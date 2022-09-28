@@ -1,9 +1,9 @@
 <?php
 namespace api\modules\v1\controllers;
 
+use api\modules\v1\models\SpaceSearch;
 use mdm\admin\components\AccessControl;
 use sizeg\jwt\JwtHttpBearerAuth;
-use Yii;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
 
@@ -45,27 +45,22 @@ class SpaceController extends ActiveController
         ];
         return $behaviors;
     }
-/*
-public function actions()
-{
-$actions = parent::actions();
-unset($actions['index']);
-return $actions;
-}
-public function actionIndex()
-{
 
-$searchModel = new ResourceSearch();
-$dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+    public function actions()
+    {
+        $actions = parent::actions();
+        unset($actions['index']);
+        return $actions;
+    }
+    public function actionIndex()
+    {
 
-if (isset(Yii::$app->request->queryParams['type'])) {
-$type = HtmlPurifier::process(Yii::$app->request->queryParams['type']);
-$dataProvider->query->andWhere(['author_id' => Yii::$app->user->id, 'type' => $type]);
-} else {
-$dataProvider->query->andWhere(['author_id' => Yii::$app->user->id]);
-}
+        $searchModel = new SpaceSearch();
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
-return $dataProvider;
-}*/
+        $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id]);
+
+        return $dataProvider;
+    }
 
 }
