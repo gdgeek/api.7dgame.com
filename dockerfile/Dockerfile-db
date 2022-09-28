@@ -1,0 +1,8 @@
+# Dockerfile-db
+
+# Use MySQL 5.7 for the base image
+FROM mariadb:10.4
+
+# Copy database initialisation scripts
+COPY init.sql /docker-entrypoint-initdb.d/
+COPY yii2advanced.sql /db/

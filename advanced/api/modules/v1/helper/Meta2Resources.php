@@ -1,0 +1,95 @@
+<?php
+
+namespace api\modules\v1\helper;
+
+use api\modules\v1\models\Resource;
+
+class Meta2Resources
+{
+    public static function HandleAddon($addon, &$resources)
+    {
+        $resource = null;
+        switch ($addon->type) {
+            case 'ImageTarget':
+                $resource = $addon->parameters->picture;
+                break;
+        }
+
+        if ($resource != null && !in_array($resource, $resources)) {
+            array_push($resources, $resource);
+        }
+
+    }
+    public static function HandleNode($node, &$resources)
+    {
+        $resource = null;
+
+        if (!isset($node->type)) {
+            //  echo json_encode($node);
+            return;
+        }
+        // echo $node->type;
+        switch ($node->type) {
+
+            case 'Polygen':
+                $resource = $node->parameters->polygen;
+                break;
+            case 'Picture':
+                $resource = $node->parameters->picture;
+                break;
+            case 'Video':
+                $resource = $node->parameters->video;
+                break;
+
+        }
+
+        if ($resource != null && !in_array($resource, $resources)) {
+            array_push($resources, $resource);
+        }
+
+        if (isset($node->children) && isset($node->children->entities)) {
+            foreach ($node->children->entities as $entity) {
+                //echo json_encode($entity);
+                Meta2Resources::HandleNode($entity, $resources);
+            }
+        }
+
+        return $resources;
+    }
+    public static function Handle($meta)
+    {
+        //echo 'aaa';
+        $resources = [];
+        if (!$meta->data) {
+            return;
+        }
+        $data = json_decode($meta->data);
+
+        Meta2Resources::HandleNode($data, $resources);
+
+        if (isset($data->children) && isset($data->children->addons)) {
+
+            foreach ($data->children->addons as $addon) {
+
+                Meta2Resources::HandleAddon($addon, $resources);
+            }
+        }
+
+        if (count($resources) == 0) {
+            return [];
+        } else {
+            $queue = ['or'];
+            foreach ($resources as $id) {
+                $queue[] = 'id=' . $id;
+            }
+
+            $items = Resource::find()->where($queue)->all();
+            $rets = [];
+            foreach ($items as $item) {
+                $rets[] = $item->sample;
+            }
+            return $rets;
+        }
+
+    }
+}

@@ -1,0 +1,73 @@
+version: "3"
+services:
+    app:
+        build:
+            context: ..
+            dockerfile: ./Dockerfile-app
+        container_name: local-mrpp-app
+        environment:
+            - MRPP_TITLE=增强现实直播平台
+            - MRPP_SUB_TITLE=陆军装甲兵学院
+            - MRPP_COMPANY=陆军装甲兵学院
+            - MRPP_COMPANY_URL=http://www.hfut.edu.cn/
+            - MRPP_API=http://192.168.31.130:81
+            - MRPP_PUB=http://192.168.31.130:82
+            - MRPP_AKA=直播平台
+            - MRPP_LOCAL=1
+            - MRPP_IP=192.168.31.130
+            - MRPP_DISK=1
+            - MYSQL_ROOT_PASSWORD=Setup2021
+        depends_on:
+            - db
+        ports:
+            - "80:80"
+        volumes:
+            - ../../:/var/www/html
+    api:
+        build:
+            context: ..
+            dockerfile: ./Dockerfile-api
+        container_name: local-mrpp-api
+        environment:
+            - MRPP_TITLE=增强现实直播平台
+            - MRPP_SUB_TITLE=陆军装甲兵学院
+            - MRPP_COMPANY=陆军装甲兵学院
+            - MRPP_COMPANY_URL=https://bujiaban.com
+            - MRPP_API=http://api.tmrpp.com
+            - MRPP_PUB=http://public.tmrpp.com
+            - MRPP_AKA=直播平台
+            - MRPP_LOCAL=1
+            - MRPP_IP=192.168.31.129
+            - MRPP_DISK=1
+            - MYSQL_ROOT_PASSWORD=Setup2021
+        depends_on:
+            - db
+        ports:
+            - "81:80"
+        volumes:
+            - ../../:/var/www/html
+    db:
+        build:
+            context: ..
+            dockerfile: ./Dockerfile-db
+        volumes:
+            - sql-data:/var/lib/mysql
+        environment:
+            - MYSQL_ROOT_PASSWORD=Setup2021
+            - MYSQL_DATABASE=wordpress
+            - MYSQL_USER=wordpress
+            - MYSQL_PASSWORD=Setup2021
+        ports:
+            - 3306:3306
+    phpmyadmin:
+        image: phpmyadmin/phpmyadmin:latest
+        ports:
+            - 8015:80
+        environment:
+            - MYSQL_ROOT_PASSWORD=Setup2021
+        depends_on:
+            - db
+volumes:
+    sql-data:
+
+

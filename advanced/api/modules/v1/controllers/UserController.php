@@ -1,0 +1,104 @@
+<?php
+
+namespace api\modules\v1\controllers;
+
+use api\common\models\UserDataForm;
+use api\modules\v1\models\User;
+
+use api\modules\v1\models\UserCreation;
+
+use mdm\admin\components\AccessControl;
+use mdm\admin\components\Configs;
+use sizeg\jwt\JwtHttpBearerAuth;
+use Yii;
+use yii\base\Exception;
+use yii\filters\auth\CompositeAuth;
+
+class UserController extends \yii\rest\Controller
+
+{
+
+    public function behaviors()
+    {
+
+        $behaviors = parent::behaviors();
+
+        $behaviors['authenticator'] = [
+            'class' => CompositeAuth::className(),
+            'authMethods' => [
+                JwtHttpBearerAuth::class,
+            ],
+        ];
+        $auth = $behaviors['authenticator'];
+        // add CORS filter
+        $behaviors['corsFilter'] = [
+            'class' => \yii\filters\Cors::className(),
+            'cors' => [
+                'Origin' => ['*'],
+                'Access-Control-Request-Method' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],
+                'Access-Control-Request-Headers' => ['*'],
+                'Access-Control-Allow-Credentials' => null,
+                'Access-Control-Max-Age' => 86400,
+            ],
+        ];
+
+        // re-add authentication filter
+        $behaviors['authenticator'] = $auth;
+        // avoid authentication on CORS-pre-flight requests (HTTP OPTIONS method)
+        $behaviors['authenticator']['except'] = ['options'];
+
+      //  echo 1;
+
+        $behaviors['access'] = [
+            'class' => AccessControl::class,
+        ];
+
+        return $behaviors;
+    }
+    private function getAssignments($userId)
+    {
+        $manager = Configs::authManager();
+        $assignments = $manager->getAssignments($userId);
+        $ret = [];
+        foreach ($assignments as $key => $value) {
+            $ret[] = $value->roleName;
+
+        }
+        return $ret;
+    }
+    private function getUserData()
+    {
+        //权限
+        //目录
+        $user = new \stdClass();
+        $user->username = Yii::$app->user->identity->username;
+        $user->data = Yii::$app->user->identity->getData();
+        $user->roles = $this->getAssignments(Yii::$app->user->identity->id);
+        return $user;
+
+    }
+    public function actionCreation(){
+        $creation = new UserCreation();
+        return $creation;
+    }
+    public function actionSetData()
+    {
+        $model = new UserDataForm(Yii::$app->user->identity);
+        $post = Yii::$app->request->post();
+        if ($model->load($post, '') && $model->save()) {
+            return $this->getUserData();
+        } else {
+            if (count($model->errors) == 0) {
+                throw new Exception("缺少数据", 400);
+            } else {
+                throw new Exception(json_encode($model->errors), 400);
+            }
+
+        }
+    }
+    public function actionGetData()
+    {
+        return $this->getUserData();
+    }
+
+}

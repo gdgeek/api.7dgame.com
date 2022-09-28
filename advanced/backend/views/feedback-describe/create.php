@@ -1,0 +1,20 @@
+<?php
+
+use yii\helpers\Html;
+
+/* @var $this yii\web\View */
+/* @var $model backend\models\FeedbackDescribe */
+
+$this->title = 'Create Feedback Describe';
+$this->params['breadcrumbs'][] = ['label' => 'Feedback Describes', 'url' => ['index']];
+$this->params['breadcrumbs'][] = $this->title;
+?>
+<div class="feedback-describe-create">
+
+    <h1><?= Html::encode($this->title) ?></h1>
+
+    <?= $this->render('_form', [
+        'model' => $model,
+    ]) ?>
+
+</div>

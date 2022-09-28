@@ -1,0 +1,15 @@
+{
+  "name": "blueimp-file-upload",
+  "homepage": "https://github.com/blueimp/jQuery-File-Upload",
+  "version": "10.31.0",
+  "_release": "10.31.0",
+  "_resolution": {
+    "type": "version",
+    "tag": "v10.31.0",
+    "commit": "6d176da126c8150d267d0607b9be19ee2578be0b"
+  },
+  "_source": "https://github.com/blueimp/jQuery-File-Upload.git",
+  "_target": "^10.31.0",
+  "_originalSource": "blueimp-file-upload",
+  "_direct": true
+}
