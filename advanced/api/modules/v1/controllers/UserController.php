@@ -4,9 +4,7 @@ namespace api\modules\v1\controllers;
 
 use api\common\models\UserDataForm;
 use api\modules\v1\models\User;
-
 use api\modules\v1\models\UserCreation;
-
 use mdm\admin\components\AccessControl;
 use mdm\admin\components\Configs;
 use sizeg\jwt\JwtHttpBearerAuth;
@@ -23,13 +21,6 @@ class UserController extends \yii\rest\Controller
 
         $behaviors = parent::behaviors();
 
-        $behaviors['authenticator'] = [
-            'class' => CompositeAuth::className(),
-            'authMethods' => [
-                JwtHttpBearerAuth::class,
-            ],
-        ];
-        $auth = $behaviors['authenticator'];
         // add CORS filter
         $behaviors['corsFilter'] = [
             'class' => \yii\filters\Cors::className(),
@@ -41,13 +32,14 @@ class UserController extends \yii\rest\Controller
                 'Access-Control-Max-Age' => 86400,
             ],
         ];
-
+        $behaviors['authenticator'] = [
+            'class' => CompositeAuth::className(),
+            'authMethods' => [
+                JwtHttpBearerAuth::class,
+            ],
+            'except' => ['options'],
+        ];
         // re-add authentication filter
-        $behaviors['authenticator'] = $auth;
-        // avoid authentication on CORS-pre-flight requests (HTTP OPTIONS method)
-        $behaviors['authenticator']['except'] = ['options'];
-
-      //  echo 1;
 
         $behaviors['access'] = [
             'class' => AccessControl::class,
@@ -77,7 +69,8 @@ class UserController extends \yii\rest\Controller
         return $user;
 
     }
-    public function actionCreation(){
+    public function actionCreation()
+    {
         $creation = new UserCreation();
         return $creation;
     }
