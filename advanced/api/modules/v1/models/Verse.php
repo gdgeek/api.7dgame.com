@@ -3,6 +3,7 @@
 namespace api\modules\v1\models;
 
 use api\modules\v1\models\File;
+use api\modules\v1\models\Space;
 use api\modules\v1\models\User;
 use Yii;
 use yii\behaviors\BlameableBehavior;
@@ -21,6 +22,7 @@ use yii\db\Expression;
  * @property string|null $info
  * @property int|null $image_id
  * @property string|null $data
+ * @property int|null $version
  *
  * @property Meta[] $metas
  * @property User $author
@@ -67,7 +69,7 @@ class Verse extends \yii\db\ActiveRecord
     {
         return [
             [['name'], 'required'],
-            [['author_id', 'updater_id', 'image_id'], 'integer'],
+            [['author_id', 'updater_id', 'image_id', 'version'], 'integer'],
             [['created_at', 'updated_at'], 'safe'],
             [['info', 'data'], 'string'],
             [['name'], 'string', 'max' => 255],
@@ -79,10 +81,8 @@ class Verse extends \yii\db\ActiveRecord
     public function fields()
     {
         $fields = parent::fields();
-        // unset($fields['author_id']);
         unset($fields['updater_id']);
         unset($fields['image_id']);
-        // unset($fields['data']);
         unset($fields['updated_at']);
 
         return $fields;
@@ -102,6 +102,7 @@ class Verse extends \yii\db\ActiveRecord
             'info' => 'Info',
             'image_id' => 'Image Id',
             'data' => 'Data',
+            'version' => 'Version',
         ];
     }
     /**
@@ -162,7 +163,6 @@ class Verse extends \yii\db\ActiveRecord
         }
         if (isset($data->children->addons)) {
             foreach ($data->children->addons as $addon) {
-                //   echo 123;
                 if ($this->upgrade($addon)) {
                     $ret = true;
                 }
@@ -175,7 +175,6 @@ class Verse extends \yii\db\ActiveRecord
                 }
             }
         }
-
         return $ret;
     }
     public function afterFind()
@@ -221,12 +220,27 @@ class Verse extends \yii\db\ActiveRecord
         return null;
 
     }
+    public function getSpace()
+    {
+        $data = json_decode($this->data);
+        if (isset($data->parameters) && isset($data->parameters->space)) {
+            $space_id = $data->parameters->space;
+            $space = Space::findOne($space_id);
+            if ($space) {
+                return $space->client;
+            }
+
+        }
+    }
     public function extraFields()
     {
 
         return ['metas', 'verseCybers', 'verseOpen', 'message', 'image', 'share',
             'author' => function () {
                 return $this->author->sample;
+            },
+            'space' => function () {
+                return $this->space;
             },
             'links' => function () {
                 return $this->getLinks();
