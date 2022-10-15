@@ -31,7 +31,6 @@ use yii\db\Expression;
 
  */
 class Verse extends \yii\db\ActiveRecord
-
 {
 
     public function behaviors()
@@ -227,7 +226,7 @@ class Verse extends \yii\db\ActiveRecord
             $space_id = $data->parameters->space;
             $space = Space::findOne($space_id);
             if ($space) {
-                return $space->client;
+                return $space->model;
             }
 
         }
