@@ -18,7 +18,6 @@ use yii\db\Expression;
  * @property int|null $updater_id
  * @property string $created_at
  * @property string $updated_at
- * @property string $name
  * @property int|null $verse_id
  * @property string|null $info
  * @property int|null $image_id
@@ -30,6 +29,7 @@ use yii\db\Expression;
  * @property Verse $verse
  */
 class Meta extends \yii\db\ActiveRecord
+
 {
 
     public function behaviors()
@@ -65,11 +65,9 @@ class Meta extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['name'], 'required'],
             [['author_id', 'updater_id', 'verse_id', 'image_id'], 'integer'],
             [['created_at', 'updated_at'], 'safe'],
             [['info', 'data'], 'string'],
-            [['name'], 'string', 'max' => 255],
             [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['author_id' => 'id']],
             [['image_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['image_id' => 'id']],
             [['updater_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updater_id' => 'id']],
@@ -105,7 +103,6 @@ class Meta extends \yii\db\ActiveRecord
             'updater_id' => 'Updater ID',
             'created_at' => 'Created At',
             'updated_at' => 'Updated At',
-            'name' => 'Name',
             'verse_id' => 'Verse ID',
             'info' => 'Info',
             'image_id' => 'Image Id',
