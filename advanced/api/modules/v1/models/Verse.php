@@ -31,6 +31,7 @@ use yii\db\Expression;
 
  */
 class Verse extends \yii\db\ActiveRecord
+
 {
 
     public function behaviors()
@@ -223,11 +224,6 @@ class Verse extends \yii\db\ActiveRecord
     {
         $data = json_decode($this->data);
         if (isset($data->parameters) && isset($data->parameters->space)) {
-            $space_id = $data->parameters->space;
-            $space = Space::findOne($space_id);
-            if ($space) {
-                return $space->model;
-            }
 
         }
     }
