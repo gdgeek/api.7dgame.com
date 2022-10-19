@@ -200,7 +200,7 @@ class Verse extends \yii\db\ActiveRecord
         }
         $ret = [];
         foreach ($data->children->metas as $child) {
-            $id = $child->parameters->meta->id;
+            $id = $child->parameters->id;
             if (isset($map[$meta->id])) {
                 array_push($ret, $map[$id]);
             }
@@ -223,10 +223,10 @@ class Verse extends \yii\db\ActiveRecord
     {
         $data = json_decode($this->data);
         if (isset($data->parameters) && isset($data->parameters->space)) {
-            $space_id = $data->parameters->space;
-            $space = Space::findOne($space_id);
-            if ($space) {
-                return $space->model;
+            $space = $data->parameters->space;
+            $model = Space::findOne($space->id);
+            if ($model) {
+                return $model->model;
             }
 
         }
