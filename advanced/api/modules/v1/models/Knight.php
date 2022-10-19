@@ -2,7 +2,12 @@
 
 namespace api\modules\v1\models;
 
+use api\modules\v1\models\File;
+use api\modules\v1\models\User;
 use Yii;
+use yii\behaviors\BlameableBehavior;
+use yii\behaviors\TimestampBehavior;
+use yii\db\Expression;
 
 /**
  * This is the model class for table "knight".
@@ -25,6 +30,26 @@ use Yii;
  */
 class Knight extends \yii\db\ActiveRecord
 {
+
+    public function behaviors()
+    {
+        return [
+            [
+                'class' => TimestampBehavior::class,
+                'attributes' => [
+                    \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => ['created_at', 'updated_at'],
+                    \yii\db\ActiveRecord::EVENT_BEFORE_UPDATE => ['updated_at'],
+
+                ],
+                'value' => new Expression('NOW()'),
+            ],
+            [
+                'class' => BlameableBehavior::class,
+                'createdByAttribute' => 'author_id',
+                'updatedByAttribute' => 'updater_id',
+            ],
+        ];
+    }
     /**
      * {@inheritdoc}
      */
@@ -39,7 +64,6 @@ class Knight extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['author_id'], 'required'],
             [['author_id', 'updater_id', 'image_id', 'mesh_id'], 'integer'],
             [['create_at', 'updated_at'], 'safe'],
             [['info', 'data'], 'string'],

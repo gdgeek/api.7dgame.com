@@ -8,8 +8,8 @@ use yii\db\Migration;
  *
  * - `{{%user}}`
  * - `{{%user}}`
- * - `{{%file}}`
- * - `{{%file}}`
+ * - `{{%resource}}`
+ * - `{{%resource}}`
  */
 class m221019_123650_create_knight_table extends Migration
 {
@@ -77,12 +77,12 @@ class m221019_123650_create_knight_table extends Migration
             'image_id'
         );
 
-        // add foreign key for table `{{%file}}`
+        // add foreign key for table `{{%resource}}`
         $this->addForeignKey(
             '{{%fk-knight-image_id}}',
             '{{%knight}}',
             'image_id',
-            '{{%file}}',
+            '{{%resource}}',
             'id',
             'CASCADE'
         );
@@ -94,12 +94,12 @@ class m221019_123650_create_knight_table extends Migration
             'mesh_id'
         );
 
-        // add foreign key for table `{{%file}}`
+        // add foreign key for table `{{%resource}}`
         $this->addForeignKey(
             '{{%fk-knight-mesh_id}}',
             '{{%knight}}',
             'mesh_id',
-            '{{%file}}',
+            '{{%resource}}',
             'id',
             'CASCADE'
         );
@@ -134,7 +134,7 @@ class m221019_123650_create_knight_table extends Migration
             '{{%knight}}'
         );
 
-        // drops foreign key for table `{{%file}}`
+        // drops foreign key for table `{{%resource}}`
         $this->dropForeignKey(
             '{{%fk-knight-image_id}}',
             '{{%knight}}'
@@ -146,7 +146,7 @@ class m221019_123650_create_knight_table extends Migration
             '{{%knight}}'
         );
 
-        // drops foreign key for table `{{%file}}`
+        // drops foreign key for table `{{%resource}}`
         $this->dropForeignKey(
             '{{%fk-knight-mesh_id}}',
             '{{%knight}}'
