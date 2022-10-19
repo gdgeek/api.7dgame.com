@@ -101,7 +101,3 @@ class m220326_105029_create_order_table extends Migration
         $this->dropTable('{{%order}}');
     }
 }
-php yii migrate/create create_space_table --fields="title:string:notNull,author_id:integer:notNull:foreignKey(user)"
-
-//,mesh_id:integer:notNull:foreignKey(file),dat_id:in
-teger:notNull:foreignKey(file),created_at:dateTime:notNull(),context:json
