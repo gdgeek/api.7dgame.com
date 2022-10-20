@@ -24,7 +24,7 @@ class m221020_175746_create_meta_knight_table extends Migration
         $this->createTable('{{%meta_knight}}', [
             'id' => $this->primaryKey(),
             'verse_id' => $this->integer()->notNull(),
-            'knight_id' => $this->integer()->notNull(),
+            'knight_id' => $this->integer(),
             'user_id' => $this->integer()->notNull(),
             'info' => $this->json(),
             'create_at' => $this->dateTime(),
