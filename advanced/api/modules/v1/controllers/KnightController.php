@@ -55,7 +55,6 @@ class KnightController extends ActiveController
     }
     public function actionIndex()
     {
-
         $searchModel = new KnightSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
         $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id]);
