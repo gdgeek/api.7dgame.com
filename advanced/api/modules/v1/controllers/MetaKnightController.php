@@ -30,7 +30,18 @@ class MetaKnightController extends ActiveController
                 ],
             ],
         ];
+        // unset($behaviors['authenticator']);
+        $behaviors['authenticator'] = [
+            'class' => CompositeAuth::class,
+            'authMethods' => [
+                JwtHttpBearerAuth::class,
+            ],
+            'except' => ['options'],
+        ];
 
+        $behaviors['access'] = [
+            'class' => AccessControl::class,
+        ];
         return $behaviors;
     }
 
@@ -44,7 +55,7 @@ class MetaKnightController extends ActiveController
     {
         $searchModel = new MetaKnightSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-        $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id]);
+        $dataProvider->query->andWhere(['user_id' => Yii::$app->user->id]);
         return $dataProvider;
     }
 
