@@ -113,9 +113,9 @@ class Verse extends \yii\db\ActiveRecord
     {
         return $this->hasMany(VerseCyber::className(), ['verse_id' => 'id']);
     }
-    public function extraResources()
+    public function getResources()
     {
-        $metas = $this->links;
+        $metas = $this->useMetas;
         $out = [];
         foreach ($metas as $meta) {
             if ($meta->data) {
@@ -189,9 +189,8 @@ class Verse extends \yii\db\ActiveRecord
 
     }
 
-    public function getLinks()
+    public function getUseMetas()
     {
-
         $data = json_decode($this->data);
         $metas = $this->metas;
         $map = [];
@@ -200,9 +199,11 @@ class Verse extends \yii\db\ActiveRecord
         }
         $ret = [];
         foreach ($data->children->metas as $child) {
-            $id = $child->parameters->id;
-            if (isset($map[$meta->id])) {
-                array_push($ret, $map[$id]);
+            if ($child->type == 'Meta') {
+                $id = $child->parameters->id;
+                if (isset($map[$meta->id])) {
+                    array_push($ret, $map[$id]);
+                }
             }
         }
         return $ret;
@@ -241,14 +242,14 @@ class Verse extends \yii\db\ActiveRecord
             'space' => function () {
                 return $this->space;
             },
-            'links' => function () {
-                return $this->getLinks();
+            'useMetas' => function () {
+                return $this->useMetas;
             },
             'script' => function () {
                 return $this->script;
             },
             'resources' => function () {
-                return $this->extraResources();
+                return $this->resources;
             },
 
         ];
