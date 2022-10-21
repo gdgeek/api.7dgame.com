@@ -29,7 +29,6 @@ use yii\db\Expression;
  * @property Verse $verse
  */
 class Meta extends \yii\db\ActiveRecord
-
 {
 
     public function behaviors()
@@ -161,7 +160,7 @@ class Meta extends \yii\db\ActiveRecord
     {
         return ['verse', 'image',
             'author' => function () {
-                return $this->author->sample;
+                return $this->author;
             },
             'editor' => function () {
                 return $this->extraEditor();
@@ -175,24 +174,16 @@ class Meta extends \yii\db\ActiveRecord
     public function extraResources()
     {
         $resources = \api\modules\v1\helper\Meta2Resources::Handle($this);
-        return $resources;
+        $items = Resource::find()->where(['id' => $resources])->all();
+        return $items;
     }
+
     public function extraEditor()
     {
         $editor = \api\modules\v1\helper\Meta2Editor::Handle($this);
         return $editor;
     }
-    /*
-    public function extraAuthor()
-    {
-    $author = $this->author;
-    $result = new \stdClass();
-    $result->id = $author->id;
-    $result->username = $author->username;
-    $result->nickname = $author->nickname;
-    $result->email = $author->email;
-    return $result;
-    }*/
+
     public function upgrade($data)
     {
         $ret = false;

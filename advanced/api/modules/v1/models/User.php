@@ -37,12 +37,21 @@ class User extends ActiveRecord implements IdentityInterface
         return $user;
 
     }
+    public function fields()
+    {
+        //$fields = parent::fields();
 
+        return [
+            'id', 'nickname', 'email',
+            'username',
+        ];
+    }
+    /*
     public function getSample()
     {
 
-        return ['id' => $this->id, 'username' => $this->username, 'nickname' => $this->nickname, 'email' => $this->email];
-    }
+    return ['id' => $this->id, 'username' => $this->username, 'nickname' => $this->nickname, 'email' => $this->email];
+    }*/
     public function getData()
     {
 
@@ -299,7 +308,7 @@ class User extends ActiveRecord implements IdentityInterface
     {
 
         $this->userInfo->save();
-        
+
         return true;
 
     }

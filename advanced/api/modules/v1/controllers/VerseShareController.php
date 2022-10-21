@@ -94,7 +94,7 @@ class VerseShareController extends ActiveController
             $models = $dataProvider->getModels();
             $results = [];
             foreach ($models as $model) {
-                $sample = $model->user->sample;
+                $sample = $model->user;
                 $sample['info'] = $model->info;
                 array_push($results, $sample);
             }

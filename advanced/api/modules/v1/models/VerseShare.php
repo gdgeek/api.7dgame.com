@@ -88,7 +88,7 @@ class VerseShare extends \yii\db\ActiveRecord
 
             },
             'author' => function () {
-                return $this->user->sample;
+                return $this->user;
             }];
     }
     /**

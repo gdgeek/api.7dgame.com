@@ -1,8 +1,10 @@
 <?php
 namespace api\modules\v1\controllers;
 
-use api\modules\v1\models\MetaKnightSearch;
+use mdm\admin\components\AccessControl;
+use sizeg\jwt\JwtHttpBearerAuth;
 use Yii;
+use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
 
 class MetaKnightController extends ActiveController
@@ -30,6 +32,7 @@ class MetaKnightController extends ActiveController
                 ],
             ],
         ];
+
         // unset($behaviors['authenticator']);
         $behaviors['authenticator'] = [
             'class' => CompositeAuth::class,
@@ -43,20 +46,6 @@ class MetaKnightController extends ActiveController
             'class' => AccessControl::class,
         ];
         return $behaviors;
-    }
-
-    public function actions()
-    {
-        $actions = parent::actions();
-        unset($actions['index']);
-        return $actions;
-    }
-    public function actionIndex()
-    {
-        $searchModel = new MetaKnightSearch();
-        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-        $dataProvider->query->andWhere(['user_id' => Yii::$app->user->id]);
-        return $dataProvider;
     }
 
 }

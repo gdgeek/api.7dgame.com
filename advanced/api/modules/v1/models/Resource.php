@@ -2,10 +2,9 @@
 
 namespace api\modules\v1\models;
 
-use yii\behaviors\BlameableBehavior;
-
 use api\modules\v1\models\User;
 use Yii;
+use yii\behaviors\BlameableBehavior;
 
 /**
  * This is the model class for table "resource".
@@ -18,13 +17,13 @@ use Yii;
  * @property int $file_id
  * @property int|null $image_id
  * @property string|null $info
- * @property int|null $updater_id 
- * @property string|null $uuid 
+ * @property int|null $updater_id
+ * @property string|null $uuid
  *
  * @property User $author
  * @property File $file
  * @property File $image
- * @property User $updater 
+ * @property User $updater
  */
 class Resource extends \yii\db\ActiveRecord
 {
@@ -59,7 +58,7 @@ class Resource extends \yii\db\ActiveRecord
             [['name', 'type', 'uuid'], 'string', 'max' => 255],
             [['uuid'], 'unique'],
             [['updater_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::class, 'targetAttribute' => ['updater_id' => 'id']],
-            [['author_id'], 'exist', 'skipOnError' => true,  'targetClass' => User::class, 'targetAttribute' => ['author_id' => 'id']],
+            [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::class, 'targetAttribute' => ['author_id' => 'id']],
             [['file_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::class, 'targetAttribute' => ['file_id' => 'id']],
             [['image_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::class, 'targetAttribute' => ['image_id' => 'id']],
         ];
@@ -80,7 +79,7 @@ class Resource extends \yii\db\ActiveRecord
             'file_id' => 'File ID',
             'image_id' => 'Image ID',
             'info' => 'Info',
-            'uuid' => 'Uuid', 
+            'uuid' => 'Uuid',
         ];
     }
 
@@ -130,10 +129,11 @@ class Resource extends \yii\db\ActiveRecord
     {
         return new ResourceQuery(get_called_class());
     }
-    public function afterFind(){
+    public function afterFind()
+    {
 
         parent::afterFind();
-        if(empty($this->uuid)){
+        if (empty($this->uuid)) {
             $this->uuid = \Faker\Provider\Uuid::uuid();
             $this->save();
         }
@@ -142,30 +142,40 @@ class Resource extends \yii\db\ActiveRecord
     {
         parent::afterDelete();
         $file = File::findOne($this->file_id);
-        if($file){
+        if ($file) {
             $file->delete();
-        }    
+        }
         $image = File::findOne($this->image_id);
-        if($image){
+        if ($image) {
             $image->delete();
         }
     }
-    
-    public function extraFields() 
-    { 
+
+    public function extraFields()
+    {
         return [
-                 'file',
-                 'image',
-                 'author'=>function(){
-                    return $this->author->sample;
-                  }
-              ]; 
-    } 
-    public function getSample(){
-        return ['id'=>$this->id, 'info'=>$this->info, 'md5'=>$this->file->md5, 'uuid'=>$this->uuid, 'fileData'=>$this->file, 'file'=>$this->file->url, 'type'=>$this->type];
+            'file',
+            'image',
+            'author' => function () {
+                return $this->author;
+            },
+        ];
     }
-   
-    
-    
+    /*
+    public function getSample()
+    {
+    return ['id' => $this->id, 'info' => $this->info, 'md5' => $this->file->md5, 'uuid' => $this->uuid, 'fileData' => $this->file, 'file' => $this->file->url, 'type' => $this->type];
+    }*/
+    public function fields()
+    {
+        //$fields = parent::fields();
+
+        return [
+            'id', 'info', 'uuid', 'type', 'file' => function ($model) {
+                return $this->file;
+            },
+
+        ];
+    }
 
 }

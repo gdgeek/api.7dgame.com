@@ -2,13 +2,10 @@
 
 namespace api\modules\v1\models;
 
-
 use api\modules\v1\models\User;
 use Yii;
-
 use yii\behaviors\AttributesBehavior;
 use yii\behaviors\BlameableBehavior;
-
 use yii\behaviors\TimestampBehavior;
 use yii\db\Expression;
 
@@ -67,12 +64,16 @@ class File extends \yii\db\ActiveRecord
 
     }
 
-     public function fields()
+    public function fields()
     {
         $fields = parent::fields();
-       
-        unset($fields['updater_id']);
 
+        unset($fields['updater_id']);
+        unset($fields['id']);
+        unset($fields['user_id']);
+        unset($fields['created_at']);
+        unset($fields['size']);
+        unset($fields['filename']);
 
         return $fields;
     }
@@ -95,10 +96,10 @@ class File extends \yii\db\ActiveRecord
                 'class' => AttributesBehavior::class,
                 'attributes' => [
                     'size' => [
-                         \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => [$this, 'getFileSize'],
+                        \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => [$this, 'getFileSize'],
                     ],
                     'type' => [
-                         \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => [$this, 'getFileType'],
+                        \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => [$this, 'getFileType'],
                     ],
 
                 ],

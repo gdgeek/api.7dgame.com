@@ -3,6 +3,7 @@
 namespace api\modules\v1\models;
 
 use api\modules\v1\models\File;
+use api\modules\v1\models\Knight;
 use api\modules\v1\models\Space;
 use api\modules\v1\models\User;
 use Yii;
@@ -39,9 +40,7 @@ class Verse extends \yii\db\ActiveRecord
             [
                 'class' => TimestampBehavior::class,
                 'attributes' => [
-                    \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => ['created_at', 'updated_at'],
-                    \yii\db\ActiveRecord::EVENT_BEFORE_UPDATE => ['updated_at'],
-
+                    \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => ['created_at'],
                 ],
                 'value' => new Expression('NOW()'),
             ],
@@ -115,12 +114,13 @@ class Verse extends \yii\db\ActiveRecord
     }
     public function getResources()
     {
-        $metas = $this->useMetas;
+        $metas = $this->datas['metas'];
         $out = [];
         foreach ($metas as $meta) {
             if ($meta->data) {
                 $resources = $meta->extraResources();
                 foreach ($resources as $resource) {
+
                     if (!isset($out[$resource['id']])) {
                         $out[$resource['id']] = $resource;
                     }
@@ -189,25 +189,29 @@ class Verse extends \yii\db\ActiveRecord
 
     }
 
-    public function getUseMetas()
+    public function getDatas()
     {
         $data = json_decode($this->data);
-        $metas = $this->metas;
-        $map = [];
-        foreach ($metas as $meta) {
-            $map[$meta->id] = $meta;
-        }
-        $ret = [];
+
+        $m = [];
+        $k = [];
+
         foreach ($data->children->metas as $child) {
             if ($child->type == 'Meta') {
                 $id = $child->parameters->id;
-                if (isset($map[$meta->id])) {
-                    array_push($ret, $map[$id]);
-                }
+                array_push($m, $id);
+
+            } else {
+                $id = $child->parameters->id;
+                array_push($k, $id);
             }
         }
-        return $ret;
+        $knightQuery = $this->getMetaKnights()->where(['id' => $k]);
+        $metaQuery = $this->getMetas()->where(['id' => $m]);
+
+        return ['metas' => $metaQuery->all(), 'knights' => $knightQuery->all()];
     }
+
     public function getScript()
     {
 
@@ -237,13 +241,13 @@ class Verse extends \yii\db\ActiveRecord
 
         return ['metas', 'verseCybers', 'verseOpen', 'message', 'image', 'share',
             'author' => function () {
-                return $this->author->sample;
+                return $this->author;
             },
             'space' => function () {
                 return $this->space;
             },
-            'useMetas' => function () {
-                return $this->useMetas;
+            'datas' => function () {
+                return $this->datas;
             },
             'script' => function () {
                 return $this->script;
@@ -254,6 +258,17 @@ class Verse extends \yii\db\ActiveRecord
 
         ];
     }
+
+    /**
+     * Gets query for [[MetaKnights]].
+     *
+     * @return \yii\db\ActiveQuery|MetaKnightQuery
+     */
+    public function getMetaKnights()
+    {
+        return $this->hasMany(MetaKnight::className(), ['verse_id' => 'id']);
+    }
+
     /**
      * Gets query for [[Metas]].
      *

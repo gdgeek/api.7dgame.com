@@ -3,6 +3,9 @@
 namespace api\modules\v1\models;
 
 use Yii;
+use yii\behaviors\BlameableBehavior;
+use yii\behaviors\TimestampBehavior;
+use yii\db\Expression;
 
 /**
  * This is the model class for table "meta_knight".
@@ -20,6 +23,24 @@ use Yii;
  */
 class MetaKnight extends \yii\db\ActiveRecord
 {
+
+    public function behaviors()
+    {
+        return [
+            [
+                'class' => TimestampBehavior::class,
+                'attributes' => [
+                    \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => ['create_at'],
+                ],
+                'value' => new Expression('NOW()'),
+            ],
+            [
+                'class' => BlameableBehavior::class,
+                'createdByAttribute' => 'user_id',
+                'updatedByAttribute' => false,
+            ],
+        ];
+    }
     /**
      * {@inheritdoc}
      */
@@ -34,7 +55,7 @@ class MetaKnight extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['verse_id', 'knight_id', 'user_id'], 'required'],
+            [['verse_id'], 'required'],
             [['verse_id', 'knight_id', 'user_id'], 'integer'],
             [['info'], 'string'],
             [['create_at'], 'safe'],
@@ -58,7 +79,20 @@ class MetaKnight extends \yii\db\ActiveRecord
             'create_at' => 'Create At',
         ];
     }
+    public function fields()
+    {
+        //$fields = parent::fields();
 
+        return [
+            'id',
+            'author_id' => function ($model) {
+                return $this->user_id;
+            },
+            'data' => function ($model) {
+                return $this->knight->data;
+            },
+        ];
+    }
     /**
      * Gets query for [[Knight]].
      *

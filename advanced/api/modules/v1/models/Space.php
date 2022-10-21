@@ -82,7 +82,7 @@ class Space extends \yii\db\ActiveRecord
             'sample',
             'dat',
             'author' => function () {
-                return $this->author->sample;
+                return $this->author;
             },
         ];
     }

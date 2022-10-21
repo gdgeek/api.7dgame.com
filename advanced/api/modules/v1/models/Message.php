@@ -27,7 +27,6 @@ use yii\db\Expression;
  * @property Reply[] $replies
  */
 class Message extends \yii\db\ActiveRecord
-
 {
 
     public function behaviors()
@@ -119,19 +118,19 @@ class Message extends \yii\db\ActiveRecord
         return [
             'author' => function () {
                 return $this->extraAuthor();
-            }, 
-        
-            'likes', 
-            'likesCount' => function(){
+            },
+
+            'likes',
+            'likesCount' => function () {
                 return $this->likesCount();
             },
             'like',
             'verseOpen',
-            'replies', 
-            'messageTags'
+            'replies',
+            'messageTags',
         ];
     }
-    
+
     /**
      * Gets query for [[Updater]].
      *
@@ -170,14 +169,16 @@ class Message extends \yii\db\ActiveRecord
     {
         return new MessageQuery(get_called_class());
     }
-    public function likesCount(){
+    public function likesCount()
+    {
         $query = $this->getLikes();
         return $query->count();
 
     }
-    public function getLike(){
-        return $this->hasOne(Like::className(),['message_id' => 'id'])
-        ->andWhere(['user_id' => \Yii::$app->user->identity->id]);
+    public function getLike()
+    {
+        return $this->hasOne(Like::className(), ['message_id' => 'id'])
+            ->andWhere(['user_id' => \Yii::$app->user->identity->id]);
     }
     /**
      * Gets query for [[Likes]].

@@ -2,8 +2,6 @@
 
 namespace api\modules\v1\helper;
 
-use api\modules\v1\models\Resource;
-
 class Meta2Resources
 {
     public static function HandleAddon($addon, &$resources)
@@ -25,7 +23,7 @@ class Meta2Resources
         $resource = null;
 
         if (!isset($node->type)) {
-            //  echo json_encode($node);
+
             return;
         }
         // echo $node->type;
@@ -74,22 +72,7 @@ class Meta2Resources
                 Meta2Resources::HandleAddon($addon, $resources);
             }
         }
-
-        if (count($resources) == 0) {
-            return [];
-        } else {
-            $queue = ['or'];
-            foreach ($resources as $id) {
-                $queue[] = 'id=' . $id;
-            }
-
-            $items = Resource::find()->where($queue)->all();
-            $rets = [];
-            foreach ($items as $item) {
-                $rets[] = $item->sample;
-            }
-            return $rets;
-        }
+        return $resources;
 
     }
 }
