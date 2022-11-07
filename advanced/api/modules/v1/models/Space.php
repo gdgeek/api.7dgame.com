@@ -11,7 +11,6 @@ use yii\db\Expression;
  * This is the model class for table "space".
  *
  * @property int $id
- * @property string $name
  * @property int $author_id
  * @property int $sample_id
  * @property int $mesh_id
@@ -19,6 +18,7 @@ use yii\db\Expression;
  * @property string $created_at
  * @property int|null $image_id
  * @property string|null $info
+ * @property string|null $name
  *
  * @property User $author
  * @property File $dat
@@ -27,6 +27,7 @@ use yii\db\Expression;
  * @property File $sample
  */
 class Space extends \yii\db\ActiveRecord
+
 {
 
     public function behaviors()
@@ -66,7 +67,7 @@ class Space extends \yii\db\ActiveRecord
             [['author_id', 'sample_id', 'mesh_id', 'dat_id', 'image_id'], 'integer'],
             [['created_at'], 'safe'],
             [['info'], 'string'],
-            [['title'], 'string', 'max' => 255],
+            [['title', 'name'], 'string', 'max' => 255],
             [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['author_id' => 'id']],
             [['dat_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['dat_id' => 'id']],
             [['image_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['image_id' => 'id']],
@@ -122,6 +123,7 @@ class Space extends \yii\db\ActiveRecord
             'created_at' => 'Created At',
             'image_id' => 'Image ID',
             'info' => 'Info',
+            'name' => 'Name',
         ];
     }
 
@@ -176,5 +178,14 @@ class Space extends \yii\db\ActiveRecord
     public function getSample()
     {
         return $this->hasOne(File::className(), ['id' => 'sample_id']);
+    }
+
+    /**
+     * {@inheritdoc}
+     * @return SpaceQuery the active query used by this AR class.
+     */
+    public static function find()
+    {
+        return new SpaceQuery(get_called_class());
     }
 }
