@@ -22,6 +22,7 @@ use yii\db\Expression;
  * @property Verse $verse
  */
 class MetaKnight extends \yii\db\ActiveRecord
+
 {
 
     public function behaviors()
@@ -85,9 +86,7 @@ class MetaKnight extends \yii\db\ActiveRecord
 
         return [
             'id',
-            'author_id' => function ($model) {
-                return $this->user_id;
-            },
+
             'data' => function ($model) {
                 return $this->knight->data;
             },

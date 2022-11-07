@@ -29,6 +29,7 @@ use yii\db\Expression;
 
  */
 class MetaVerse extends \yii\db\ActiveRecord
+
 {
 
     public function behaviors()
@@ -81,7 +82,6 @@ class MetaVerse extends \yii\db\ActiveRecord
         unset($fields['author_id']);
         unset($fields['updater_id']);
         unset($fields['image_id']);
-        // unset($fields['data']);
         unset($fields['updated_at']);
 
         return $fields;
@@ -154,13 +154,11 @@ class MetaVerse extends \yii\db\ActiveRecord
             foreach ($data->children->entities as $entity) {
                 if ($this->upgrade($entity)) {
                     $ret = true;
-
                 }
             }
         }
         if (isset($data->children->addons)) {
             foreach ($data->children->addons as $addon) {
-                //   echo 123;
                 if ($this->upgrade($addon)) {
                     $ret = true;
                 }
@@ -178,7 +176,6 @@ class MetaVerse extends \yii\db\ActiveRecord
     }
     public function afterFind()
     {
-
         parent::afterFind();
         $data = json_decode($this->data);
         $change = $this->upgrade($data);
@@ -186,12 +183,10 @@ class MetaVerse extends \yii\db\ActiveRecord
             $this->data = json_encode($data);
             $this->save();
         }
-
     }
 
     public function getLinks()
     {
-
         $data = json_decode($this->data);
         $metas = $this->metas;
         $map = [];
