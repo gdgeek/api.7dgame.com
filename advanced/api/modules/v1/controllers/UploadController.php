@@ -5,7 +5,6 @@ namespace api\modules\v1\controllers;
 use yii\web\UploadedFile;
 
 class UploadController extends \yii\rest\Controller
-
 {
 
     public function behaviors()

@@ -54,14 +54,12 @@ class Meta2Resources
 
         return $resources;
     }
-    public static function Handle($meta)
+    public static function Handle($data)
     {
         //echo 'aaa';
         $resources = [];
-        if (!$meta->data) {
-            return;
-        }
-        $data = json_decode($meta->data);
+
+        //$data = json_decode($meta->data);
 
         Meta2Resources::HandleNode($data, $resources);
 

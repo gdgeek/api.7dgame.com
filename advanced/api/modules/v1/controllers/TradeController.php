@@ -3,9 +3,7 @@ namespace api\modules\v1\controllers;
 
 use api\modules\v1\models\Order;
 use api\modules\v1\models\Trade;
-
 use api\modules\v1\models\TradeSearch;
-
 use mdm\admin\components\AccessControl;
 use sizeg\jwt\JwtHttpBearerAuth;
 use Yii;
@@ -63,9 +61,9 @@ class TradeController extends ActiveController
     }
 
     public function actionIndex()
-    {   
+    {
 
-        if(null == \Yii::$app->user->identity->wx_openid){
+        if (null == \Yii::$app->user->identity->wx_openid) {
             return [];
 
         }

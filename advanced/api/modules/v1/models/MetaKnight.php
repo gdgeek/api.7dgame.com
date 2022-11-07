@@ -79,17 +79,40 @@ class MetaKnight extends \yii\db\ActiveRecord
             'create_at' => 'Create At',
         ];
     }
+    public function getResourceIds()
+    {
+        if ($this->knight == null) {
+            return [];
+        }
+        return $this->knight->getResourceIds();
+    }
     public function fields()
     {
         //$fields = parent::fields();
 
         return [
             'id',
-            'author_id' => function ($model) {
-                return $this->user_id;
-            },
             'data' => function ($model) {
+                $knight = $this->knight;
+                if (!$knight) {
+                    return null;
+                }
                 return $this->knight->data;
+            },
+            'knight_id',
+            'mesh' => function ($model) {
+                $knight = $this->knight;
+                if (!$knight) {
+                    return null;
+                }
+                return $this->knight->mesh;
+            },
+            'info' => function ($model) {
+                $knight = $this->knight;
+                if (!$knight) {
+                    return null;
+                }
+                return $this->knight->info;
             },
         ];
     }

@@ -76,7 +76,7 @@ class Meta extends \yii\db\ActiveRecord
     public function fields()
     {
         $fields = parent::fields();
-        // unset($fields['author_id']);
+        unset($fields['author_id']);
         unset($fields['updater_id']);
         // unset($fields['data']);
         unset($fields['updated_at']);
@@ -171,10 +171,15 @@ class Meta extends \yii\db\ActiveRecord
             'share',
         ];
     }
+    public function getResourceIds()
+    {
+        $resourceIds = \api\modules\v1\helper\Meta2Resources::Handle(json_decode($this->data));
+        return $resourceIds;
+    }
     public function extraResources()
     {
-        $resources = \api\modules\v1\helper\Meta2Resources::Handle($this);
-        $items = Resource::find()->where(['id' => $resources])->all();
+        $resourceIds = $this->resourceIds;
+        $items = Resource::find()->where(['id' => $resourceIds])->all();
         return $items;
     }
 

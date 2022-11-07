@@ -114,20 +114,25 @@ class Verse extends \yii\db\ActiveRecord
     }
     public function getResources()
     {
-        $metas = $this->datas['metas'];
-        $out = [];
-        foreach ($metas as $meta) {
-            if ($meta->data) {
-                $resources = $meta->extraResources();
-                foreach ($resources as $resource) {
+        $datas = $this->datas;
 
-                    if (!isset($out[$resource['id']])) {
-                        $out[$resource['id']] = $resource;
-                    }
-                }
-            }
+        $ids = [];
+
+        $metas = $datas['metas'];
+        foreach ($metas as $meta) {
+
+            $ids = array_merge_recursive($ids, $meta->resourceIds);
+
         }
-        return array_values($out);
+        $knights = $datas['knights'];
+        foreach ($knights as $knight) {
+
+            $ids = array_merge_recursive($ids, $knight->resourceIds);
+            // $ids = $ids + $knight->resourceIds;
+            // return $ids;
+        }
+        $items = Resource::find()->where(['id' => $ids])->all();
+        return $items;
     }
     /*
     public function extraProgramme()
