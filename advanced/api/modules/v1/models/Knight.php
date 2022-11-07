@@ -2,7 +2,7 @@
 
 namespace api\modules\v1\models;
 
-use api\modules\v1\models\File;
+use api\modules\v1\models\Resource;
 use api\modules\v1\models\User;
 use Yii;
 use yii\behaviors\BlameableBehavior;
@@ -24,8 +24,8 @@ use yii\db\Expression;
  * @property int|null $mesh_id
  *
  * @property User $author
- * @property File $image
- * @property File $mesh
+ * @property Resource $image
+ * @property Resource $mesh
  * @property User $updater
  */
 class Knight extends \yii\db\ActiveRecord
@@ -69,8 +69,8 @@ class Knight extends \yii\db\ActiveRecord
             [['info', 'data'], 'string'],
             [['title'], 'string', 'max' => 255],
             [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['author_id' => 'id']],
-            [['image_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['image_id' => 'id']],
-            [['mesh_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['mesh_id' => 'id']],
+            [['image_id'], 'exist', 'skipOnError' => true, 'targetClass' => Resource::className(), 'targetAttribute' => ['image_id' => 'id']],
+            [['mesh_id'], 'exist', 'skipOnError' => true, 'targetClass' => Resource::className(), 'targetAttribute' => ['mesh_id' => 'id']],
             [['updater_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updater_id' => 'id']],
         ];
     }
@@ -103,7 +103,11 @@ class Knight extends \yii\db\ActiveRecord
     {
         return $this->hasOne(User::className(), ['id' => 'author_id']);
     }
-
+    public function getResourceIds()
+    {
+        $resourceIds = \api\modules\v1\helper\Meta2Resources::Handle(json_decode($this->data));
+        return $resourceIds;
+    }
     /**
      * Gets query for [[Image]].
      *
@@ -111,7 +115,7 @@ class Knight extends \yii\db\ActiveRecord
      */
     public function getImage()
     {
-        return $this->hasOne(File::className(), ['id' => 'image_id']);
+        return $this->hasOne(Resource::className(), ['id' => 'image_id']);
     }
 
     /**
@@ -121,7 +125,7 @@ class Knight extends \yii\db\ActiveRecord
      */
     public function getMesh()
     {
-        return $this->hasOne(File::className(), ['id' => 'mesh_id']);
+        return $this->hasOne(Resource::className(), ['id' => 'mesh_id']);
     }
 
     /**

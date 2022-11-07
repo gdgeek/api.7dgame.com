@@ -13,7 +13,6 @@ use yii\base\Exception;
 use yii\filters\auth\CompositeAuth;
 
 class UserController extends \yii\rest\Controller
-
 {
 
     public function behaviors()

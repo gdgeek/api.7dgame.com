@@ -171,7 +171,7 @@ class Resource extends \yii\db\ActiveRecord
         //$fields = parent::fields();
 
         return [
-            'id', 'info', 'uuid', 'type', 'file' => function ($model) {
+            'id', 'info', 'name', 'uuid', 'type', 'file' => function ($model) {
                 return $this->file;
             },
 

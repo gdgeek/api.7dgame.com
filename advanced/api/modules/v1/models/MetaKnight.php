@@ -22,7 +22,6 @@ use yii\db\Expression;
  * @property Verse $verse
  */
 class MetaKnight extends \yii\db\ActiveRecord
-
 {
 
     public function behaviors()
@@ -80,15 +79,40 @@ class MetaKnight extends \yii\db\ActiveRecord
             'create_at' => 'Create At',
         ];
     }
+    public function getResourceIds()
+    {
+        if ($this->knight == null) {
+            return [];
+        }
+        return $this->knight->getResourceIds();
+    }
     public function fields()
     {
         //$fields = parent::fields();
 
         return [
             'id',
-
             'data' => function ($model) {
+                $knight = $this->knight;
+                if (!$knight) {
+                    return null;
+                }
                 return $this->knight->data;
+            },
+            'knight_id',
+            'mesh' => function ($model) {
+                $knight = $this->knight;
+                if (!$knight) {
+                    return null;
+                }
+                return $this->knight->mesh;
+            },
+            'info' => function ($model) {
+                $knight = $this->knight;
+                if (!$knight) {
+                    return null;
+                }
+                return $this->knight->info;
             },
         ];
     }
