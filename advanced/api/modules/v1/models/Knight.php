@@ -74,7 +74,12 @@ class Knight extends \yii\db\ActiveRecord
             [['updater_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updater_id' => 'id']],
         ];
     }
-
+    public function extraFields()
+    {
+        return [
+            'image',
+        ];
+    }
     /**
      * {@inheritdoc}
      */

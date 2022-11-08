@@ -27,7 +27,6 @@ use yii\db\Expression;
  * @property File $sample
  */
 class Space extends \yii\db\ActiveRecord
-
 {
 
     public function behaviors()
@@ -138,7 +137,7 @@ class Space extends \yii\db\ActiveRecord
     }
     public function getModel()
     {
-        return ['title' => $this->title, 'image' => $this->image, 'mesh' => $this->mesh, 'sample' => $this->sample, 'dat' => $this->dat];
+        return ['title' => $this->title, 'name' => $this->name, 'image' => $this->image, 'mesh' => $this->mesh, 'sample' => $this->sample, 'dat' => $this->dat];
     }
     /**
      * Gets query for [[Dat]].
