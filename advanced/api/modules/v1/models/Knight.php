@@ -2,6 +2,7 @@
 
 namespace api\modules\v1\models;
 
+use api\modules\v1\models\File;
 use api\modules\v1\models\Resource;
 use api\modules\v1\models\User;
 use Yii;
@@ -24,11 +25,12 @@ use yii\db\Expression;
  * @property int|null $mesh_id
  *
  * @property User $author
- * @property Resource $image
+ * @property File $image
  * @property Resource $mesh
  * @property User $updater
  */
 class Knight extends \yii\db\ActiveRecord
+
 {
 
     public function behaviors()
@@ -69,7 +71,7 @@ class Knight extends \yii\db\ActiveRecord
             [['info', 'data'], 'string'],
             [['title'], 'string', 'max' => 255],
             [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['author_id' => 'id']],
-            [['image_id'], 'exist', 'skipOnError' => true, 'targetClass' => Resource::className(), 'targetAttribute' => ['image_id' => 'id']],
+            [['image_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['image_id' => 'id']],
             [['mesh_id'], 'exist', 'skipOnError' => true, 'targetClass' => Resource::className(), 'targetAttribute' => ['mesh_id' => 'id']],
             [['updater_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updater_id' => 'id']],
         ];
@@ -115,7 +117,7 @@ class Knight extends \yii\db\ActiveRecord
      */
     public function getImage()
     {
-        return $this->hasOne(Resource::className(), ['id' => 'image_id']);
+        return $this->hasOne(File::className(), ['id' => 'image_id']);
     }
 
     /**
