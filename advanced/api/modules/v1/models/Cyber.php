@@ -1,0 +1,113 @@
+<?php
+
+namespace api\modules\v1\models;
+
+use Yii;
+
+/**
+ * This is the model class for table "cyber".
+ *
+ * @property int $id
+ * @property int $author_id
+ * @property int|null $updater_id
+ * @property int|null $meta_id
+ * @property string $create_at
+ * @property string|null $updated_at
+ * @property string|null $data
+ *
+ * @property User $author
+ * @property Meta $meta
+ * @property User $updater
+ * @property CyberScript[] $cyberScripts
+ */
+class Cyber extends \yii\db\ActiveRecord
+{
+    /**
+     * {@inheritdoc}
+     */
+    public static function tableName()
+    {
+        return 'cyber';
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function rules()
+    {
+        return [
+            [['author_id', 'create_at'], 'required'],
+            [['author_id', 'updater_id', 'meta_id'], 'integer'],
+            [['create_at', 'updated_at'], 'safe'],
+            [['data'], 'string'],
+            [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['author_id' => 'id']],
+            [['meta_id'], 'exist', 'skipOnError' => true, 'targetClass' => Meta::className(), 'targetAttribute' => ['meta_id' => 'id']],
+            [['updater_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updater_id' => 'id']],
+        ];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function attributeLabels()
+    {
+        return [
+            'id' => 'ID',
+            'author_id' => 'Author ID',
+            'updater_id' => 'Updater ID',
+            'meta_id' => 'Meta ID',
+            'create_at' => 'Create At',
+            'updated_at' => 'Updated At',
+            'data' => 'Data',
+        ];
+    }
+
+    /**
+     * Gets query for [[Author]].
+     *
+     * @return \yii\db\ActiveQuery|yii\db\ActiveQuery
+     */
+    public function getAuthor()
+    {
+        return $this->hasOne(User::className(), ['id' => 'author_id']);
+    }
+
+    /**
+     * Gets query for [[Meta]].
+     *
+     * @return \yii\db\ActiveQuery|MetaQuery
+     */
+    public function getMeta()
+    {
+        return $this->hasOne(Meta::className(), ['id' => 'meta_id']);
+    }
+
+    /**
+     * Gets query for [[Updater]].
+     *
+     * @return \yii\db\ActiveQuery|yii\db\ActiveQuery
+     */
+    public function getUpdater()
+    {
+        return $this->hasOne(User::className(), ['id' => 'updater_id']);
+    }
+
+    /**
+     * Gets query for [[CyberScripts]].
+     *
+     * @return \yii\db\ActiveQuery|CyberScriptQuery
+     */
+    public function getCyberScripts()
+    {
+        return $this->hasMany(CyberScript::className(), ['cyber_id' => 'id']);
+    }
+
+    /**
+     * {@inheritdoc}
+     * @return CyberQuery the active query used by this AR class.
+     */
+    public static function find()
+    {
+        return new CyberQuery(get_called_class());
+    }
+}
