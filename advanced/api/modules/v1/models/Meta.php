@@ -135,9 +135,9 @@ class Meta extends \yii\db\ActiveRecord
      *
      * @return \yii\db\ActiveQuery|CyberQuery
      */
-    public function getCybers()
+    public function getCyber()
     {
-        return $this->hasMany(Cyber::className(), ['meta_id' => 'id']);
+        return $this->hasOne(Cyber::className(), ['meta_id' => 'id']);
     }
 
     /**
@@ -180,7 +180,7 @@ class Meta extends \yii\db\ActiveRecord
                 return $this->extraResources();
             },
             'share',
-            'cybers',
+            'cyber',
         ];
     }
     public function getResourceIds()
