@@ -29,6 +29,7 @@ use yii\db\Expression;
  * @property Verse $verse
  */
 class Meta extends \yii\db\ActiveRecord
+
 {
 
     public function behaviors()
@@ -130,6 +131,16 @@ class Meta extends \yii\db\ActiveRecord
     }
 
     /**
+     * Gets query for [[Cybers]].
+     *
+     * @return \yii\db\ActiveQuery|CyberQuery
+     */
+    public function getCybers()
+    {
+        return $this->hasMany(Cyber::className(), ['meta_id' => 'id']);
+    }
+
+    /**
      * Gets query for [[Verse]].
      *
      * @return \yii\db\ActiveQuery|VerseQuery
@@ -169,6 +180,7 @@ class Meta extends \yii\db\ActiveRecord
                 return $this->extraResources();
             },
             'share',
+            'cybers',
         ];
     }
     public function getResourceIds()
