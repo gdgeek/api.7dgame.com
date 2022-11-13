@@ -2,7 +2,11 @@
 
 namespace api\modules\v1\models;
 
+use api\modules\v1\models\User;
 use Yii;
+use yii\behaviors\BlameableBehavior;
+use yii\behaviors\TimestampBehavior;
+use yii\db\Expression;
 
 /**
  * This is the model class for table "cyber".
@@ -21,7 +25,27 @@ use Yii;
  * @property CyberScript[] $cyberScripts
  */
 class Cyber extends \yii\db\ActiveRecord
+
 {
+    public function behaviors()
+    {
+        return [
+            [
+                'class' => TimestampBehavior::class,
+                'attributes' => [
+                    \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => ['created_at', 'updated_at'],
+                    \yii\db\ActiveRecord::EVENT_BEFORE_UPDATE => ['updated_at'],
+
+                ],
+                'value' => new Expression('NOW()'),
+            ],
+            [
+                'class' => BlameableBehavior::class,
+                'createdByAttribute' => 'author_id',
+                'updatedByAttribute' => 'updater_id',
+            ],
+        ];
+    }
     /**
      * {@inheritdoc}
      */
@@ -62,6 +86,26 @@ class Cyber extends \yii\db\ActiveRecord
         ];
     }
 
+    public function fields()
+    {
+        $fields = parent::fields();
+
+        unset($fields['author_id']);
+        unset($fields['updater_id']);
+        unset($fields['meta_id']);
+        unset($fields['created_at']);
+        unset($fields['updated_at']);
+
+        return $fields;
+    }
+
+    public function extraFields()
+    {
+        return ['meta',
+            'author',
+            'scripts' => $this->cyberScripts,
+        ];
+    }
     /**
      * Gets query for [[Author]].
      *
