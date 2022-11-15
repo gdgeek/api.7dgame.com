@@ -151,6 +151,7 @@ return [
                         'v1/editor',
                         'v1/person',
                         'v1/space',
+                        'v1/cyber',
                         'people',
                     ],
                 ],

@@ -3,6 +3,9 @@
 namespace api\modules\v1\models;
 
 use Yii;
+use yii\behaviors\BlameableBehavior;
+use yii\behaviors\TimestampBehavior;
+use yii\db\Expression;
 
 /**
  * This is the model class for table "cyber".
@@ -22,6 +25,25 @@ use Yii;
  */
 class Cyber extends \yii\db\ActiveRecord
 {
+
+    public function behaviors()
+    {
+        return [
+            [
+                'class' => TimestampBehavior::class,
+                'attributes' => [
+                    \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => ['create_at', 'updated_at'],
+                    \yii\db\ActiveRecord::EVENT_BEFORE_UPDATE => ['create_at'],
+                ],
+                'value' => new Expression('NOW()'),
+            ],
+            [
+                'class' => BlameableBehavior::class,
+                'createdByAttribute' => 'author_id',
+                'updatedByAttribute' => 'updater_id',
+            ],
+        ];
+    }
     /**
      * {@inheritdoc}
      */
@@ -36,7 +58,7 @@ class Cyber extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['author_id', 'create_at'], 'required'],
+
             [['author_id', 'updater_id', 'meta_id'], 'integer'],
             [['create_at', 'updated_at'], 'safe'],
             [['data'], 'string'],
