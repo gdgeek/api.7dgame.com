@@ -38,6 +38,9 @@ class Meta2Resources
             case 'Video':
                 $resource = $node->parameters->video;
                 break;
+            case 'Sound':
+                $resource = $node->parameters->sound;
+                break;
 
         }
 

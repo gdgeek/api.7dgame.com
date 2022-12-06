@@ -120,16 +120,11 @@ class Verse extends \yii\db\ActiveRecord
 
         $metas = $datas['metas'];
         foreach ($metas as $meta) {
-
             $ids = array_merge_recursive($ids, $meta->resourceIds);
-
         }
         $knights = $datas['knights'];
         foreach ($knights as $knight) {
-
             $ids = array_merge_recursive($ids, $knight->resourceIds);
-            // $ids = $ids + $knight->resourceIds;
-            // return $ids;
         }
         $items = Resource::find()->where(['id' => $ids])->all();
         return $items;
@@ -200,12 +195,10 @@ class Verse extends \yii\db\ActiveRecord
 
         $m = [];
         $k = [];
-
         foreach ($data->children->metas as $child) {
             if ($child->type == 'Meta') {
                 $id = $child->parameters->id;
                 array_push($m, $id);
-
             } else {
                 $id = $child->parameters->id;
                 array_push($k, $id);

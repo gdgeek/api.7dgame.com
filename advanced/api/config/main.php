@@ -155,7 +155,13 @@ return [
                         'people',
                     ],
                 ],
-
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/cyber-script',
+                    'extraPatterns' => [
+                        'GET find' => 'find',
+                    ],
+                ],
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/local',

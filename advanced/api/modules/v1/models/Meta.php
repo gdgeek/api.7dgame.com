@@ -2,6 +2,7 @@
 
 namespace api\modules\v1\models;
 
+use api\modules\v1\models\Cyber;
 use api\modules\v1\models\File;
 use api\modules\v1\models\User;
 use api\modules\v1\models\VerseShare;
@@ -29,7 +30,6 @@ use yii\db\Expression;
  * @property Verse $verse
  */
 class Meta extends \yii\db\ActiveRecord
-
 {
 
     public function behaviors()
@@ -79,17 +79,21 @@ class Meta extends \yii\db\ActiveRecord
         $fields = parent::fields();
         unset($fields['author_id']);
         unset($fields['updater_id']);
-        // unset($fields['data']);
         unset($fields['updated_at']);
-
         unset($fields['created_at']);
-
         unset($fields['verse_id']);
-
         unset($fields['image_id']);
-
         unset($fields['info']);
+        $fields['script'] = function () {
 
+            if ($this->cyber) {
+                $script = $this->cyber->GetCyberScripts()->andWhere(['language' => 'lua'])->one();
+                if ($script) {
+                    return $script->script;
+                }
+            }
+            //return $this->cyber->GetCyberScripts()->andWhere(['language' => 'lua'])->one()->script;
+        };
         return $fields;
     }
     /**
