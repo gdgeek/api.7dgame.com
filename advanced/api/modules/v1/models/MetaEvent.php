@@ -33,6 +33,7 @@ class MetaEvent extends \yii\db\ActiveRecord
             [['meta_id'], 'required'],
             [['meta_id'], 'integer'],
             [['slots', 'links'], 'string'],
+            [['meta_id'], 'unique'],
             [['meta_id'], 'exist', 'skipOnError' => true, 'targetClass' => Meta::className(), 'targetAttribute' => ['meta_id' => 'id']],
         ];
     }

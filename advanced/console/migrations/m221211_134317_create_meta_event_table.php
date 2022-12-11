@@ -15,12 +15,16 @@ class m221211_134317_create_meta_event_table extends Migration
      */
     public function safeUp()
     {
+        if ($this->db->driverName === 'mysql') {
+            // http://stackoverflow.com/questions/766809/whats-the-difference-between-utf8-general-ci-and-utf8-unicode-ci
+            $tableOptions = 'CHARACTER SET utf8 COLLATE utf8_unicode_ci ENGINE=InnoDB';
+        }
         $this->createTable('{{%meta_event}}', [
             'id' => $this->primaryKey(),
-            'meta_id' => $this->integer()->notNull(),
+            'meta_id' => $this->integer()->notNull()->unique(),
             'slots' => $this->json(),
             'links' => $this->json(),
-        ]);
+        ], $tableOptions);
 
         // creates index for column `meta_id`
         $this->createIndex(
