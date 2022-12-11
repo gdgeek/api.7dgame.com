@@ -27,24 +27,15 @@ use yii\db\Expression;
 class Cyber extends \yii\db\ActiveRecord
 
 {
-<<<<<<< HEAD
-=======
-
->>>>>>> cb8ddf1c97f93f7144fe411c6e1461c723349cf9
     public function behaviors()
     {
         return [
             [
                 'class' => TimestampBehavior::class,
                 'attributes' => [
-<<<<<<< HEAD
                     \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => ['created_at', 'updated_at'],
                     \yii\db\ActiveRecord::EVENT_BEFORE_UPDATE => ['updated_at'],
 
-=======
-                    \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => ['create_at', 'updated_at'],
-                    \yii\db\ActiveRecord::EVENT_BEFORE_UPDATE => ['create_at'],
->>>>>>> cb8ddf1c97f93f7144fe411c6e1461c723349cf9
                 ],
                 'value' => new Expression('NOW()'),
             ],
