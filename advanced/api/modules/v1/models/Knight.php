@@ -30,7 +30,6 @@ use yii\db\Expression;
  * @property User $updater
  */
 class Knight extends \yii\db\ActiveRecord
-
 {
 
     public function behaviors()
@@ -39,7 +38,7 @@ class Knight extends \yii\db\ActiveRecord
             [
                 'class' => TimestampBehavior::class,
                 'attributes' => [
-                    \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => ['created_at', 'updated_at'],
+                    \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => ['create_at', 'updated_at'],
                     \yii\db\ActiveRecord::EVENT_BEFORE_UPDATE => ['updated_at'],
 
                 ],

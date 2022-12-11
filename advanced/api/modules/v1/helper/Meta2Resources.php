@@ -27,16 +27,19 @@ class Meta2Resources
             return;
         }
         // echo $node->type;
-        switch ($node->type) {
+        switch (strtolower($node->type)) {
 
-            case 'Polygen':
+            case 'polygen':
                 $resource = $node->parameters->polygen;
                 break;
-            case 'Picture':
+            case 'picture':
                 $resource = $node->parameters->picture;
                 break;
-            case 'Video':
+            case 'video':
                 $resource = $node->parameters->video;
+                break;
+            case 'sound':
+                $resource = $node->parameters->sound;
                 break;
 
         }

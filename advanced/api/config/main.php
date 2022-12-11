@@ -151,10 +151,17 @@ return [
                         'v1/editor',
                         'v1/person',
                         'v1/space',
+                        'v1/cyber',
                         'people',
                     ],
                 ],
-
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/cyber-script',
+                    'extraPatterns' => [
+                        'GET find' => 'find',
+                    ],
+                ],
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/local',

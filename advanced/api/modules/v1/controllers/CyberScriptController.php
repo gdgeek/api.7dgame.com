@@ -1,15 +1,13 @@
 <?php
 namespace api\modules\v1\controllers;
 
-use mdm\admin\components\AccessControl;
-use sizeg\jwt\JwtHttpBearerAuth;
-use yii\filters\auth\CompositeAuth;
+use api\modules\v1\models\CyberScript;
 use yii\rest\ActiveController;
 
-class VerseCyberController extends ActiveController
+class CyberScriptController extends ActiveController
 {
 
-    public $modelClass = 'api\modules\v1\models\VerseCyber';
+    public $modelClass = 'api\modules\v1\models\CyberScript';
     public function behaviors()
     {
         $behaviors = parent::behaviors();
@@ -32,20 +30,27 @@ class VerseCyberController extends ActiveController
             ],
         ];
 
+        /*
         // unset($behaviors['authenticator']);
         $behaviors['authenticator'] = [
-            'class' => CompositeAuth::class,
-            'authMethods' => [
-                JwtHttpBearerAuth::class,
-            ],
-            'except' => ['options'],
+        'class' => CompositeAuth::class,
+        'authMethods' => [
+        JwtHttpBearerAuth::class,
+        ],
+        'except' => ['options'],
         ];
 
         $behaviors['access'] = [
-            'class' => AccessControl::class,
+        'class' => AccessControl::class,
         ];
-
+         */
         return $behaviors;
+    }
+    public function actionFind($cyber_id, $language = 'lua')
+    {
+
+        $script = CyberScript::findOne(['cyber_id' => $cyber_id, 'language' => $language]);
+        return $script;
     }
 
 }

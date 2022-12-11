@@ -6,10 +6,10 @@ use sizeg\jwt\JwtHttpBearerAuth;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
 
-class VerseCyberController extends ActiveController
+class CyberController extends ActiveController
 {
 
-    public $modelClass = 'api\modules\v1\models\VerseCyber';
+    public $modelClass = 'api\modules\v1\models\Cyber';
     public function behaviors()
     {
         $behaviors = parent::behaviors();
