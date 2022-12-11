@@ -144,6 +144,7 @@ return [
                         'v1/tags',
                         'v1/knight',
                         'v1/meta-knight',
+                        'v1/meta-event',
                         'v1/verse-open',
                         'v1/verse-share',
                         'v1/like',
