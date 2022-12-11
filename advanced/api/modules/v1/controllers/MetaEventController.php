@@ -1,6 +1,7 @@
 <?php
 namespace api\modules\v1\controllers;
 
+use api\modules\v1\models\MetaEventSearch;
 use mdm\admin\components\AccessControl;
 use sizeg\jwt\JwtHttpBearerAuth;
 use yii\filters\auth\CompositeAuth;
@@ -58,7 +59,7 @@ class MetaEventController extends ActiveController
     public function actionIndex($metaId)
     {
 
-        $searchModel = new MetaSearch();
+        $searchModel = new MetaEventSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
         $dataProvider->query->andWhere(['meta_id' => $metaId]);
