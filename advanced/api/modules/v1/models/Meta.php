@@ -23,13 +23,17 @@ use yii\db\Expression;
  * @property string|null $info
  * @property int|null $image_id
  * @property string|null $data
+ * @property string|null $event
  *
+ * @property Cyber[] $cybers
  * @property User $author
- * @property File $image_id0
+ * @property File $image
  * @property User $updater
  * @property Verse $verse
+ * @property MetaRete[] $metaRetes
  */
 class Meta extends \yii\db\ActiveRecord
+
 {
 
     public function behaviors()
@@ -67,7 +71,7 @@ class Meta extends \yii\db\ActiveRecord
         return [
             [['author_id', 'updater_id', 'verse_id', 'image_id'], 'integer'],
             [['created_at', 'updated_at'], 'safe'],
-            [['info', 'data'], 'string'],
+            [['info', 'data', 'event'], 'string'],
             [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['author_id' => 'id']],
             [['image_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['image_id' => 'id']],
             [['updater_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updater_id' => 'id']],
@@ -109,8 +113,9 @@ class Meta extends \yii\db\ActiveRecord
             'updated_at' => 'Updated At',
             'verse_id' => 'Verse ID',
             'info' => 'Info',
-            'image_id' => 'Image Id',
+            'image_id' => 'Image ID',
             'data' => 'Data',
+            'event' => 'Event',
         ];
     }
 
@@ -152,6 +157,16 @@ class Meta extends \yii\db\ActiveRecord
     public function getVerse()
     {
         return $this->hasOne(Verse::className(), ['id' => 'verse_id']);
+    }
+
+    /**
+     * Gets query for [[MetaRetes]].
+     *
+     * @return \yii\db\ActiveQuery|MetaReteQuery
+     */
+    public function getMetaRetes()
+    {
+        return $this->hasMany(MetaRete::className(), ['meta_id' => 'id']);
     }
 
     /**
