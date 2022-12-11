@@ -32,6 +32,7 @@ use yii\db\Expression;
 
  */
 class Verse extends \yii\db\ActiveRecord
+
 {
 
     public function behaviors()
