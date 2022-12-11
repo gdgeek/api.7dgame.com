@@ -47,23 +47,23 @@ class MetaEventController extends ActiveController
 
         return $behaviors;
     }
-/*
-public function actions()
-{
-$actions = parent::actions();
-unset($actions['index']);
-return $actions;
-}
 
-public function actionIndex()
-{
+    public function actions()
+    {
+        $actions = parent::actions();
+        unset($actions['index']);
+        return $actions;
+    }
 
-$searchModel = new MetaSearch();
-$dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+    public function actionIndex($metaId)
+    {
 
-$dataProvider->query->andWhere(['author_id' => Yii::$app->user->id]);
+        $searchModel = new MetaSearch();
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
-return $dataProvider;
-}
- */
+        $dataProvider->query->andWhere(['meta_id' => $metaId]);
+
+        return $dataProvider;
+    }
+
 }
