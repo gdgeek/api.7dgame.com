@@ -23,13 +23,13 @@ use yii\db\Expression;
  * @property string|null $info
  * @property int|null $image_id
  * @property string|null $data
- * @property string|null $event
  *
  * @property Cyber[] $cybers
  * @property User $author
  * @property File $image
  * @property User $updater
  * @property Verse $verse
+ * @property MetaEvent[] $metaEvents
  * @property MetaRete[] $metaRetes
  */
 class Meta extends \yii\db\ActiveRecord
@@ -71,7 +71,7 @@ class Meta extends \yii\db\ActiveRecord
         return [
             [['author_id', 'updater_id', 'verse_id', 'image_id'], 'integer'],
             [['created_at', 'updated_at'], 'safe'],
-            [['info', 'data', 'event'], 'string'],
+            [['info', 'data'], 'string'],
             [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['author_id' => 'id']],
             [['image_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['image_id' => 'id']],
             [['updater_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updater_id' => 'id']],
@@ -115,7 +115,6 @@ class Meta extends \yii\db\ActiveRecord
             'info' => 'Info',
             'image_id' => 'Image ID',
             'data' => 'Data',
-            'event' => 'Event',
         ];
     }
 
@@ -158,7 +157,15 @@ class Meta extends \yii\db\ActiveRecord
     {
         return $this->hasOne(Verse::className(), ['id' => 'verse_id']);
     }
-
+    /**
+     * Gets query for [[MetaEvents]].
+     *
+     * @return \yii\db\ActiveQuery|MetaEventQuery
+     */
+    public function getMetaEvents()
+    {
+        return $this->hasMany(MetaEvent::className(), ['meta_id' => 'id']);
+    }
     /**
      * Gets query for [[MetaRetes]].
      *
