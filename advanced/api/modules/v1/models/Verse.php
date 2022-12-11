@@ -216,7 +216,7 @@ class Verse extends \yii\db\ActiveRecord
         $cybers = $this->verseCybers;
         if (count($cybers) >= 1) {
             $cyber = array_shift($cybers);
-            return $cyber->script;
+            return json_encode($cyber->script);
         }
 
         return null;
@@ -248,7 +248,7 @@ class Verse extends \yii\db\ActiveRecord
                 return $this->datas;
             },
             'script' => function () {
-                return $this->script;
+                return 123;
             },
             'resources' => function () {
                 return $this->resources;
