@@ -33,7 +33,7 @@ class Cyber extends \yii\db\ActiveRecord
             [
                 'class' => TimestampBehavior::class,
                 'attributes' => [
-                    \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => ['created_at', 'updated_at'],
+                    \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => ['create_at', 'updated_at'],
                     \yii\db\ActiveRecord::EVENT_BEFORE_UPDATE => ['updated_at'],
 
                 ],
@@ -93,7 +93,7 @@ class Cyber extends \yii\db\ActiveRecord
         unset($fields['author_id']);
         unset($fields['updater_id']);
         unset($fields['meta_id']);
-        unset($fields['created_at']);
+        unset($fields['create_at']);
         unset($fields['updated_at']);
 
         return $fields;
