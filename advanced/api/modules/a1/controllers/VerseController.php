@@ -1,21 +1,29 @@
 <?php
-namespace api\modules\v1\controllers;
+namespace api\modules\a1\controllers;
 
-use api\modules\v1\models\MetaEventSearch;
 use mdm\admin\components\AccessControl;
 use sizeg\jwt\JwtHttpBearerAuth;
 use Yii;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
 
-class MetaEventController extends ActiveController
+class VerseController extends ActiveController
 {
 
-    public $modelClass = 'api\modules\v1\models\MetaEvent';
+    public $modelClass = 'api\modules\a1\models\Verse';
     public function behaviors()
     {
         $behaviors = parent::behaviors();
-
+        // echo $this->action->id;
+        if ($this->action->id != 'open' && $this->action->id != 'view') {
+            $behaviors['authenticator'] = [
+                'class' => CompositeAuth::class,
+                'authMethods' => [
+                    JwtHttpBearerAuth::class,
+                ],
+            ];
+        }
+        $auth = $behaviors['authenticator'];
         // add CORS filter
         $behaviors['corsFilter'] = [
             'class' => \yii\filters\Cors::class,
@@ -34,38 +42,18 @@ class MetaEventController extends ActiveController
             ],
         ];
 
-        // unset($behaviors['authenticator']);
-        $behaviors['authenticator'] = [
-            'class' => CompositeAuth::class,
-            'authMethods' => [
-                JwtHttpBearerAuth::class,
-            ],
-            'except' => ['options'],
-        ];
+        // re-add authentication filter
+        $behaviors['authenticator'] = $auth;
+        // avoid authentication on CORS-pre-flight requests (HTTP OPTIONS method)
+        $behaviors['authenticator']['except'] = ['options'];
 
-        $behaviors['access'] = [
-            'class' => AccessControl::class,
-        ];
+        if ($this->action->id != 'open' && $this->action->id != 'view') {
+            $behaviors['access'] = [
+                'class' => AccessControl::class,
+            ];
+        }
 
         return $behaviors;
-    }
-
-    public function actions()
-    {
-        $actions = parent::actions();
-        unset($actions['index']);
-        return $actions;
-    }
-
-    public function actionIndex($metaId)
-    {
-
-        $searchModel = new MetaEventSearch();
-        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-
-        $dataProvider->query->andWhere(['meta_id' => $metaId]);
-
-        return $dataProvider;
     }
 
 }

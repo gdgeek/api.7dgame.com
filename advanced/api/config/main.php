@@ -15,6 +15,9 @@ return [
         'v1' => [
             'class' => 'api\modules\v1\Module',
         ],
+        'a1' => [
+            'class' => 'api\modules\a1\Module',
+        ],
     ],
     'components' => [
 
@@ -154,6 +157,12 @@ return [
                         'v1/space',
                         'v1/cyber',
                         'people',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => [
+                        'a1/verse',
                     ],
                 ],
                 [

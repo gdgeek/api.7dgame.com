@@ -1,9 +1,11 @@
 <?php
 
-namespace api\modules\v1\models;
+namespace api\modules\a1\models;
 
+use api\modules\a1\models\MetaEvent;
 use api\modules\v1\models\Cyber;
 use api\modules\v1\models\File;
+use api\modules\v1\models\MetaQuery;
 use api\modules\v1\models\User;
 use api\modules\v1\models\VerseShare;
 use Yii;
@@ -87,6 +89,8 @@ class Meta extends \yii\db\ActiveRecord
         unset($fields['verse_id']);
         unset($fields['image_id']);
         unset($fields['info']);
+
+        $fields['id'] = function ($model) {return 'meta_' . $this->id;};
         $fields['event'] = function () {
             return $this->metaEvent;
         };
@@ -98,7 +102,6 @@ class Meta extends \yii\db\ActiveRecord
                     return $script->script;
                 }
             }
-            //return $this->cyber->GetCyberScripts()->andWhere(['language' => 'lua'])->one()->script;
         };
         return $fields;
     }
@@ -193,24 +196,6 @@ class Meta extends \yii\db\ActiveRecord
         $share = VerseShare::findOne(['verse_id' => $this->verse_id, 'user_id' => Yii::$app->user->id]);
 
         return $share;
-    }
-
-    public function extraFields()
-    {
-        return ['verse', 'image',
-            'author' => function () {
-                return $this->author;
-            },
-            'editor' => function () {
-                return $this->extraEditor();
-            },
-            'resources' => function () {
-                return $this->extraResources();
-            },
-
-            'share',
-            'cyber',
-        ];
     }
     public function getResourceIds()
     {
