@@ -32,7 +32,6 @@ use yii\db\Expression;
 
  */
 class Verse extends \yii\db\ActiveRecord
-
 {
 
     public function behaviors()
@@ -249,7 +248,7 @@ class Verse extends \yii\db\ActiveRecord
                 return $this->datas;
             },
             'script' => function () {
-                return 123;
+                return $this->script;
             },
             'resources' => function () {
                 return $this->resources;
