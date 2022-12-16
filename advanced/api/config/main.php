@@ -150,6 +150,7 @@ return [
                         'v1/meta-event',
                         'v1/verse-open',
                         'v1/verse-share',
+                        'v1/verse-event',
                         'v1/like',
                         'v1/token',
                         'v1/editor',
