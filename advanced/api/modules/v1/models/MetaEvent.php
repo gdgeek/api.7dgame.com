@@ -10,7 +10,6 @@ use Yii;
  * @property int $id
  * @property int $meta_id
  * @property string|null $slots
- * @property string|null $links
  *
  * @property Meta $meta
  */
@@ -32,7 +31,7 @@ class MetaEvent extends \yii\db\ActiveRecord
         return [
             [['meta_id'], 'required'],
             [['meta_id'], 'integer'],
-            [['slots', 'links'], 'string'],
+            [['slots'], 'string'],
             [['meta_id'], 'unique'],
             [['meta_id'], 'exist', 'skipOnError' => true, 'targetClass' => Meta::className(), 'targetAttribute' => ['meta_id' => 'id']],
         ];
@@ -47,7 +46,6 @@ class MetaEvent extends \yii\db\ActiveRecord
             'id' => 'ID',
             'meta_id' => 'Meta ID',
             'slots' => 'Slots',
-            'links' => 'Links',
         ];
     }
 
