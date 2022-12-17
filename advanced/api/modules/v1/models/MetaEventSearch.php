@@ -18,7 +18,7 @@ class MetaEventSearch extends MetaEvent
     {
         return [
             [['id', 'meta_id'], 'integer'],
-            [['slots'], 'safe'],
+            [['data'], 'safe'],
         ];
     }
 
@@ -62,7 +62,7 @@ class MetaEventSearch extends MetaEvent
             'meta_id' => $this->meta_id,
         ]);
 
-        $query->andFilterWhere(['like', 'slots', $this->slots]);
+        $query->andFilterWhere(['like', 'data', $this->data]);
 
         return $dataProvider;
     }
