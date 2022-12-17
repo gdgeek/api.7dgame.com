@@ -23,6 +23,7 @@ use yii\db\Expression;
  * @property string|null $info
  * @property int|null $image_id
  * @property string|null $data
+ * @property string|null $uuid
  *
  * @property Cyber[] $cybers
  * @property User $author
@@ -33,6 +34,7 @@ use yii\db\Expression;
  * @property MetaRete[] $metaRetes
  */
 class Meta extends \yii\db\ActiveRecord
+
 {
 
     public function behaviors()
@@ -71,6 +73,8 @@ class Meta extends \yii\db\ActiveRecord
             [['author_id', 'updater_id', 'verse_id', 'image_id'], 'integer'],
             [['created_at', 'updated_at'], 'safe'],
             [['info', 'data'], 'string'],
+            [['uuid'], 'string', 'max' => 255],
+            [['uuid'], 'unique'],
             [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['author_id' => 'id']],
             [['image_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['image_id' => 'id']],
             [['updater_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updater_id' => 'id']],
@@ -117,6 +121,7 @@ class Meta extends \yii\db\ActiveRecord
             'info' => 'Info',
             'image_id' => 'Image ID',
             'data' => 'Data',
+            'uuid' => 'Uuid',
         ];
     }
 
@@ -160,7 +165,7 @@ class Meta extends \yii\db\ActiveRecord
         return $this->hasOne(Verse::className(), ['id' => 'verse_id']);
     }
     /**
-     * Gets query for [[MetaEvents]].
+     * Gets query for [[MetaEvent]].
      *
      * @return \yii\db\ActiveQuery|MetaEventQuery
      */
