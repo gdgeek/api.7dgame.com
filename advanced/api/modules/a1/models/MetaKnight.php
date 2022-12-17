@@ -14,16 +14,18 @@ use yii\db\Expression;
  *
  * @property int $id
  * @property int $verse_id
- * @property int $knight_id
+ * @property int|null $knight_id
  * @property int $user_id
  * @property string|null $info
  * @property string|null $create_at
+ * @property string|null $uuid
  *
  * @property Knight $knight
  * @property User $user
  * @property Verse $verse
  */
 class MetaKnight extends \yii\db\ActiveRecord
+
 {
 
     public function behaviors()
@@ -61,6 +63,8 @@ class MetaKnight extends \yii\db\ActiveRecord
             [['verse_id', 'knight_id', 'user_id'], 'integer'],
             [['info'], 'string'],
             [['create_at'], 'safe'],
+            [['uuid'], 'string', 'max' => 255],
+            [['uuid'], 'unique'],
             [['knight_id'], 'exist', 'skipOnError' => true, 'targetClass' => Knight::className(), 'targetAttribute' => ['knight_id' => 'id']],
             [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['user_id' => 'id']],
             [['verse_id'], 'exist', 'skipOnError' => true, 'targetClass' => Verse::className(), 'targetAttribute' => ['verse_id' => 'id']],
@@ -79,6 +83,7 @@ class MetaKnight extends \yii\db\ActiveRecord
             'user_id' => 'User ID',
             'info' => 'Info',
             'create_at' => 'Create At',
+            'uuid' => 'Uuid',
         ];
     }
     public function getResourceIds()
