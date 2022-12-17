@@ -9,6 +9,7 @@ use api\modules\a1\models\MetaKnight;
 use api\modules\a1\models\Resource;
 use api\modules\a1\models\Space;
 use api\modules\v1\models\User;
+use api\modules\v1\models\VerseEvent;
 use api\modules\v1\models\VerseQuery;
 use Yii;
 use yii\behaviors\BlameableBehavior;
@@ -93,6 +94,10 @@ class Verse extends \yii\db\ActiveRecord
 
         $fields['description'] = function () {
             return json_decode($this->info)->description;
+        };
+
+        $fields['connections'] = function () {
+            return $this->verseEvent->data;
         };
         $fields['space'] = function () {
             return $this->space;
@@ -235,6 +240,15 @@ class Verse extends \yii\db\ActiveRecord
         return $this->hasOne(User::className(), ['id' => 'author_id']);
     }
 
+    /**
+     * Gets query for [[VerseEvents]].
+     *
+     * @return \yii\db\ActiveQuery|VerseEventQuery
+     */
+    public function getVerseEvent()
+    {
+        return $this->hasOne(VerseEvent::className(), ['verse_id' => 'id']);
+    }
     /**
      * Gets query for [[Image]].
      *

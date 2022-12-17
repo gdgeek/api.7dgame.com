@@ -90,10 +90,8 @@ class Meta extends \yii\db\ActiveRecord
         unset($fields['image_id']);
         unset($fields['info']);
 
-        $fields['id'] = function ($model) {return 'meta_' . $this->id;};
-        $fields['event'] = function () {
-            return $this->metaEvent;
-        };
+        // $fields['id'] = function ($model) {return 'meta_' . $this->id;};
+        $fields['type'] = function () {return 'Mate';};
         $fields['script'] = function () {
 
             if ($this->cyber) {

@@ -93,7 +93,8 @@ class MetaKnight extends \yii\db\ActiveRecord
         //$fields = parent::fields();
 
         return [
-            'id' => function ($model) {return 'knight_' . $this->id;},
+            'id',
+            'type' => function ($model) {return 'Knight';},
             'data' => function ($model) {
                 $knight = $this->knight;
                 if (!$knight) {

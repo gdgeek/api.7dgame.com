@@ -261,7 +261,7 @@ class Verse extends \yii\db\ActiveRecord
      *
      * @return \yii\db\ActiveQuery|VerseEventQuery
      */
-    public function getVerseEvents()
+    public function getVerseEvent()
     {
         return $this->hasOne(VerseEvent::className(), ['verse_id' => 'id']);
     }
