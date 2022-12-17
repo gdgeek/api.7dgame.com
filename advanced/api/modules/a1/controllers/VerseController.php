@@ -61,5 +61,4 @@ class VerseController extends ActiveController
         unset($actions['index']);
         return $actions;
     }
-
 }
