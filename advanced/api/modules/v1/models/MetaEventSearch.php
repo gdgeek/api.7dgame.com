@@ -2,9 +2,9 @@
 
 namespace api\modules\v1\models;
 
+use api\modules\v1\models\MetaEvent;
 use yii\base\Model;
 use yii\data\ActiveDataProvider;
-use api\modules\v1\models\MetaEvent;
 
 /**
  * MetaEventSearch represents the model behind the search form of `api\modules\v1\models\MetaEvent`.
@@ -62,7 +62,7 @@ class MetaEventSearch extends MetaEvent
             'meta_id' => $this->meta_id,
         ]);
 
-        $query->andFilterWhere(['like', 'data', $this->data]);
+        // $query->andFilterWhere(['like', 'data', $this->data]);
 
         return $dataProvider;
     }
