@@ -3,7 +3,6 @@
 namespace api\modules\a1\models;
 
 use api\modules\a1\models\File;
-//use api\modules\a1\models\Knight;
 use api\modules\a1\models\Meta;
 use api\modules\a1\models\MetaKnight;
 use api\modules\a1\models\Resource;
@@ -37,6 +36,7 @@ use yii\db\Expression;
 
  */
 class Verse extends \yii\db\ActiveRecord
+
 {
 
     public function behaviors()
@@ -89,7 +89,7 @@ class Verse extends \yii\db\ActiveRecord
         unset($fields['updated_at']);
         unset($fields['created_at']);
         unset($fields['author_id']);
-        unset($fields['id']);
+        // unset($fields['id']);
         unset($fields['info']);
 
         $fields['description'] = function () {
