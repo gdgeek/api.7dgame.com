@@ -62,7 +62,7 @@ class MetaEventSearch extends MetaEvent
             'meta_id' => $this->meta_id,
         ]);
 
-        // $query->andFilterWhere(['like', 'data', $this->data]);
+        $query->andFilterWhere(['like', 'data', $this->data]);
 
         return $dataProvider;
     }
