@@ -1,10 +1,9 @@
 <?php
 
-namespace api\modules\a1\models;
+namespace api\modules\e1\models;
 
-use api\modules\a1\models\MetaEvent;
 use api\modules\v1\models\Cyber;
-use api\modules\v1\models\File;
+use api\modules\v1\models\MetaEvent;
 use api\modules\v1\models\MetaQuery;
 use api\modules\v1\models\User;
 use api\modules\v1\models\VerseShare;
@@ -93,17 +92,6 @@ class Meta extends \yii\db\ActiveRecord
         unset($fields['image_id']);
         unset($fields['info']);
 
-        // $fields['id'] = function ($model) {return 'meta_' . $this->id;};
-        $fields['type'] = function () {return 'Mate';};
-        $fields['script'] = function () {
-
-            if ($this->cyber) {
-                $script = $this->cyber->GetCyberScripts()->andWhere(['language' => 'lua'])->one();
-                if ($script) {
-                    return $script->script;
-                }
-            }
-        };
         return $fields;
     }
     /**
@@ -165,7 +153,7 @@ class Meta extends \yii\db\ActiveRecord
         return $this->hasOne(Verse::className(), ['id' => 'verse_id']);
     }
     /**
-     * Gets query for [[MetaEvents]].
+     * Gets query for [[MetaEvent]].
      *
      * @return \yii\db\ActiveQuery|MetaEventQuery
      */
@@ -198,6 +186,24 @@ class Meta extends \yii\db\ActiveRecord
         $share = VerseShare::findOne(['verse_id' => $this->verse_id, 'user_id' => Yii::$app->user->id]);
 
         return $share;
+    }
+
+    public function extraFields()
+    {
+        return ['verse', 'image',
+            'author' => function () {
+                return $this->author;
+            },
+            'editor' => function () {
+                return $this->extraEditor();
+            },
+            'resources' => function () {
+                return $this->extraResources();
+            },
+
+            'share',
+            'cyber',
+        ];
     }
     public function getResourceIds()
     {

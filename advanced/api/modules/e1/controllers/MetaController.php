@@ -1,17 +1,19 @@
 <?php
-namespace api\modules\a1\controllers;
+namespace api\modules\e1\controllers;
 
+use api\modules\v1\models\MetaSearch;
 use Yii;
 use yii\rest\ActiveController;
 
-class VerseController extends ActiveController
+class MetaController extends ActiveController
 {
 
-    public $modelClass = 'api\modules\a1\models\Verse';
+    public $modelClass = 'api\modules\e1\models\Meta';
     public function behaviors()
     {
         $behaviors = parent::behaviors();
 
+        // add CORS filter
         $behaviors['corsFilter'] = [
             'class' => \yii\filters\Cors::class,
             'cors' => [
@@ -28,17 +30,40 @@ class VerseController extends ActiveController
                 ],
             ],
         ];
+/*
+// unset($behaviors['authenticator']);
+$behaviors['authenticator'] = [
+'class' => CompositeAuth::class,
+'authMethods' => [
+JwtHttpBearerAuth::class,
+],
+'except' => ['options'],
+];
+
+$behaviors['access'] = [
+'class' => AccessControl::class,
+];
+ */
 
         return $behaviors;
     }
+
     public function actions()
     {
         $actions = parent::actions();
         unset($actions['index']);
-        unset($actions['create']);
-        unset($actions['update']);
-        unset($actions['delete']);
-        unset($actions['options']);
         return $actions;
     }
+
+    public function actionIndex()
+    {
+
+        $searchModel = new MetaSearch();
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+
+        $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id]);
+
+        return $dataProvider;
+    }
+
 }

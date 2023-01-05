@@ -1,7 +1,8 @@
 <?php
 
-namespace api\modules\v1\models;
+namespace api\modules\e1\models;
 
+use api\modules\v1\models\MetaKnightQuery;
 use Yii;
 use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
@@ -93,6 +94,7 @@ class MetaKnight extends \yii\db\ActiveRecord
     public function fields()
     {
         $fields = parent::fields();
+
         return [
             'id',
             'data' => function ($model) {

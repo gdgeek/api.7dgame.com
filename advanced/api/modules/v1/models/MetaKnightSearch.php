@@ -2,9 +2,9 @@
 
 namespace api\modules\v1\models;
 
+use api\modules\v1\models\MetaKnight;
 use yii\base\Model;
 use yii\data\ActiveDataProvider;
-use api\modules\v1\models\MetaKnight;
 
 /**
  * MetaKnightSearch represents the model behind the search form of `api\modules\v1\models\MetaKnight`.
@@ -18,7 +18,7 @@ class MetaKnightSearch extends MetaKnight
     {
         return [
             [['id', 'verse_id', 'knight_id', 'user_id'], 'integer'],
-            [['info', 'create_at'], 'safe'],
+            [['info', 'create_at', 'uuid'], 'safe'],
         ];
     }
 
@@ -65,7 +65,8 @@ class MetaKnightSearch extends MetaKnight
             'create_at' => $this->create_at,
         ]);
 
-        $query->andFilterWhere(['like', 'info', $this->info]);
+        $query->andFilterWhere(['like', 'info', $this->info])
+            ->andFilterWhere(['like', 'uuid', $this->uuid]);
 
         return $dataProvider;
     }

@@ -23,10 +23,8 @@ class Meta2Resources
         $resource = null;
 
         if (!isset($node->type)) {
-
             return;
         }
-        // echo $node->type;
         switch (strtolower($node->type)) {
 
             case 'polygen':

@@ -3,11 +3,8 @@
 namespace api\modules\a1\models;
 
 use api\modules\v1\models\Knight;
-use api\modules\v1\models\MetaKnightQuery;
+use api\modules\v1\models\User;
 use Yii;
-use yii\behaviors\BlameableBehavior;
-use yii\behaviors\TimestampBehavior;
-use yii\db\Expression;
 
 /**
  * This is the model class for table "meta_knight".
@@ -25,26 +22,7 @@ use yii\db\Expression;
  * @property Verse $verse
  */
 class MetaKnight extends \yii\db\ActiveRecord
-
 {
-
-    public function behaviors()
-    {
-        return [
-            [
-                'class' => TimestampBehavior::class,
-                'attributes' => [
-                    \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => ['create_at'],
-                ],
-                'value' => new Expression('NOW()'),
-            ],
-            [
-                'class' => BlameableBehavior::class,
-                'createdByAttribute' => 'user_id',
-                'updatedByAttribute' => false,
-            ],
-        ];
-    }
     /**
      * {@inheritdoc}
      */
@@ -59,7 +37,7 @@ class MetaKnight extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['verse_id'], 'required'],
+            [['verse_id', 'user_id'], 'required'],
             [['verse_id', 'knight_id', 'user_id'], 'integer'],
             [['info'], 'string'],
             [['create_at'], 'safe'],
@@ -86,32 +64,7 @@ class MetaKnight extends \yii\db\ActiveRecord
             'uuid' => 'Uuid',
         ];
     }
-    public function getResourceIds()
-    {
-        if ($this->knight == null) {
-            return [];
-        }
-        return $this->knight->getResourceIds();
-    }
-    public function fields()
-    {
-        //$fields = parent::fields();
 
-        return [
-            'id',
-            'type' => function ($model) {return 'Knight';},
-            'data' => function ($model) {
-                $knight = $this->knight;
-                if (!$knight) {
-                    return null;
-                }
-                return $this->knight->data;
-            },
-            'event' => function ($model) {},
-            'script' => function ($model) {},
-
-        ];
-    }
     /**
      * Gets query for [[Knight]].
      *
@@ -121,7 +74,13 @@ class MetaKnight extends \yii\db\ActiveRecord
     {
         return $this->hasOne(Knight::className(), ['id' => 'knight_id']);
     }
-
+    public function getResourceIds()
+    {
+        if ($this->knight == null) {
+            return [];
+        }
+        return $this->knight->getResourceIds();
+    }
     /**
      * Gets query for [[User]].
      *
@@ -148,6 +107,30 @@ class MetaKnight extends \yii\db\ActiveRecord
      */
     public static function find()
     {
-        return new MetaKnightQuery(get_called_class());
+        return new \api\modules\v1\models\MetaKnightQuery(get_called_class());
+    }
+
+    public function fields()
+    {
+        $fields = parent::fields();
+        unset($fields['verse_id']);
+        unset($fields['knight_id']);
+        unset($fields['user_id']);
+        unset($fields['create_at']);
+        unset($fields['info']);
+        $fields['type'] = function ($model) {
+            return 'Knight';
+        };
+        $fields['script'] = function ($model) {
+            return '';
+        };
+        $fields['data'] = function ($model) {
+            $knight = $this->knight;
+            if (!$knight) {
+                return null;
+            }
+            return $this->knight->data;
+        };
+        return $fields;
     }
 }

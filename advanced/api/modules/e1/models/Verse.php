@@ -1,13 +1,8 @@
 <?php
 
-namespace api\modules\a1\models;
+namespace api\modules\e1\models;
 
-use api\modules\a1\models\File;
-use api\modules\a1\models\Meta;
-use api\modules\a1\models\Resource;
-use api\modules\a1\models\Space;
 use api\modules\v1\models\User;
-use api\modules\v1\models\VerseEvent;
 use api\modules\v1\models\VerseQuery;
 use Yii;
 use yii\behaviors\BlameableBehavior;
@@ -85,25 +80,18 @@ class Verse extends \yii\db\ActiveRecord
         unset($fields['updater_id']);
         unset($fields['image_id']);
         unset($fields['updated_at']);
-        unset($fields['created_at']);
         unset($fields['author_id']);
-        // unset($fields['id']);
+        unset($fields['created_at']);
         unset($fields['info']);
-
-        $fields['description'] = function () {
-            return json_decode($this->info)->description;
-        };
-        $fields['connections'] = function () {
-            if ($this->verseEvent) {
-                return $this->verseEvent->data;
-            }
-        };
+        unset($fields['version']);
         $fields['space'] = function () {
             return $this->space;
         };
-        $fields['modules'] = function () {
-            return $this->modules;
+
+        $fields['datas'] = function () {
+            return $this->datas;
         };
+
         $fields['resources'] = function () {
             return $this->resources;
         };
@@ -138,55 +126,41 @@ class Verse extends \yii\db\ActiveRecord
     }
     public function getResources()
     {
-        $modules = $this->modules;
+        $datas = $this->datas;
 
         $ids = [];
 
-        foreach ($modules as $module) {
-            $ids = array_merge_recursive($ids, $module->resourceIds);
+        $metas = $datas['metas'];
+        foreach ($metas as $meta) {
+            $ids = array_merge_recursive($ids, $meta->resourceIds);
         }
-
+        $knights = $datas['knights'];
+        foreach ($knights as $knight) {
+            $ids = array_merge_recursive($ids, $knight->resourceIds);
+        }
         $items = Resource::find()->where(['id' => $ids])->all();
         return $items;
     }
 
-    public function getModules()
+    public function getDatas()
     {
         $data = json_decode($this->data);
+
         $m = [];
         $k = [];
-        $mUUID = [];
-        $kUUID = [];
         foreach ($data->children->metas as $child) {
             if ($child->type == 'Meta') {
                 $id = $child->parameters->id;
-                $mUUID[$id] = $child->parameters->uuid;
                 array_push($m, $id);
             } else {
                 $id = $child->parameters->id;
-                $kUUID[$id] = $child->parameters->uuid;
                 array_push($k, $id);
             }
         }
         $knightQuery = $this->getMetaKnights()->where(['id' => $k]);
         $metaQuery = $this->getMetas()->where(['id' => $m]);
-        $metas = $metaQuery->all();
 
-        foreach ($metas as $i => $item) {
-            if (!$item->uuid) {
-                $item->uuid = $mUUID[$item->id];
-                $item->save();
-            }
-        }
-
-        $knights = $knightQuery->all();
-        foreach ($knights as $i => $item) {
-            if (!$item->uuid) {
-                $item->uuid = $kUUID[$item->id];
-                $item->save();
-            }
-        }
-        return array_merge($metas, $knights);
+        return ['metas' => $metaQuery->all(), 'knights' => $knightQuery->all()];
     }
 
     public function getScript()
@@ -207,13 +181,20 @@ class Verse extends \yii\db\ActiveRecord
         if (isset($data->parameters) && isset($data->parameters->space)) {
             $space = $data->parameters->space;
             $model = Space::findOne($space->id);
-            if ($model) {
-                return $model;
-            }
+            return $model;
 
         }
     }
 
+    /**
+     * Gets query for [[VerseEvents]].
+     *
+     * @return \yii\db\ActiveQuery|VerseEventQuery
+     */
+    public function getVerseEvent()
+    {
+        return $this->hasOne(VerseEvent::className(), ['verse_id' => 'id']);
+    }
     /**
      * Gets query for [[MetaKnights]].
      *
@@ -258,15 +239,6 @@ class Verse extends \yii\db\ActiveRecord
         return $this->hasOne(User::className(), ['id' => 'author_id']);
     }
 
-    /**
-     * Gets query for [[VerseEvents]].
-     *
-     * @return \yii\db\ActiveQuery|VerseEventQuery
-     */
-    public function getVerseEvent()
-    {
-        return $this->hasOne(VerseEvent::className(), ['verse_id' => 'id']);
-    }
     /**
      * Gets query for [[Image]].
      *

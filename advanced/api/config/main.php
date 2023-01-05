@@ -18,6 +18,9 @@ return [
         'a1' => [
             'class' => 'api\modules\a1\Module',
         ],
+        'e1' => [
+            'class' => 'api\modules\e1\Module',
+        ],
     ],
     'components' => [
 
@@ -164,6 +167,8 @@ return [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => [
                         'a1/verse',
+                        'e1/verse',
+                        'e1/meta',
                     ],
                 ],
                 [
