@@ -1,30 +1,22 @@
 <?php
-namespace api\modules\v1\controllers;
+namespace api\modules\p1\controllers;
 
-use api\modules\v1\models\MetaSearch;
+use api\modules\p1\models\VerseSearch;
 use mdm\admin\components\AccessControl;
 use sizeg\jwt\JwtHttpBearerAuth;
 use Yii;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
 
-class EditorController extends ActiveController
+class VersePublishController extends ActiveController
 {
 
-    public $modelClass = 'api\modules\v1\models\Meta';
+    public $modelClass = 'api\modules\p1\models\Verse';
     public function behaviors()
     {
         $behaviors = parent::behaviors();
-/*
-        // unset($behaviors['authenticator']);
-        $behaviors['authenticator'] = [
-            'class' => CompositeAuth::class,
-            'authMethods' => [
-                JwtHttpBearerAuth::class,
-            ],
-        ];
-        $auth = $behaviors['authenticator'];
-        */
+        // echo $this->action->id;
+
         // add CORS filter
         $behaviors['corsFilter'] = [
             'class' => \yii\filters\Cors::class,
@@ -42,34 +34,30 @@ class EditorController extends ActiveController
                 ],
             ],
         ];
-/*
-        // re-add authentication filter
-        $behaviors['authenticator'] = $auth;
-        // avoid authentication on CORS-pre-flight requests (HTTP OPTIONS method)
-        $behaviors['authenticator']['except'] = ['options'];
-
+        $behaviors['authenticator'] = [
+            'class' => CompositeAuth::class,
+            'authMethods' => [
+                JwtHttpBearerAuth::class,
+            ],
+            'except' => ['options'],
+        ];
         $behaviors['access'] = [
             'class' => AccessControl::class,
         ];
-*/
         return $behaviors;
     }
-
     public function actions()
     {
-        $actions = parent::actions();
-       // unset($actions['index']);
-        return $actions;
+
+        return [];
     }
 
     public function actionIndex()
     {
 
-        $searchModel = new MetaSearch();
+        $searchModel = new VerseSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-
         $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id]);
-
         return $dataProvider;
     }
 

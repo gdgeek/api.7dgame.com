@@ -10,7 +10,7 @@ return [
     ],
     'vendorPath' => dirname(dirname(__DIR__)) . '/vendor',
     'timeZone' => 'Asia/Shanghai',
-    'name' => '混合现实编程平台（MrPP.com）',
+    'name' => '元宇宙实景编程平台（MrPP.com）',
 
     'components' => [
         'cache' => [

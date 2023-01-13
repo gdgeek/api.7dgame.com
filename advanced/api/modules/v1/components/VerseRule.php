@@ -3,6 +3,7 @@
 namespace api\modules\v1\components;
 
 use api\modules\v1\models\Verse;
+use api\modules\v1\models\VerseShare;
 use Yii;
 use yii\rbac\Rule;
 use yii\web\BadRequestHttpException;
@@ -35,11 +36,15 @@ class VerseRule extends Rule
 
         $userid = Yii::$app->user->identity->id;
 
-        if ($userid == $verse->author_id || $verse->share) {
+        if ($userid == $verse->author_id) {
             return true;
         }
 
-        throw new BadRequestHttpException("您不是所有者");
-
+        $share = VerseShare::findOne(['verse_id' => $id, 'user_id' => $userid]);
+        if ($share) {
+            return true;
+        }
+        // throw new BadRequestHttpException("您不是所有者");
+        return false;
     }
 }

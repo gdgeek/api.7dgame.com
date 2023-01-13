@@ -21,6 +21,9 @@ return [
         'e1' => [
             'class' => 'api\modules\e1\Module',
         ],
+        'p1' => [
+            'class' => 'api\modules\p1\Module',
+        ],
     ],
     'components' => [
 
@@ -136,6 +139,14 @@ return [
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/like',
+                    'extraPatterns' => [
+                        'POST remove' => 'remove',
+
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
                     'controller' => ['project', 'file', 'user', 'resource'],
                 ],
                 [
@@ -151,24 +162,42 @@ return [
                         'v1/knight',
                         'v1/meta-knight',
                         'v1/meta-event',
+                        'v1/verse',
                         'v1/verse-open',
-                        'v1/verse-share',
                         'v1/verse-event',
-                        'v1/like',
                         'v1/token',
                         'v1/editor',
                         'v1/person',
                         'v1/space',
                         'v1/cyber',
-                        'people',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/verse-share',
+                    'extraPatterns' => [
+                        'GET list' => 'list',
+                        'GET remove' => 'remove',
                     ],
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => [
                         'a1/verse',
+                        'p1/verse-open',
+                        'p1/verse-publish',
+                        'p1/verse-share',
                         'e1/verse',
                         'e1/meta',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'p1/site',
+                    'extraPatterns' => [
+                        'POST login' => 'login',
+                        'GET logout' => 'logout',
+                        'GET user' => 'user',
                     ],
                 ],
                 [
@@ -189,15 +218,7 @@ return [
                         'POST signup' => 'signup',
                     ],
                 ],
-                [
-                    'class' => 'yii\rest\UrlRule',
-                    'controller' => 'v1/verse',
-                    'extraPatterns' => [
-                        'GET publish' => 'publish',
-                        'GET open' => 'open',
-                        'GET share' => 'share',
-                    ],
-                ],
+
             ],
 
         ],

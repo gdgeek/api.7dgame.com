@@ -25,7 +25,6 @@ use yii\db\Expression;
  * @property User $updater
  */
 class Reply extends \yii\db\ActiveRecord
-
 {
 
     public function behaviors()
@@ -88,7 +87,28 @@ class Reply extends \yii\db\ActiveRecord
             'info' => 'Info',
         ];
     }
+    public function fields()
+    {
+        $fields = parent::fields();
+        $fields['created_at'] = function ($model) {
+            if ("object" == gettype($model->created_at)) {
+                return date("Y-m-d H:i:s", time());
+            }
+            return $model->created_at;
+        };
 
+        $fields['updated_at'] = function ($model) {
+            if ("object" == gettype($model->updated_at)) {
+                return date("Y-m-d H:i:s", time());
+            }
+            return $model->updated_at;
+        };
+
+        $fields['author'] = function () {
+            return $this->author;
+        };
+        return $fields;
+    }
     /**
      * Gets query for [[Author]].
      *
@@ -127,19 +147,19 @@ class Reply extends \yii\db\ActiveRecord
     {
         return new ReplyQuery(get_called_class());
     }
+/*
+public function getAuthor()
+{
+$author = $this->author;
+$result = new \stdClass();
+$result->id = $author->id;
+$result->username = $author->username;
+$result->nickname = $author->nickname;
+$result->email = $author->email;
 
-    public function extraAuthor()
-    {
-        $author = $this->author;
-        $result = new \stdClass();
-        $result->id = $author->id;
-        $result->username = $author->username;
-        $result->nickname = $author->nickname;
-        $result->email = $author->email;
-
-        return $result;
-    }
-
+return $result;
+}
+ */
     public function afterSave($insert, $changedAttributes)
     {
         $message = $this->message;
@@ -150,7 +170,7 @@ class Reply extends \yii\db\ActiveRecord
     public function extraFields()
     {
         return ['author' => function () {
-            return $this->extraAuthor();
+            return $this->author;
         }, 'message'];
     }
 }

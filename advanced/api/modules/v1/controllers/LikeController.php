@@ -59,7 +59,7 @@ class LikeController extends ActiveController
     public function actions()
     {
         $actions = parent::actions();
-        unset($actions['delete']);
+        //  unset($actions['delete']);
         unset($actions['index']);
         return $actions;
     }
@@ -71,21 +71,14 @@ class LikeController extends ActiveController
         $dataProvider = $searchModel->search($query);
         return $dataProvider;
     }
-
-    public function actionDelete($id, $message_id = null, $user_id = null)
+    public function actionRemove($message_id = null)
     {
-
-        $model = null;
-        if (isset($message_id)) {
-            $model = Like::findOne(['message_id' => $message_id, 'user_id' => $user_id]);
-        } else {
-            $model = Like::findOne($id);
-        }
+        $model = Like::findOne(['message_id' => $message_id, 'user_id' => Yii::$app->user->identity->id]);
         if ($model == null) {
-            throw new BadRequestHttpException('无效id');
+            throw new BadRequestHttpException('无效 message id');
         }
         $model->delete();
-        return $id;
+        return Yii::$app->user->identity->id;
     }
 
 }

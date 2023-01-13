@@ -53,6 +53,17 @@ class VerseShare extends \yii\db\ActiveRecord
         ];
     }
 
+    public function fields()
+    {
+        $fields = parent::fields();
+        //unset($fields['verse_id']);
+        unset($fields['user_id']);
+        //  unset($fields['info']);
+        $fields['user'] = function () {
+            return $this->user;
+        };
+        return $fields;
+    }
     /**
      * Gets query for [[User]].
      *
@@ -72,25 +83,25 @@ class VerseShare extends \yii\db\ActiveRecord
     {
         return $this->hasOne(Verse::className(), ['id' => 'verse_id']);
     }
-    public function extraVerse()
+    /* public function extraVerse()
     {
 
-        $verse = $this->verse;
-        $result = $verse->attributes;
-        $result['image'] = $verse->image;
-        return $result;
+    $verse = $this->verse;
+    $result = $verse->attributes;
+    $result['image'] = $verse->image;
+    return $result;
     }
     public function extraFields()
     {
-        return [
-            'verse' => function () {
-                return $this->extraVerse();
+    return [
+    'verse' => function () {
+    return $this->extraVerse();
 
-            },
-            'author' => function () {
-                return $this->user;
-            }];
-    }
+    },
+    'author' => function () {
+    return $this->user;
+    }];
+    }*/
     /**
      * {@inheritdoc}
      * @return VerseShareQuery the active query used by this AR class.

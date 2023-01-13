@@ -2,6 +2,7 @@
 namespace api\modules\v1\controllers;
 
 use api\modules\v1\models\User;
+use api\modules\v1\models\VerseSearch;
 use api\modules\v1\models\VerseShare;
 use api\modules\v1\models\VerseShareSearch;
 use mdm\admin\components\AccessControl;
@@ -61,10 +62,11 @@ class VerseShareController extends ActiveController
         $actions = parent::actions();
         unset($actions['create']);
         unset($actions['index']);
-        unset($actions['delete']);
+
         return $actions;
     }
-    public function actionDelete($id, $user_id, $verse_id)
+
+    public function actionRemove($user_id, $verse_id)
     {
 
         $model = null;
@@ -80,27 +82,29 @@ class VerseShareController extends ActiveController
         return $id;
 
     }
-    public function actionMe()
-    {
 
-    }
     public function actionIndex()
     {
-        $get = Yii::$app->request->get();
-        if (isset($get['verse_id'])) {
-            $searchModel = new VerseShareSearch();
-            $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-            $dataProvider->query->andWhere(['verse_id' => $get['verse_id']]);
-            $models = $dataProvider->getModels();
-            $results = [];
-            foreach ($models as $model) {
-                $sample = $model->user;
-                // $sample['info'] = $model->info;
-                array_push($results, $sample);
-            }
-            return $results;
-        }
-        return $get;
+        $searchModel = new VerseSearch();
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+        $query = $dataProvider->query;
+        $query->select('verse.*')->leftJoin('verse_share', '`verse_share`.`verse_id` = `verse`.`id`')->andWhere(['verse_share.user_id' => Yii::$app->user->id]);
+        return $dataProvider;
+    }
+    public function actionList($verse_id)
+    {
+
+        $searchModel = new VerseShareSearch();
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+        $dataProvider->query->andWhere(['verse_id' => $verse_id]);
+        $models = $dataProvider->getModels();
+        /*() $results = [];
+        foreach ($models as $model) {
+        $sample = $model->user;
+        array_push($results, $sample);
+        }*/
+        return $models;
+
     }
     public function actionCreate()
     {

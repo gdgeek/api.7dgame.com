@@ -2,12 +2,10 @@
 
 namespace api\modules\v1\models;
 
-use yii\behaviors\TimestampBehavior;
-use yii\behaviors\BlameableBehavior;
-
-use yii\db\Expression;
-
 use Yii;
+use yii\behaviors\BlameableBehavior;
+use yii\behaviors\TimestampBehavior;
+use yii\db\Expression;
 
 /**
  * This is the model class for table "like".
@@ -28,13 +26,17 @@ class Like extends \yii\db\ActiveRecord
             [
                 'class' => TimestampBehavior::class,
                 'attributes' => [
-                    \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => ['created_at']
+                    \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => ['created_at'],
                 ],
                 'value' => new Expression('NOW()'),
-            ]
+            ],
+            [
+                'class' => BlameableBehavior::class,
+                'createdByAttribute' => 'user_id',
+                'updatedByAttribute' => null,
+            ],
         ];
     }
-
 
     /**
      * {@inheritdoc}
@@ -50,7 +52,7 @@ class Like extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['user_id','message_id'], 'required'],
+            [['message_id'], 'required'],
             [['user_id', 'message_id'], 'integer'],
             [['message_id'], 'exist', 'skipOnError' => true, 'targetClass' => Message::className(), 'targetAttribute' => ['message_id' => 'id']],
             [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['user_id' => 'id']],
@@ -103,7 +105,7 @@ class Like extends \yii\db\ActiveRecord
     {
         return new LikeQuery(get_called_class());
     }
-    
+
     public function afterSave($insert, $changedAttributes)
     {
         $message = $this->message;
