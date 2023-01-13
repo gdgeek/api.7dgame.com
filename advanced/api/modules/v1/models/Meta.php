@@ -34,7 +34,6 @@ use yii\db\Expression;
  * @property MetaRete[] $metaRetes
  */
 class Meta extends \yii\db\ActiveRecord
-
 {
 
     public function behaviors()
@@ -84,7 +83,6 @@ class Meta extends \yii\db\ActiveRecord
     public function fields()
     {
         $fields = parent::fields();
-        unset($fields['author_id']);
         unset($fields['updater_id']);
         unset($fields['updated_at']);
         unset($fields['created_at']);
@@ -93,6 +91,9 @@ class Meta extends \yii\db\ActiveRecord
         unset($fields['info']);
         $fields['event'] = function () {
             return $this->metaEvent;
+        };
+        $fields['share'] = function () {
+            return $this->share;
         };
         $fields['script'] = function () {
 

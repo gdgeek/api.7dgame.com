@@ -33,6 +33,16 @@ class LocalController extends ActiveController
                 ],
             ],
         ];
+        $behaviors['authenticator'] = [
+            'class' => CompositeAuth::class,
+            'authMethods' => [
+                JwtHttpBearerAuth::class,
+            ],
+            'except' => ['options'],
+        ];
+        $behaviors['access'] = [
+            'class' => AccessControl::class,
+        ];
         return $behaviors;
     }
 

@@ -30,20 +30,16 @@ class CyberScriptController extends ActiveController
             ],
         ];
 
-        /*
-        // unset($behaviors['authenticator']);
         $behaviors['authenticator'] = [
-        'class' => CompositeAuth::class,
-        'authMethods' => [
-        JwtHttpBearerAuth::class,
-        ],
-        'except' => ['options'],
+            'class' => CompositeAuth::class,
+            'authMethods' => [
+                JwtHttpBearerAuth::class,
+            ],
+            'except' => ['options'],
         ];
-
         $behaviors['access'] = [
-        'class' => AccessControl::class,
+            'class' => AccessControl::class,
         ];
-         */
         return $behaviors;
     }
     public function actionFind($cyber_id, $language = 'lua')

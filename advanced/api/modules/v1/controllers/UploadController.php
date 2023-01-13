@@ -21,6 +21,16 @@ class UploadController extends \yii\rest\Controller
                 'Access-Control-Max-Age' => 86400,
             ],
         ];
+        $behaviors['authenticator'] = [
+            'class' => CompositeAuth::class,
+            'authMethods' => [
+                JwtHttpBearerAuth::class,
+            ],
+            'except' => ['options'],
+        ];
+        $behaviors['access'] = [
+            'class' => AccessControl::class,
+        ];
 
         return $behaviors;
     }

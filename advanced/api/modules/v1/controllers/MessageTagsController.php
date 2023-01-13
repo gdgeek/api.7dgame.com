@@ -1,28 +1,22 @@
 <?php
 namespace api\modules\v1\controllers;
 
-use api\modules\v1\models\MessageTagsSearch;
 use api\modules\v1\models\MessageTags;
+use api\modules\v1\models\MessageTagsSearch;
 use mdm\admin\components\AccessControl;
 use sizeg\jwt\JwtHttpBearerAuth;
 use Yii;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
-
 use yii\web\BadRequestHttpException;
+
 class MessageTagsController extends ActiveController
 {
     public $modelClass = 'api\modules\v1\models\MessageTags';
     public function behaviors()
     {
         $behaviors = parent::behaviors();
-        $behaviors['authenticator'] = [
-            'class' => CompositeAuth::class,
-            'authMethods' => [
-                JwtHttpBearerAuth::class,
-            ],
-        ];
-        $auth = $behaviors['authenticator'];
+
         // add CORS filter
         $behaviors['corsFilter'] = [
             'class' => \yii\filters\Cors::class,
@@ -40,10 +34,13 @@ class MessageTagsController extends ActiveController
                 ],
             ],
         ];
-        // re-add authentication filter
-        $behaviors['authenticator'] = $auth;
-        // avoid authentication on CORS-pre-flight requests (HTTP OPTIONS method)
-        $behaviors['authenticator']['except'] = ['options'];
+        $behaviors['authenticator'] = [
+            'class' => CompositeAuth::class,
+            'authMethods' => [
+                JwtHttpBearerAuth::class,
+            ],
+            'except' => ['options'],
+        ];
         $behaviors['access'] = [
             'class' => AccessControl::class,
         ];
@@ -64,24 +61,24 @@ class MessageTagsController extends ActiveController
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
         return $dataProvider;
     }
-    public  function actionDelete($id, $message_id = null, $tag_id = null){
+    public function actionDelete($id, $message_id = null, $tag_id = null)
+    {
 
         $model = null;
-        if(isset($message_id) && isset($tag_id)){
-            $model = MessageTags::findOne(['message_id'=>$message_id, 'tag_id'=>$tag_id ]);
-        }else{
+        if (isset($message_id) && isset($tag_id)) {
+            $model = MessageTags::findOne(['message_id' => $message_id, 'tag_id' => $tag_id]);
+        } else {
             $model = MessageTags::findOne($id);
-        
+
         }
-        if($model == null){
+        if ($model == null) {
             throw new BadRequestHttpException('无效id');
         }
-        if($model->message->author_id != Yii::$app->user->identity->id){
+        if ($model->message->author_id != Yii::$app->user->identity->id) {
             throw new BadRequestHttpException('没有删除权限');
         }
         $model->delete();
         return $id;
     }
-
 
 }

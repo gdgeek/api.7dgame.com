@@ -98,11 +98,7 @@ class VerseShareController extends ActiveController
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
         $dataProvider->query->andWhere(['verse_id' => $verse_id]);
         $models = $dataProvider->getModels();
-        /*() $results = [];
-        foreach ($models as $model) {
-        $sample = $model->user;
-        array_push($results, $sample);
-        }*/
+
         return $models;
 
     }

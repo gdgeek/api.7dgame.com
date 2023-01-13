@@ -12,13 +12,7 @@ class TagsController extends ActiveController
     public function behaviors()
     {
         $behaviors = parent::behaviors();
-        $behaviors['authenticator'] = [
-            'class' => CompositeAuth::class,
-            'authMethods' => [
-                JwtHttpBearerAuth::class,
-            ],
-        ];
-        $auth = $behaviors['authenticator'];
+
         // add CORS filter
         $behaviors['corsFilter'] = [
             'class' => \yii\filters\Cors::class,
@@ -36,10 +30,13 @@ class TagsController extends ActiveController
                 ],
             ],
         ];
-        // re-add authentication filter
-        $behaviors['authenticator'] = $auth;
-        // avoid authentication on CORS-pre-flight requests (HTTP OPTIONS method)
-        $behaviors['authenticator']['except'] = ['options'];
+        $behaviors['authenticator'] = [
+            'class' => CompositeAuth::class,
+            'authMethods' => [
+                JwtHttpBearerAuth::class,
+            ],
+            'except' => ['options'],
+        ];
         $behaviors['access'] = [
             'class' => AccessControl::class,
         ];

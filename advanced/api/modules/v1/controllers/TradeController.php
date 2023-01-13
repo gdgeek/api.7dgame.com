@@ -18,15 +18,6 @@ class TradeController extends ActiveController
     {
         $behaviors = parent::behaviors();
 
-// unset($behaviors['authenticator']);
-        $behaviors['authenticator'] = [
-            'class' => CompositeAuth::class,
-            'authMethods' => [
-                JwtHttpBearerAuth::class,
-            ],
-        ];
-        $auth = $behaviors['authenticator'];
-// add CORS filter
         $behaviors['corsFilter'] = [
             'class' => \yii\filters\Cors::class,
             'cors' => [
@@ -44,13 +35,16 @@ class TradeController extends ActiveController
             ],
         ];
 
-        $behaviors['authenticator'] = $auth;
-        $behaviors['authenticator']['except'] = ['options'];
-
+        $behaviors['authenticator'] = [
+            'class' => CompositeAuth::class,
+            'authMethods' => [
+                JwtHttpBearerAuth::class,
+            ],
+            'except' => ['options'],
+        ];
         $behaviors['access'] = [
             'class' => AccessControl::class,
         ];
-
         return $behaviors;
 
     }

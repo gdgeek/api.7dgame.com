@@ -16,14 +16,6 @@ class MessageController extends ActiveController
     {
         $behaviors = parent::behaviors();
 
-        // unset($behaviors['authenticator']);
-        $behaviors['authenticator'] = [
-            'class' => CompositeAuth::class,
-            'authMethods' => [
-                JwtHttpBearerAuth::class,
-            ],
-        ];
-        $auth = $behaviors['authenticator'];
         // add CORS filter
         $behaviors['corsFilter'] = [
             'class' => \yii\filters\Cors::class,
@@ -42,15 +34,16 @@ class MessageController extends ActiveController
             ],
         ];
 
-        // re-add authentication filter
-        $behaviors['authenticator'] = $auth;
-        // avoid authentication on CORS-pre-flight requests (HTTP OPTIONS method)
-        $behaviors['authenticator']['except'] = ['options'];
-
+        $behaviors['authenticator'] = [
+            'class' => CompositeAuth::class,
+            'authMethods' => [
+                JwtHttpBearerAuth::class,
+            ],
+            'except' => ['options'],
+        ];
         $behaviors['access'] = [
             'class' => AccessControl::class,
         ];
-
         return $behaviors;
     }
 
@@ -69,7 +62,7 @@ class MessageController extends ActiveController
         $query = $dataProvider->query;
         if ($tag != null) {
             $query->select('message.*')->leftJoin('message_tags', '`message_tags`.`message_id` = `message`.`id`')->andWhere(['message_tags.tag_id' => $tag]);
-        }else if ($liker != null) {
+        } else if ($liker != null) {
             $query->select('message.*')->leftJoin('like', '`like`.`message_id` = `message`.`id`')->andWhere(['like.user_id' => $liker]);
         }
 

@@ -2,8 +2,12 @@
 
 namespace api\modules\v1\components;
 
+use api\modules\v1\models\Cyber;
+use api\modules\v1\models\Meta;
+use api\modules\v1\models\MetaEvent;
+use api\modules\v1\models\MetaKnight;
 use api\modules\v1\models\Verse;
-use api\modules\v1\models\VerseShare;
+use api\modules\v1\models\VerseEvent;
 use Yii;
 use yii\rbac\Rule;
 use yii\web\BadRequestHttpException;
@@ -11,40 +15,227 @@ use yii\web\BadRequestHttpException;
 class VerseRule extends Rule
 {
     public $name = 'verse_rule';
-    public function execute($user, $item, $params)
+    private function getVerseFromVerseId($params)
     {
-        //echo 123;
 
-        $post = Yii::$app->request->post();
+        $id = isset($params['verse_id']) ? $params['verse_id'] : $params['verseId'];
 
-        $id = isset($params['id']) ? $params['id'] : null;
-        if (!$id) {
-            $id = isset($params['verse_id']) ? $params['verse_id'] : null;
-            if (!$id) {
-                $post = Yii::$app->request->post();
-                $id = isset($post['verse_id']) ? $post['verse_id'] : null;
-                if (!$id) {
-                    throw new BadRequestHttpException(json_encode($item));
-                }
+        return $id;
+    }
+    private function getVerseIdMetaEvent($params)
+    {
+        $post = \Yii::$app->request->post();
+        if (isset($post['verse_id'])) {
+            return $post['verse_id'];
+        }
+
+        $id = isset($params['metaId']) ? $params['metaId'] : $params['id'];
+        $meta = Meta::findOne($id);
+        if ($meta) {
+            return $meta->verse->id;
+        }
+        throw new BadRequestHttpException($id);
+
+    }
+    private function getVerseId($params)
+    {
+        $request = Yii::$app->request;
+
+        $post = \Yii::$app->request->post();
+        $controller = Yii::$app->controller->id;
+        if ($controller == 'cyber') {
+            if ($request->isPut) {
+                return $this->getIdFromCyberId($params, 'id');
+            }
+            if ($request->isPost) {
+
+                return $this->getIdFromMetaId($post, 'meta_id');
+            }
+        }
+        if ($controller == 'verse-share') {
+            if ($request->isGet) {
+                return $this->getId($params, 'verse_id');
             }
         }
 
+        if ($controller == 'verse-event') {
+            if ($request->isGet) {
+
+                return $this->getId($params, 'verseId');
+            }
+            if ($request->isPut) {
+
+                return $this->getIdFromVerseEventId($params, 'id');
+            }
+            if ($request->isPost) {
+
+                return $this->getId($post, 'verse_id');
+            }
+        }
+
+        if ($controller == 'event-share') {
+            if ($request->isGet) {
+
+                return $this->getId($params, 'verseId');
+            }
+        }
+        //s/1
+        if ($controller == 'meta-event') {
+            if ($request->isGet) {
+
+                return $this->getIdFromMetaId($params, 'metaId');
+            }
+
+            if ($request->isPut) {
+
+                return $this->getIdFromMetaEventId($params, 'id');
+            }
+            if ($request->isPost) {
+
+                return $this->getIdFromMetaId($post, 'meta_id');
+            }
+        }
+
+        if ($controller == 'meta-knight') {
+            if ($request->isPost) {
+                return $this->getId($post, 'verse_id');
+            }
+            if ($request->isGet) {
+                return $this->getIdFromMetaKnight($params, 'id');
+            }
+            if ($request->isDelete) {
+                return $this->getIdFromMetaKnight($params, 'id');
+            }
+            if ($request->isPut) {
+
+                return $this->getIdFromMetaKnight($params, 'id');
+            }
+        }
+        if ($controller == 'meta') {
+            if ($request->isGet) {
+                return $this->getIdFromMetaId($params, 'id');
+            }
+            if ($request->isPost) {
+
+                return $this->getId($post, 'verse_id');
+            }
+
+            if ($request->isPut) {
+
+                return $this->getIdFromMetaId($params, 'id');
+            }
+            if ($request->isDelete) {
+
+                return $this->getIdFromMetaId($params, 'id');
+            }
+        }
+
+        return $this->getId($params, 'id');
+    }
+    private function getIdFromCyberId($array, $key)
+    {
+        if (isset($array[$key])) {
+
+            $id = $array[$key];
+
+            $cyber = Cyber::findOne($id);
+
+            if ($cyber) {
+                return $cyber->meta->verse->id;
+            }
+        }
+
+        throw new BadRequestHttpException(json_encode($array));
+        return null;
+    }
+    private function getIdFromMetaKnight($array, $key)
+    {
+        if (isset($array[$key])) {
+
+            $id = $array[$key];
+
+            $knight = MetaKnight::findOne($id);
+
+            if ($knight) {
+                return $knight->verse->id;
+            }
+        }
+
+        throw new BadRequestHttpException(json_encode($array));
+        return null;
+    }
+    private function getIdFromMetaEventId($array, $key)
+    {
+        if (isset($array[$key])) {
+
+            $id = $array[$key];
+
+            $event = MetaEvent::findOne($id);
+
+            if ($event) {
+                return $event->meta->verse->id;
+            }
+        }
+
+        throw new BadRequestHttpException(json_encode($array));
+        return null;
+    }
+    private function getIdFromVerseEventId($array, $key)
+    {
+
+        if (isset($array[$key])) {
+
+            $id = $array[$key];
+
+            $event = VerseEvent::findOne($id);
+
+            if ($event) {
+                return $event->verse->id;
+            }
+        }
+
+        throw new BadRequestHttpException(json_encode($array));
+        return null;
+    }
+    private function getIdFromMetaId($array, $key)
+    {
+        if (isset($array[$key])) {
+
+            $id = $array[$key];
+
+            $meta = Meta::findOne($id);
+
+            if ($meta) {
+                return $meta->verse->id;
+            }
+        }
+
+        throw new BadRequestHttpException(json_encode($array));
+        return null;
+    }
+    private function getId($array, $key)
+    {
+        if (isset($array[$key])) {
+            return $array[$key];
+        }
+        throw new BadRequestHttpException(json_encode($array));
+        return null;
+    }
+    public function execute($user, $item, $params)
+    {
+        $id = $this->getVerseId($params);
+
         $verse = Verse::findOne($id);
         if (!$verse) {
-            throw new BadRequestHttpException("找不到宇宙");
+            throw new BadRequestHttpException("$post");
         }
 
         $userid = Yii::$app->user->identity->id;
 
-        if ($userid == $verse->author_id) {
+        if ($userid == $verse->author_id || $verse->share != null) {
             return true;
         }
 
-        $share = VerseShare::findOne(['verse_id' => $id, 'user_id' => $userid]);
-        if ($share) {
-            return true;
-        }
-        // throw new BadRequestHttpException("您不是所有者");
         return false;
     }
 }
