@@ -32,21 +32,6 @@ class SpaceRule extends Rule
 
         throw new BadRequestHttpException("您不是所有者");
         return false;
-        /*
-    $post = Yii::$app->request->post();
-
-    $id = isset($params['id']) ? $params['id'] : null;
-    if (!$id) {
-    $id = isset($params['space_id']) ? $params['space_id'] : null;
-    if (!$id) {
-    $post = Yii::$app->request->post();
-    $id = isset($post['space_id']) ? $post['space_id'] : null;
-    if (!$id) {
-    throw new BadRequestHttpException(json_encode($item));
-    }
-    }
-    }
-     */
 
     }
 }

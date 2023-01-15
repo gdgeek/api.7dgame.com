@@ -93,16 +93,13 @@ class Meta extends \yii\db\ActiveRecord
         unset($fields['image_id']);
         unset($fields['info']);
 
-        // $fields['id'] = function ($model) {return 'meta_' . $this->id;};
         $fields['type'] = function () {return 'Mate';};
         $fields['script'] = function () {
-
-            if ($this->cyber) {
-                $script = $this->cyber->GetCyberScripts()->andWhere(['language' => 'lua'])->one();
-                if ($script) {
-                    return $script->script;
-                }
+            if ($this->cyber && $this->cyber->script) {
+                return $this->cyber->script;
             }
+            return 'local meta = {}';
+
         };
         return $fields;
     }
@@ -197,7 +194,7 @@ class Meta extends \yii\db\ActiveRecord
 
         $share = VerseShare::findOne(['verse_id' => $this->verse_id, 'user_id' => Yii::$app->user->id]);
 
-        return $share;
+        return $share != null;
     }
     public function getResourceIds()
     {

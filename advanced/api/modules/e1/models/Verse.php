@@ -4,6 +4,7 @@ namespace api\modules\e1\models;
 
 use api\modules\v1\models\User;
 use api\modules\v1\models\VerseQuery;
+use api\modules\v1\models\VerseShare;
 use Yii;
 use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
@@ -80,7 +81,6 @@ class Verse extends \yii\db\ActiveRecord
         unset($fields['updater_id']);
         unset($fields['image_id']);
         unset($fields['updated_at']);
-        unset($fields['author_id']);
         unset($fields['created_at']);
         unset($fields['info']);
         unset($fields['version']);
@@ -95,6 +95,10 @@ class Verse extends \yii\db\ActiveRecord
         $fields['resources'] = function () {
             return $this->resources;
         };
+        $fields['share'] = function () {
+            return $this->share;
+        };
+
         return $fields;
     }
     /**
@@ -281,7 +285,7 @@ class Verse extends \yii\db\ActiveRecord
 
         $share = VerseShare::findOne(['verse_id' => $this->id, 'user_id' => Yii::$app->user->id]);
 
-        return $share;
+        return $share != null;
     }
 
 }

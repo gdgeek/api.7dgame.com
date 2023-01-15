@@ -69,11 +69,8 @@ class File extends \yii\db\ActiveRecord
         $fields = parent::fields();
 
         unset($fields['updater_id']);
-        // unset($fields['id']);
         unset($fields['user_id']);
         unset($fields['created_at']);
-        //unset($fields['size']);
-        // unset($fields['filename']);
 
         return $fields;
     }

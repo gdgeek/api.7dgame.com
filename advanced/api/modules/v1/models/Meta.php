@@ -5,7 +5,6 @@ namespace api\modules\v1\models;
 use api\modules\v1\models\Cyber;
 use api\modules\v1\models\File;
 use api\modules\v1\models\User;
-use api\modules\v1\models\VerseShare;
 use Yii;
 use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
@@ -86,25 +85,11 @@ class Meta extends \yii\db\ActiveRecord
         unset($fields['updater_id']);
         unset($fields['updated_at']);
         unset($fields['created_at']);
-        unset($fields['verse_id']);
         unset($fields['image_id']);
         unset($fields['info']);
-        $fields['event'] = function () {
-            return $this->metaEvent;
-        };
-        $fields['share'] = function () {
-            return $this->share;
-        };
-        $fields['script'] = function () {
+        unset($fields['verse_id']);
 
-            if ($this->cyber) {
-                $script = $this->cyber->GetCyberScripts()->andWhere(['language' => 'lua'])->one();
-                if ($script) {
-                    return $script->script;
-                }
-            }
-            //return $this->cyber->GetCyberScripts()->andWhere(['language' => 'lua'])->one()->script;
-        };
+        $fields['share'] = function () {return $this->share;};
         return $fields;
     }
     /**
@@ -193,13 +178,6 @@ class Meta extends \yii\db\ActiveRecord
     {
         return $this->hasOne(File::className(), ['id' => 'image_id']);
     }
-    public function getShare()
-    {
-
-        $share = VerseShare::findOne(['verse_id' => $this->verse_id, 'user_id' => Yii::$app->user->id]);
-
-        return $share;
-    }
 
     public function extraFields()
     {
@@ -207,89 +185,39 @@ class Meta extends \yii\db\ActiveRecord
             'author' => function () {
                 return $this->author;
             },
-            'editor' => function () {
-                return $this->extraEditor();
+            'event' => function () {
+                return $this->metaEvent;
             },
-            'resources' => function () {
-                return $this->extraResources();
+            'script' => function () {
+                if ($this->cyber) {
+                    return $this->cyber->script;
+                }
+                return null;
             },
-
-            'share',
             'cyber',
         ];
     }
+    public function getShare()
+    {
+
+        $share = VerseShare::findOne(['verse_id' => $this->verse_id, 'user_id' => Yii::$app->user->id]);
+
+        return $share != null;
+    }
+    /*
     public function getResourceIds()
     {
-        $resourceIds = \api\modules\v1\helper\Meta2Resources::Handle(json_decode($this->data));
-        return $resourceIds;
+    $resourceIds = \api\modules\v1\helper\Meta2Resources::Handle(json_decode($this->data));
+    return $resourceIds;
     }
     public function extraResources()
     {
-        $resourceIds = $this->resourceIds;
-        $items = Resource::find()->where(['id' => $resourceIds])->all();
-        return $items;
+    $resourceIds = $this->resourceIds;
+    $items = Resource::find()->where(['id' => $resourceIds])->all();
+    return $items;
     }
+     */
 
-    public function extraEditor()
-    {
-        $editor = \api\modules\v1\helper\Meta2Editor::Handle($this);
-        return $editor;
-    }
-
-    public function upgrade($data)
-    {
-        $ret = false;
-        if (isset($data->parameters) && isset($data->parameters->transfrom)) {
-
-            $ret = true;
-            $data->parameters->transform = $data->parameters->transfrom;
-            unset($data->parameters->transfrom);
-        }
-
-        if (isset($data->chieldren)) {
-
-            $ret = true;
-            $data->children = $data->chieldren;
-            unset($data->chieldren);
-        }
-        if (isset($data->children->entities)) {
-            foreach ($data->children->entities as $entity) {
-                if ($this->upgrade($entity)) {
-                    $ret = true;
-
-                }
-            }
-        }
-        if (isset($data->children->addons)) {
-            foreach ($data->children->addons as $addon) {
-                //   echo 123;
-                if ($this->upgrade($addon)) {
-                    $ret = true;
-                }
-            }
-        }
-        if (isset($data->children->components)) {
-            foreach ($data->children->components as $component) {
-                if ($this->upgrade($component)) {
-                    $ret = true;
-                }
-            }
-        }
-
-        return $ret;
-    }
-    public function afterFind()
-    {
-
-        parent::afterFind();
-        $data = json_decode($this->data);
-        $change = $this->upgrade($data);
-        if ($change) {
-            $this->data = json_encode($data);
-            $this->save();
-        }
-
-    }
     /**
      * {@inheritdoc}
      * @return MetaQuery the active query used by this AR class.

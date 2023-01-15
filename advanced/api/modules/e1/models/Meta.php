@@ -85,7 +85,7 @@ class Meta extends \yii\db\ActiveRecord
     {
         $fields = parent::fields();
         unset($fields['author_id']);
-        unset($fields['updater_id']);
+        // unset($fields['updater_id']);
         unset($fields['updated_at']);
         unset($fields['created_at']);
         unset($fields['verse_id']);
@@ -185,23 +185,21 @@ class Meta extends \yii\db\ActiveRecord
 
         $share = VerseShare::findOne(['verse_id' => $this->verse_id, 'user_id' => Yii::$app->user->id]);
 
-        return $share;
+        return $share != null;
     }
 
     public function extraFields()
     {
-        return ['verse', 'image',
-            'author' => function () {
-                return $this->author;
+        return [/*'verse', 'image',*/
+            /* 'author' => function () {
+            return $this->author;
             },
             'editor' => function () {
-                return $this->extraEditor();
-            },
+            return $this->extraEditor();
+            },*/
             'resources' => function () {
                 return $this->extraResources();
             },
-
-            'share',
             'cyber',
         ];
     }
@@ -216,12 +214,12 @@ class Meta extends \yii\db\ActiveRecord
         $items = Resource::find()->where(['id' => $resourceIds])->all();
         return $items;
     }
-
-    public function extraEditor()
-    {
-        $editor = \api\modules\v1\helper\Meta2Editor::Handle($this);
-        return $editor;
-    }
+/*
+public function extraEditor()
+{
+$editor = \api\modules\v1\helper\Meta2Editor::Handle($this);
+return $editor;
+}*/
 
     public function upgrade($data)
     {
@@ -285,4 +283,5 @@ class Meta extends \yii\db\ActiveRecord
     {
         return new MetaQuery(get_called_class());
     }
+
 }

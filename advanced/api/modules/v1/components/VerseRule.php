@@ -227,15 +227,22 @@ class VerseRule extends Rule
 
         $verse = Verse::findOne($id);
         if (!$verse) {
-            throw new BadRequestHttpException("$post");
+            throw new BadRequestHttpException("no verse");
         }
 
         $userid = Yii::$app->user->identity->id;
 
         if ($userid == $verse->author_id || $verse->share != null) {
+
+            return true;
+        }
+
+        $request = Yii::$app->request;
+        if ($request->isGet && $verse->verseOpen != null) {
             return true;
         }
 
         return false;
+
     }
 }

@@ -83,6 +83,7 @@ class Verse extends \yii\db\ActiveRecord
         unset($fields['image_id']);
         unset($fields['updated_at']);
 
+        $fields['share'] = function () {return $this->share;};
         return $fields;
     }
     /**
@@ -103,15 +104,7 @@ class Verse extends \yii\db\ActiveRecord
             'version' => 'Version',
         ];
     }
-    /**
-     * Gets query for [[VerseCybers]].
-     *
-     * @return \yii\db\ActiveQuery|VerseCyberQuery
-     */
-    public function getVerseCybers()
-    {
-        return $this->hasMany(VerseCyber::className(), ['verse_id' => 'id']);
-    }
+
     public function getResources()
     {
         $datas = $this->datas;
@@ -210,18 +203,6 @@ class Verse extends \yii\db\ActiveRecord
         return ['metas' => $metaQuery->all(), 'knights' => $knightQuery->all()];
     }
 
-    public function getScript()
-    {
-
-        $cybers = $this->verseCybers;
-        if (count($cybers) >= 1) {
-            $cyber = array_shift($cybers);
-            return json_encode($cyber->script);
-        }
-
-        return null;
-
-    }
     public function getSpace()
     {
         $data = json_decode($this->data);
@@ -237,7 +218,7 @@ class Verse extends \yii\db\ActiveRecord
     public function extraFields()
     {
 
-        return ['metas', 'verseCybers', 'verseOpen', 'message', 'image', 'share',
+        return ['metas', 'verseOpen', 'message', 'image',
             'author' => function () {
                 return $this->author;
             },
@@ -246,9 +227,6 @@ class Verse extends \yii\db\ActiveRecord
             },
             'datas' => function () {
                 return $this->datas;
-            },
-            'script' => function () {
-                return $this->script;
             },
             'resources' => function () {
                 return $this->resources;
@@ -294,6 +272,13 @@ class Verse extends \yii\db\ActiveRecord
         return $this->hasOne(VerseOpen::className(), ['verse_id' => 'id']);
     }
 
+    public function getVerseShare()
+    {
+
+        $share = $this->hasOne(VerseShare::className(), ['verse_id' => $this->id, 'user_id' => Yii::$app->user->id]);
+
+        return $share;
+    }
     public function getMessage()
     {
         return $this->hasOne(Message::class, ['id' => 'message_id'])
@@ -337,21 +322,13 @@ class Verse extends \yii\db\ActiveRecord
     {
         return new VerseQuery(get_called_class());
     }
-    /**
-     * Gets query for [[VerseRetes]].
-     *
-     * @return \yii\db\ActiveQuery|VerseReteQuery
-     */
-    public function getVerseRetes()
-    {
-        return $this->hasMany(VerseRete::className(), ['verse_id' => 'id']);
-    }
+
     public function getShare()
     {
 
         $share = VerseShare::findOne(['verse_id' => $this->id, 'user_id' => Yii::$app->user->id]);
 
-        return $share;
+        return $share != null;
     }
 
 }

@@ -35,7 +35,6 @@ use yii\db\Expression;
 
  */
 class Verse extends \yii\db\ActiveRecord
-
 {
 
     public function behaviors()
@@ -190,18 +189,6 @@ class Verse extends \yii\db\ActiveRecord
         return array_merge($metas, $knights);
     }
 
-    public function getScript()
-    {
-
-        $cybers = $this->verseCybers;
-        if (count($cybers) >= 1) {
-            $cyber = array_shift($cybers);
-            return json_encode($cyber->script);
-        }
-
-        return null;
-
-    }
     public function getSpace()
     {
         $data = json_decode($this->data);
@@ -310,7 +297,7 @@ class Verse extends \yii\db\ActiveRecord
 
         $share = VerseShare::findOne(['verse_id' => $this->id, 'user_id' => Yii::$app->user->id]);
 
-        return $share;
+        return $share != null;
     }
 
 }

@@ -14,16 +14,7 @@ class VerseController extends ActiveController
     public function behaviors()
     {
         $behaviors = parent::behaviors();
-        // echo $this->action->id;
-        if ($this->action->id != 'open' && $this->action->id != 'view') {
-            $behaviors['authenticator'] = [
-                'class' => CompositeAuth::class,
-                'authMethods' => [
-                    JwtHttpBearerAuth::class,
-                ],
-            ];
-        }
-        $auth = $behaviors['authenticator'];
+
         // add CORS filter
         $behaviors['corsFilter'] = [
             'class' => \yii\filters\Cors::class,
@@ -42,16 +33,17 @@ class VerseController extends ActiveController
             ],
         ];
 
-        // re-add authentication filter
-        $behaviors['authenticator'] = $auth;
-        // avoid authentication on CORS-pre-flight requests (HTTP OPTIONS method)
-        $behaviors['authenticator']['except'] = ['options'];
+        $behaviors['authenticator'] = [
+            'class' => CompositeAuth::class,
+            'authMethods' => [
+                JwtHttpBearerAuth::class,
+            ],
+            'except' => ['options'],
+        ];
 
-        if ($this->action->id != 'open' && $this->action->id != 'view') {
-            $behaviors['access'] = [
-                'class' => AccessControl::class,
-            ];
-        }
+        $behaviors['access'] = [
+            'class' => AccessControl::class,
+        ];
 
         return $behaviors;
     }

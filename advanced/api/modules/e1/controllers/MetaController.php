@@ -2,7 +2,10 @@
 namespace api\modules\e1\controllers;
 
 use api\modules\v1\models\MetaSearch;
+use mdm\admin\components\AccessControl;
+use sizeg\jwt\JwtHttpBearerAuth;
 use Yii;
+use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
 
 class MetaController extends ActiveController
@@ -30,20 +33,17 @@ class MetaController extends ActiveController
                 ],
             ],
         ];
-/*
-// unset($behaviors['authenticator']);
-$behaviors['authenticator'] = [
-'class' => CompositeAuth::class,
-'authMethods' => [
-JwtHttpBearerAuth::class,
-],
-'except' => ['options'],
-];
+        $behaviors['authenticator'] = [
+            'class' => CompositeAuth::class,
+            'authMethods' => [
+                JwtHttpBearerAuth::class,
+            ],
+            'except' => ['options'],
+        ];
 
-$behaviors['access'] = [
-'class' => AccessControl::class,
-];
- */
+        $behaviors['access'] = [
+            'class' => AccessControl::class,
+        ];
 
         return $behaviors;
     }
