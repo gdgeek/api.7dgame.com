@@ -85,10 +85,20 @@ class Verse extends \yii\db\ActiveRecord
         unset($fields['image_id']);
         unset($fields['info']);
         $fields['image'] = function () {
-            return $this->image->url;
+            if ($this->image) {
+                return $this->image->url;
+            }
+
+            return null;
         };
         $fields['description'] = function () {
-            return json_decode($this->info)->description;
+            if ($this->info) {
+                $data = json_decode($this->info);
+                if ($data->description) {
+                    return $data->description;
+                }
+            }
+            return null;
         };
         return $fields;
     }
@@ -192,21 +202,13 @@ class Verse extends \yii\db\ActiveRecord
     {
         return new VerseQuery(get_called_class());
     }
-    /**
-     * Gets query for [[VerseRetes]].
-     *
-     * @return \yii\db\ActiveQuery|VerseReteQuery
-     */
-    public function getVerseRetes()
-    {
-        return $this->hasMany(VerseRete::className(), ['verse_id' => 'id']);
-    }
+
     public function getShare()
     {
 
         $share = VerseShare::findOne(['verse_id' => $this->id, 'user_id' => Yii::$app->user->id]);
 
-        return $share;
+        return $share != null;
     }
 
 }
