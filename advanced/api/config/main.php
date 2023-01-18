@@ -142,7 +142,6 @@ return [
                     'controller' => 'v1/like',
                     'extraPatterns' => [
                         'POST remove' => 'remove',
-
                     ],
                 ],
                 [
@@ -153,7 +152,7 @@ return [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => [
                         'v1/meta',
-                        'v1/editor-verse',
+                        //'v1/editor-verse',
                         'v1/verse-cyber',
                         'v1/message',
                         'v1/reply',
@@ -166,7 +165,6 @@ return [
                         'v1/verse-open',
                         'v1/verse-event',
                         'v1/token',
-                        'v1/editor',
                         'v1/person',
                         'v1/space',
                         'v1/cyber',
@@ -177,7 +175,7 @@ return [
                     'controller' => 'v1/verse-share',
                     'extraPatterns' => [
                         'GET list' => 'list',
-                        'GET remove' => 'remove',
+                        //    'POST remove' => 'remove',
                     ],
                 ],
                 [

@@ -9,7 +9,6 @@ use yii\rest\ActiveController;
 
 class PersonController extends ActiveController
 {
-
     public $modelClass = 'api\modules\v1\models\Person';
     public function behaviors()
     {
@@ -32,7 +31,6 @@ class PersonController extends ActiveController
                 ],
             ],
         ];
-
         $behaviors['authenticator'] = [
             'class' => CompositeAuth::class,
             'authMethods' => [
@@ -45,5 +43,19 @@ class PersonController extends ActiveController
         ];
         return $behaviors;
     }
+/*
+public function actions()
+{
+$actions = parent::actions();
+
+return [];
+}
+
+public function actionIndex()
+{
+$search = new UserSearch();
+$dataProvider = $search->search(Yii::$app->request->queryParams);
+return $dataProvider;
+}*/
 
 }

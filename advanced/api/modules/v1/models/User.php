@@ -46,12 +46,7 @@ class User extends ActiveRecord implements IdentityInterface
             'username',
         ];
     }
-    /*
-    public function getSample()
-    {
 
-    return ['id' => $this->id, 'username' => $this->username, 'nickname' => $this->nickname, 'email' => $this->email];
-    }*/
     public function getData()
     {
 
@@ -292,7 +287,6 @@ class User extends ActiveRecord implements IdentityInterface
      */
     public function getUserInfo()
     {
-
         $has = $this->hasOne(UserInfo::className(), ['user_id' => 'id']);
         $info = $has->one();
         if (!$info) {
@@ -306,11 +300,8 @@ class User extends ActiveRecord implements IdentityInterface
 
     public function afterSave($insert, $changedAttributes)
     {
-
         $this->userInfo->save();
-
         return true;
-
     }
 
 }

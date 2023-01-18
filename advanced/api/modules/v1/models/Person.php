@@ -108,182 +108,24 @@ class Person extends \yii\db\ActiveRecord
     }
     public function extraFields()
     {
-        return ['data', 'roles'];
+        return ['avatar', 'roles'];
     }
-    public function getData()
+    public function getAvatar()
     {
 
-        $data = $this->hasOne(UserInfo::className(), ['user_id' => 'id']);
-        $info = $data->one();
-        if (!$info) {
-            $info = new UserInfo();
-            $info->user_id = $this->id;
-            $info->save();
+        $info = $this->userInfo;
+        if ($info && $info->avatar) {
+            return $info->avatar;
         }
-       
-        
-        return  $info->toArray([], ['avatar']);
+
+        return null;
     }
     public function getRoles()
     {
         $manager = Configs::authManager();
         $assignments = $manager->getAssignments($this->id);
-        $ret = [];
-        foreach ($assignments as $key => $value) {
-            $ret[] = $value->roleName;
 
-        }
-        return $ret;
-    }
-    
-    /**
-     * Gets query for [[Feedbacks]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getFeedbacks()
-    {
-        return $this->hasMany(Feedback::className(), ['repairer' => 'id']);
-    }
-
-    /**
-     * Gets query for [[Feedbacks0]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getFeedbacks0()
-    {
-        return $this->hasMany(Feedback::className(), ['reporter' => 'id']);
-    }
-
-    /**
-     * Gets query for [[Files]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getFiles()
-    {
-        return $this->hasMany(File::className(), ['user_id' => 'id']);
-    }
-
-    /**
-     * Gets query for [[Invitations]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getInvitations()
-    {
-        return $this->hasMany(Invitation::className(), ['recipient_id' => 'id']);
-    }
-
-    /**
-     * Gets query for [[Invitations0]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getInvitations0()
-    {
-        return $this->hasMany(Invitation::className(), ['sender_id' => 'id']);
-    }
-
-    /**
-     * Gets query for [[Likes]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getLikes()
-    {
-        return $this->hasMany(Like::className(), ['user_id' => 'id']);
-    }
-
-    /**
-     * Gets query for [[Messages]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getMessages()
-    {
-        return $this->hasMany(Message::className(), ['author_id' => 'id']);
-    }
-
-    /**
-     * Gets query for [[Messages0]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getMessages0()
-    {
-        return $this->hasMany(Message::className(), ['updater_id' => 'id']);
-    }
-
-    /**
-     * Gets query for [[Metas]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getMetas()
-    {
-        return $this->hasMany(Meta::className(), ['author_id' => 'id']);
-    }
-
-    /**
-     * Gets query for [[Metas0]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getMetas0()
-    {
-        return $this->hasMany(Meta::className(), ['updater_id' => 'id']);
-    }
-
-    /**
-     * Gets query for [[Orders]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getOrders()
-    {
-        return $this->hasMany(Order::className(), ['user_id' => 'id']);
-    }
-
-    /**
-     * Gets query for [[Replies]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getReplies()
-    {
-        return $this->hasMany(Reply::className(), ['author_id' => 'id']);
-    }
-
-    /**
-     * Gets query for [[Replies0]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getReplies0()
-    {
-        return $this->hasMany(Reply::className(), ['updater_id' => 'id']);
-    }
-
-    /**
-     * Gets query for [[Resources]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getResources()
-    {
-        return $this->hasMany(Resource::className(), ['author_id' => 'id']);
-    }
-
-    /**
-     * Gets query for [[Resources0]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getResources0()
-    {
-        return $this->hasMany(Resource::className(), ['updater_id' => 'id']);
+        return array_values($assignments);
     }
 
     /**
@@ -291,78 +133,9 @@ class Person extends \yii\db\ActiveRecord
      *
      * @return \yii\db\ActiveQuery
      */
-    public function getUserInfos()
+    public function getUserInfo()
     {
-        return $this->hasMany(UserInfo::className(), ['user_id' => 'id']);
+        return $this->hasOne(UserInfo::className(), ['user_id' => 'id']);
     }
 
-    /**
-     * Gets query for [[Verses]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getVerses()
-    {
-        return $this->hasMany(Verse::className(), ['author_id' => 'id']);
-    }
-
-    /**
-     * Gets query for [[Verses0]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getVerses0()
-    {
-        return $this->hasMany(Verse::className(), ['updater_id' => 'id']);
-    }
-
-    /**
-     * Gets query for [[VerseCybers]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getVerseCybers()
-    {
-        return $this->hasMany(VerseCyber::className(), ['author_id' => 'id']);
-    }
-
-    /**
-     * Gets query for [[VerseCybers0]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getVerseCybers0()
-    {
-        return $this->hasMany(VerseCyber::className(), ['updater_id' => 'id']);
-    }
-
-    /**
-     * Gets query for [[VerseOpens]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getVerseOpens()
-    {
-        return $this->hasMany(VerseOpen::className(), ['user_id' => 'id']);
-    }
-
-    /**
-     * Gets query for [[VerseShares]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getVerseShares()
-    {
-        return $this->hasMany(VerseShare::className(), ['user_id' => 'id']);
-    }
-
-    /**
-     * Gets query for [[Wxes]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getWxes()
-    {
-        return $this->hasMany(Wx::className(), ['user_id' => 'id']);
-    }
 }
