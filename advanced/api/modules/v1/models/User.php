@@ -16,24 +16,24 @@ class User extends ActiveRecord implements IdentityInterface
     const STATUS_ACTIVE = 10;
 
     public $token = null;
+/*
+private function getAssignments()
+{
+$manager = Configs::authManager();
+$assignments = $manager->getAssignments($this->id);
+$ret = [];
+foreach ($assignments as $key => $value) {
+$ret[] = $value->roleName;
 
-    private function getAssignments()
-    {
-        $manager = Configs::authManager();
-        $assignments = $manager->getAssignments($this->id);
-        $ret = [];
-        foreach ($assignments as $key => $value) {
-            $ret[] = $value->roleName;
-
-        }
-        return $ret;
-    }
+}
+return $ret;
+}*/
     public function getUser()
     {
         $user = new \stdClass();
         $user->username = $this->username;
         $user->data = $this->getData();
-        $user->roles = $this->getAssignments();
+        $user->roles = $this->getRoles();
         return $user;
 
     }
@@ -145,7 +145,6 @@ class User extends ActiveRecord implements IdentityInterface
         $user = static::findIdentity($token->getClaim('uid'));
         $user->token = $token;
         return $user;
-
     }
 
     /**
@@ -302,6 +301,13 @@ class User extends ActiveRecord implements IdentityInterface
     {
         $this->userInfo->save();
         return true;
+    }
+
+    public function getRoles()
+    {
+        $manager = Configs::authManager();
+        $assignments = $manager->getAssignments($this->id);
+        return array_values(array_map(function ($value) {return $value->roleName;}, $assignments));
     }
 
 }

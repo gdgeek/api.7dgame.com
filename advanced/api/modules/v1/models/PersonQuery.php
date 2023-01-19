@@ -1,22 +1,22 @@
 <?php
 
-namespace common\models;
+namespace api\modules\v1\models;
 
 /**
- * This is the ActiveQuery class for [[Material]].
+ * This is the ActiveQuery class for [[Person]].
  *
- * @see Material
+ * @see Person
  */
-class MaterialQuery extends \yii\db\ActiveQuery
+class PersonQuery extends \yii\db\ActiveQuery
 {
     /*public function active()
     {
-        return $this->andWhere('[[status]]=1');
+    return $this->andWhere('[[status]]=1');
     }*/
 
     /**
      * {@inheritdoc}
-     * @return Material[]|array
+     * @return Person[]|array
      */
     public function all($db = null)
     {
@@ -25,7 +25,7 @@ class MaterialQuery extends \yii\db\ActiveQuery
 
     /**
      * {@inheritdoc}
-     * @return Material|array|null
+     * @return Person|array|null
      */
     public function one($db = null)
     {

@@ -7,7 +7,7 @@ use yii\base\Model;
 /**
  * Signup form
  */
-class LocalSignupForm extends Model
+class PersonRegister extends Model
 {
     public $username;
     public $password;

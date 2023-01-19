@@ -83,6 +83,8 @@ class Person extends \yii\db\ActiveRecord
         unset($fields['wx_openid']);
         unset($fields['updated_at']);
 
+        $fields['avatar'] = function () {return $this->avatar;};
+        $fields['roles'] = function () {return $this->roles;};
         return $fields;
     }
     /**
@@ -106,10 +108,7 @@ class Person extends \yii\db\ActiveRecord
             'nickname' => 'Nickname',
         ];
     }
-    public function extraFields()
-    {
-        return ['avatar', 'roles'];
-    }
+
     public function getAvatar()
     {
 
@@ -124,8 +123,7 @@ class Person extends \yii\db\ActiveRecord
     {
         $manager = Configs::authManager();
         $assignments = $manager->getAssignments($this->id);
-
-        return array_values($assignments);
+        return array_values(array_map(function ($value) {return $value->roleName;}, $assignments));
     }
 
     /**
