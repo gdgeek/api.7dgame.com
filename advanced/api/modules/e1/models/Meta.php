@@ -88,7 +88,6 @@ class Meta extends \yii\db\ActiveRecord
         // unset($fields['updater_id']);
         unset($fields['updated_at']);
         unset($fields['created_at']);
-        unset($fields['verse_id']);
         unset($fields['image_id']);
         unset($fields['info']);
 

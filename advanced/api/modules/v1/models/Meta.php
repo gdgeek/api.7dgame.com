@@ -87,7 +87,6 @@ class Meta extends \yii\db\ActiveRecord
         unset($fields['created_at']);
         unset($fields['image_id']);
         unset($fields['info']);
-        unset($fields['verse_id']);
 
         $fields['share'] = function () {return $this->share;};
         return $fields;
