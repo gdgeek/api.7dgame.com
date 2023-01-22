@@ -23,6 +23,12 @@ RUN docker-php-ext-install -j$(nproc) mysqli pdo pdo_mysql
 RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
 
 COPY . /var/www/html
+RUN chmod -R 777 /var/www/html/advanced/backend/runtime
+RUN chmod -R 777 /var/www/html/advanced/backend/web/assets
+RUN chmod -R 777 /var/www/html/advanced/console/runtime
+RUN chmod -R 777 /var/www/html/advanced/api/runtime
+RUN chmod -R 777 /var/www/html/advanced/api/web/assets
+RUN chmod -R 755 /var/www/html/advanced/yii
 
 # Copy HTTP server config
 COPY 000-default.conf /etc/apache2/sites-available/
