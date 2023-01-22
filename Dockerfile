@@ -21,7 +21,8 @@ RUN apt-get update && apt-get install -y \
 RUN docker-php-ext-install -j$(nproc) mysqli pdo pdo_mysql
 
 RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
-# WORKDIR /var/www/html/advanced/
+
 COPY . /var/www/html
+
 # Copy HTTP server config
 COPY 000-default.conf /etc/apache2/sites-available/
