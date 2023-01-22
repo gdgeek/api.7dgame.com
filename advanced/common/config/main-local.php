@@ -6,7 +6,7 @@ return [
         ],
         'db' => [
             'class' => 'yii\db\Connection',
-            'dsn' => 'mysql:host=mrppdb;dbname=yii2advanced',
+            'dsn' => 'mysql:host=mrpp-db;dbname=yii2advanced',
             'username' => 'root',
             'password' => getenv('MYSQL_ROOT_PASSWORD'),
             'charset' => 'utf8',
