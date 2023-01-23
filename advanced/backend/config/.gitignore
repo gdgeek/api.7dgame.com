@@ -1,4 +1,6 @@
 codeception-local.php
 test-local.php
 certs
+main-local.php
+params-local.php
 

@@ -22,13 +22,26 @@ RUN docker-php-ext-install -j$(nproc) mysqli pdo pdo_mysql
 
 RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
 
-COPY . /var/www/html
+COPY ./advanced/ /var/www/html/advanced
 RUN chmod -R 777 /var/www/html/advanced/backend/runtime
 RUN chmod -R 777 /var/www/html/advanced/backend/web/assets
 RUN chmod -R 777 /var/www/html/advanced/console/runtime
 RUN chmod -R 777 /var/www/html/advanced/api/runtime
 RUN chmod -R 777 /var/www/html/advanced/api/web/assets
-RUN chmod -R 755 /var/www/html/advanced/yii
+
+COPY files/api/config/main-local.php /var/www/html/advanced/api/config/
+COPY files/api/config/params-local.php /var/www/html/advanced/api/config/
+COPY files/api/web/index.php /var/www/html/advanced/api/web/
+COPY files/api/web/robots.txt /var/www/html/advanced/api/web/
+COPY files/common/config/main-local.php /var/www/html/advanced/common/config/
+COPY files/common/config/params-local.php /var/www/html/advanced/common/config/
+COPY files/console/config/main-local.php /var/www/html/advanced/console/config/
+COPY files/console/config/params-local.php /var/www/html/advanced/console/config/
+COPY files/backend/config/main-local.php /var/www/html/advanced/backend/config/
+COPY files/backend/config/params-local.php /var/www/html/advanced/backend/config/
+COPY files/backend/web/index.php /var/www/html/advanced/backend/web/
+COPY files/backend/web/robots.txt /var/www/html/advanced/backend/web/
+# RUN chmod -R 755 /var/www/html/advanced/yii
 
 # Copy HTTP server config
 COPY 000-default.conf /etc/apache2/sites-available/
