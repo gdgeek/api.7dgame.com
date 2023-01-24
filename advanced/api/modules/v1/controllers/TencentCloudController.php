@@ -52,7 +52,7 @@ class TencentCloudController extends ActiveController
     public function actionToken($bucket, $region = 'ap-nanjing')
     {
 
-        $cred = new Credential(Yii::$app->secret->secretId, Yii::$app->secret->secretKey);
+        $cred = new Credential(Yii::$app->secret->id, Yii::$app->secret->key);
 
         // 实例化一个http选项，可选的，没有特殊需求可以跳过
         $httpProfile = new HttpProfile();
