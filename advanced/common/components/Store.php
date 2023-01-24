@@ -24,26 +24,20 @@ class Store extends BaseObject
 
     public $secretId;
     public $secretKey;
+
     public $store;
 
-    public function tempKeys()
+    public function tempKeys($bucket, $region)
     {
-        return Store::GetTempKeys($this->config());
-    }
-    public function actionStore()
-    {
-        $store = \Yii::$app->store;
-        return $store->store;
+        return Store::GetTempKeys($this->config($bucket, $region));
     }
     public function officialAccount()
     {
         $config = [
             'secretId' => $this->secretId,
             'secretKey' => $this->secretKey,
-            // 指定 API 调用返回结果的类型：array(default)/collection/object/raw/自定义类名
-            'bucket' => $this->bucket,
-            'region' => $this->region,
-            //...
+            'store' => $this->store,
+
         ];
 
         return Factory::officialAccount($config);
@@ -61,7 +55,7 @@ class Store extends BaseObject
 
     }
 
-    public function config()
+    public function config($bucket, $region)
     {
 
         return [
@@ -70,8 +64,8 @@ class Store extends BaseObject
             'proxy' => '',
             'secretId' => $this->secretId, //'AKIDypSO5VYrmVzEF1jiev0pMhmbFsMbHaMt',
             'secretKey' => $this->secretKey, //'QecLpjOpiK8wYbO3SbV8yc8PQCk36xYx',
-            'bucket' => $this->bucket, //'mrpp-1257979353',
-            'region' => $this->region, //'ap-chengdu',
+            'bucket' => $bucket, //'mrpp-1257979353',
+            'region' => $region, //'ap-chengdu',
             'durationSeconds' => 1800,
             'allowPrefix' => '*',
             'allowActions' => [
