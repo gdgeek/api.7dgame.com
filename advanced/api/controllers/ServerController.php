@@ -62,6 +62,12 @@ class ServerController extends \yii\rest\Controller
         $store = Yii::$app->store;
         return $store->tempKeys();
     }
+
+    public function actionStore()
+    {
+        $store = \Yii::$app->store;
+        return $store->store;
+    }
     public function actionUser()
     {
         $user = new \stdClass();

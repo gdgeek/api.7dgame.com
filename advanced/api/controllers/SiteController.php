@@ -93,11 +93,7 @@ class SiteController extends \yii\rest\Controller
 
         return ['qrcode' => $url, 'token' => $token];
     }
-    public function actionStore()
-    {
-        $store = \Yii::$app->store;
-        return ['raw' => $store['raw'], 'store' => $store['store'], 'release' => $store['release']];
-    }
+
     /**
      * Verify email address
      *

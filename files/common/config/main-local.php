@@ -5,17 +5,19 @@ return [
             'class' => \common\components\Store::class,
             'secretId' => getenv('STORE_SECRET_ID'),
             'secretKey' => getenv('STORE_SECRET_KEY'),
-            'raw' => [
-                'bucket' => getenv('COS_RAW_BUKET'),
-                'region' => getenv('COS_RAW_REGION'),
-            ],
-            'release' => [
-                'bucket' => getenv('COS_RELEASE_BUKET'),
-                'region' => getenv('COS_RELEASE_REGION'),
-            ],
             'store' => [
-                'bucket' => getenv('COS_STORE_BUKET'),
-                'region' => getenv('COS_STORE_REGION'),
+                'raw' => [
+                    'bucket' => getenv('COS_RAW_BUKET'),
+                    'region' => getenv('COS_RAW_REGION'),
+                ],
+                'release' => [
+                    'bucket' => getenv('COS_RELEASE_BUKET'),
+                    'region' => getenv('COS_RELEASE_REGION'),
+                ],
+                'store' => [
+                    'bucket' => getenv('COS_STORE_BUKET'),
+                    'region' => getenv('COS_STORE_REGION'),
+                ],
             ],
         ],
         'db' => [
