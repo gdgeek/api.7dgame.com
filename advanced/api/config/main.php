@@ -106,6 +106,7 @@ return [
                         'GET binded-email' => 'binded-email',
                         'GET param' => 'param',
                         'GET information' => 'information',
+                        'GET store' => 'store',
                         'POST resend-verification-email' => 'resend-verification-email',
                         'OPTIONS resend-verification-email' => 'resend-verification-email',
                         'POST request-password-reset' => 'request-password-reset',
