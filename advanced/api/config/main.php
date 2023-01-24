@@ -106,7 +106,6 @@ return [
                         'GET binded-email' => 'binded-email',
                         'GET param' => 'param',
                         'GET information' => 'information',
-                        'GET store' => 'store',
                         'POST resend-verification-email' => 'resend-verification-email',
                         'OPTIONS resend-verification-email' => 'resend-verification-email',
                         'POST request-password-reset' => 'request-password-reset',
@@ -121,6 +120,7 @@ return [
                     'extraPatterns' => [
                         'GET user' => 'user',
                         'GET sts' => 'sts',
+                        'GET store' => 'store',
                         'GET test' => 'test',
                         'GET token' => 'token',
                         'GET logout' => 'logout',
