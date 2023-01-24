@@ -24,12 +24,16 @@ class Store extends BaseObject
 
     public $secretId;
     public $secretKey;
-    public $bucket;
-    public $region;
+    public $store;
 
     public function tempKeys()
     {
         return Store::GetTempKeys($this->config());
+    }
+    public function actionStore()
+    {
+        $store = \Yii::$app->store;
+        return $store->store;
     }
     public function officialAccount()
     {
