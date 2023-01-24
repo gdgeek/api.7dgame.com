@@ -69,6 +69,7 @@ return [
                     'controller' => 'v1/tencent-cloud',
                     'extraPatterns' => [
                         'GET token' => 'token',
+                        'GET store' => 'store',
                     ],
                 ],
                 [
@@ -119,8 +120,6 @@ return [
                     'controller' => 'server',
                     'extraPatterns' => [
                         'GET user' => 'user',
-                        'GET sts' => 'sts',
-                        'GET store' => 'store',
                         'GET test' => 'test',
                         'GET token' => 'token',
                         'GET logout' => 'logout',

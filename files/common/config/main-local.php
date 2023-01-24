@@ -1,10 +1,10 @@
 <?php
 return [
     'components' => [
-        'store' => [
-            'class' => \common\components\Store::class,
-            'secretId' => getenv('STORE_SECRET_ID'),
-            'secretKey' => getenv('STORE_SECRET_KEY'),
+        'secret' => [
+            'class' => \common\components\Secret::class,
+            'id' => getenv('SECRET_ID'),
+            'key' => getenv('SECRET_KEY'),
             'store' => [
                 'raw' => [
                     'bucket' => getenv('COS_RAW_BUKET'),
