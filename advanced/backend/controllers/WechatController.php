@@ -7,6 +7,7 @@ use api\modules\v1\models\Trade;
 use api\modules\v1\models\User;
 use EasyWeChat\OfficialAccount\Application;
 use yii\web\Controller;
+use \Symfony\Component\HttpClient\Exception\ClientException;
 
 /**
  * MethodController implements the CRUD actions for Method model.
@@ -99,7 +100,7 @@ class WechatController extends Controller
         $trade = $order->trade;
         try {
             $result = $trade->placeOrder($order->user->wx_openid, $time_expire, $uuid);
-        } catch (\Symfony\Component\HttpClient\Exception\ClientException$e) {
+        } catch (ClientException $e) {
 
             return $this->render('error', ['exception' => $e, 'parameter' => $parameter]);
 
