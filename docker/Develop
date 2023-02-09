@@ -26,19 +26,5 @@ WORKDIR /var/www/html/advanced/
 
 
 
-
-COPY files/api/config/main-local.php /var/www/html/advanced/api/config/
-COPY files/api/config/params-local.php /var/www/html/advanced/api/config/
-COPY files/api/web/index.php /var/www/html/advanced/api/web/
-COPY files/api/web/robots.txt /var/www/html/advanced/api/web/
-COPY files/common/config/main-local.php /var/www/html/advanced/common/config/
-COPY files/common/config/params-local.php /var/www/html/advanced/common/config/
-COPY files/console/config/main-local.php /var/www/html/advanced/console/config/
-COPY files/console/config/params-local.php /var/www/html/advanced/console/config/
-COPY files/backend/config/main-local.php /var/www/html/advanced/backend/config/
-COPY files/backend/config/params-local.php /var/www/html/advanced/backend/config/
-COPY files/backend/web/index.php /var/www/html/advanced/backend/web/
-COPY files/backend/web/robots.txt /var/www/html/advanced/backend/web/
-
 # Copy HTTP server config
 COPY 000-default.conf /etc/apache2/sites-available/
