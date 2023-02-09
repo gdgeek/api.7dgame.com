@@ -25,6 +25,7 @@ class VerseRule extends Rule
     private function getVerseIdMetaEvent($params)
     {
         $post = \Yii::$app->request->post();
+
         if (isset($post['verse_id'])) {
             return $post['verse_id'];
         }
@@ -53,8 +54,12 @@ class VerseRule extends Rule
             }
         }
         if ($controller == 'verse-share') {
+
             if ($request->isGet) {
                 return $this->getId($params, 'verse_id');
+            }
+            if ($request->isPost) {
+                return $this->getId($post, 'verse_id');
             }
         }
 
@@ -223,6 +228,7 @@ class VerseRule extends Rule
     }
     public function execute($user, $item, $params)
     {
+
         $id = $this->getVerseId($params);
 
         $verse = Verse::findOne($id);

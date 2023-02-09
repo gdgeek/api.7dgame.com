@@ -11,7 +11,6 @@ use Yii;
 use yii\base\Exception;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
-use yii\web\BadRequestHttpException;
 
 class VerseShareController extends ActiveController
 {
@@ -21,12 +20,7 @@ class VerseShareController extends ActiveController
         $behaviors = parent::behaviors();
 
         // unset($behaviors['authenticator']);
-        $behaviors['authenticator'] = [
-            'class' => CompositeAuth::class,
-            'authMethods' => [
-                JwtHttpBearerAuth::class,
-            ],
-        ];
+
         $auth = $behaviors['authenticator'];
         // add CORS filter
         $behaviors['corsFilter'] = [
@@ -46,10 +40,13 @@ class VerseShareController extends ActiveController
             ],
         ];
 
-        // re-add authentication filter
-        $behaviors['authenticator'] = $auth;
-        // avoid authentication on CORS-pre-flight requests (HTTP OPTIONS method)
-        $behaviors['authenticator']['except'] = ['options'];
+        $behaviors['authenticator'] = [
+            'class' => CompositeAuth::class,
+            'authMethods' => [
+                JwtHttpBearerAuth::class,
+            ],
+            'except' => ['options'],
+        ];
 
         $behaviors['access'] = [
             'class' => AccessControl::class,
@@ -62,27 +59,28 @@ class VerseShareController extends ActiveController
         $actions = parent::actions();
         unset($actions['create']);
         unset($actions['index']);
+        //unset($actions['delete']);
 
         return $actions;
     }
+/*
+public function actionRemove($user_id, $verse_id)
+{
 
-    public function actionRemove($user_id, $verse_id)
-    {
+$model = null;
+if (isset($verse_id)) {
+$model = VerseShare::findOne(['verse_id' => $verse_id, 'user_id' => $user_id]);
+}
 
-        $model = null;
-        if (isset($verse_id)) {
-            $model = VerseShare::findOne(['verse_id' => $verse_id, 'user_id' => $user_id]);
-        }
+if ($model == null) {
+throw new BadRequestHttpException('无效id');
+}
+$id = $model->id;
+$model->delete();
+return $id;
 
-        if ($model == null) {
-            throw new BadRequestHttpException('无效id');
-        }
-        $id = $model->id;
-        $model->delete();
-        return $id;
-
-    }
-
+}
+ */
     public function actionIndex()
     {
         $searchModel = new VerseSearch();
@@ -129,8 +127,7 @@ class VerseShareController extends ActiveController
             }
         } else {
             throw new Exception("缺少数据", 400);
-        }
+        }return 0;
 
-        return 0;
     }
 }
