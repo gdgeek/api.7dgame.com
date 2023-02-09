@@ -22,7 +22,7 @@ RUN docker-php-ext-install -j$(nproc) mysqli pdo pdo_mysql
 
 RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
 
-COPY ../advanced/ /var/www/html/advanced
+COPY ./advanced/ /var/www/html/advanced
 
 RUN chmod -R 777 /var/www/html/advanced/backend/runtime
 RUN chmod -R 777 /var/www/html/advanced/backend/web/assets
