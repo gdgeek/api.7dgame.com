@@ -33,6 +33,7 @@ use yii\db\Expression;
  * @property MetaRete[] $metaRetes
  */
 class Meta extends \yii\db\ActiveRecord
+
 {
 
     public function behaviors()
