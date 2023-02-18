@@ -28,18 +28,26 @@ class Meta2Resources
         switch (strtolower($node->type)) {
 
             case 'polygen':
-                $resource = $node->parameters->polygen;
+                if (isset($node->parameters->polygen)) {
+                    $resource = $node->parameters->polygen;
+                }
+
                 break;
             case 'picture':
-                $resource = $node->parameters->picture;
+                if (isset($node->parameters->picture)) {
+                    $resource = $node->parameters->picture;
+                }
                 break;
             case 'video':
-                $resource = $node->parameters->video;
+                if (isset($node->parameters->video)) {
+                    $resource = $node->parameters->video;
+                }
                 break;
             case 'sound':
-                $resource = $node->parameters->sound;
+                if (isset($node->parameters->sound)) {
+                    $resource = $node->parameters->sound;
+                }
                 break;
-
         }
 
         if ($resource != null && !in_array($resource, $resources)) {
