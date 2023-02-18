@@ -32,6 +32,7 @@ use yii\db\Expression;
 
  */
 class Verse extends \yii\db\ActiveRecord
+
 {
 
     public function behaviors()
@@ -218,7 +219,7 @@ class Verse extends \yii\db\ActiveRecord
     public function extraFields()
     {
 
-        return ['metas', 'verseOpen', 'message', 'image',
+        return ['metas', 'metaKnights', 'verseOpen', 'message', 'image',
             'author' => function () {
                 return $this->author;
             },
