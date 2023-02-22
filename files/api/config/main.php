@@ -152,7 +152,6 @@ return [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => [
                         'v1/meta',
-                        //'v1/editor-verse',
                         'v1/verse-cyber',
                         'v1/message',
                         'v1/reply',
@@ -175,7 +174,29 @@ return [
                     'controller' => 'v1/verse-share',
                     'extraPatterns' => [
                         'GET list' => 'list',
-                        //    'POST remove' => 'remove',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/meta-resource',
+                    'extraPatterns' => [
+                        'GET resources' => 'resources',
+
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/verse-space',
+                    'extraPatterns' => [
+                        'GET spaces' => 'spaces',
+
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/verse-knight',
+                    'extraPatterns' => [
+                        'GET knights' => 'knights',
                     ],
                 ],
                 [

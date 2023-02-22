@@ -30,6 +30,7 @@ use yii\db\Expression;
  * @property User $updater
  */
 class Knight extends \yii\db\ActiveRecord
+
 {
 
     public function behaviors()
@@ -79,6 +80,7 @@ class Knight extends \yii\db\ActiveRecord
     {
         return [
             'image',
+            'verseKnights',
         ];
     }
     /**
@@ -142,5 +144,15 @@ class Knight extends \yii\db\ActiveRecord
     public function getUpdater()
     {
         return $this->hasOne(User::className(), ['id' => 'updater_id']);
+    }
+
+    /**
+     * Gets query for [[VerseKnights]].
+     *
+     * @return \yii\db\ActiveQuery|VerseKnightQuery
+     */
+    public function getVerseKnights()
+    {
+        return $this->hasMany(VerseKnight::className(), ['knight_id' => 'id']);
     }
 }

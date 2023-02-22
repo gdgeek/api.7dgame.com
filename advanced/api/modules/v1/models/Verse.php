@@ -6,6 +6,7 @@ use api\modules\v1\models\File;
 use api\modules\v1\models\Knight;
 use api\modules\v1\models\Space;
 use api\modules\v1\models\User;
+use api\modules\v1\models\VerseShare;
 use Yii;
 use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
@@ -219,21 +220,19 @@ class Verse extends \yii\db\ActiveRecord
     public function extraFields()
     {
 
-        return ['metas', 'metaKnights', 'verseOpen', 'message', 'image',
-            'author' => function () {
-                return $this->author;
-            },
-            'space' => function () {
-                return $this->space;
-            },
-            'datas' => function () {
-                return $this->datas;
-            },
-            'resources' => function () {
-                return $this->resources;
-            },
-
+        return [
+            'metas',
+            'metaKnights',
+            'verseOpen',
+            'message',
+            'image',
+            'author',
+            'space',
+            'datas',
+            'resources',
+            'verseShare',
         ];
+
     }
     /**
      * Gets query for [[VerseEvents]].
@@ -272,12 +271,41 @@ class Verse extends \yii\db\ActiveRecord
     {
         return $this->hasOne(VerseOpen::className(), ['verse_id' => 'id']);
     }
+    public function editable($userid)
+    {
+        if ($userid == $this->author_id) {
+            return true;
+        }
+        $share = $this->verseShare;
+        if ($share && $share->editable) {
+            return true;
+        }
+        return false;
+    }
 
+    public function viewable($userid)
+    {
+        if ($userid == $this->author_id) {
+            return true;
+        }
+        $share = $this->verseShare;
+        if ($share) {
+            return true;
+        }
+
+        $open = $this->verseOpen;
+        if ($open) {
+            return true;
+        }
+        return false;
+    }
     public function getVerseShare()
     {
 
-        $share = $this->hasOne(VerseShare::className(), ['verse_id' => $this->id, 'user_id' => Yii::$app->user->id]);
+        // verse_id
+        // $share = $this->hasOne(VerseShare::className(), ['verse_id' => 123, 'user_id' => Yii::$app->user->id]);
 
+        $share = VerseShare::findOne(['verse_id' => $this->id, 'user_id' => Yii::$app->user->id]);
         return $share;
     }
     public function getMessage()
@@ -326,10 +354,7 @@ class Verse extends \yii\db\ActiveRecord
 
     public function getShare()
     {
-
-        $share = VerseShare::findOne(['verse_id' => $this->id, 'user_id' => Yii::$app->user->id]);
-
-        return $share != null;
+        return $this->verseShare != null;
     }
 
 }

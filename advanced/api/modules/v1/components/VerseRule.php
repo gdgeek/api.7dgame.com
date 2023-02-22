@@ -53,6 +53,13 @@ class VerseRule extends Rule
                 return $this->getIdFromMetaId($post, 'meta_id');
             }
         }
+        if ($controller == 'verse-space') {
+
+            if ($request->isGet) {
+
+                return $this->getId($params, 'verse_id');
+            }
+        }
         if ($controller == 'verse-share') {
 
             if ($request->isGet) {
@@ -134,8 +141,12 @@ class VerseRule extends Rule
                 return $this->getIdFromMetaId($params, 'id');
             }
         }
+        if ($controller == 'verse') {
+            return $this->getId($params, 'id');
+        }
 
-        return $this->getId($params, 'id');
+        throw new BadRequestHttpException($controller);
+
     }
     private function getIdFromCyberId($array, $key)
     {
@@ -238,13 +249,12 @@ class VerseRule extends Rule
 
         $userid = Yii::$app->user->identity->id;
 
-        if ($userid == $verse->author_id || $verse->share != null) {
-
+        if ($verse->editable($userid)) {
             return true;
         }
 
         $request = Yii::$app->request;
-        if ($request->isGet && $verse->verseOpen != null) {
+        if ($request->isGet && $verse->viewable($userid)) {
             return true;
         }
 

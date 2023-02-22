@@ -1,15 +1,19 @@
 <?php
 namespace api\modules\v1\controllers;
 
+use api\modules\v1\models\ResourceSearch;
 use mdm\admin\components\AccessControl;
 use sizeg\jwt\JwtHttpBearerAuth;
+use Yii;
 use yii\filters\auth\CompositeAuth;
+use yii\helpers\HtmlPurifier;
 use yii\rest\ActiveController;
+use yii\web\BadRequestHttpException;
 
-class MetaKnightController extends ActiveController
+class MetaResourceController extends ActiveController
 {
 
-    public $modelClass = 'api\modules\v1\models\MetaKnight';
+    public $modelClass = 'api\modules\v1\models\MetaResource';
     public function behaviors()
     {
         $behaviors = parent::behaviors();
@@ -45,6 +49,32 @@ class MetaKnightController extends ActiveController
             'class' => AccessControl::class,
         ];
         return $behaviors;
+    }
+
+    public function actions()
+    {
+        $actions = parent::actions();
+        unset($actions['index']);
+        return $actions;
+    }
+
+    public function actionResources()
+    {
+
+        if (!isset(Yii::$app->request->queryParams['type'])) {
+            throw new BadRequestHttpException('缺乏 type 数据');
+        }
+
+        if (!isset(Yii::$app->request->queryParams['meta_id'])) {
+            throw new BadRequestHttpException('缺乏 meta_id 数据');
+        }
+        $searchModel = new ResourceSearch();
+        $dataProvider = $searchModel->search(\Yii::$app->request->queryParams);
+        $type = HtmlPurifier::process(Yii::$app->request->queryParams['type']);
+        $meta_id = HtmlPurifier::process(Yii::$app->request->queryParams['meta_id']);
+        $query = $dataProvider->query;
+        $query->select('resource.*')->leftJoin('meta_resource', '`meta_resource`.`resource_id` = `resource`.`id`')->andWhere(['meta_resource.meta_id' => $meta_id, 'resource.type' => $type]);
+        return $dataProvider;
     }
 
 }

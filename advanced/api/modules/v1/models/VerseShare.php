@@ -16,6 +16,7 @@ use Yii;
  * @property Verse $verse
  */
 class VerseShare extends \yii\db\ActiveRecord
+
 {
     /**
      * {@inheritdoc}
@@ -32,7 +33,7 @@ class VerseShare extends \yii\db\ActiveRecord
     {
         return [
             [['verse_id', 'user_id'], 'required'],
-            [['verse_id', 'user_id'], 'integer'],
+            [['verse_id', 'user_id', 'editable'], 'integer'],
             [['info'], 'string'],
             [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['user_id' => 'id']],
             [['verse_id'], 'exist', 'skipOnError' => true, 'targetClass' => Verse::className(), 'targetAttribute' => ['verse_id' => 'id']],
@@ -50,15 +51,14 @@ class VerseShare extends \yii\db\ActiveRecord
             'verse_id' => 'Verse ID',
             'user_id' => 'User ID',
             'info' => 'Info',
+            'editable' => 'Editable',
         ];
     }
 
     public function fields()
     {
         $fields = parent::fields();
-        //unset($fields['verse_id']);
         unset($fields['user_id']);
-        //  unset($fields['info']);
         $fields['user'] = function () {
             return $this->user;
         };
