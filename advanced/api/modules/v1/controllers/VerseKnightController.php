@@ -60,13 +60,12 @@ class VerseKnightController extends ActiveController
 
     public function actionKnights()
     {
-
-        if (!isset(Yii::$app->request->queryParams['knight_id'])) {
-            throw new BadRequestHttpException('缺乏 knight_id 数据');
+        if (!isset(Yii::$app->request->queryParams['verse_id'])) {
+            throw new BadRequestHttpException('缺乏 verse_id 数据');
         }
         $searchModel = new KnightSearch();
         $dataProvider = $searchModel->search(\Yii::$app->request->queryParams);
-        $knight_id = HtmlPurifier::process(Yii::$app->request->queryParams['knight_id']);
+        $verse_id = HtmlPurifier::process(Yii::$app->request->queryParams['verse_id']);
         $query = $dataProvider->query;
         $query->select('knight.*')->leftJoin('verse_knight', '`verse_knight`.`knight_id` = `knight`.`id`')->andWhere(['verse_knight.verse_id' => $verse_id]);
         return $dataProvider;
