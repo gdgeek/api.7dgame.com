@@ -57,13 +57,13 @@ class MetaEventController extends ActiveController
         return $actions;
     }
 
-    public function actionIndex($metaId)
+    public function actionIndex($meta_id)
     {
 
         $searchModel = new MetaEventSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
-        $dataProvider->query->andWhere(['meta_id' => $metaId]);
+        $dataProvider->query->andWhere(['meta_id' => $meta_id]);
 
         return $dataProvider;
     }

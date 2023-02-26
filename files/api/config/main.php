@@ -173,7 +173,15 @@ return [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/verse-share',
                     'extraPatterns' => [
-                        'GET list' => 'list',
+                        'GET verses' => 'verses',
+                        'PUT put' => 'put',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/verse-open',
+                    'extraPatterns' => [
+                        'GET verses' => 'verses',
                     ],
                 ],
                 [

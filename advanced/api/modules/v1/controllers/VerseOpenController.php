@@ -52,18 +52,11 @@ class VerseOpenController extends ActiveController
     public function actions()
     {
         $actions = parent::actions();
-        unset($actions['index']);
+        // unset($actions['index']);
         return $actions;
     }
-/*
-public function actionIndex()
-{
-$searchModel = new VerseOpenSearch();
-$dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-return $dataProvider;
-}
- */
-    public function actionIndex()
+
+    public function actionVerses()
     {
         $searchModel = new VerseSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);

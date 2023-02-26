@@ -57,13 +57,13 @@ class VerseEventController extends ActiveController
         return $actions;
     }
 
-    public function actionIndex($verseId)
+    public function actionIndex($verse_id)
     {
 
         $searchModel = new VerseEventSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
-        $dataProvider->query->andWhere(['verse_id' => $verseId]);
+        $dataProvider->query->andWhere(['verse_id' => $verse_id]);
 
         return $dataProvider;
     }

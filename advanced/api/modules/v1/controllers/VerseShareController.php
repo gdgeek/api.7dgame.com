@@ -19,9 +19,6 @@ class VerseShareController extends ActiveController
     {
         $behaviors = parent::behaviors();
 
-        // unset($behaviors['authenticator']);
-
-        $auth = $behaviors['authenticator'];
         // add CORS filter
         $behaviors['corsFilter'] = [
             'class' => \yii\filters\Cors::class,
@@ -46,8 +43,8 @@ class VerseShareController extends ActiveController
                 JwtHttpBearerAuth::class,
             ],
             'except' => ['options'],
-        ];
 
+        ];
         $behaviors['access'] = [
             'class' => AccessControl::class,
         ];
@@ -61,8 +58,11 @@ class VerseShareController extends ActiveController
         unset($actions['index']);
         return $actions;
     }
-
-    public function actionIndex()
+    public function actionPut()
+    {
+        return 123;
+    }
+    public function actionVerses()
     {
         $searchModel = new VerseSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
@@ -70,7 +70,7 @@ class VerseShareController extends ActiveController
         $query->select('verse.*')->leftJoin('verse_share', '`verse_share`.`verse_id` = `verse`.`id`')->andWhere(['verse_share.user_id' => Yii::$app->user->id]);
         return $dataProvider;
     }
-    public function actionList($verse_id)
+    public function actionIndex($verse_id)
     {
 
         $searchModel = new VerseShareSearch();
