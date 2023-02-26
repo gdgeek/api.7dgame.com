@@ -85,7 +85,10 @@ class Verse extends \yii\db\ActiveRecord
         unset($fields['image_id']);
         unset($fields['updated_at']);
 
-        $fields['share'] = function () {return $this->share;};
+        // $fields['share'] = function () {return $this->share;};
+        $fields['editable'] = function () {return $this->editable();};
+        $fields['viewable'] = function () {return $this->viewable();};
+
         return $fields;
     }
     /**
@@ -271,8 +274,10 @@ class Verse extends \yii\db\ActiveRecord
     {
         return $this->hasOne(VerseOpen::className(), ['verse_id' => 'id']);
     }
-    public function editable($userid)
+    public function editable()
     {
+
+        $userid = Yii::$app->user->identity->id;
         if ($userid == $this->author_id) {
             return true;
         }
@@ -283,8 +288,9 @@ class Verse extends \yii\db\ActiveRecord
         return false;
     }
 
-    public function viewable($userid)
+    public function viewable()
     {
+        $userid = Yii::$app->user->identity->id;
         if ($userid == $this->author_id) {
             return true;
         }
@@ -351,10 +357,10 @@ class Verse extends \yii\db\ActiveRecord
     {
         return new VerseQuery(get_called_class());
     }
-
-    public function getShare()
-    {
-        return $this->verseShare != null;
-    }
+/*
+public function getShare()
+{
+return $this->verseShare != null;
+}*/
 
 }

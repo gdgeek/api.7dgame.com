@@ -249,12 +249,12 @@ class VerseRule extends Rule
 
         $userid = Yii::$app->user->identity->id;
 
-        if ($verse->editable($userid)) {
+        if ($verse->editable()) {
             return true;
         }
 
         $request = Yii::$app->request;
-        if ($request->isGet && $verse->viewable($userid)) {
+        if ($request->isGet && $verse->viewable()) {
             return true;
         }
 

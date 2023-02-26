@@ -29,7 +29,7 @@ class BindingRule extends Rule
             if ($request->isGet) {
                 if (isset($params['meta_id'])) {
                     $meta = Meta::findOne($params['meta_id']);
-                    if ($meta && $meta->verse->viewable($userid)) {
+                    if ($meta && $meta->verse->viewable()) {
                         return true;
                     }
                 }
@@ -41,7 +41,7 @@ class BindingRule extends Rule
 
                     $meta = Meta::findOne($post['meta_id']);
                     $resource = Resource::findOne($post['resource_id']);
-                    if ($meta && $meta->verse->editable($userid) && $resource && $resource->author_id == $userid) {
+                    if ($meta && $meta->verse->editable() && $resource && $resource->author_id == $userid) {
                         return true;
                     }
                 }
@@ -49,7 +49,7 @@ class BindingRule extends Rule
             if ($request->isDelete) {
                 if (isset($params['id'])) {
                     $mr = MetaResource::findOne($params['id']);
-                    if ($mr && $mr->meta->verse->editable($userid)) {
+                    if ($mr && $mr->meta->verse->editable()) {
                         return true;
                     }
                 }
@@ -60,7 +60,7 @@ class BindingRule extends Rule
             if ($request->isGet) {
                 if (isset($params['verse_id'])) {
                     $verse = Verse::findOne($params['verse_id']);
-                    if ($verse && $verse->viewable($userid)) {
+                    if ($verse && $verse->viewable()) {
                         return true;
                     }
                 }
@@ -72,7 +72,7 @@ class BindingRule extends Rule
 
                     $verse = Verse::findOne($post['verse_id']);
                     $space = Space::findOne($post['space_id']);
-                    if ($verse && $verse->editable($userid) && $space && $space->author_id == $userid) {
+                    if ($verse && $verse->editable() && $space && $space->author_id == $userid) {
                         return true;
                     }
                 }
@@ -80,7 +80,7 @@ class BindingRule extends Rule
             if ($request->isDelete) {
                 if (isset($params['id'])) {
                     $vs = VerseSpace::findOne($params['id']);
-                    if ($vs && $vs->verse->editable($userid)) {
+                    if ($vs && $vs->verse->editable()) {
                         return true;
                     }
                 }
@@ -91,7 +91,7 @@ class BindingRule extends Rule
             if ($request->isGet) {
                 if (isset($params['verse_id'])) {
                     $verse = Verse::findOne($params['verse_id']);
-                    if ($verse && $verse->viewable($userid)) {
+                    if ($verse && $verse->viewable()) {
                         return true;
                     }
                 }
@@ -103,7 +103,7 @@ class BindingRule extends Rule
 
                     $verse = Verse::findOne($post['verse_id']);
                     $knight = Knight::findOne($post['knight_id']);
-                    if ($verse && $verse->editable($userid) && $knight && $knight->author_id == $userid) {
+                    if ($verse && $verse->editable() && $knight && $knight->author_id == $userid) {
                         return true;
                     }
                 }
@@ -111,7 +111,7 @@ class BindingRule extends Rule
             if ($request->isDelete) {
                 if (isset($params['id'])) {
                     $vk = VerseKnight::findOne($params['id']);
-                    if ($vk && $vk->verse->editable($userid)) {
+                    if ($vk && $vk->verse->editable()) {
                         return true;
                     }
                 }

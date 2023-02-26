@@ -4,7 +4,6 @@ namespace api\modules\e1\models;
 
 use api\modules\v1\models\User;
 use api\modules\v1\models\VerseQuery;
-use api\modules\v1\models\VerseShare;
 use Yii;
 use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
@@ -31,6 +30,7 @@ use yii\db\Expression;
 
  */
 class Verse extends \yii\db\ActiveRecord
+
 {
 
     public function behaviors()
@@ -95,9 +95,10 @@ class Verse extends \yii\db\ActiveRecord
         $fields['resources'] = function () {
             return $this->resources;
         };
+        /*
         $fields['share'] = function () {
-            return $this->share;
-        };
+        return $this->share;
+        };*/
 
         return $fields;
     }
@@ -280,12 +281,13 @@ class Verse extends \yii\db\ActiveRecord
     {
         return $this->hasMany(VerseRete::className(), ['verse_id' => 'id']);
     }
-    public function getShare()
-    {
+    /*
+public function getShare()
+{
 
-        $share = VerseShare::findOne(['verse_id' => $this->id, 'user_id' => Yii::$app->user->id]);
+$share = VerseShare::findOne(['verse_id' => $this->id, 'user_id' => Yii::$app->user->id]);
 
-        return $share != null;
-    }
+return $share != null;
+}*/
 
 }

@@ -59,28 +59,9 @@ class VerseShareController extends ActiveController
         $actions = parent::actions();
         unset($actions['create']);
         unset($actions['index']);
-        //unset($actions['delete']);
-
         return $actions;
     }
-/*
-public function actionRemove($user_id, $verse_id)
-{
 
-$model = null;
-if (isset($verse_id)) {
-$model = VerseShare::findOne(['verse_id' => $verse_id, 'user_id' => $user_id]);
-}
-
-if ($model == null) {
-throw new BadRequestHttpException('无效id');
-}
-$id = $model->id;
-$model->delete();
-return $id;
-
-}
- */
     public function actionIndex()
     {
         $searchModel = new VerseSearch();
@@ -103,12 +84,13 @@ return $id;
     public function actionCreate()
     {
         $post = Yii::$app->request->post();
-        if (isset($post['username']) && isset($post['verse_id'])) {
+        if (isset($post['username']) && isset($post['verse_id']) && isset($post['editable'])) {
             $user = User::findByUsername($post['username']);
             if (isset($user)) {
                 $model = new VerseShare();
                 $model->user_id = $user->id;
                 $model->verse_id = $post['verse_id'];
+                $model->editable = $post['editable'];
                 if (isset($post['info'])) {
                     $model->info = $post['info'];
                 }

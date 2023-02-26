@@ -89,7 +89,9 @@ class Meta extends \yii\db\ActiveRecord
         unset($fields['image_id']);
         unset($fields['info']);
 
-        $fields['share'] = function () {return $this->share;};
+        //  $fields['share'] = function () {return $this->share;};
+        $fields['editable'] = function () {return $this->verse->editable();};
+        $fields['viewable'] = function () {return $this->verse->viewable();};
         return $fields;
     }
     /**
@@ -197,13 +199,14 @@ class Meta extends \yii\db\ActiveRecord
             'cyber',
         ];
     }
+    /*
     public function getShare()
     {
 
-        $share = VerseShare::findOne(['verse_id' => $this->verse_id, 'user_id' => Yii::$app->user->id]);
+    $share = VerseShare::findOne(['verse_id' => $this->verse_id, 'user_id' => Yii::$app->user->id]);
 
-        return $share != null;
-    }
+    return $share != null;
+    }*/
     /*
     public function getResourceIds()
     {
