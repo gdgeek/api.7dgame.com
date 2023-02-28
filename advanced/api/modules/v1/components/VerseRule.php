@@ -121,6 +121,8 @@ class VerseRule extends Rule
 
         if ($controller == 'meta-knight') {
 
+            //throw new BadRequestHttpException($controller . '$request->isGet');
+
             if ($request->isGet && isset($params['id'])) {
                 $knight = MetaKnight::findOne($params['id']);
                 if ($knight) {
@@ -167,6 +169,7 @@ class VerseRule extends Rule
             }
 
         }
+
         if ($controller == 'verse') {
 
             if (($request->isGet || $request->isPut || $request->isDelete) && isset($params['id'])) {

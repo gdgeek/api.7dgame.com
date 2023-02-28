@@ -3,7 +3,9 @@
 namespace api\modules\e1\models;
 
 use api\modules\v1\models\User;
+use api\modules\v1\models\VerseOpen;
 use api\modules\v1\models\VerseQuery;
+use api\modules\v1\models\VerseShare;
 use Yii;
 use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
@@ -95,12 +97,39 @@ class Verse extends \yii\db\ActiveRecord
         $fields['resources'] = function () {
             return $this->resources;
         };
-        /*
-        $fields['share'] = function () {
-        return $this->share;
-        };*/
 
         return $fields;
+    }
+    public function editable()
+    {
+
+        $userid = Yii::$app->user->identity->id;
+        if ($userid == $this->author_id) {
+            return true;
+        }
+        $share = $this->verseShare;
+        if ($share && $share->editable) {
+            return true;
+        }
+        return false;
+    }
+
+    public function viewable()
+    {
+        $userid = Yii::$app->user->identity->id;
+        if ($userid == $this->author_id) {
+            return true;
+        }
+        $share = $this->verseShare;
+        if ($share) {
+            return true;
+        }
+
+        $open = $this->verseOpen;
+        if ($open) {
+            return true;
+        }
+        return false;
     }
     /**
      * {@inheritdoc}
@@ -179,6 +208,11 @@ class Verse extends \yii\db\ActiveRecord
 
         return null;
 
+    }
+    public function getVerseShare()
+    {
+        $share = VerseShare::findOne(['verse_id' => $this->id, 'user_id' => Yii::$app->user->id]);
+        return $share;
     }
     public function getSpace()
     {

@@ -308,9 +308,6 @@ class Verse extends \yii\db\ActiveRecord
     public function getVerseShare()
     {
 
-        // verse_id
-        // $share = $this->hasOne(VerseShare::className(), ['verse_id' => 123, 'user_id' => Yii::$app->user->id]);
-
         $share = VerseShare::findOne(['verse_id' => $this->id, 'user_id' => Yii::$app->user->id]);
         return $share;
     }
