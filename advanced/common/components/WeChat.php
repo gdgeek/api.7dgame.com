@@ -2,7 +2,6 @@
 
 namespace common\components;
 
-use linslin\yii2\curl;
 use yii\base\Component;
 
 class WeChat extends Component
@@ -126,7 +125,7 @@ class WeChat extends Component
     }
     public function signature($jsapi_ticket, $timestamp, $url)
     {
-       // $timestamp = 1648512360;
+        // $timestamp = 1648512360;
         $noncestr = \Yii::$app->getSecurity()->generateRandomString(16);
         $option = [
             'noncestr' => $noncestr,
@@ -144,9 +143,9 @@ class WeChat extends Component
             }
         }
         $signature = sha1($string1); //$optionString;
-        
+
         $parameter = [
-            'string1'=> $string1,
+            'string1' => $string1,
             'appid' => $this->app_id,
             'signature' => $signature,
             'timestamp' => $timestamp,
@@ -159,13 +158,12 @@ class WeChat extends Component
 
 }
 
-
 /*
 {"string1":"jsapi_ticket=LIKLckvwlJT9cWIhEQTwfKFcpFdSS7xzXnMcYxBib_nKrAQ1duAAqXEjGpgX6RQbQev-r8HW39aWUNsO7tPZng&noncestr=BMkRsjUa0eJ5pgZA×tamp=1648517406&url=https%3A%2F%2Fadmin.t.mrpp.com%2Fwechat%2Fpay%3Fuuid%3Dcbf1e8ba-754e-30e4-884f-734780b32c8f",
-    "appid":"wx6f81800f15c9a88c",
-    "signature":"dbfacbe726dd83fbef0c7edba116f2260b05e634",
-    "timestamp":"1648517406",
-    "nonceStr":"BMkRsjUa0eJ5pgZA",
-    "jsapi_ticket":"LIKLckvwlJT9cWIhEQTwfKFcpFdSS7xzXnMcYxBib_nKrAQ1duAAqXEjGpgX6RQbQev-r8HW39aWUNsO7tPZng",
-    "url":"https%3A%2F%2Fadmin.t.mrpp.com%2Fwechat%2Fpay%3Fuuid%3Dcbf1e8ba-754e-30e4-884f-734780b32c8f"}
-    */
+"appid":"wx6f81800f15c9a88c",
+"signature":"dbfacbe726dd83fbef0c7edba116f2260b05e634",
+"timestamp":"1648517406",
+"nonceStr":"BMkRsjUa0eJ5pgZA",
+"jsapi_ticket":"LIKLckvwlJT9cWIhEQTwfKFcpFdSS7xzXnMcYxBib_nKrAQ1duAAqXEjGpgX6RQbQev-r8HW39aWUNsO7tPZng",
+"url":"https%3A%2F%2Fadmin.t.mrpp.com%2Fwechat%2Fpay%3Fuuid%3Dcbf1e8ba-754e-30e4-884f-734780b32c8f"}
+ */

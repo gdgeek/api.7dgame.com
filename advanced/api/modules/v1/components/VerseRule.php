@@ -26,19 +26,20 @@ class VerseRule extends Rule
         $controller = Yii::$app->controller->id;
 
         if ($controller == 'cyber') {
-            if ($request->isPut && isset($params['id'])) {{
+            if (($request->isPut || $request->isGet) && isset($params['id'])) {
                 $cyber = Cyber::findOne($params['id']);
                 if ($cyber) {
                     return $cyber->meta->verse;
                 }
             }
-                if ($request->isPost && isset($post['meta_id'])) {
-                    $meta = Meta::findOne($post['meta_id']);
-                    if ($meta) {
-                        return $meta->verse;
-                    }
+
+            if ($request->isPost && isset($post['meta_id'])) {
+                $meta = Meta::findOne($post['meta_id']);
+                if ($meta) {
+                    return $meta->verse;
                 }
             }
+
         }
         if ($controller == 'verse-space') {
 
@@ -123,7 +124,7 @@ class VerseRule extends Rule
 
             //throw new BadRequestHttpException($controller . '$request->isGet');
 
-            if ($request->isGet && isset($params['id'])) {
+            if (($request->isGet || $request->isDelete || $request->isPut) && isset($params['id'])) {
                 $knight = MetaKnight::findOne($params['id']);
                 if ($knight) {
                     return $knight->verse;
@@ -136,21 +137,6 @@ class VerseRule extends Rule
                 return $verse;
             }
 
-            if ($request->isDelete && isset($params['id'])) {
-
-                $knight = MetaKnight::findOne($params['id']);
-                if ($knight) {
-                    return $knight->verse;
-                }
-
-            }
-            if ($request->isPut && isset($params['id'])) {
-
-                $knight = MetaKnight::findOne($params['id']);
-                if ($knight) {
-                    return $knight->verse;
-                }
-            }
         }
         if ($controller == 'meta') {
 

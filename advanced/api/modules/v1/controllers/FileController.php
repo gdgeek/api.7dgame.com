@@ -3,20 +3,21 @@ namespace api\modules\v1\controllers;
 
 use mdm\admin\components\AccessControl;
 use sizeg\jwt\JwtHttpBearerAuth;
+use Yii;
+use yii\data\ActiveDataProvider;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
 
-class KnightController extends ActiveController
+class FileController extends ActiveController
 {
-
-    public $modelClass = 'api\modules\v1\models\Knight';
+    public $modelClass = 'api\modules\v1\models\File';
     public function behaviors()
     {
+
         $behaviors = parent::behaviors();
 
-        // add CORS filter
         $behaviors['corsFilter'] = [
-            'class' => \yii\filters\Cors::class,
+            'class' => \yii\filters\Cors::className(),
             'cors' => [
                 'Origin' => ['*'],
                 'Access-Control-Request-Method' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],
@@ -31,8 +32,9 @@ class KnightController extends ActiveController
                 ],
             ],
         ];
+
         $behaviors['authenticator'] = [
-            'class' => CompositeAuth::class,
+            'class' => CompositeAuth::className(),
             'authMethods' => [
                 JwtHttpBearerAuth::class,
             ],
@@ -44,4 +46,12 @@ class KnightController extends ActiveController
         return $behaviors;
     }
 
+    public function actionIndex()
+    {
+        $activeData = new ActiveDataProvider([
+            'query' => \common\models\Project::find()->where(['user_id' => Yii::$app->user->id]),
+            'pagination' => false,
+        ]);
+        return $activeData;
+    }
 }

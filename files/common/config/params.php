@@ -62,25 +62,13 @@ if ($aka) {
     $params['information']['aka'] = Html::encode($aka);
 }
 if ($local) {
-    $params['information']['local'] = ($local != 0);
+    $params['information']['local'] = true;
 }
 if ($ip) {
     $params['information']['ip'] = $ip;
 }
 if ($disk) {
     $params['information']['disk'] = true;
-}
-if ($api) {
-    $params['information']['api'] = Html::encode($api);
-} else {
-
-    $params['information']['api'] = Html::encode('https://api.mrpp.com');
-}
-if ($pub) {
-    $params['information']['pub'] = Html::encode($pub);
-} else {
-
-    $params['information']['pub'] = Html::encode('https://public.mrpp.com');
 }
 
 return $params;

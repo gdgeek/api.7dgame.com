@@ -132,9 +132,7 @@ return [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/upload',
                     'extraPatterns' => [
-                        'OPTIONS file' => 'file',
                         'POST file' => 'file',
-
                     ],
                 ],
                 [
@@ -146,12 +144,13 @@ return [
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',
-                    'controller' => ['project', 'file', 'user', 'resource'],
+                    'controller' => ['project', 'user', 'resource'],
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => [
                         'v1/meta',
+                        'v1/file',
                         'v1/verse-cyber',
                         'v1/message',
                         'v1/reply',
@@ -194,10 +193,16 @@ return [
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/test',
+                    'extraPatterns' => [
+                        'GET file' => 'file',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/verse-space',
                     'extraPatterns' => [
                         'GET spaces' => 'spaces',
-
                     ],
                 ],
                 [
@@ -241,6 +246,9 @@ return [
                         'GET information' => 'information',
                         'GET param' => 'param',
                         'GET ready' => 'ready',
+                        'GET init' => 'init',
+                        'OPTIONS init' => 'init',
+                        'POST init' => 'init',
                         'OPTIONS signup' => 'signup',
                         'POST signup' => 'signup',
                     ],

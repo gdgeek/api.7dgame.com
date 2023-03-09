@@ -3,18 +3,19 @@
 namespace common\components;
 
 class JwtValidationData extends \sizeg\jwt\JwtValidationData
+
 {
- 
+
     /**
      * @inheritdoc
      */
     public function init()
     {
-        $this->validationData->setIssuer('https://api.mrpp.com');
-        $this->validationData->setAudience('https://mrpp.com');
-        $this->validationData->setId('4f1g23a12aa');
 
-      		
+        $this->validationData->setIssuer(\Yii::$app->jwt_parameter->issuer);
+        $this->validationData->setAudience(\Yii::$app->jwt_parameter->audience);
+        $this->validationData->setId(\Yii::$app->jwt_parameter->id);
+
         parent::init();
     }
-}    
+}

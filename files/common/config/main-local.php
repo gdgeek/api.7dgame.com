@@ -49,6 +49,13 @@ return [
             'key' => getenv('JWT_KEY'),
             'jwtValidationData' => \common\components\JwtValidationData::class,
         ],
+
+        'jwt_parameter' => [
+            'class' => \common\components\JwtParameter::class,
+            'issuer' => getenv('JWT_ISSUER'),
+            'audience' => getenv('JWT_AUDIENCE'),
+            'id' => getenv('JWT_ID'),
+        ],
         'wechat' => [
             'class' => \common\components\WeChat::class,
             'app_id' => getenv('WECHAT_APP_ID'),
