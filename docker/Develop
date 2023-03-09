@@ -27,4 +27,4 @@ WORKDIR /var/www/html/advanced/
 
 
 # Copy HTTP server config
-COPY 000-default.conf /etc/apache2/sites-available/
+COPY ./docker/000-default.conf /etc/apache2/sites-available/

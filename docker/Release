@@ -63,4 +63,4 @@ COPY files/backend/web/robots.txt /var/www/html/advanced/backend/web/
 # RUN chmod -R 755 /var/www/html/advanced/yii
 
 # Copy HTTP server config
-COPY 000-default.conf /etc/apache2/sites-available/
+COPY ./docker/000-default.conf /etc/apache2/sites-available/
