@@ -8,6 +8,7 @@ use yii\behaviors\AttributesBehavior;
 use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
 use yii\db\Expression;
+use yii\helpers\ArrayHelper;
 
 /**
  * This is the model class for table "file".
@@ -27,6 +28,7 @@ use yii\db\Expression;
  * @property Video[] $videos
  */
 class File extends \yii\db\ActiveRecord
+
 {
 
     private $header = null;
@@ -41,7 +43,7 @@ class File extends \yii\db\ActiveRecord
     {
         $header = $this->getFileHeader();
         if (isset($header)) {
-            $filesize = round($header['Content-Length'], 2);
+            $filesize = round(ArrayHelper::getValue($header, 'Content-Length', 0), 2);
             return $filesize;
         }
         return null;
@@ -50,7 +52,7 @@ class File extends \yii\db\ActiveRecord
     {
         $header = $this->getFileHeader();
         if (isset($header)) {
-            return json_decode($header['ETag']);
+            return json_decode(ArrayHelper::getValue($header, 'ETag'));
         }
         return null;
     }
@@ -58,9 +60,9 @@ class File extends \yii\db\ActiveRecord
     {
         $header = $this->getFileHeader();
         if (isset($header)) {
-            return $header['Content-Type'];
+            return ArrayHelper::getValue($header, 'Content-Type', 'application/octet-stream');
         }
-        return null;
+        return 'application/octet-stream';
 
     }
 
