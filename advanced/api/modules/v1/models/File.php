@@ -34,8 +34,8 @@ class File extends \yii\db\ActiveRecord
     private $header = null;
     private function getFileHeader()
     {
-        if (isset($this->url) && $this->header == null) {
-            $this->header = get_headers($this->owner->url, true);
+        if (isset($this->filterUrl) && $this->header == null) {
+            $this->header = get_headers($this->filterUrl, true);
         }
         return $this->header;
     }
@@ -65,7 +65,14 @@ class File extends \yii\db\ActiveRecord
         return 'application/octet-stream';
 
     }
-
+    public function getFilterUrl()
+    {
+        if (preg_match('/^http[s]?:\/\/(\d+.\d+.\d+.\d+)[:]?\d+[\/]?/',
+            \Yii::$app->request->hostInfo, $matches)) {
+            return str_replace('[ip]', $matches[1], $this->url);
+        }
+        return $this->url;
+    }
     public function fields()
     {
         $fields = parent::fields();
@@ -73,7 +80,9 @@ class File extends \yii\db\ActiveRecord
         unset($fields['updater_id']);
         unset($fields['user_id']);
         unset($fields['created_at']);
-
+        $fields['url'] = function () {
+            return $this->filterUrl;
+        };
         return $fields;
     }
     public function behaviors()

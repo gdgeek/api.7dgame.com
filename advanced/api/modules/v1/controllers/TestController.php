@@ -1,6 +1,7 @@
 <?php
 namespace api\modules\v1\controllers;
 
+use api\modules\v1\models\File;
 use yii\rest\ActiveController;
 
 class TestController extends ActiveController
@@ -15,15 +16,8 @@ class TestController extends ActiveController
     }
     public function actionFile()
     {
-
-        $storage = new \common\components\Storage();
-        if ($storage->init()) {
-
-        } else {
-            return $storage->errors;
-        }
-
-        return $storage->targetDirector('raw', 'test');
+        $all = File::find()->one();
+        return $all;
     }
 
 }
