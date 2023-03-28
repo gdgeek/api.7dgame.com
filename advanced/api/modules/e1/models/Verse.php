@@ -98,6 +98,9 @@ class Verse extends \yii\db\ActiveRecord
             return $this->resources;
         };
 
+        $fields['editable'] = function () {return $this->editable();};
+        $fields['viewable'] = function () {return $this->viewable();};
+
         return $fields;
     }
     public function editable()
