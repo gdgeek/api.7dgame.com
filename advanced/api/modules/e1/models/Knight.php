@@ -28,6 +28,7 @@ use yii\db\Expression;
  * @property User $updater
  */
 class Knight extends \yii\db\ActiveRecord
+
 {
 
     public function behaviors()
@@ -48,6 +49,7 @@ class Knight extends \yii\db\ActiveRecord
                 'updatedByAttribute' => 'updater_id',
             ],
         ];
+
     }
     /**
      * {@inheritdoc}
@@ -129,6 +131,7 @@ class Knight extends \yii\db\ActiveRecord
      */
     public function getMesh()
     {
+
         return $this->hasOne(Resource::className(), ['id' => 'mesh_id']);
     }
 
@@ -139,6 +142,7 @@ class Knight extends \yii\db\ActiveRecord
      */
     public function getUpdater()
     {
+
         return $this->hasOne(User::className(), ['id' => 'updater_id']);
     }
 }

@@ -354,10 +354,6 @@ class Verse extends \yii\db\ActiveRecord
     {
         return new VerseQuery(get_called_class());
     }
-/*
-public function getShare()
-{
-return $this->verseShare != null;
-}*/
+
 
 }
