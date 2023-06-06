@@ -4,12 +4,12 @@ namespace api\modules\v1\models;
 
 use yii\base\Model;
 use yii\data\ActiveDataProvider;
-use api\modules\v1\models\VerseEvent;
+use api\modules\v1\models\EventNode;
 
 /**
- * VerseEventSearch represents the model behind the search form of `api\modules\v1\models\VerseEvent`.
+ * EventNodeSearch represents the model behind the search form of `api\modules\v1\models\EventNode`.
  */
-class VerseEventSearch extends VerseEvent
+class EventNodeSearch extends EventNode
 {
     /**
      * {@inheritdoc}
@@ -18,7 +18,6 @@ class VerseEventSearch extends VerseEvent
     {
         return [
             [['id', 'verse_id'], 'integer'],
-            [['data'], 'safe'],
         ];
     }
 
@@ -40,7 +39,7 @@ class VerseEventSearch extends VerseEvent
      */
     public function search($params)
     {
-        $query = VerseEvent::find();
+        $query = EventNode::find();
 
         // add conditions that should always apply here
 
@@ -61,8 +60,6 @@ class VerseEventSearch extends VerseEvent
             'id' => $this->id,
             'verse_id' => $this->verse_id,
         ]);
-
-        $query->andFilterWhere(['like', 'data', $this->data]);
 
         return $dataProvider;
     }

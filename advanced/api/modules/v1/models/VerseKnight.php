@@ -15,6 +15,7 @@ use Yii;
  * @property Verse $verse
  */
 class VerseKnight extends \yii\db\ActiveRecord
+
 {
     /**
      * {@inheritdoc}
@@ -58,7 +59,14 @@ class VerseKnight extends \yii\db\ActiveRecord
     {
         return $this->hasOne(Knight::className(), ['id' => 'knight_id']);
     }
-
+    public function extraFields()
+    {
+        return [
+            'image',
+            'verseKnights',
+            'author',
+        ];
+    }
     /**
      * Gets query for [[Verse]].
      *

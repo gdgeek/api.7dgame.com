@@ -2,7 +2,6 @@
 
 namespace api\modules\a1\models;
 
-use api\modules\a1\models\MetaEvent;
 use api\modules\v1\models\Cyber;
 use api\modules\v1\models\File;
 use api\modules\v1\models\MetaQuery;
@@ -32,10 +31,10 @@ use yii\db\Expression;
  * @property File $image
  * @property User $updater
  * @property Verse $verse
- * @property MetaEvent $metaEvent
  * @property MetaRete[] $metaRetes
  */
 class Meta extends \yii\db\ActiveRecord
+
 {
 
     public function behaviors()
@@ -161,15 +160,7 @@ class Meta extends \yii\db\ActiveRecord
     {
         return $this->hasOne(Verse::className(), ['id' => 'verse_id']);
     }
-    /**
-     * Gets query for [[MetaEvents]].
-     *
-     * @return \yii\db\ActiveQuery|MetaEventQuery
-     */
-    public function getMetaEvent()
-    {
-        return $this->hasOne(MetaEvent::className(), ['meta_id' => 'id']);
-    }
+
     /**
      * Gets query for [[MetaRetes]].
      *

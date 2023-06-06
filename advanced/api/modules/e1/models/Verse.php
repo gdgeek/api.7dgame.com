@@ -229,15 +229,6 @@ class Verse extends \yii\db\ActiveRecord
     }
 
     /**
-     * Gets query for [[VerseEvents]].
-     *
-     * @return \yii\db\ActiveQuery|VerseEventQuery
-     */
-    public function getVerseEvent()
-    {
-        return $this->hasOne(VerseEvent::className(), ['verse_id' => 'id']);
-    }
-    /**
      * Gets query for [[MetaKnights]].
      *
      * @return \yii\db\ActiveQuery|MetaKnightQuery

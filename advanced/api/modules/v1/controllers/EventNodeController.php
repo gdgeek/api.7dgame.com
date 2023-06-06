@@ -1,17 +1,16 @@
 <?php
+
 namespace api\modules\v1\controllers;
 
-use api\modules\v1\models\MetaEventSearch;
 use mdm\admin\components\AccessControl;
 use sizeg\jwt\JwtHttpBearerAuth;
-use Yii;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
 
-class MetaEventController extends ActiveController
+class EventNodeController extends ActiveController
 {
 
-    public $modelClass = 'api\modules\v1\models\MetaEvent';
+    public $modelClass = 'api\modules\v1\models\EventNode';
     public function behaviors()
     {
         $behaviors = parent::behaviors();
@@ -48,24 +47,6 @@ class MetaEventController extends ActiveController
         ];
 
         return $behaviors;
-    }
-
-    public function actions()
-    {
-        $actions = parent::actions();
-        unset($actions['index']);
-        return $actions;
-    }
-
-    public function actionIndex($meta_id)
-    {
-
-        $searchModel = new MetaEventSearch();
-        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-
-        $dataProvider->query->andWhere(['meta_id' => $meta_id]);
-
-        return $dataProvider;
     }
 
 }

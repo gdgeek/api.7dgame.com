@@ -2,14 +2,14 @@
 
 namespace api\modules\v1\models;
 
-use api\modules\v1\models\MetaEvent;
 use yii\base\Model;
 use yii\data\ActiveDataProvider;
+use api\modules\v1\models\VerseScript;
 
 /**
- * MetaEventSearch represents the model behind the search form of `api\modules\v1\models\MetaEvent`.
+ * VerseScriptSearch represents the model behind the search form of `api\modules\v1\models\VerseScript`.
  */
-class MetaEventSearch extends MetaEvent
+class VerseScriptSearch extends VerseScript
 {
     /**
      * {@inheritdoc}
@@ -17,8 +17,8 @@ class MetaEventSearch extends MetaEvent
     public function rules()
     {
         return [
-            [['id', 'meta_id'], 'integer'],
-            [['data'], 'safe'],
+            [['id', 'verse_id'], 'integer'],
+            [['created_at', 'script'], 'safe'],
         ];
     }
 
@@ -40,7 +40,7 @@ class MetaEventSearch extends MetaEvent
      */
     public function search($params)
     {
-        $query = MetaEvent::find();
+        $query = VerseScript::find();
 
         // add conditions that should always apply here
 
@@ -59,10 +59,11 @@ class MetaEventSearch extends MetaEvent
         // grid filtering conditions
         $query->andFilterWhere([
             'id' => $this->id,
-            'meta_id' => $this->meta_id,
+            'created_at' => $this->created_at,
+            'verse_id' => $this->verse_id,
         ]);
 
-        $query->andFilterWhere(['like', 'data', $this->data]);
+        $query->andFilterWhere(['like', 'script', $this->script]);
 
         return $dataProvider;
     }

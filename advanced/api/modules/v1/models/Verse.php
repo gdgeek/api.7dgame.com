@@ -88,6 +88,7 @@ class Verse extends \yii\db\ActiveRecord
         // $fields['share'] = function () {return $this->share;};
         $fields['editable'] = function () {return $this->editable();};
         $fields['viewable'] = function () {return $this->viewable();};
+        $fields['links'] = function () {return $this->eventLinks;};
 
         return $fields;
     }
@@ -237,15 +238,17 @@ class Verse extends \yii\db\ActiveRecord
         ];
 
     }
+
     /**
-     * Gets query for [[VerseEvents]].
+     * Gets query for [[EventLinks]].
      *
-     * @return \yii\db\ActiveQuery|VerseEventQuery
+     * @return \yii\db\ActiveQuery|EventLinkQuery
      */
-    public function getVerseEvent()
+    public function getEventLinks()
     {
-        return $this->hasOne(VerseEvent::className(), ['verse_id' => 'id']);
+        return $this->hasMany(EventLink::className(), ['verse_id' => 'id']);
     }
+
     /**
      * Gets query for [[MetaKnights]].
      *
@@ -276,7 +279,9 @@ class Verse extends \yii\db\ActiveRecord
     }
     public function editable()
     {
-
+        if (!isset(Yii::$app->user->identity)) {
+            return false;
+        }
         $userid = Yii::$app->user->identity->id;
         if ($userid == $this->author_id) {
             return true;
@@ -290,6 +295,9 @@ class Verse extends \yii\db\ActiveRecord
 
     public function viewable()
     {
+        if (!isset(Yii::$app->user->identity)) {
+            return false;
+        }
         $userid = Yii::$app->user->identity->id;
         if ($userid == $this->author_id) {
             return true;
@@ -354,6 +362,5 @@ class Verse extends \yii\db\ActiveRecord
     {
         return new VerseQuery(get_called_class());
     }
-
 
 }

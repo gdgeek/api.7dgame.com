@@ -4,10 +4,9 @@ namespace api\modules\v1\components;
 
 use api\modules\v1\models\Cyber;
 use api\modules\v1\models\Meta;
-use api\modules\v1\models\MetaEvent;
 use api\modules\v1\models\MetaKnight;
 use api\modules\v1\models\Verse;
-use api\modules\v1\models\VerseEvent;
+use api\modules\v1\models\VerseScript;
 use api\modules\v1\models\VerseShare;
 use Yii;
 use yii\rbac\Rule;
@@ -48,6 +47,24 @@ class VerseRule extends Rule
                 return $verse;
             }
         }
+        if ($controller == 'verse-script') {
+
+            if ($request->isGet && isset($params['verse_id'])) {
+                $verse = Verse::findOne($params['verse_id']);
+                return $verse;
+            }
+
+            if ($request->isPost && isset($post['verse_id'])) {
+                $verse = Verse::findOne($post['verse_id']);
+                return $verse;
+            }
+            if (($request->isDelete || $request->isPut || $request->isGet) && isset($params['id'])) {
+
+                $script = VerseScript::findOne($params['id']);
+                $verse = Verse::findOne($script->verse_id);
+                return $verse;
+            }
+        }
         if ($controller == 'verse-share') {
 
             if ($request->isGet && isset($params['verse_id'])) {
@@ -67,56 +84,10 @@ class VerseRule extends Rule
 
         }
 
-        if ($controller == 'verse-event') {
-
-            if ($request->isGet && isset($params['verse_id'])) {
-                $verse = Verse::findOne($params['verse_id']);
-                return $verse;
-            }
-
-            if ($request->isPut && isset($params['id'])) {
-                $event = VerseEvent::findOne($params['id']);
-                if ($event) {
-                    return $event->verse;
-                }
-            }
-            if ($request->isPost && isset($post['verse_id'])) {
-
-                $verse = Verse::findOne($post['verse_id']);
-                return $verse;
-            }
-        }
-
         if ($controller == 'event-share') {
             if ($request->isGet && isset($params['verse_id'])) {
                 $verse = Verse::findOne($params['verse_id']);
                 return $verse;
-            }
-        }
-        //s/1
-        if ($controller == 'meta-event') {
-
-            if ($request->isGet && isset($params['meta_id'])) {
-                $meta = Meta::findOne($params['meta_id']);
-                if ($meta) {
-                    return $meta->verse;
-                }
-            }
-
-            if ($request->isPut && isset($params['id'])) {
-
-                $event = MetaEvent::findOne($params['id']);
-
-                if ($event) {
-                    return $event->meta->verse;
-                }
-            }
-            if ($request->isPost && isset($post['meta_id'])) {
-
-                $meta = Meta::findOne($post['meta_id']);
-                if ($meta) {
-                    return $meta->verse;
-                }
             }
         }
 

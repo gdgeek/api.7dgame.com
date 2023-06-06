@@ -1,17 +1,16 @@
 <?php
+
 namespace api\modules\v1\controllers;
 
-use api\modules\v1\models\VerseEventSearch;
 use mdm\admin\components\AccessControl;
 use sizeg\jwt\JwtHttpBearerAuth;
-use Yii;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
 
-class VerseEventController extends ActiveController
+class EventOutputController extends ActiveController
 {
 
-    public $modelClass = 'api\modules\v1\models\VerseEvent';
+    public $modelClass = 'api\modules\v1\models\EventOutput';
     public function behaviors()
     {
         $behaviors = parent::behaviors();
@@ -48,24 +47,6 @@ class VerseEventController extends ActiveController
         ];
 
         return $behaviors;
-    }
-
-    public function actions()
-    {
-        $actions = parent::actions();
-        unset($actions['index']);
-        return $actions;
-    }
-
-    public function actionIndex($verse_id)
-    {
-
-        $searchModel = new VerseEventSearch();
-        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-
-        $dataProvider->query->andWhere(['verse_id' => $verse_id]);
-
-        return $dataProvider;
     }
 
 }

@@ -3,11 +3,11 @@
 namespace api\modules\v1\models;
 
 /**
- * This is the ActiveQuery class for [[VerseEvent]].
+ * This is the ActiveQuery class for [[EventInput]].
  *
- * @see VerseEvent
+ * @see EventInput
  */
-class VerseEventQuery extends \yii\db\ActiveQuery
+class EventInputQuery extends \yii\db\ActiveQuery
 {
     /*public function active()
     {
@@ -16,7 +16,7 @@ class VerseEventQuery extends \yii\db\ActiveQuery
 
     /**
      * {@inheritdoc}
-     * @return VerseEvent[]|array
+     * @return EventInput[]|array
      */
     public function all($db = null)
     {
@@ -25,7 +25,7 @@ class VerseEventQuery extends \yii\db\ActiveQuery
 
     /**
      * {@inheritdoc}
-     * @return VerseEvent|array|null
+     * @return EventInput|array|null
      */
     public function one($db = null)
     {

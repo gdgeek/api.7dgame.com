@@ -3,11 +3,11 @@
 namespace api\modules\v1\models;
 
 /**
- * This is the ActiveQuery class for [[MetaEvent]].
+ * This is the ActiveQuery class for [[EventNode]].
  *
- * @see MetaEvent
+ * @see EventNode
  */
-class MetaEventQuery extends \yii\db\ActiveQuery
+class EventNodeQuery extends \yii\db\ActiveQuery
 {
     /*public function active()
     {
@@ -16,7 +16,7 @@ class MetaEventQuery extends \yii\db\ActiveQuery
 
     /**
      * {@inheritdoc}
-     * @return MetaEvent[]|array
+     * @return EventNode[]|array
      */
     public function all($db = null)
     {
@@ -25,7 +25,7 @@ class MetaEventQuery extends \yii\db\ActiveQuery
 
     /**
      * {@inheritdoc}
-     * @return MetaEvent|array|null
+     * @return EventNode|array|null
      */
     public function one($db = null)
     {

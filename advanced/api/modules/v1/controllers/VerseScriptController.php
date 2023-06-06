@@ -1,17 +1,18 @@
 <?php
 namespace api\modules\v1\controllers;
 
-use api\modules\v1\models\KnightSearch;
+use api\modules\v1\models\VerseScriptSearch;
 use mdm\admin\components\AccessControl;
 use sizeg\jwt\JwtHttpBearerAuth;
 use Yii;
 use yii\filters\auth\CompositeAuth;
+use yii\helpers\HtmlPurifier;
 use yii\rest\ActiveController;
 
-class KnightController extends ActiveController
+class VerseScriptController extends ActiveController
 {
 
-    public $modelClass = 'api\modules\v1\models\Knight';
+    public $modelClass = 'api\modules\v1\models\VerseScript';
     public function behaviors()
     {
         $behaviors = parent::behaviors();
@@ -33,6 +34,8 @@ class KnightController extends ActiveController
                 ],
             ],
         ];
+
+        // unset($behaviors['authenticator']);
         $behaviors['authenticator'] = [
             'class' => CompositeAuth::class,
             'authMethods' => [
@@ -40,6 +43,7 @@ class KnightController extends ActiveController
             ],
             'except' => ['options'],
         ];
+
         $behaviors['access'] = [
             'class' => AccessControl::class,
         ];
@@ -56,11 +60,13 @@ class KnightController extends ActiveController
     public function actionIndex()
     {
 
-        $searchModel = new KnightSearch();
-        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-
-        // $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id]);
-
+        if (!isset(Yii::$app->request->queryParams['verse_id'])) {
+            throw new BadRequestHttpException('缺乏 verse_id 数据');
+        }
+        $searchModel = new VerseScriptSearch();
+        $dataProvider = $searchModel->search(\Yii::$app->request->queryParams);
+        $verse_id = HtmlPurifier::process(Yii::$app->request->queryParams['verse_id']);
+        $dataProvider->query->andWhere(['verse_id' => $verse_id]);
         return $dataProvider;
     }
 
