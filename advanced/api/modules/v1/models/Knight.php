@@ -157,4 +157,5 @@ class Knight extends \yii\db\ActiveRecord
     {
         return $this->hasMany(VerseKnight::className(), ['knight_id' => 'id']);
     }
+
 }

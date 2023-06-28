@@ -2,11 +2,11 @@
 
 namespace api\modules\a1\models;
 
+use api\modules\a1\models\EventLink;
 use api\modules\a1\models\File;
 use api\modules\a1\models\Meta;
 use api\modules\a1\models\Resource;
 use api\modules\a1\models\Space;
-use api\modules\v1\models\EventLink;
 use api\modules\v1\models\User;
 use api\modules\v1\models\VerseQuery;
 use Yii;
@@ -94,10 +94,11 @@ class Verse extends \yii\db\ActiveRecord
             return json_decode($this->info)->description;
         };
         $fields['connections'] = function () {
-
+            return $this->eventLinks;
+            //  return $this->eventLinks[0]->eventOutput->eventNode;
             $ret = [];
             foreach ($this->eventLinks as $item) {
-                $node = $item->eventOutput->eventNode->meta->uuid;
+                $node = $item->eventOutput->eventNode->id;
                 if (!isset($ret[$node])) {
                     $ret[$node] = new \stdClass ();
                     $ret[$node]->node = $node;
@@ -122,13 +123,13 @@ class Verse extends \yii\db\ActiveRecord
                     $linked->connections,
                     function ($l) use ($item) {
                         return
-                        $l->node == $item->eventInput->eventNode->meta->uuid &&
+                        $l->node == $item->eventInput->eventNode->id &&
                         $l->uuid == $item->eventInput->uuid;
                     }
                 );
                 if (!$connection) {
                     $connection = new \stdClass ();
-                    $connection->node = $item->eventInput->eventNode->meta->uuid;
+                    $connection->node = $item->eventInput->eventNode->id;
                     $connection->uuid = $item->eventInput->uuid;
 
                     array_push($linked->connections, $connection);
@@ -147,7 +148,12 @@ class Verse extends \yii\db\ActiveRecord
             return $this->space;
         };
         $fields['modules'] = function () {
-            return $this->modules;
+            $data = json_decode($this->data);
+
+            return [
+                'metas' => $this->getNodes($data->children->metas, $this->getMetas()),
+                'knights' => $this->getNodes($data->children->metaKnights, $this->getMetaKnights()),
+            ];
         };
         $fields['resources'] = function () {
             return $this->resources;
@@ -204,44 +210,36 @@ class Verse extends \yii\db\ActiveRecord
         $items = Resource::find()->where(['id' => $ids])->all();
         return $items;
     }
+    public function getNodes($inputs, $quest)
+    {
+        $m = [];
+        $UUID = [];
+        foreach ($inputs as $child) {
 
+            $id = $child->parameters->id;
+            $UUID[$id] = $child->parameters->uuid;
+            array_push($m, $id);
+
+        }
+
+        $datas = $quest->where(['id' => $m])->all();
+        // $datas = $query->all();
+
+        foreach ($datas as $i => $item) {
+            if (!$item->uuid) {
+                $item->uuid = $UUID[$item->id];
+                $item->save();
+            }
+        }
+
+        return $datas;
+    }
     public function getModules()
     {
         $data = json_decode($this->data);
-        $m = [];
-        $k = [];
-        $mUUID = [];
-        $kUUID = [];
-        foreach ($data->children->metas as $child) {
-            if ($child->type == 'Meta') {
-                $id = $child->parameters->id;
-                $mUUID[$id] = $child->parameters->uuid;
-                array_push($m, $id);
-            } else {
-                $id = $child->parameters->id;
-                $kUUID[$id] = $child->parameters->uuid;
-                array_push($k, $id);
-            }
-        }
-        $knightQuery = $this->getMetaKnights()->where(['id' => $k]);
-        $metaQuery = $this->getMetas()->where(['id' => $m]);
-        $metas = $metaQuery->all();
-
-        foreach ($metas as $i => $item) {
-            if (!$item->uuid) {
-                $item->uuid = $mUUID[$item->id];
-                $item->save();
-            }
-        }
-
-        $knights = $knightQuery->all();
-        foreach ($knights as $i => $item) {
-            if (!$item->uuid) {
-                $item->uuid = $kUUID[$item->id];
-                $item->save();
-            }
-        }
-        return array_merge($metas, $knights);
+        $metas = $this->getNodes($data->children->metas, $this->getMetas());
+        $metaKnights = $this->getNodes($data->children->metaKnights, $this->getMetaKnights());
+        return array_merge($metas, $metaKnights);
     }
 
     public function getSpace()
