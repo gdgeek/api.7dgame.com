@@ -101,21 +101,24 @@ class Meta extends \yii\db\ActiveRecord
         unset($fields['verse_id']);
         unset($fields['image_id']);
         unset($fields['info']);
+
+        unset($fields['event_node_id']);
+        unset($fields['id']);
         $fields['inputs'] = function ($model) {
             $ret = [];
             foreach ($this->eventNode->eventInputs as $input) {
-                $ret[] = $input->uuid;
+                $ret[] = ['uuid' => $input->uuid, 'title' => $input->title];
             }
             return $ret;
         };
-        $fields['outputs'] = function ($model) {
-            $ret = [];
-            foreach ($this->eventNode->eventOutputs as $output) {
-                $ret[] = $output->uuid;
-            }
-            return $ret;
-        };
-        $fields['type'] = function () {return 'Mate';};
+        /*$fields['outputs'] = function ($model) {
+        $ret = [];
+        foreach ($this->eventNode->eventOutputs as $output) {
+        $ret[] = $output->uuid;
+        }
+        return $ret;
+        };*/
+        // $fields['type'] = function () {return 'Mate';};
         $fields['script'] = function () {
             if ($this->cyber && $this->cyber->script) {
                 return $this->cyber->script;

@@ -118,7 +118,7 @@ class MetaKnight extends \yii\db\ActiveRecord
      */
     public static function find()
     {
-        return new \api\modules\v1\models\MetaKnightQuery (get_called_class());
+        return new \api\modules\v1\models\MetaKnightQuery(get_called_class());
     }
 
     public function fields()
@@ -129,23 +129,23 @@ class MetaKnight extends \yii\db\ActiveRecord
         unset($fields['user_id']);
         unset($fields['create_at']);
         unset($fields['info']);
+        unset($fields['event_node_id']);
+        unset($fields['id']);
 
         $fields['inputs'] = function ($model) {
             $ret = [];
             foreach ($this->eventNode->eventInputs as $input) {
-                $ret[] = $input->uuid;
-            }
-            return $ret;
-        };
-        $fields['outputs'] = function ($model) {
-            $ret = [];
-            foreach ($this->eventNode->eventOutputs as $output) {
-                $ret[] = $output->uuid;
+                $ret[] = ['uuid' => $input->uuid, 'title' => $input->title];
             }
             return $ret;
         };
         $fields['type'] = function ($model) {
-            return 'Knight';
+            $knight = $this->knight;
+            if (!$knight || $this->knight->type == null) {
+                return 'sample';
+            }
+
+            return $this->knight->type;
         };
         $fields['script'] = function ($model) {
             return '';

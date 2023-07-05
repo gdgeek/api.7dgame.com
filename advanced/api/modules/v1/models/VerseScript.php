@@ -14,8 +14,8 @@ use yii\db\Expression;
  * @property int $verse_id
  * @property string|null $script
  * @property string $title
- * @property string|null $blockly
  * @property string $uuid
+ * @property string|null $workspace
  *
  * @property Verse $verse
  */
@@ -53,7 +53,7 @@ class VerseScript extends \yii\db\ActiveRecord
             [['created_at'], 'safe'],
             [['verse_id', 'title', 'uuid'], 'required'],
             [['verse_id'], 'integer'],
-            [['script', 'blockly'], 'string'],
+            [['script', 'workspace'], 'string'],
             [['title', 'uuid'], 'string', 'max' => 255],
             [['uuid'], 'unique'],
             [['verse_id'], 'exist', 'skipOnError' => true, 'targetClass' => Verse::className(), 'targetAttribute' => ['verse_id' => 'id']],
@@ -76,8 +76,8 @@ class VerseScript extends \yii\db\ActiveRecord
             'verse_id' => 'Verse ID',
             'script' => 'Script',
             'title' => 'Title',
-            'blockly' => 'Blockly',
             'uuid' => 'Uuid',
+            'workspace' => 'Workspace',
         ];
     }
 
