@@ -128,7 +128,7 @@ class MetaKnight extends \yii\db\ActiveRecord
         unset($fields['knight_id']);
         unset($fields['user_id']);
         unset($fields['create_at']);
-        unset($fields['info']);
+        // unset($fields['info']);
         unset($fields['event_node_id']);
         unset($fields['id']);
 

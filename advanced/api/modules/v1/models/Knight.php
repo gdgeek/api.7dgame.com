@@ -24,6 +24,8 @@ use yii\db\Expression;
  * @property int|null $image_id
  * @property int|null $mesh_id
  * @property string|null $type
+ * @property string|null $schema
+ * @property string|null $events
  *
  * @property User $author
  * @property File $image
@@ -69,7 +71,7 @@ class Knight extends \yii\db\ActiveRecord
         return [
             [['author_id', 'updater_id', 'image_id', 'mesh_id'], 'integer'],
             [['create_at', 'updated_at'], 'safe'],
-            [['info', 'data'], 'string'],
+            [['info', 'data', 'schema', 'events'], 'string'],
             [['title', 'type'], 'string', 'max' => 255],
             [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['author_id' => 'id']],
             [['image_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['image_id' => 'id']],
@@ -103,6 +105,8 @@ class Knight extends \yii\db\ActiveRecord
             'image_id' => 'Image ID',
             'mesh_id' => 'Mesh ID',
             'type' => 'Type',
+            'schema' => 'Schema',
+            'events' => 'Events',
         ];
     }
 

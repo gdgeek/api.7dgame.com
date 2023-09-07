@@ -126,13 +126,7 @@ class MetaKnight extends \yii\db\ActiveRecord
                 }
                 return $this->knight->mesh;
             },
-            'info' => function ($model) {
-                $knight = $this->knight;
-                if (!$knight) {
-                    return null;
-                }
-                return $this->knight->info;
-            },
+            'info',
             'event_node' => function ($model) {
                 return $this->eventNode;
             },

@@ -100,26 +100,26 @@ class Verse extends \yii\db\ActiveRecord
             foreach ($this->eventLinks as $item) {
                 $node = $item->eventOutput->eventNode->id;
                 if (!isset($ret[$node])) {
-                    $ret[$node] = new \stdClass ();
+                    $ret[$node] = new \stdClass();
                     $ret[$node]->node = $node;
                     $ret[$node]->linked = [];
 
                 }
 
-                $linked = \array_filter (
+                $linked = \array_filter(
                     $ret[$node]->linked,
                     function ($l) use ($item) {
                         return $l->uuid == $item->eventOutput->uuid;
                     }
                 );
                 if (!$linked) {
-                    $linked = new \stdClass ();
+                    $linked = new \stdClass();
                     $linked->uuid = $item->eventOutput->uuid;
                     $linked->connections = [];
                     array_push($ret[$node]->linked, $linked);
                 }
 
-                $connection = \array_filter (
+                $connection = \array_filter(
                     $linked->connections,
                     function ($l) use ($item) {
                         return
@@ -128,7 +128,7 @@ class Verse extends \yii\db\ActiveRecord
                     }
                 );
                 if (!$connection) {
-                    $connection = new \stdClass ();
+                    $connection = new \stdClass();
                     $connection->node = $item->eventInput->eventNode->id;
                     $connection->uuid = $item->eventInput->uuid;
 
@@ -147,14 +147,17 @@ class Verse extends \yii\db\ActiveRecord
         $fields['space'] = function () {
             return $this->space;
         };
+
         $fields['modules'] = function () {
+
             $data = json_decode($this->data);
 
-            return [
-                'metas' => $this->getNodes($data->children->metas, $this->getMetas()),
-                'knights' => $this->getNodes($data->children->metaKnights, $this->getMetaKnights()),
-            ];
+            return array_merge(
+                $this->getNodes($data->children->metas, $this->getMetas()),
+                $this->getNodes($data->children->metaKnights, $this->getMetaKnights()),
+            );
         };
+
         $fields['resources'] = function () {
             return $this->resources;
         };
@@ -215,11 +218,9 @@ class Verse extends \yii\db\ActiveRecord
         $m = [];
         $UUID = [];
         foreach ($inputs as $child) {
-
             $id = $child->parameters->id;
             $UUID[$id] = $child->parameters->uuid;
             array_push($m, $id);
-
         }
 
         $datas = $quest->where(['id' => $m])->all();
@@ -234,6 +235,7 @@ class Verse extends \yii\db\ActiveRecord
 
         return $datas;
     }
+
     public function getModules()
     {
         $data = json_decode($this->data);
