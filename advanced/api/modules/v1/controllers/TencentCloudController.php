@@ -43,11 +43,15 @@ class TencentCloudController extends ActiveController
     {
         return [];
     }
-
     public function actionStore()
     {
         $secret = \Yii::$app->secret;
         return $secret->store;
+    }
+    public function actionCloud()
+    {
+        $cloud = \Yii::$app->cloud;
+        return $cloud;
     }
     public function actionToken($bucket, $region = 'ap-nanjing')
     {

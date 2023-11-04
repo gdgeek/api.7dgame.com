@@ -19,6 +19,16 @@ return [
                     'region' => getenv('COS_STORE_REGION'),
                 ],
             ],
+            'cloud' => [
+                'public' => [
+                    'bucket' => getenv('COS_PUBLIC_BUKET'),
+                    'region' => getenv('COS_PUBLIC_REGION'),
+                ],
+                'private' => [
+                    'bucket' => getenv('COS_PRIVATE_BUKET'),
+                    'region' => getenv('COS_PRIVATE_REGION'),
+                ],
+            ],
         ],
         'db' => [
             'class' => 'yii\db\Connection',
