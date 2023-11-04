@@ -9,5 +9,6 @@ class Secret extends BaseObject
     public $id;
     public $key;
     public $store;
+    public $cloud;
 
 }
