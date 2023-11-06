@@ -5,28 +5,14 @@ return [
             'class' => \common\components\Secret::class,
             'id' => getenv('SECRET_ID'),
             'key' => getenv('SECRET_KEY'),
-            'store' => [
-                'raw' => [
-                    'bucket' => getenv('COS_RAW_BUKET'),
-                    'region' => getenv('COS_RAW_REGION'),
-                ],
-                'release' => [
-                    'bucket' => getenv('COS_RELEASE_BUKET'),
-                    'region' => getenv('COS_RELEASE_REGION'),
-                ],
-                'store' => [
-                    'bucket' => getenv('COS_STORE_BUKET'),
-                    'region' => getenv('COS_STORE_REGION'),
-                ],
-            ],
             'cloud' => [
                 'public' => [
-                    'bucket' => getenv('COS_PUBLIC_BUKET'),
-                    'region' => getenv('COS_PUBLIC_REGION'),
+                    'bucket' => getenv('COS_BUCKETS_PUBLIC_BUCKET'),
+                    'region' => getenv('COS_BUCKETS_PUBLIC_REGION'),
                 ],
                 'private' => [
-                    'bucket' => getenv('COS_PRIVATE_BUKET'),
-                    'region' => getenv('COS_PRIVATE_REGION'),
+                    'bucket' => getenv('COS_BUCKETS_PRIVATE_BUCKET'),
+                    'region' => getenv('COS_BUCKETS_PRIVATE_REGION'),
                 ],
             ],
         ],

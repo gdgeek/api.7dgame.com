@@ -43,11 +43,12 @@ class TencentCloudController extends ActiveController
     {
         return [];
     }
+    /*
     public function actionStore()
     {
-        $secret = \Yii::$app->secret;
-        return $secret->store;
-    }
+    $secret = \Yii::$app->secret;
+    return $secret->store;
+    }*/
     public function actionCloud()
     {
         $cloud = \Yii::$app->secret->cloud;
