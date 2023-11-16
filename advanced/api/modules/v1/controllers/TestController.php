@@ -1,7 +1,6 @@
 <?php
 namespace api\modules\v1\controllers;
 
-use api\modules\v1\models\File;
 use yii\rest\ActiveController;
 
 class TestController extends ActiveController
@@ -16,8 +15,11 @@ class TestController extends ActiveController
     }
     public function actionFile()
     {
-        $all = File::find()->one();
-        return $all;
+        $curl = curl_init();
+        curl_setopt($curl, CURLOPT_URL, 'https://api.bilibili.com/x/space/wbi/arc/search?mid=20959246');
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+        $output = curl_exec($curl);
+        return $output;
     }
 
 }
