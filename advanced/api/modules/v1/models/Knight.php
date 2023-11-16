@@ -26,6 +26,7 @@ use yii\db\Expression;
  * @property string|null $type
  * @property string|null $schema
  * @property string|null $events
+ * @property int|null $limit
  *
  * @property User $author
  * @property File $image
@@ -69,7 +70,7 @@ class Knight extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['author_id', 'updater_id', 'image_id', 'mesh_id'], 'integer'],
+            [['author_id', 'updater_id', 'image_id', 'mesh_id', 'limit'], 'integer'],
             [['create_at', 'updated_at'], 'safe'],
             [['info', 'data', 'schema', 'events'], 'string'],
             [['title', 'type'], 'string', 'max' => 255],
@@ -107,6 +108,7 @@ class Knight extends \yii\db\ActiveRecord
             'type' => 'Type',
             'schema' => 'Schema',
             'events' => 'Events',
+            'limit' => 'Limit',
         ];
     }
 

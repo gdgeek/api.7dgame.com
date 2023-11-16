@@ -68,7 +68,6 @@ return [
                 'base_uri' => 'https://api.mch.weixin.qq.com/',
             ],
             'secret_key' => getenv('PAY_SECRET_KEY'),
-
         ],
     ],
 ];

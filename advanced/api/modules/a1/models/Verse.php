@@ -95,50 +95,6 @@ class Verse extends \yii\db\ActiveRecord
         };
         $fields['connections'] = function () {
             return $this->eventLinks;
-            //  return $this->eventLinks[0]->eventOutput->eventNode;
-            $ret = [];
-            foreach ($this->eventLinks as $item) {
-                $node = $item->eventOutput->eventNode->id;
-                if (!isset($ret[$node])) {
-                    $ret[$node] = new \stdClass();
-                    $ret[$node]->node = $node;
-                    $ret[$node]->linked = [];
-
-                }
-
-                $linked = \array_filter(
-                    $ret[$node]->linked,
-                    function ($l) use ($item) {
-                        return $l->uuid == $item->eventOutput->uuid;
-                    }
-                );
-                if (!$linked) {
-                    $linked = new \stdClass();
-                    $linked->uuid = $item->eventOutput->uuid;
-                    $linked->connections = [];
-                    array_push($ret[$node]->linked, $linked);
-                }
-
-                $connection = \array_filter(
-                    $linked->connections,
-                    function ($l) use ($item) {
-                        return
-                        $l->node == $item->eventInput->eventNode->id &&
-                        $l->uuid == $item->eventInput->uuid;
-                    }
-                );
-                if (!$connection) {
-                    $connection = new \stdClass();
-                    $connection->node = $item->eventInput->eventNode->id;
-                    $connection->uuid = $item->eventInput->uuid;
-
-                    array_push($linked->connections, $connection);
-
-                }
-
-            };
-            return json_encode(array_values($ret));
-
         };
         $fields['stories'] = function () {
             return $this->verseScripts;
@@ -150,12 +106,7 @@ class Verse extends \yii\db\ActiveRecord
 
         $fields['modules'] = function () {
 
-            $data = json_decode($this->data);
-
-            return array_merge(
-                $this->getNodes($data->children->metas, $this->getMetas()),
-                $this->getNodes($data->children->metaKnights, $this->getMetaKnights()),
-            );
+            return $this->modules;
         };
 
         $fields['resources'] = function () {
@@ -224,7 +175,6 @@ class Verse extends \yii\db\ActiveRecord
         }
 
         $datas = $quest->where(['id' => $m])->all();
-        // $datas = $query->all();
 
         foreach ($datas as $i => $item) {
             if (!$item->uuid) {

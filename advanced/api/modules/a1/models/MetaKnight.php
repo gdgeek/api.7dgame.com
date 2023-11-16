@@ -128,10 +128,8 @@ class MetaKnight extends \yii\db\ActiveRecord
         unset($fields['knight_id']);
         unset($fields['user_id']);
         unset($fields['create_at']);
-        // unset($fields['info']);
         unset($fields['event_node_id']);
         unset($fields['id']);
-
         $fields['inputs'] = function ($model) {
             $ret = [];
             foreach ($this->eventNode->eventInputs as $input) {
@@ -144,7 +142,6 @@ class MetaKnight extends \yii\db\ActiveRecord
             if (!$knight || $this->knight->type == null) {
                 return 'sample';
             }
-
             return $this->knight->type;
         };
         $fields['script'] = function ($model) {

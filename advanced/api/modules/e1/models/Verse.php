@@ -86,22 +86,21 @@ class Verse extends \yii\db\ActiveRecord
         unset($fields['created_at']);
         unset($fields['info']);
         unset($fields['version']);
-        $fields['space'] = function () {
-            return $this->space;
-        };
+        // unset($fields['data']);
+        // unset($fields['data']);
 
-        $fields['datas'] = function () {
-            return $this->datas;
-        };
-
-        $fields['resources'] = function () {
-            return $this->resources;
-        };
-
-        $fields['editable'] = function () {return $this->editable();};
-        $fields['viewable'] = function () {return $this->viewable();};
-
+        $fields['space'] = function () {return $this->space;};
+        $fields['modules'] = function () {return $this->modules;};
+        //$fields['resources'] = function () {return $this->resources;};
+        $fields['editable'] = function () {return $this->editable;};
+        $fields['viewable'] = function () {return $this->viewable;};
+        $fields['root'] = function () {return json_decode($this->data);};
         return $fields;
+    }
+
+    public function getEditable()
+    {
+        return $this->editable();
     }
     public function editable()
     {
@@ -116,7 +115,10 @@ class Verse extends \yii\db\ActiveRecord
         }
         return false;
     }
-
+    public function getViewable()
+    {
+        return $this->viewable();
+    }
     public function viewable()
     {
         $userid = Yii::$app->user->identity->id;
@@ -161,57 +163,82 @@ class Verse extends \yii\db\ActiveRecord
     {
         return $this->hasMany(VerseCyber::className(), ['verse_id' => 'id']);
     }
+
+    public function getNodes($inputs, $quest)
+    {
+        $m = [];
+        $UUID = [];
+        foreach ($inputs as $child) {
+            $id = $child->parameters->id;
+            $UUID[$id] = $child->parameters->uuid;
+            array_push($m, $id);
+        }
+
+        $datas = $quest->where(['id' => $m])->all();
+
+        foreach ($datas as $i => $item) {
+            if (!$item->uuid) {
+                $item->uuid = $UUID[$item->id];
+                $item->save();
+            }
+        }
+
+        return $datas;
+    }
+
+    public function getModules()
+    {
+        $data = json_decode($this->data);
+        $metas = $this->getNodes($data->children->metas, $this->getMetas());
+        $metaKnights = $this->getNodes($data->children->metaKnights, $this->getMetaKnights());
+        return array_merge($metas, $metaKnights);
+    }
     public function getResources()
     {
-        $datas = $this->datas;
-
+        $modules = $this->modules;
         $ids = [];
+        foreach ($modules as $module) {
+            $ids = array_merge_recursive($ids, $module->resourceIds);
+        }
 
-        $metas = $datas['metas'];
-        foreach ($metas as $meta) {
-            $ids = array_merge_recursive($ids, $meta->resourceIds);
-        }
-        $knights = $datas['knights'];
-        foreach ($knights as $knight) {
-            $ids = array_merge_recursive($ids, $knight->resourceIds);
-        }
         $items = Resource::find()->where(['id' => $ids])->all();
         return $items;
     }
+/*
+public function getDatas()
+{
+$data = json_decode($this->data);
 
-    public function getDatas()
-    {
-        $data = json_decode($this->data);
+$m = [];
+$k = [];
+foreach ($data->children->metas as $child) {
+if ($child->type == 'Meta') {
+$id = $child->parameters->id;
+array_push($m, $id);
+} else {
+$id = $child->parameters->id;
+array_push($k, $id);
+}
+}
+$knightQuery = $this->getMetaKnights()->where(['id' => $k]);
+$metaQuery = $this->getMetas()->where(['id' => $m]);
 
-        $m = [];
-        $k = [];
-        foreach ($data->children->metas as $child) {
-            if ($child->type == 'Meta') {
-                $id = $child->parameters->id;
-                array_push($m, $id);
-            } else {
-                $id = $child->parameters->id;
-                array_push($k, $id);
-            }
-        }
-        $knightQuery = $this->getMetaKnights()->where(['id' => $k]);
-        $metaQuery = $this->getMetas()->where(['id' => $m]);
+return ['metas' => $metaQuery->all(), 'knights' => $knightQuery->all()];
+}
 
-        return ['metas' => $metaQuery->all(), 'knights' => $knightQuery->all()];
-    }
+public function getScript()
+{
 
-    public function getScript()
-    {
+$cybers = $this->verseCybers;
+if (count($cybers) >= 1) {
+$cyber = array_shift($cybers);
+return json_encode($cyber->script);
+}
 
-        $cybers = $this->verseCybers;
-        if (count($cybers) >= 1) {
-            $cyber = array_shift($cybers);
-            return json_encode($cyber->script);
-        }
+return null;
 
-        return null;
-
-    }
+}
+ */
     public function getVerseShare()
     {
         $share = VerseShare::findOne(['verse_id' => $this->id, 'user_id' => Yii::$app->user->id]);
@@ -309,13 +336,5 @@ class Verse extends \yii\db\ActiveRecord
     {
         return $this->hasMany(VerseRete::className(), ['verse_id' => 'id']);
     }
-    /*
-public function getShare()
-{
-
-$share = VerseShare::findOne(['verse_id' => $this->id, 'user_id' => Yii::$app->user->id]);
-
-return $share != null;
-}*/
 
 }
