@@ -2,14 +2,11 @@
 
 namespace api\modules\a1\models;
 
-use api\modules\a1\models\EventLink;
 use api\modules\a1\models\File;
 use api\modules\a1\models\Meta;
-use api\modules\a1\models\Resource;
 use api\modules\a1\models\Space;
 use api\modules\v1\models\User;
 use api\modules\v1\models\VerseQuery;
-use Yii;
 use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
 use yii\db\Expression;
@@ -92,11 +89,16 @@ class Room extends \yii\db\ActiveRecord
         unset($fields['data']);
         unset($fields['version']);
         unset($fields['name']);
-
-        $fields['space'] = function () {
-            return $this->space;
+        $data = json_decode($this->data);
+        $space = $data->parameters->space;
+        $fields['occlusion'] = function ($model) use ($space) {
+            return $space->occlusion;
         };
 
+        $fields['space'] = function ($model) use ($space) {
+            $model = Space::findOne($space->id);
+            return $model;
+        };
         return $fields;
     }
     /**
@@ -117,144 +119,6 @@ class Room extends \yii\db\ActiveRecord
             'version' => 'Version',
         ];
     }
-    /**
-     * Gets query for [[VerseCybers]].
-     *
-     * @return \yii\db\ActiveQuery|VerseCyberQuery
-     */
-    public function getVerseCybers()
-    {
-        return $this->hasMany(VerseCyber::className(), ['verse_id' => 'id']);
-    }
-
-    /**
-     * Gets query for [[EventLinks]].
-     *
-     * @return \yii\db\ActiveQuery|EventLinkQuery
-     */
-    public function getEventLinks()
-    {
-        return $this->hasMany(EventLink::className(), ['verse_id' => 'id']);
-    }
-    public function getResources()
-    {
-        $modules = $this->modules;
-
-        $ids = [];
-
-        foreach ($modules as $module) {
-            $ids = array_merge_recursive($ids, $module->resourceIds);
-        }
-
-        $items = Resource::find()->where(['id' => $ids])->all();
-        return $items;
-    }
-    public function getNodes($inputs, $quest)
-    {
-        $m = [];
-        $UUID = [];
-        foreach ($inputs as $child) {
-            $id = $child->parameters->id;
-            $UUID[$id] = $child->parameters->uuid;
-            array_push($m, $id);
-        }
-
-        $datas = $quest->where(['id' => $m])->all();
-
-        foreach ($datas as $i => $item) {
-            if (!$item->uuid) {
-                $item->uuid = $UUID[$item->id];
-                $item->save();
-            }
-        }
-
-        return $datas;
-    }
-
-    public function getModules()
-    {
-        $data = json_decode($this->data);
-        $metas = $this->getNodes($data->children->metas, $this->getMetas());
-        $metaKnights = $this->getNodes($data->children->metaKnights, $this->getMetaKnights());
-        return array_merge($metas, $metaKnights);
-    }
-
-    public function getSpace()
-    {
-        $data = json_decode($this->data);
-        if (isset($data->parameters) && isset($data->parameters->space)) {
-            $space = $data->parameters->space;
-            $model = Space::findOne($space->id);
-            if ($model) {
-                return $model;
-            }
-
-        }
-    }
-
-    /**
-     * Gets query for [[MetaKnights]].
-     *
-     * @return \yii\db\ActiveQuery|MetaKnightQuery
-     */
-    public function getMetaKnights()
-    {
-        return $this->hasMany(MetaKnight::className(), ['verse_id' => 'id']);
-    }
-
-    /**
-     * Gets query for [[Metas]].
-     *
-     * @return \yii\db\ActiveQuery|MetaQuery
-     */
-    public function getMetas()
-    {
-        return $this->hasMany(Meta::className(), ['verse_id' => 'id']);
-    }
-    /**
-     * Gets query for [[VerseOpens]].
-     *
-     * @return \yii\db\ActiveQuery|VerseOpenQuery
-     */
-    public function getVerseOpen()
-    {
-        return $this->hasOne(VerseOpen::className(), ['verse_id' => 'id']);
-    }
-
-    public function getMessage()
-    {
-        return $this->hasOne(Message::class, ['id' => 'message_id'])
-            ->viaTable('verse_open', ['verse_id' => 'id']);
-    }
-    /**
-     * Gets query for [[Author]].
-     *
-     * @return \yii\db\ActiveQuery|UserQuery
-     */
-    public function getAuthor()
-    {
-        return $this->hasOne(User::className(), ['id' => 'author_id']);
-    }
-
-    /**
-     * Gets query for [[Image]].
-     *
-     * @return \yii\db\ActiveQuery|FileQuery
-     */
-    public function getImage()
-    {
-        return $this->hasOne(File::className(), ['id' => 'image_id']);
-    }
-
-    /**
-     * Gets query for [[Updater]].
-     *
-     * @return \yii\db\ActiveQuery|UserQuery
-     */
-    public function getUpdater()
-    {
-        return $this->hasOne(User::className(), ['id' => 'updater_id']);
-    }
 
     /**
      * {@inheritdoc}
@@ -264,31 +128,4 @@ class Room extends \yii\db\ActiveRecord
     {
         return new VerseQuery(get_called_class());
     }
-    /**
-     * Gets query for [[VerseRetes]].
-     *
-     * @return \yii\db\ActiveQuery|VerseReteQuery
-     */
-    public function getVerseRetes()
-    {
-        return $this->hasMany(VerseRete::className(), ['verse_id' => 'id']);
-    }
-    public function getShare()
-    {
-
-        $share = VerseShare::findOne(['verse_id' => $this->id, 'user_id' => Yii::$app->user->id]);
-
-        return $share != null;
-    }
-
-    /**
-     * Gets query for [[VerseScripts]].
-     *
-     * @return \yii\db\ActiveQuery|VerseScriptQuery
-     */
-    public function getVerseScripts()
-    {
-        return $this->hasMany(VerseScript::className(), ['verse_id' => 'id']);
-    }
-
 }
