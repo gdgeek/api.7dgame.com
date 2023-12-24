@@ -220,6 +220,7 @@ return [
                     'controller' => [
                         'a1/verse',
                         'a1/room',
+                        'a1/game',
                         'p1/verse-open',
                         'p1/verse-publish',
                         'p1/verse-share',
