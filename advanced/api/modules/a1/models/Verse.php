@@ -80,6 +80,42 @@ class Verse extends \yii\db\ActiveRecord
             [['updater_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updater_id' => 'id']],
         ];
     }
+    public function extraFields()
+    {
+        $data = json_decode($this->data);
+        $space = $data->parameters->space;
+
+        return [
+            'id',
+
+            'name',
+            'description' => function () {
+                $info = json_decode($this->info);
+                return $info->description;
+            },
+
+            'data',
+            'connections' => function () {
+                return $this->eventLinks;
+            },
+            'stories' => function () {
+                return $this->verseScripts;
+            },
+            'modules' => function () {
+                return $this->modules;
+            },
+            'resources' => function () {
+                return $this->resources;
+            },
+            'occlusion' => function ($model) use ($space) {
+                return $space->occlusion;
+            },
+            'space' => function ($model) use ($space) {
+                $model = Space::findOne($space->id);
+                return $model;
+            },
+        ];
+    }
     public function fields()
     {
         $fields = parent::fields();
@@ -89,30 +125,35 @@ class Verse extends \yii\db\ActiveRecord
         unset($fields['created_at']);
         unset($fields['author_id']);
         unset($fields['info']);
+        unset($fields['name']);
+        unset($fields['data']);
+        unset($fields['data']);
+        unset($fields['version']);
 
-        $fields['description'] = function () {
-            return json_decode($this->info)->description;
-        };
+        //$fields['description'] = function () {
+        //    return json_decode($this->info)->description;
+        //};
+        /*
         $fields['connections'] = function () {
-            return $this->eventLinks;
+        return $this->eventLinks;
         };
         $fields['stories'] = function () {
-            return $this->verseScripts;
+        return $this->verseScripts;
 
         };
         $fields['space'] = function () {
-            return $this->space;
+        return $this->space;
         };
 
         $fields['modules'] = function () {
 
-            return $this->modules;
+        return $this->modules;
         };
 
         $fields['resources'] = function () {
-            return $this->resources;
-        };
-        return $fields;
+        return $this->resources;
+        };*/
+        return [];
     }
     /**
      * {@inheritdoc}
