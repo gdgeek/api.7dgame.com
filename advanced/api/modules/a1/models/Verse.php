@@ -98,8 +98,19 @@ class Verse extends \yii\db\ActiveRecord
             'connections' => function () {
                 return $this->eventLinks;
             },
-            'stories' => function () {
-                return $this->stories;
+            'stories' => function () use ($data) {
+                $scripts = $this->verseScripts;
+
+                $story = json_decode($data->parameters->story);
+                $sorted = $story->sorted;
+
+                usort($scripts, function ($a, $b) use ($sorted) {
+                    $posA = array_search($a->id, $sorted);
+                    $posB = array_search($b->id, $sorted);
+                    return $posA - $posB;
+                });
+
+                return $scripts;
             },
             'modules' => function () {
                 return $this->modules;
@@ -107,10 +118,10 @@ class Verse extends \yii\db\ActiveRecord
             'resources' => function () {
                 return $this->resources;
             },
-            'occlusion' => function ($model) use ($space) {
+            'occlusion' => function () use ($space) {
                 return $space->occlusion;
             },
-            'space' => function ($model) use ($space) {
+            'space' => function () use ($space) {
                 $model = Space::findOne($space->id);
                 return $model;
             },
@@ -337,10 +348,6 @@ class Verse extends \yii\db\ActiveRecord
         return $share != null;
     }
 
-    public function getStories()
-    {
-        return $this->getVerseScripts();
-    }
     /**
      * Gets query for [[VerseScripts]].
      *
