@@ -99,7 +99,7 @@ class Verse extends \yii\db\ActiveRecord
                 return $this->eventLinks;
             },
             'stories' => function () {
-                return $this->verseScripts;
+                return $this->stories;
             },
             'modules' => function () {
                 return $this->modules;
@@ -337,6 +337,10 @@ class Verse extends \yii\db\ActiveRecord
         return $share != null;
     }
 
+    public function getStories()
+    {
+        return $this->getVerseScripts();
+    }
     /**
      * Gets query for [[VerseScripts]].
      *

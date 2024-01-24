@@ -47,7 +47,7 @@ class VerseScript extends \yii\db\ActiveRecord
     public function fields()
     {
         $fields = parent::fields();
-        unset($fields['id']);
+        //unset($fields['id']);
         unset($fields['created_at']);
         unset($fields['workspace']);
         unset($fields['verse_id']);
