@@ -99,18 +99,24 @@ class Verse extends \yii\db\ActiveRecord
                 return $this->eventLinks;
             },
             'stories' => function () use ($data) {
+
                 $scripts = $this->verseScripts;
 
-                $story = json_decode($data->parameters->story);
-                $sorted = $story->sorted;
+                if (isset($data->parameters->story)) {
+                    $story = json_decode($data->parameters->story);
+                    $sorted = $story->sorted;
 
-                usort($scripts, function ($a, $b) use ($sorted) {
-                    $posA = array_search($a->id, $sorted);
-                    $posB = array_search($b->id, $sorted);
-                    return $posA - $posB;
-                });
+                    usort($scripts, function ($a, $b) use ($sorted) {
+                        $posA = array_search($a->id, $sorted);
+                        $posB = array_search($b->id, $sorted);
+                        return $posA - $posB;
+                    });
 
-                return $scripts;
+                    //json_decode($data->parameters->story)
+                    return $scripts;
+                }
+                return [];
+
             },
             'modules' => function () {
                 return $this->modules;
@@ -241,9 +247,16 @@ class Verse extends \yii\db\ActiveRecord
     public function getModules()
     {
         $data = json_decode($this->data);
-        $metas = $this->getNodes($data->children->metas, $this->getMetas());
-        $metaKnights = $this->getNodes($data->children->metaKnights, $this->getMetaKnights());
-        return array_merge($metas, $metaKnights);
+        $modules = [];
+        if (isset($data->children->metas)) {
+            $modules = array_merge($modules, $this->getNodes($data->children->metas, $this->getMetas()));
+        }
+
+        if (isset($data->children->metaKnights)) {
+            $modules = array_merge($modules, $this->getNodes($data->children->metaKnights, $this->getMetaKnights()));
+
+        }
+        return $modules; //array_merge($metas, $metaKnights);
     }
 
     public function getSpace()
