@@ -147,29 +147,6 @@ class Verse extends \yii\db\ActiveRecord
         unset($fields['data']);
         unset($fields['version']);
 
-        //$fields['description'] = function () {
-        //    return json_decode($this->info)->description;
-        //};
-        /*
-        $fields['connections'] = function () {
-        return $this->eventLinks;
-        };
-        $fields['stories'] = function () {
-        return $this->verseScripts;
-
-        };
-        $fields['space'] = function () {
-        return $this->space;
-        };
-
-        $fields['modules'] = function () {
-
-        return $this->modules;
-        };
-
-        $fields['resources'] = function () {
-        return $this->resources;
-        };*/
         return [];
     }
     /**

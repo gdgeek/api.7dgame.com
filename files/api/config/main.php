@@ -218,12 +218,18 @@ return [
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => [
-                        'a1/verse',
                         'p1/verse-open',
                         'p1/verse-publish',
                         'p1/verse-share',
                         'e1/verse',
                         'e1/meta',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'a1/verse',
+                    'extraPatterns' => [
+                        'GET decode' => 'decode',
                     ],
                 ],
                 [
