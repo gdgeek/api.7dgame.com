@@ -111,14 +111,6 @@ class Meta extends \yii\db\ActiveRecord
             }
             return $ret;
         };
-        /*$fields['outputs'] = function ($model) {
-        $ret = [];
-        foreach ($this->eventNode->eventOutputs as $output) {
-        $ret[] = $output->uuid;
-        }
-        return $ret;
-        };*/
-        // $fields['type'] = function () {return 'Mate';};
         $fields['script'] = function () {
             if ($this->cyber && $this->cyber->script) {
                 return $this->cyber->script;

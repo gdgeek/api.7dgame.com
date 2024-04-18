@@ -89,7 +89,9 @@ class Meta extends \yii\db\ActiveRecord
         unset($fields['created_at']);
         unset($fields['image_id']);
         unset($fields['info']);
-
+        unset($fields['event_node_id']);
+        unset($fields['author_id']);
+        unset($fields['verse_id']);
         $fields['editable'] = function () {return $this->verse->editable();};
         $fields['viewable'] = function () {return $this->verse->viewable();};
         return $fields;

@@ -86,15 +86,16 @@ class Verse extends \yii\db\ActiveRecord
         unset($fields['created_at']);
         unset($fields['info']);
         unset($fields['version']);
+        unset($fields['name']);
         // unset($fields['data']);
         // unset($fields['data']);
 
         $fields['space'] = function () {return $this->space;};
         $fields['modules'] = function () {return $this->modules;};
-        //$fields['resources'] = function () {return $this->resources;};
+        $fields['resources'] = function () {return $this->resources;};
         $fields['editable'] = function () {return $this->editable;};
         $fields['viewable'] = function () {return $this->viewable;};
-        $fields['root'] = function () {return json_decode($this->data);};
+        //$fields['root'] = function () {return json_decode($this->data);};
         return $fields;
     }
 
@@ -200,7 +201,6 @@ class Verse extends \yii\db\ActiveRecord
         foreach ($modules as $module) {
             $ids = array_merge_recursive($ids, $module->resourceIds);
         }
-
         $items = Resource::find()->where(['id' => $ids])->all();
         return $items;
     }
