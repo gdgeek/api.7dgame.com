@@ -35,6 +35,12 @@ class Meta2Resources
                     }
 
                     break;
+                case 'voxel':
+                    if (isset($node->parameters->voxel)) {
+                        $resource = $node->parameters->voxel;
+                    }
+
+                    break;
                 case 'picture':
                     if (isset($node->parameters->picture)) {
                         $resource = $node->parameters->picture;
@@ -68,8 +74,6 @@ class Meta2Resources
     {
         //echo 'aaa';
         $resources = [];
-
-        //$data = json_decode($meta->data);
 
         Meta2Resources::HandleNode($data, $resources);
 
