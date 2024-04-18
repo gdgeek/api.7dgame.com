@@ -103,7 +103,7 @@ class Meta extends \yii\db\ActiveRecord
         unset($fields['info']);
 
         unset($fields['event_node_id']);
-        unset($fields['id']);
+        //unset($fields['id']);
         $fields['inputs'] = function ($model) {
             $ret = [];
             foreach ($this->eventNode->eventInputs as $input) {
