@@ -19,7 +19,6 @@ use yii\db\Expression;
  * @property int|null $updater_id
  * @property string $created_at
  * @property string $updated_at
- * @property int|null $verse_id
  * @property string|null $info
  * @property int|null $image_id
  * @property string|null $data
@@ -30,8 +29,10 @@ use yii\db\Expression;
  * @property User $author
  * @property File $image
  * @property User $updater
- * @property Verse $verse
  * @property MetaRete[] $metaRetes
+ * @property string|null $type
+ * @property string|null $events
+ * @property string|null $title
  *
  * @property MetaResource[] $metaResources
  */
@@ -72,16 +73,15 @@ class Meta extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['author_id', 'updater_id', 'verse_id', 'image_id', 'event_node_id'], 'integer'],
+            [['author_id', 'updater_id', 'image_id', 'event_node_id'], 'integer'],
             [['created_at', 'updated_at'], 'safe'],
-            [['info', 'data'], 'string'],
-            [['uuid'], 'string', 'max' => 255],
+            [['info', 'data', 'events'], 'string'],
+            [['uuid', 'title', 'type'], 'string', 'max' => 255],
             [['uuid'], 'unique'],
             [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['author_id' => 'id']],
             [['event_node_id'], 'exist', 'skipOnError' => true, 'targetClass' => EventNode::className(), 'targetAttribute' => ['event_node_id' => 'id']],
             [['image_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['image_id' => 'id']],
             [['updater_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updater_id' => 'id']],
-            [['verse_id'], 'exist', 'skipOnError' => true, 'targetClass' => Verse::className(), 'targetAttribute' => ['verse_id' => 'id']],
         ];
     }
     public function fields()
@@ -90,13 +90,14 @@ class Meta extends \yii\db\ActiveRecord
         unset($fields['updater_id']);
         unset($fields['updated_at']);
         unset($fields['created_at']);
-        unset($fields['image_id']);
-        unset($fields['info']);
-
+        //unset($fields['info']);
+        $fields['image'] = function () {
+            return $this->image;
+        };
         $fields['event_node'] = function () {return $this->eventNode;};
 
-        $fields['editable'] = function () {return $this->verse->editable();};
-        $fields['viewable'] = function () {return $this->verse->viewable();};
+        $fields['editable'] = function () {return true;};
+        $fields['viewable'] = function () {return true;};
         return $fields;
     }
     /**
@@ -109,8 +110,6 @@ class Meta extends \yii\db\ActiveRecord
             'author_id' => 'Author ID',
             'updater_id' => 'Updater ID',
             'created_at' => 'Created At',
-            'updated_at' => 'Updated At',
-            'verse_id' => 'Verse ID',
             'info' => 'Info',
             'image_id' => 'Image ID',
             'data' => 'Data',
@@ -158,16 +157,6 @@ class Meta extends \yii\db\ActiveRecord
     }
 
     /**
-     * Gets query for [[Verse]].
-     *
-     * @return \yii\db\ActiveQuery|VerseQuery
-     */
-    public function getVerse()
-    {
-        return $this->hasOne(Verse::className(), ['id' => 'verse_id']);
-    }
-
-    /**
      * Gets query for [[MetaRetes]].
      *
      * @return \yii\db\ActiveQuery|MetaReteQuery
@@ -189,7 +178,7 @@ class Meta extends \yii\db\ActiveRecord
 
     public function extraFields()
     {
-        return ['verse', 'image',
+        return ['image',
             'author' => function () {
                 return $this->author;
             },
@@ -223,7 +212,6 @@ class Meta extends \yii\db\ActiveRecord
         $ret = parent::beforeSave($insert);
         if ($this->eventNode == null) {
             $node = new EventNode();
-            $node->verse_id = $this->verse_id;
             $node->save();
             $this->event_node_id = $node->id;
         }

@@ -2,9 +2,9 @@
 
 namespace api\modules\v1\models;
 
+use api\modules\v1\models\Meta;
 use yii\base\Model;
 use yii\data\ActiveDataProvider;
-use api\modules\v1\models\Meta;
 
 /**
  * MetaSearch represents the model behind the search form of `api\modules\v1\models\Meta`.
@@ -17,8 +17,8 @@ class MetaSearch extends Meta
     public function rules()
     {
         return [
-            [['id', 'author_id', 'updater_id', 'verse_id', 'image_id'], 'integer'],
-            [['created_at', 'updated_at', 'name', 'info', 'data'], 'safe'],
+            [['id', 'author_id', 'updater_id', 'image_id'], 'integer'],
+            [['created_at', 'updated_at', 'title', 'info', 'data'], 'safe'],
         ];
     }
 
@@ -63,11 +63,11 @@ class MetaSearch extends Meta
             'updater_id' => $this->updater_id,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
-            'verse_id' => $this->verse_id,
+
             'image_id' => $this->image_id,
         ]);
 
-        $query->andFilterWhere(['like', 'name', $this->name])
+        $query->andFilterWhere(['like', 'title', $this->title])
             ->andFilterWhere(['like', 'info', $this->info])
             ->andFilterWhere(['like', 'data', $this->data]);
 

@@ -7,7 +7,6 @@ use api\modules\v1\models\EventNode;
 use api\modules\v1\models\File;
 use api\modules\v1\models\MetaQuery;
 use api\modules\v1\models\User;
-use api\modules\v1\models\VerseShare;
 use Yii;
 use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
@@ -21,7 +20,6 @@ use yii\db\Expression;
  * @property int|null $updater_id
  * @property string $created_at
  * @property string $updated_at
- * @property int|null $verse_id
  * @property string|null $info
  * @property int|null $image_id
  * @property string|null $data
@@ -31,7 +29,6 @@ use yii\db\Expression;
  * @property User $author
  * @property File $image
  * @property User $updater
- * @property Verse $verse
  * @property MetaRete[] $metaRetes
  */
 class Meta extends \yii\db\ActiveRecord
@@ -71,7 +68,7 @@ class Meta extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['author_id', 'updater_id', 'verse_id', 'image_id', 'event_node_id'], 'integer'],
+            [['author_id', 'updater_id', 'image_id', 'event_node_id'], 'integer'],
             [['created_at', 'updated_at'], 'safe'],
             [['info', 'data'], 'string'],
             [['uuid'], 'string', 'max' => 255],
@@ -80,7 +77,6 @@ class Meta extends \yii\db\ActiveRecord
             [['event_node_id'], 'exist', 'skipOnError' => true, 'targetClass' => EventNode::className(), 'targetAttribute' => ['event_node_id' => 'id']],
             [['image_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['image_id' => 'id']],
             [['updater_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updater_id' => 'id']],
-            [['verse_id'], 'exist', 'skipOnError' => true, 'targetClass' => Verse::className(), 'targetAttribute' => ['verse_id' => 'id']],
         ];
     }
     /**
@@ -98,7 +94,6 @@ class Meta extends \yii\db\ActiveRecord
         unset($fields['updater_id']);
         unset($fields['updated_at']);
         unset($fields['created_at']);
-        unset($fields['verse_id']);
         unset($fields['image_id']);
         unset($fields['info']);
 
@@ -131,7 +126,6 @@ class Meta extends \yii\db\ActiveRecord
             'updater_id' => 'Updater ID',
             'created_at' => 'Created At',
             'updated_at' => 'Updated At',
-            'verse_id' => 'Verse ID',
             'info' => 'Info',
             'image_id' => 'Image ID',
             'data' => 'Data',
@@ -170,16 +164,6 @@ class Meta extends \yii\db\ActiveRecord
     }
 
     /**
-     * Gets query for [[Verse]].
-     *
-     * @return \yii\db\ActiveQuery|VerseQuery
-     */
-    public function getVerse()
-    {
-        return $this->hasOne(Verse::className(), ['id' => 'verse_id']);
-    }
-
-    /**
      * Gets query for [[MetaRetes]].
      *
      * @return \yii\db\ActiveQuery|MetaReteQuery
@@ -198,13 +182,7 @@ class Meta extends \yii\db\ActiveRecord
     {
         return $this->hasOne(File::className(), ['id' => 'image_id']);
     }
-    public function getShare()
-    {
 
-        $share = VerseShare::findOne(['verse_id' => $this->verse_id, 'user_id' => Yii::$app->user->id]);
-
-        return $share != null;
-    }
     public function getResourceIds()
     {
         $resourceIds = \api\modules\v1\helper\Meta2Resources::Handle(json_decode($this->data));

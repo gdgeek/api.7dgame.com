@@ -223,6 +223,7 @@ return [
                         'p1/verse-share',
                         'e1/verse',
                         'e1/meta',
+                        'e1/knight',
                     ],
                 ],
                 [
