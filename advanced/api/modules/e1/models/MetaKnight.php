@@ -38,12 +38,12 @@ class MetaKnight extends \yii\db\ActiveRecord
     {
         return [
             [['verse_id', 'user_id'], 'required'],
-            [['verse_id', 'knight_id', 'user_id'], 'integer'],
+            [['verse_id', 'meta_id', 'user_id'], 'integer'],
             [['info'], 'string'],
             [['create_at'], 'safe'],
             [['uuid'], 'string', 'max' => 255],
             [['uuid'], 'unique'],
-            [['knight_id'], 'exist', 'skipOnError' => true, 'targetClass' => Knight::className(), 'targetAttribute' => ['knight_id' => 'id']],
+            [['meta_id'], 'exist', 'skipOnError' => true, 'targetClass' => Knight::className(), 'targetAttribute' => ['knight_id' => 'id']],
             [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['user_id' => 'id']],
             [['verse_id'], 'exist', 'skipOnError' => true, 'targetClass' => Verse::className(), 'targetAttribute' => ['verse_id' => 'id']],
         ];
@@ -57,7 +57,7 @@ class MetaKnight extends \yii\db\ActiveRecord
         return [
             'id' => 'ID',
             'verse_id' => 'Verse ID',
-            'knight_id' => 'Knight ID',
+            'meta_id' => 'Meta ID',
             'user_id' => 'User ID',
             'info' => 'Info',
             'create_at' => 'Create At',
@@ -70,17 +70,17 @@ class MetaKnight extends \yii\db\ActiveRecord
      *
      * @return \yii\db\ActiveQuery|yii\db\ActiveQuery
      */
-    public function getKnight()
+    public function getMeta()
     {
-        return $this->hasOne(Knight::className(), ['id' => 'knight_id']);
+        return $this->hasOne(Knight::className(), ['id' => 'meta_id']);
     }
 
     public function getResourceIds()
     {
-        if ($this->knight == null) {
+        if ($this->meta == null) {
             return [];
         }
-        return $this->knight->getResourceIds();
+        return $this->meta->getResourceIds();
     }
     /**
      * Gets query for [[User]].
@@ -115,27 +115,29 @@ class MetaKnight extends \yii\db\ActiveRecord
     {
         $fields = parent::fields();
         unset($fields['verse_id']);
-        unset($fields['knight_id']);
+        unset($fields['meta_id']);
         unset($fields['user_id']);
         unset($fields['create_at']);
         unset($fields['id']);
-
+        $fields['meta'] = function ($model) {
+            return $this->meta;
+        };
         $fields['type'] = function ($model) {
-            $knight = $this->knight;
-            if (!$knight || $this->knight->type == null) {
+            $meta = $this->meta;
+            if (!$meta || $this->meta->type == null) {
                 return 'sample';
             }
-            return $this->knight->type;
+            return $this->meta->type;
         };
         $fields['script'] = function ($model) {
             return '';
         };
         $fields['data'] = function ($model) {
-            $knight = $this->knight;
-            if (!$knight) {
+            $meta = $this->meta;
+            if (!$meta) {
                 return null;
             }
-            return $this->knight->data;
+            return $this->meta->data;
         };
         return $fields;
     }

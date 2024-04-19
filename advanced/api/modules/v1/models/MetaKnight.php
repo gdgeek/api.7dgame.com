@@ -12,7 +12,7 @@ use yii\db\Expression;
  *
  * @property int $id
  * @property int $verse_id
- * @property int $knight_id
+ * @property int $meta_id
  * @property int $user_id
  * @property string|null $info
  * @property string|null $create_at
@@ -20,7 +20,7 @@ use yii\db\Expression;
  * @property int|null $event_node_id
  *
  * @property EventNode $eventNode
- * @property Knight $knight
+ * @property Meta $meta
  * @property User $user
  * @property Verse $verse
  * @property string|null $uuid
@@ -61,13 +61,13 @@ class MetaKnight extends \yii\db\ActiveRecord
     {
         return [
             [['verse_id'], 'required'],
-            [['verse_id', 'knight_id', 'user_id', 'event_node_id'], 'integer'],
+            [['verse_id', 'meta_id', 'user_id', 'event_node_id'], 'integer'],
             [['info'], 'string'],
             [['create_at'], 'safe'],
             [['uuid'], 'string', 'max' => 255],
             [['uuid'], 'unique'],
             [['event_node_id'], 'exist', 'skipOnError' => true, 'targetClass' => EventNode::className(), 'targetAttribute' => ['event_node_id' => 'id']],
-            [['knight_id'], 'exist', 'skipOnError' => true, 'targetClass' => Knight::className(), 'targetAttribute' => ['knight_id' => 'id']],
+            [['meta_id'], 'exist', 'skipOnError' => true, 'targetClass' => Meta::className(), 'targetAttribute' => ['meta_id' => 'id']],
             [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['user_id' => 'id']],
             [['verse_id'], 'exist', 'skipOnError' => true, 'targetClass' => Verse::className(), 'targetAttribute' => ['verse_id' => 'id']],
         ];
@@ -81,7 +81,7 @@ class MetaKnight extends \yii\db\ActiveRecord
         return [
             'id' => 'ID',
             'verse_id' => 'Verse ID',
-            'knight_id' => 'Knight ID',
+            'meta_id' => 'Meta ID',
             'user_id' => 'User ID',
             'info' => 'Info',
             'create_at' => 'Create At',
@@ -100,10 +100,10 @@ class MetaKnight extends \yii\db\ActiveRecord
     }
     public function getResourceIds()
     {
-        if ($this->knight == null) {
+        if ($this->meta == null) {
             return [];
         }
-        return $this->knight->getResourceIds();
+        return $this->meta->getResourceIds();
     }
     public function fields()
     {
@@ -112,20 +112,14 @@ class MetaKnight extends \yii\db\ActiveRecord
             'id',
             'uuid',
             'data' => function ($model) {
-                $knight = $this->knight;
-                if (!$knight) {
+                $meta = $this->meta;
+                if (!$meta) {
                     return null;
                 }
-                return $this->knight->data;
+                return $this->meta->data;
             },
-            'knight_id',
-            'mesh' => function ($model) {
-                $knight = $this->knight;
-                if (!$knight) {
-                    return null;
-                }
-                return $this->knight->mesh;
-            },
+            'meta_id',
+
             'info',
             'event_node' => function ($model) {
                 return $this->eventNode;
@@ -133,13 +127,13 @@ class MetaKnight extends \yii\db\ActiveRecord
         ];
     }
     /**
-     * Gets query for [[Knight]].
+     * Gets query for [[Meta]].
      *
      * @return \yii\db\ActiveQuery|yii\db\ActiveQuery
      */
-    public function getKnight()
+    public function getMeta()
     {
-        return $this->hasOne(Knight::className(), ['id' => 'knight_id']);
+        return $this->hasOne(Meta::className(), ['id' => 'meta_id']);
     }
 
     /**

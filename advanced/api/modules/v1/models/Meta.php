@@ -99,8 +99,8 @@ class Meta extends \yii\db\ActiveRecord
         };
         $fields['event_node'] = function () {return $this->eventNode;};
 
-        $fields['editable'] = function () {return $this->verse->editable();};
-        $fields['viewable'] = function () {return $this->verse->viewable();};
+        $fields['editable'] = function () {return true;};
+        $fields['viewable'] = function () {return true;};
         return $fields;
     }
     /**

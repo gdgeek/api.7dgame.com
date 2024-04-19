@@ -147,6 +147,7 @@ class VerseRule extends Rule
         $verse = $this->getVerse($params);
 
         if (!$verse) {
+            return true;
             throw new BadRequestHttpException("no verse");
         }
 
