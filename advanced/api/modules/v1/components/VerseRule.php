@@ -2,6 +2,8 @@
 
 namespace api\modules\v1\components;
 
+use api\modules\v1\models\Cyber;
+use api\modules\v1\models\Meta;
 use api\modules\v1\models\MetaKnight;
 use api\modules\v1\models\Verse;
 use api\modules\v1\models\VerseScript;
@@ -21,23 +23,23 @@ class VerseRule extends Rule
 
         $post = \Yii::$app->request->post();
         $controller = Yii::$app->controller->id;
-/*
-if ($controller == 'cyber') {
-if (($request->isPut || $request->isGet) && isset($params['id'])) {
-$cyber = Cyber::findOne($params['id']);
-if ($cyber) {
-return $cyber->meta->verse;
-}
-}
 
-if ($request->isPost && isset($post['meta_id'])) {
-$meta = Meta::findOne($post['meta_id']);
-if ($meta) {
-return $meta->verse;
-}
-}
+        if ($controller == 'cyber') {
+            if (($request->isPut || $request->isGet) && isset($params['id'])) {
+                $cyber = Cyber::findOne($params['id']);
+                if ($cyber) {
+                    return $cyber->meta->verse;
+                }
+            }
 
-}*/
+            if ($request->isPost && isset($post['meta_id'])) {
+                $meta = Meta::findOne($post['meta_id']);
+                if ($meta) {
+                    return $meta->verse;
+                }
+            }
+
+        }
         if ($controller == 'verse-space') {
 
             if ($request->isGet && isset($params['verse_id'])) {
@@ -107,23 +109,21 @@ return $meta->verse;
             }
 
         }
-
         if ($controller == 'meta') {
-            /* return true;
 
-        if ($request->isPost && isset($post['verse_id'])) {
-        $verse = Verse::findOne($post['verse_id']);
-        return $verse;
-        }
+            if ($request->isPost && isset($post['verse_id'])) {
+                $verse = Verse::findOne($post['verse_id']);
+                return $verse;
+            }
 
-        if (($request->isGet || $request->isPut || $request->isDelete) && isset($params['id'])) {
+            if (($request->isGet || $request->isPut || $request->isDelete) && isset($params['id'])) {
 
-        $meta = Meta::findOne($params['id']);
-        if ($meta) {
-        return $meta->verse;
-        }
+                $meta = Meta::findOne($params['id']);
+                if ($meta) {
+                    return $meta->verse;
+                }
 
-        }*/
+            }
 
         }
 
@@ -147,7 +147,6 @@ return $meta->verse;
         $verse = $this->getVerse($params);
 
         if (!$verse) {
-            //return true;
             throw new BadRequestHttpException("no verse");
         }
 
