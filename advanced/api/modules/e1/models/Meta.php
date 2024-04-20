@@ -161,7 +161,7 @@ class Meta extends \yii\db\ActiveRecord
     {
         return [
             'resources' => function () {
-                return $this->extraResources();
+                return $this->resources;
             },
             'cyber',
         ];
@@ -171,18 +171,12 @@ class Meta extends \yii\db\ActiveRecord
         $resourceIds = \api\modules\v1\helper\Meta2Resources::Handle(json_decode($this->data));
         return $resourceIds;
     }
-    public function extraResources()
+    public function getResources()
     {
         $resourceIds = $this->resourceIds;
         $items = Resource::find()->where(['id' => $resourceIds])->all();
         return $items;
     }
-/*
-public function extraEditor()
-{
-$editor = \api\modules\v1\helper\Meta2Editor::Handle($this);
-return $editor;
-}*/
 
     public function upgrade($data)
     {

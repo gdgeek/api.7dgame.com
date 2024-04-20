@@ -97,6 +97,9 @@ class Meta extends \yii\db\ActiveRecord
         $fields['image'] = function () {
             return $this->image;
         };
+        $fields['resources'] = function () {
+            return $this->resources;
+        };
         $fields['event_node'] = function () {return $this->eventNode;};
 
         $fields['editable'] = function () {return true;};
@@ -149,6 +152,17 @@ class Meta extends \yii\db\ActiveRecord
     public function getUpdater()
     {
         return $this->hasOne(User::className(), ['id' => 'updater_id']);
+    }
+    public function getResourceIds()
+    {
+        $resourceIds = \api\modules\v1\helper\Meta2Resources::Handle(json_decode($this->data));
+        return $resourceIds;
+    }
+    public function getResources()
+    {
+        $resourceIds = $this->resourceIds;
+        $items = Resource::find()->where(['id' => $resourceIds])->all();
+        return $items;
     }
 
     /**

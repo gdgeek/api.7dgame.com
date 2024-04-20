@@ -80,6 +80,7 @@ class Verse extends \yii\db\ActiveRecord
     public function fields()
     {
         $fields = parent::fields();
+
         unset($fields['updater_id']);
         unset($fields['image_id']);
         unset($fields['updated_at']);
@@ -90,8 +91,9 @@ class Verse extends \yii\db\ActiveRecord
         // unset($fields['data']);
         // unset($fields['data']);
 
+        $fields['metas'] = function () {return $this->metas;};
         $fields['space'] = function () {return $this->space;};
-        $fields['modules'] = function () {return $this->modules;};
+        // $fields['modules'] = function () {return $this->modules;};
         $fields['resources'] = function () {return $this->resources;};
         $fields['editable'] = function () {return $this->editable;};
         $fields['viewable'] = function () {return $this->viewable;};
@@ -106,6 +108,7 @@ class Verse extends \yii\db\ActiveRecord
     public function editable()
     {
 
+        return true;
         $userid = Yii::$app->user->identity->id;
         if ($userid == $this->author_id) {
             return true;
@@ -122,6 +125,7 @@ class Verse extends \yii\db\ActiveRecord
     }
     public function viewable()
     {
+        return true;
         $userid = Yii::$app->user->identity->id;
         if ($userid == $this->author_id) {
             return true;
@@ -190,25 +194,16 @@ class Verse extends \yii\db\ActiveRecord
     public function getModules()
     {
 
-        // $data = json_decode($this->data);
-        // $metas = $this->getNodes($data->children->metas, $this->getMetas());
-
         return $this->metaKnights;
-        //$metaKnights = $this->getNodes($data->children->metaKnights, $this->getMetaKnights());
-        // $m =;
-        // foreach ($m as $k => $v) {
-        //     echo $v->id;
-        // }
-        //  $metas = array_merge($metas, $v->metas);
-        // echo json_encode(count($this->metaKnights));
-        //array_merge($metas, $metaKnights);
+
     }
     public function getResources()
     {
-        $modules = $this->modules;
+        $metas = $this->metas;
         $ids = [];
-        foreach ($modules as $module) {
-            $ids = array_merge_recursive($ids, $module->resourceIds);
+
+        foreach ($metas as $meta) {
+            $ids = array_merge_recursive($ids, $meta->resourceIds);
         }
         $items = Resource::find()->where(['id' => $ids])->all();
         return $items;
@@ -281,7 +276,12 @@ return null;
      */
     public function getMetas()
     {
-        return $this->hasMany(Meta::className(), ['verse_id' => 'id']);
+        $ret = [];
+        $data = json_decode($this->data);
+        foreach ($data->children->metaKnights as $item) {
+            $ret[] = $item->parameters->meta_id;
+        }
+        return Meta::find()->where(['id' => $ret])->all();
     }
     /**
      * Gets query for [[VerseOpens]].

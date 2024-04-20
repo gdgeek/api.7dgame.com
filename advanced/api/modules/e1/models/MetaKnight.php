@@ -119,7 +119,6 @@ class MetaKnight extends \yii\db\ActiveRecord
         unset($fields['user_id']);
         unset($fields['create_at']);
         unset($fields['knight_id']);
-        // unset($fields['id']);
         $fields['type'] = function ($model) {
             return $this->meta->type;
         };
@@ -127,8 +126,10 @@ class MetaKnight extends \yii\db\ActiveRecord
             return $this->meta->cyber;
         };
         $fields['data'] = function ($model) {
-
             return $this->meta->data;
+        };
+        $fields['resources'] = function ($model) {
+            return $this->meta->resources;
         };
         return $fields;
     }
