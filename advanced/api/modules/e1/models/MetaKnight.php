@@ -10,12 +10,12 @@ use Yii;
  *
  * @property int $id
  * @property int $verse_id
- * @property int $knight_id
+ * @property int $meta_id
  * @property int $user_id
  * @property string|null $info
  * @property string|null $create_at
  *
- * @property Knight $knight
+ * @property Meta $meta
  * @property User $user
  * @property Verse $verse
  * @property string|null $uuid
@@ -43,7 +43,7 @@ class MetaKnight extends \yii\db\ActiveRecord
             [['create_at'], 'safe'],
             [['uuid'], 'string', 'max' => 255],
             [['uuid'], 'unique'],
-            [['meta_id'], 'exist', 'skipOnError' => true, 'targetClass' => Knight::className(), 'targetAttribute' => ['knight_id' => 'id']],
+            [['meta_id'], 'exist', 'skipOnError' => true, 'targetClass' => Meta::className(), 'targetAttribute' => ['meta_id' => 'id']],
             [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['user_id' => 'id']],
             [['verse_id'], 'exist', 'skipOnError' => true, 'targetClass' => Verse::className(), 'targetAttribute' => ['verse_id' => 'id']],
         ];
@@ -66,13 +66,13 @@ class MetaKnight extends \yii\db\ActiveRecord
     }
 
     /**
-     * Gets query for [[Knight]].
+     * Gets query for [[Meta]].
      *
      * @return \yii\db\ActiveQuery|yii\db\ActiveQuery
      */
     public function getMeta()
     {
-        return $this->hasOne(Knight::className(), ['id' => 'meta_id']);
+        return $this->hasOne(Meta::className(), ['id' => 'meta_id']);
     }
 
     public function getResourceIds()
@@ -118,25 +118,16 @@ class MetaKnight extends \yii\db\ActiveRecord
         unset($fields['meta_id']);
         unset($fields['user_id']);
         unset($fields['create_at']);
-        unset($fields['id']);
-        $fields['meta'] = function ($model) {
-            return $this->meta;
-        };
+        unset($fields['knight_id']);
+        // unset($fields['id']);
         $fields['type'] = function ($model) {
-            $meta = $this->meta;
-            if (!$meta || $this->meta->type == null) {
-                return 'sample';
-            }
             return $this->meta->type;
         };
         $fields['script'] = function ($model) {
-            return '';
+            return $this->meta->cyber;
         };
         $fields['data'] = function ($model) {
-            $meta = $this->meta;
-            if (!$meta) {
-                return null;
-            }
+
             return $this->meta->data;
         };
         return $fields;

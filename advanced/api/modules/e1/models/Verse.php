@@ -189,10 +189,19 @@ class Verse extends \yii\db\ActiveRecord
 
     public function getModules()
     {
-        $data = json_decode($this->data);
-        $metas = $this->getNodes($data->children->metas, $this->getMetas());
-        $metaKnights = $this->getNodes($data->children->metaKnights, $this->getMetaKnights());
-        return array_merge($metas, $metaKnights);
+
+        // $data = json_decode($this->data);
+        // $metas = $this->getNodes($data->children->metas, $this->getMetas());
+
+        return $this->metaKnights;
+        //$metaKnights = $this->getNodes($data->children->metaKnights, $this->getMetaKnights());
+        // $m =;
+        // foreach ($m as $k => $v) {
+        //     echo $v->id;
+        // }
+        //  $metas = array_merge($metas, $v->metas);
+        // echo json_encode(count($this->metaKnights));
+        //array_merge($metas, $metaKnights);
     }
     public function getResources()
     {
