@@ -75,7 +75,7 @@ class Meta extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['author_id', 'updater_id', 'verse_id', 'image_id', 'event_node_id'], 'integer'],
+            [['author_id', 'updater_id', 'image_id', 'event_node_id'], 'integer'],
             [['created_at', 'updated_at'], 'safe'],
             [['info', 'data', 'events'], 'string'],
             [['uuid', 'title', 'type'], 'string', 'max' => 255],
@@ -84,7 +84,7 @@ class Meta extends \yii\db\ActiveRecord
             [['event_node_id'], 'exist', 'skipOnError' => true, 'targetClass' => EventNode::className(), 'targetAttribute' => ['event_node_id' => 'id']],
             [['image_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['image_id' => 'id']],
             [['updater_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updater_id' => 'id']],
-            [['verse_id'], 'exist', 'skipOnError' => true, 'targetClass' => Verse::className(), 'targetAttribute' => ['verse_id' => 'id']],
+            //   [['verse_id'], 'exist', 'skipOnError' => true, 'targetClass' => Verse::className(), 'targetAttribute' => ['verse_id' => 'id']],
         ];
     }
     public function fields()
