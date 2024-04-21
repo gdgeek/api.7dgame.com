@@ -54,6 +54,8 @@ class MetaController extends ActiveController
     {
         $actions = parent::actions();
         unset($actions['index']);
+
+        //unset($actions['create']);
         return $actions;
     }
 

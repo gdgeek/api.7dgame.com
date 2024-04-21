@@ -266,7 +266,13 @@ class Verse extends \yii\db\ActiveRecord
      */
     public function getMetas()
     {
-        return $this->hasMany(Meta::className(), ['verse_id' => 'id']);
+        $ret = [];
+        $data = json_decode($this->data);
+        foreach ($data->children->metaKnights as $item) {
+            $ret[] = $item->parameters->meta_id;
+        }
+        return Meta::find()->where(['id' => $ret])->all();
+        //return $this->hasMany(Meta::className(), ['verse_id' => 'id']);
     }
     /**
      * Gets query for [[VerseOpens]].

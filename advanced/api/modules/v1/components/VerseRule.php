@@ -28,14 +28,14 @@ class VerseRule extends Rule
             if (($request->isPut || $request->isGet) && isset($params['id'])) {
                 $cyber = Cyber::findOne($params['id']);
                 if ($cyber) {
-                    return $cyber->meta->verse;
+                    return null;
                 }
             }
 
             if ($request->isPost && isset($post['meta_id'])) {
                 $meta = Meta::findOne($post['meta_id']);
                 if ($meta) {
-                    return $meta->verse;
+                    return null;
                 }
             }
 
@@ -111,19 +111,7 @@ class VerseRule extends Rule
         }
         if ($controller == 'meta') {
 
-            if ($request->isPost && isset($post['verse_id'])) {
-                $verse = Verse::findOne($post['verse_id']);
-                return $verse;
-            }
-
-            if (($request->isGet || $request->isPut || $request->isDelete) && isset($params['id'])) {
-
-                $meta = Meta::findOne($params['id']);
-                if ($meta) {
-                    return $meta->verse;
-                }
-
-            }
+            return null;
 
         }
 
@@ -144,6 +132,7 @@ class VerseRule extends Rule
 
     public function execute($user, $item, $params)
     {
+
         $verse = $this->getVerse($params);
 
         if (!$verse) {
