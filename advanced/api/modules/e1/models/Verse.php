@@ -278,8 +278,11 @@ return null;
     {
         $ret = [];
         $data = json_decode($this->data);
-        foreach ($data->children->modules as $item) {
-            $ret[] = $item->parameters->meta_id;
+
+        if (isset($data->children)) {
+            foreach ($data->children->modules as $item) {
+                $ret[] = $item->parameters->meta_id;
+            }
         }
         return Meta::find()->where(['id' => $ret])->all();
     }

@@ -85,7 +85,6 @@ class Verse extends \yii\db\ActiveRecord
         unset($fields['image_id']);
         unset($fields['updated_at']);
 
-        // $fields['share'] = function () {return $this->share;};
         $fields['editable'] = function () {return $this->editable();};
         $fields['viewable'] = function () {return $this->viewable();};
         $fields['links'] = function () {return $this->eventLinks;};
@@ -243,12 +242,13 @@ class Verse extends \yii\db\ActiveRecord
     {
         $ret = [];
         $data = json_decode($this->data);
-        foreach ($data->children->modules as $item) {
-            $ret[] = $item->parameters->meta_id;
+        if (isset($data->children)) {
+            foreach ($data->children->modules as $item) {
+                $ret[] = $item->parameters->meta_id;
+            }
         }
-
         return Meta::find()->where(['id' => $ret])->all();
-        //return $this->hasMany(Meta::className(), ['verse_id' => 'id']);
+
     }
     /**
      * Gets query for [[VerseOpens]].
