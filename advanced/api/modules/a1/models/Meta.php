@@ -97,6 +97,10 @@ class Meta extends \yii\db\ActiveRecord
         unset($fields['image_id']);
         unset($fields['info']);
         unset($fields['event_node_id']);
+        unset($fields['custom']);
+        $fields['type'] = function ($model) {
+            return $model->custom != 0 ? 'sample' : 'module';
+        };
         //unset($fields['id']);
         /* $fields['inputs'] = function ($model) {
         $ret = [];
