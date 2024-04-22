@@ -87,7 +87,9 @@ class Verse extends \yii\db\ActiveRecord
 
         return [
             'id',
-
+            'metas' => function () {
+                return $this->metas;
+            },
             'name',
             'description' => function () {
                 $info = json_decode($this->info);
@@ -95,10 +97,7 @@ class Verse extends \yii\db\ActiveRecord
             },
 
             'data',
-            'connections' => function () {
-                return $this->eventLinks;
-            },
-            'stories' => function () use ($data) {
+            'scripts' => function () use ($data) {
 
                 $scripts = $this->verseScripts;
 
@@ -118,23 +117,15 @@ class Verse extends \yii\db\ActiveRecord
                 return [];
 
             },
-            'modules' => function () {
-                return $this->modules;
-            },
             'resources' => function () {
                 return $this->resources;
             },
-            'occlusion' => function () use ($space) {
-                return $space->occlusion;
-            },
-            'space' => function () use ($space) {
-                $model = Space::findOne($space->id);
-                return $model;
-            },
+
         ];
     }
     public function fields()
     {
+        /*
         $fields = parent::fields();
         unset($fields['updater_id']);
         unset($fields['image_id']);
@@ -144,9 +135,8 @@ class Verse extends \yii\db\ActiveRecord
         unset($fields['info']);
         unset($fields['name']);
         unset($fields['data']);
-        unset($fields['data']);
         unset($fields['version']);
-
+         */
         return [];
     }
     /**
@@ -188,12 +178,12 @@ class Verse extends \yii\db\ActiveRecord
     }
     public function getResources()
     {
-        $modules = $this->modules;
+        $metas = $this->metas;
 
         $ids = [];
 
-        foreach ($modules as $module) {
-            $ids = array_merge_recursive($ids, $module->resourceIds);
+        foreach ($metas as $meta) {
+            $ids = array_merge_recursive($ids, $meta->resourceIds);
         }
 
         $items = Resource::find()->where(['id' => $ids])->all();
@@ -221,21 +211,6 @@ class Verse extends \yii\db\ActiveRecord
         return $datas;
     }
 
-    public function getModules()
-    {
-        $data = json_decode($this->data);
-        $modules = [];
-        if (isset($data->children->metas)) {
-            $modules = array_merge($modules, $this->getNodes($data->children->metas, $this->getMetas()));
-        }
-
-        if (isset($data->children->metaKnights)) {
-            $modules = array_merge($modules, $this->getNodes($data->children->metaKnights, $this->getMetaKnights()));
-
-        }
-        return $modules; //array_merge($metas, $metaKnights);
-    }
-
     public function getSpace()
     {
         $data = json_decode($this->data);
@@ -250,23 +225,20 @@ class Verse extends \yii\db\ActiveRecord
     }
 
     /**
-     * Gets query for [[MetaKnights]].
-     *
-     * @return \yii\db\ActiveQuery|MetaKnightQuery
-     */
-    public function getMetaKnights()
-    {
-        return $this->hasMany(MetaKnight::className(), ['verse_id' => 'id']);
-    }
-
-    /**
      * Gets query for [[Metas]].
      *
      * @return \yii\db\ActiveQuery|MetaQuery
      */
     public function getMetas()
     {
-        return $this->hasMany(Meta::className(), ['verse_id' => 'id']);
+        $ret = [];
+        $data = json_decode($this->data);
+        foreach ($data->children->modules as $item) {
+            $ret[] = $item->parameters->meta_id;
+        }
+
+        return Meta::find()->where(['id' => $ret])->all();
+        //return $this->hasMany(Meta::className(), ['verse_id' => 'id']);
     }
     /**
      * Gets query for [[VerseOpens]].

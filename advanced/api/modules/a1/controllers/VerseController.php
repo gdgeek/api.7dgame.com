@@ -38,12 +38,8 @@ class VerseController extends ActiveController
         unset($actions['update']);
         unset($actions['delete']);
         unset($actions['options']);
-        // unset($actions['view']);
+        //  unset($actions['view']);
         return $actions;
     }
 
-    public function actionDecode($code)
-    {
-        return $code;
-    }
 }

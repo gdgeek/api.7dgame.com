@@ -168,35 +168,35 @@ class Verse extends \yii\db\ActiveRecord
     {
         return $this->hasMany(VerseCyber::className(), ['verse_id' => 'id']);
     }
+/*
+public function getNodes($inputs, $quest)
+{
+$m = [];
+$UUID = [];
+foreach ($inputs as $child) {
+$id = $child->parameters->id;
+$UUID[$id] = $child->parameters->uuid;
+array_push($m, $id);
+}
 
-    public function getNodes($inputs, $quest)
-    {
-        $m = [];
-        $UUID = [];
-        foreach ($inputs as $child) {
-            $id = $child->parameters->id;
-            $UUID[$id] = $child->parameters->uuid;
-            array_push($m, $id);
-        }
+$datas = $quest->where(['id' => $m])->all();
 
-        $datas = $quest->where(['id' => $m])->all();
+foreach ($datas as $i => $item) {
+if (!$item->uuid) {
+$item->uuid = $UUID[$item->id];
+$item->save();
+}
+}
 
-        foreach ($datas as $i => $item) {
-            if (!$item->uuid) {
-                $item->uuid = $UUID[$item->id];
-                $item->save();
-            }
-        }
+return $datas;
+}*/
+/*
+public function getModules()
+{
 
-        return $datas;
-    }
+return $this->metaKnights;
 
-    public function getModules()
-    {
-
-        return $this->metaKnights;
-
-    }
+}*/
     public function getResources()
     {
         $metas = $this->metas;
@@ -263,12 +263,12 @@ return null;
      * Gets query for [[MetaKnights]].
      *
      * @return \yii\db\ActiveQuery|MetaKnightQuery
-     */
+
     public function getMetaKnights()
     {
-        return $this->hasMany(MetaKnight::className(), ['verse_id' => 'id']);
+    return $this->hasMany(MetaKnight::className(), ['verse_id' => 'id']);
     }
-
+     */
     /**
      * Gets query for [[Metas]].
      *
@@ -278,7 +278,7 @@ return null;
     {
         $ret = [];
         $data = json_decode($this->data);
-        foreach ($data->children->metaKnights as $item) {
+        foreach ($data->children->modules as $item) {
             $ret[] = $item->parameters->meta_id;
         }
         return Meta::find()->where(['id' => $ret])->all();

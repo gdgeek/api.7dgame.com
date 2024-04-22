@@ -29,9 +29,9 @@ class BindingRule extends Rule
             if ($request->isGet) {
                 if (isset($params['meta_id'])) {
                     $meta = Meta::findOne($params['meta_id']);
-                    if ($meta && $meta->verse->viewable()) {
-                        return true;
-                    }
+                    //  if ($meta && $meta->verse->viewable()) {
+                    return true;
+                    // }
                 }
 
             }
@@ -41,17 +41,17 @@ class BindingRule extends Rule
 
                     $meta = Meta::findOne($post['meta_id']);
                     $resource = Resource::findOne($post['resource_id']);
-                    if ($meta && $meta->verse->editable() && $resource && $resource->author_id == $userid) {
-                        return true;
-                    }
+                    //   if ($meta && $meta->verse->editable() && $resource && $resource->author_id == $userid) {
+                    return true;
+                    //   }
                 }
             }
             if ($request->isDelete) {
                 if (isset($params['id'])) {
                     $mr = MetaResource::findOne($params['id']);
-                    if ($mr && $mr->meta->verse->editable()) {
-                        return true;
-                    }
+                    //  if ($mr && $mr->meta->verse->editable()) {
+                    return true;
+                    //  }
                 }
             }
         }

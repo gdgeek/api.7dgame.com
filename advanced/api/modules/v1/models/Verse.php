@@ -3,7 +3,7 @@
 namespace api\modules\v1\models;
 
 use api\modules\v1\models\File;
-use api\modules\v1\models\Knight;
+//use api\modules\v1\models\Knight;
 use api\modules\v1\models\Space;
 use api\modules\v1\models\User;
 use api\modules\v1\models\VerseShare;
@@ -113,21 +113,18 @@ class Verse extends \yii\db\ActiveRecord
 
     public function getResources()
     {
-        $datas = $this->datas;
+        $metas = $this->metas;
 
         $ids = [];
 
-        $metas = $datas['metas'];
         foreach ($metas as $meta) {
             $ids = array_merge_recursive($ids, $meta->resourceIds);
         }
-        $knights = $datas['knights'];
-        foreach ($knights as $knight) {
-            $ids = array_merge_recursive($ids, $knight->resourceIds);
-        }
+
         $items = Resource::find()->where(['id' => $ids])->all();
         return $items;
     }
+
     /*
     public function extraProgramme()
     {
@@ -188,27 +185,6 @@ class Verse extends \yii\db\ActiveRecord
 
     }
 
-    public function getDatas()
-    {
-        $data = json_decode($this->data);
-
-        $m = [];
-        $k = [];
-        foreach ($data->children->metas as $child) {
-            if ($child->type == 'Meta') {
-                $id = $child->parameters->id;
-                array_push($m, $id);
-            } else {
-                $id = $child->parameters->id;
-                array_push($k, $id);
-            }
-        }
-        $knightQuery = $this->getMetaKnights()->where(['id' => $k]);
-        $metaQuery = $this->getMetas()->where(['id' => $m]);
-
-        return ['metas' => $metaQuery->all(), 'knights' => $knightQuery->all()];
-    }
-
     public function getSpace()
     {
         $data = json_decode($this->data);
@@ -226,13 +202,12 @@ class Verse extends \yii\db\ActiveRecord
 
         return [
             'metas',
-            'metaKnights',
+            //'metaKnights',
             'verseOpen',
             'message',
             'image',
             'author',
-            'space',
-            'datas',
+            ///'space',
             'resources',
             'verseShare',
         ];
@@ -253,12 +228,12 @@ class Verse extends \yii\db\ActiveRecord
      * Gets query for [[MetaKnights]].
      *
      * @return \yii\db\ActiveQuery|MetaKnightQuery
-     */
+
     public function getMetaKnights()
     {
-        return $this->hasMany(MetaKnight::className(), ['verse_id' => 'id']);
+    return $this->hasMany(MetaKnight::className(), ['verse_id' => 'id']);
     }
-
+     */
     /**
      * Gets query for [[Metas]].
      *
@@ -266,10 +241,9 @@ class Verse extends \yii\db\ActiveRecord
      */
     public function getMetas()
     {
-        return [];
         $ret = [];
         $data = json_decode($this->data);
-        foreach ($data->children->metaKnights as $item) {
+        foreach ($data->children->modules as $item) {
             $ret[] = $item->parameters->meta_id;
         }
 
