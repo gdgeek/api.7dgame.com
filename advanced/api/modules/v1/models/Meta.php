@@ -3,7 +3,6 @@
 namespace api\modules\v1\models;
 
 use api\modules\v1\models\Cyber;
-use api\modules\v1\models\EventNode;
 use api\modules\v1\models\File;
 use api\modules\v1\models\User;
 use Yii;
@@ -24,7 +23,6 @@ use yii\db\Expression;
  * @property int|null $image_id
  * @property string|null $data
  * @property string|null $uuid
- * @property int|null $event_node_id
  *
  * @property Cyber[] $cybers
  * @property User $author
@@ -73,13 +71,12 @@ class Meta extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['author_id', 'updater_id', 'image_id', 'event_node_id', 'custom'], 'integer'],
+            [['author_id', 'updater_id', 'image_id', 'custom'], 'integer'],
             [['created_at', 'updated_at'], 'safe'],
             [['info', 'data', 'events'], 'string'],
             [['uuid', 'title'], 'string', 'max' => 255],
             [['uuid'], 'unique'],
             [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['author_id' => 'id']],
-            [['event_node_id'], 'exist', 'skipOnError' => true, 'targetClass' => EventNode::className(), 'targetAttribute' => ['event_node_id' => 'id']],
             [['image_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['image_id' => 'id']],
             [['updater_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updater_id' => 'id']],
         ];
@@ -101,8 +98,6 @@ class Meta extends \yii\db\ActiveRecord
             return $this->resources;
         };
 
-        $fields['event_node'] = function () {return $this->eventNode;};
-
         $fields['editable'] = function () {return true;};
         $fields['viewable'] = function () {return true;};
         return $fields;
@@ -123,18 +118,9 @@ class Meta extends \yii\db\ActiveRecord
             'custom' => 'Custom',
             'data' => 'Data',
             'uuid' => 'Uuid',
-            'event_node_id' => 'Event Node ID',
         ];
     }
 
-    /**
-     * Gets query for [[EventNode]].
-     * @return \yii\db\ActiveQuery|EventNodeQuery
-     */
-    public function getEventNode()
-    {
-        return $this->hasOne(EventNode::className(), ['id' => 'event_node_id']);
-    }
     /**
      * Gets query for [[Author]].
      *
@@ -220,22 +206,5 @@ class Meta extends \yii\db\ActiveRecord
     {
         return new MetaQuery(get_called_class());
     }
-    public function afterDelete()
-    {
-        parent::afterDelete();
-        if ($this->eventNode != null) {
-            $this->eventNode->delete();
-        }
-    }
-    public function beforeSave($insert)
-    {
-        $ret = parent::beforeSave($insert);
-        if ($this->eventNode == null) {
-            $node = new EventNode();
 
-            $node->save();
-            $this->event_node_id = $node->id;
-        }
-        return $ret;
-    }
 }
