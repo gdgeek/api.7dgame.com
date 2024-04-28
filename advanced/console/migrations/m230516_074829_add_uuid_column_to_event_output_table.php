@@ -9,7 +9,7 @@ class m230516_074829_add_uuid_column_to_event_output_table extends Migration
 {
     /**
      * {@inheritdoc}
-     */
+     */#
     public function safeUp()
     {
         $this->addColumn('{{%event_output}}', 'uuid', $this->string()->notNull()->unique());

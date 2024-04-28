@@ -75,6 +75,8 @@ class Verse extends \yii\db\ActiveRecord
             [['created_at', 'updated_at'], 'safe'],
             [['info', 'data'], 'string'],
             [['name'], 'string', 'max' => 255],
+            [['uuid'], 'string', 'max' => 255],
+            [['uuid'], 'unique'],
             [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['author_id' => 'id']],
             [['image_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['image_id' => 'id']],
             [['updater_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updater_id' => 'id']],
@@ -95,8 +97,21 @@ class Verse extends \yii\db\ActiveRecord
                 $info = json_decode($this->info);
                 return $info->description;
             },
-
+            'uuid' => function () {
+                if ($this->uuid == null) {
+                    $this->uuid = Yii::$app->security->generateRandomString(32);
+                    $this->save();
+                }
+                return $this->uuid;
+            },
             'data',
+            'script' => function () {
+                $script = $this->script;
+                if ($this->script) {
+                    return $this->script->script;
+                }
+
+            },
             'scripts' => function () use ($data) {
 
                 $scripts = $this->verseScripts;
@@ -125,18 +140,7 @@ class Verse extends \yii\db\ActiveRecord
     }
     public function fields()
     {
-        /*
-        $fields = parent::fields();
-        unset($fields['updater_id']);
-        unset($fields['image_id']);
-        unset($fields['updated_at']);
-        unset($fields['created_at']);
-        unset($fields['author_id']);
-        unset($fields['info']);
-        unset($fields['name']);
-        unset($fields['data']);
-        unset($fields['version']);
-         */
+
         return [];
     }
     /**
@@ -152,6 +156,7 @@ class Verse extends \yii\db\ActiveRecord
             'updated_at' => 'Updated At',
             'name' => 'Name',
             'info' => 'Info',
+            'uuid' => 'Uuid',
             'image_id' => 'Image Id',
             'data' => 'Data',
             'version' => 'Version',
@@ -241,7 +246,7 @@ class Verse extends \yii\db\ActiveRecord
         }
 
         return Meta::find()->where(['id' => $ret])->all();
-        //return $this->hasMany(Meta::className(), ['verse_id' => 'id']);
+
     }
     /**
      * Gets query for [[VerseOpens]].
@@ -321,6 +326,10 @@ class Verse extends \yii\db\ActiveRecord
     public function getVerseScripts()
     {
         return $this->hasMany(VerseScript::className(), ['verse_id' => 'id']);
+    }
+    public function getScript()
+    {
+        return $this->hasOne(VerseScript::className(), ['verse_id' => 'id']);
     }
 
 }
