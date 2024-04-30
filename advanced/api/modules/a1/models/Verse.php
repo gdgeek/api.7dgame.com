@@ -84,7 +84,6 @@ class Verse extends \yii\db\ActiveRecord
     public function extraFields()
     {
         $data = json_decode($this->data);
-        //$space = $data->parameters->space;
 
         return [
             'id',
@@ -102,7 +101,7 @@ class Verse extends \yii\db\ActiveRecord
                 return $this->uuid;
             },
             'data',
-            'script' => function () {
+            'code' => function () {
                 $script = $this->script;
                 if ($this->script) {
                     return $this->script->script;
