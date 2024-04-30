@@ -6,7 +6,6 @@ use api\modules\a1\models\EventLink;
 use api\modules\a1\models\File;
 use api\modules\a1\models\Meta;
 use api\modules\a1\models\Resource;
-use api\modules\a1\models\Space;
 use api\modules\v1\models\User;
 use api\modules\v1\models\VerseQuery;
 use Yii;
@@ -85,7 +84,7 @@ class Verse extends \yii\db\ActiveRecord
     public function extraFields()
     {
         $data = json_decode($this->data);
-        $space = $data->parameters->space;
+        //$space = $data->parameters->space;
 
         return [
             'id',
@@ -189,20 +188,20 @@ class Verse extends \yii\db\ActiveRecord
 
         return $datas;
     }
+/*
+public function getSpace()
+{
+$data = json_decode($this->data);
+if (isset($data->parameters) && isset($data->parameters->space)) {
+$space = $data->parameters->space;
+$model = Space::findOne($space->id);
+if ($model) {
+return $model;
+}
 
-    public function getSpace()
-    {
-        $data = json_decode($this->data);
-        if (isset($data->parameters) && isset($data->parameters->space)) {
-            $space = $data->parameters->space;
-            $model = Space::findOne($space->id);
-            if ($model) {
-                return $model;
-            }
-
-        }
-    }
-
+}
+}
+ */
     /**
      * Gets query for [[Metas]].
      *
