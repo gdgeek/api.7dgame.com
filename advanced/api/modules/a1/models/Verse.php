@@ -89,17 +89,15 @@ class Verse extends \yii\db\ActiveRecord
 
         return [
             'id',
-            'metas' => function () {
-                return $this->metas;
-            },
+            'metas',
             'name',
             'description' => function () {
                 $info = json_decode($this->info);
                 return $info->description;
             },
             'uuid' => function () {
-                if ($this->uuid == null) {
-                    $this->uuid = Yii::$app->security->generateRandomString(32);
+                if (empty($this->uuid)) {
+                    $this->uuid = \Faker\Provider\Uuid::uuid();
                     $this->save();
                 }
                 return $this->uuid;
@@ -110,32 +108,8 @@ class Verse extends \yii\db\ActiveRecord
                 if ($this->script) {
                     return $this->script->script;
                 }
-
             },
-            'scripts' => function () use ($data) {
-
-                $scripts = $this->verseScripts;
-
-                if (isset($data->parameters->story)) {
-                    $story = json_decode($data->parameters->story);
-                    $sorted = $story->sorted;
-
-                    usort($scripts, function ($a, $b) use ($sorted) {
-                        $posA = array_search($a->id, $sorted);
-                        $posB = array_search($b->id, $sorted);
-                        return $posA - $posB;
-                    });
-
-                    //json_decode($data->parameters->story)
-                    return $scripts;
-                }
-                return [];
-
-            },
-            'resources' => function () {
-                return $this->resources;
-            },
-
+            'resources',
         ];
     }
     public function fields()

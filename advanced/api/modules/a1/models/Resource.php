@@ -28,6 +28,7 @@ use yii\behaviors\BlameableBehavior;
  * @property User $updater
  */
 class Resource extends \yii\db\ActiveRecord
+
 {
     public function behaviors()
     {

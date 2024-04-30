@@ -124,64 +124,14 @@ class Verse extends \yii\db\ActiveRecord
         return $items;
     }
 
-    /*
-    public function extraProgramme()
-    {
-    $programme = \api\modules\v1\helper\MetaVerse2Programme::Handle($this);
-    return $programme;
-    }
-     */
-    public function upgrade($data)
-    {
-        $ret = false;
-        if (isset($data->parameters) && isset($data->parameters->transfrom)) {
-
-            $ret = true;
-            $data->parameters->transform = $data->parameters->transfrom;
-            unset($data->parameters->transfrom);
-        }
-
-        if (isset($data->chieldren)) {
-
-            $ret = true;
-            $data->children = $data->chieldren;
-            unset($data->chieldren);
-        }
-        if (isset($data->children->entities)) {
-            foreach ($data->children->entities as $entity) {
-                if ($this->upgrade($entity)) {
-                    $ret = true;
-
-                }
-            }
-        }
-        if (isset($data->children->addons)) {
-            foreach ($data->children->addons as $addon) {
-                if ($this->upgrade($addon)) {
-                    $ret = true;
-                }
-            }
-        }
-        if (isset($data->children->components)) {
-            foreach ($data->children->components as $component) {
-                if ($this->upgrade($component)) {
-                    $ret = true;
-                }
-            }
-        }
-        return $ret;
-    }
     public function afterFind()
     {
 
         parent::afterFind();
-        $data = json_decode($this->data);
-        $change = $this->upgrade($data);
-        if ($change) {
-            $this->data = json_encode($data);
+        if (empty($this->uuid)) {
+            $this->uuid = \Faker\Provider\Uuid::uuid();
             $this->save();
         }
-
     }
 
     public function getSpace()
@@ -201,12 +151,11 @@ class Verse extends \yii\db\ActiveRecord
 
         return [
             'metas',
-            //'metaKnights',
             'verseOpen',
             'message',
             'image',
             'author',
-            ///'space',
+            'script',
             'resources',
             'verseShare',
         ];
@@ -294,6 +243,11 @@ class Verse extends \yii\db\ActiveRecord
             return true;
         }
         return false;
+    }
+    public function getScript()
+    {
+        return $this->hasOne(VerseScript::className(), ['verse_id' => 'id']);
+
     }
     public function getVerseShare()
     {
