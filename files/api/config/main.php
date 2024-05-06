@@ -228,10 +228,7 @@ return [
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',
-                    'controller' => 'a1/verse',
-                    'extraPatterns' => [
-                        'GET decode' => 'decode',
-                    ],
+                    'controller' => ['a1/verse','a1/vp-guide'],
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',
