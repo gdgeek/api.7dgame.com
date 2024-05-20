@@ -151,6 +151,7 @@ return [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => [
                         'v1/meta',
+                        'v1/prefab',
                         'v1/file',
                         'v1/verse-cyber',
                         'v1/message',

@@ -8,7 +8,7 @@ use Yii;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
 
-class MetaController extends ActiveController
+class PrefabController extends ActiveController
 {
 
     public $modelClass = 'api\modules\v1\models\Meta';
@@ -61,8 +61,7 @@ class MetaController extends ActiveController
     {
         $searchModel = new MetaSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-        $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id, 'custom' => 1]);
+        $dataProvider->query->andWhere(['custom' => 0]);
         return $dataProvider;
     }
-
 }
