@@ -23,7 +23,7 @@ class MetaRule extends Rule
 
         $userid = Yii::$app->user->identity->id;
 
-        if ($userid == $meta->author_id || $meta->share) {
+        if ($userid == $meta->author_id) {
             return true;
         }
         return false;
