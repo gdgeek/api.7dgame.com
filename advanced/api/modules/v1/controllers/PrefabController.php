@@ -54,9 +54,50 @@ class PrefabController extends ActiveController
     {
         $actions = parent::actions();
         unset($actions['index']);
+        unset($actions['create']);
+        unset($actions['update']);
+        unset($actions['delete']);
+        unset($actions['view']);
         return $actions;
     }
-
+    public function actionView($id)
+    {
+        $searchModel = new MetaSearch();
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+        $dataProvider->query->andWhere(['id' => $id, 'custom' => 0]);
+        return $dataProvider->query->one();
+    }
+    public function actionDelete($id)
+    {
+        $model = \api\modules\v1\models\Meta::findOne($id);
+        if ($model->custom != 0) {
+          throw new \yii\web\ForbiddenHttpException('You can not delete this item');
+        }
+        $model->delete();
+        return $model;
+    }
+    public function actionUpdate($id)
+    {
+        $model = \api\modules\v1\models\Meta::findOne($id);
+        $model->load(Yii::$app->getRequest()->getBodyParams(), '');
+        $model->custom = 0;
+        if ($model->save()) {
+            return $model;
+        } else {
+            return $model->errors;
+        }
+    }
+    public function actionCreate()
+    {
+        $model = new \api\modules\v1\models\Meta();
+        $model->load(Yii::$app->getRequest()->getBodyParams(), '');
+        $model->custom = 0;
+        if ($model->save()) {
+            return $model;
+        } else {
+            return $model->errors;
+        }
+    }
     public function actionIndex()
     {
         $searchModel = new MetaSearch();
