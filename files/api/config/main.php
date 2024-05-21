@@ -192,7 +192,13 @@ return [
                     'controller' => 'v1/meta-resource',
                     'extraPatterns' => [
                         'GET resources' => 'resources',
-
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/verse-meta',
+                    'extraPatterns' => [
+                        'GET metas' => 'metas',
                     ],
                 ],
                 [

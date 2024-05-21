@@ -20,7 +20,6 @@ class MetaRule extends Rule
         if (!$meta) {
             return false;
         }
-
         $userid = Yii::$app->user->identity->id;
 
         if ($userid == $meta->author_id) {

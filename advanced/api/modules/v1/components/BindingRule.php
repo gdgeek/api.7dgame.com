@@ -10,6 +10,7 @@ use api\modules\v1\models\Space;
 use api\modules\v1\models\Verse;
 use api\modules\v1\models\VerseKnight;
 use api\modules\v1\models\VerseSpace;
+use api\modules\v1\models\VerseMeta;
 use Yii;
 use yii\rbac\Rule;
 
@@ -22,7 +23,7 @@ class BindingRule extends Rule
         $post = \Yii::$app->request->post();
         $userid = Yii::$app->user->identity->id;
         $controller = Yii::$app->controller->id;
-
+        
         $request = Yii::$app->request;
         if ($controller == 'meta-resource') {
 
@@ -54,6 +55,40 @@ class BindingRule extends Rule
                     //  }
                 }
             }
+        }
+        if ($controller == 'verse-meta') {
+      
+            if ($request->isGet) {
+                if (isset($params['verse_id'])) {
+                    $verse = Verse::findOne($params['verse_id']);
+                    if ($verse && $verse->viewable()) {
+                        return true;
+                    }
+                }
+
+            }
+
+            if ($request->isPost) {
+                if (isset($post['verse_id']) && isset($post['meta_id'])) {
+
+                   
+                    $verse = Verse::findOne($post['verse_id']);
+                    $meta = Meta::findOne($post['meta_id']);
+
+                    if ($verse && $verse->editable() && $meta && $meta->author_id == $userid) {
+                        return true;
+                    }
+                }
+            }
+            if ($request->isDelete) {
+                if (isset($params['id'])) {
+                    $vm = VerseMeta::findOne($params['id']);
+                    if ($vm && $vm->verse->editable()) {
+                        return true;
+                    }
+                }
+            }
+
         }
         if ($controller == 'verse-space') {
 
