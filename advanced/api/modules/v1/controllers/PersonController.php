@@ -54,7 +54,36 @@ class PersonController extends ActiveController
         unset($actions['create']);
         unset($actions['update']);
         unset($actions['options']);
+        unset($actions['delete']);
         return $actions;
+    }
+    public function actionDelete($id)
+    {
+       
+        $user = User::findOne($id);
+        if($user == null ){
+            throw new BadRequestHttpException('没有user');
+        }
+        $roles =  Yii::$app->user->identity->roles;
+
+   
+        if( Yii::$app->user->identity->id == $user->id){
+            throw new BadRequestHttpException('不能删除自己');
+        }
+        if(in_array('root', $user->roles)){
+            throw new BadRequestHttpException('root用户不可删除');
+        }
+
+        if(in_array('root', $roles)){
+            $user->delete();
+            return ['success' => true];
+        }else if(in_array('admin', $roles) && !in_array('admin', $user->roles)){
+            $user->delete();
+            return ['success' => true];
+        }else{
+            throw new BadRequestHttpException('权限不足');
+        }
+       
     }
     public function actionCreate()
     {
