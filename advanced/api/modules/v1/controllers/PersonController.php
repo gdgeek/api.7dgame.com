@@ -49,31 +49,11 @@ class PersonController extends ActiveController
     public function actions()
     {
         $actions = parent::actions();
-        //unset($actions['index']);
         unset($actions['create']);
         unset($actions['update']);
-        //unset($actions['update']);
         unset($actions['options']);
         return $actions;
-
     }
-    /*
-    protected function findModel($id)
-    {
-    if (($model = Person::findOne($id)) !== null) {
-    return $model;
-    }
-
-    throw new NotFoundHttpException(Yii::t('app', 'The requested page does not exist.'));
-    }
-    public function actionDelete($id)
-    {
-    $model = $this->findModel($id);
-    if ($model) {
-    $model->delete();
-
-    }
-    }*/
     public function actionCreate()
     {
         $model = new PersonRegister();
@@ -100,13 +80,33 @@ class PersonController extends ActiveController
             }
         }
 
-    }
-/*
-public function actionIndex()
-{
-$search = new PersonSearch();
-$dataProvider = $search->search(Yii::$app->request->queryParams);
-return $dataProvider;
-}*/
+       
 
+    }
+
+    public function actionAuthority($authority)
+    { 
+        $model = new Assignment($this->id);
+      
+        switch ($authority) {
+            case 'manager':
+                $items = ['manager'];
+                $success = $model->assign($items);
+                break;
+            case 'admin':
+                $items = ['admin'];
+                $success = $model->assign($items);
+                break;
+            case 'user':
+                $items = ['admin'];
+                $success = $model->assign($items);
+                break;
+            default:
+                throw new Exception("无效的权限", 400);
+                break;
+        }
+        return array_merge($model->getItems(), ['success' => $success]);
+      
+
+    }
 }
