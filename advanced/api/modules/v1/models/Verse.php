@@ -191,7 +191,7 @@ class Verse extends \yii\db\ActiveRecord
     {
         $ret = [];
         $data = json_decode($this->data);
-        if (isset($data->children)) {
+        if (isset($data->children) && isset($data->children->modules)) {
             foreach ($data->children->modules as $item) {
                 $ret[] = $item->parameters->meta_id;
             }
