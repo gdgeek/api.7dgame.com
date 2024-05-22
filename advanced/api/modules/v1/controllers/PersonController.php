@@ -119,7 +119,8 @@ class PersonController extends ActiveController
     { 
 
         $post = Yii::$app->request->post();
-       
+        
+        $roles =  Yii::$app->user->identity->roles;
 
         if (!isset($post['id'])) {
             throw new BadRequestHttpException('缺乏 id 数据');
@@ -140,6 +141,9 @@ class PersonController extends ActiveController
             throw new BadRequestHttpException('root用户不可修改');
         }
 
+        if(in_array('admin', $roles) && ($auth == 'root' || $auth == 'admin')){
+            throw new BadRequestHttpException('权限不足');
+        }
         $model = new Assignment($user->id);
       
         switch ($auth) {
