@@ -1,6 +1,7 @@
 <?php
 namespace api\modules\v1\controllers;
 
+use api\modules\v1\models\User;
 use api\modules\v1\models\PersonRegister;
 use mdm\admin\components\AccessControl;
 use mdm\admin\models\Assignment;
@@ -9,6 +10,7 @@ use Yii;
 use yii\base\Exception;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
+use yii\web\BadRequestHttpException;
 
 class PersonController extends ActiveController
 {
@@ -84,22 +86,48 @@ class PersonController extends ActiveController
 
     }
 
-    public function actionAuthority($authority)
+    public function actionAuth()
     { 
-        $model = new Assignment($this->id);
+
+        $post = Yii::$app->request->post();
+       
+
+        if (!isset($post['id'])) {
+            throw new BadRequestHttpException('缺乏 id 数据');
+        }
+
+        if (!isset($post['auth'])) {
+            throw new BadRequestHttpException('缺乏 auth 数据');
+        }
+        $id = $post['id'];
+        $auth = $post['auth'];
+
+        $user = User::findOne($id);
+        if($user == null ){
+            throw new BadRequestHttpException('没有user');
+        }
+
+        if(in_array('root', $user->roles)){
+            throw new BadRequestHttpException('root用户不可修改');
+        }
+
+        $model = new Assignment($user->id);
       
-        switch ($authority) {
+        switch ($auth) {
             case 'manager':
-                $items = ['manager'];
-                $success = $model->assign($items);
+
+                $success = $model->revoke( [ 'admin']);
+                $success = $model->assign(['manager', 'user']);
                 break;
             case 'admin':
-                $items = ['admin'];
-                $success = $model->assign($items);
+                $success = $model->revoke( [ 'manager']);
+                $success = $model->assign(['admin', 'user']);
                 break;
             case 'user':
-                $items = ['admin'];
-                $success = $model->assign($items);
+
+                $success = $model->revoke( ['admin', 'manager']);
+                $success = $model->assign( ['user']);
+                
                 break;
             default:
                 throw new Exception("无效的权限", 400);

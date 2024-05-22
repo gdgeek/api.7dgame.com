@@ -176,7 +176,7 @@ return [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/person',
                     'extraPatterns' => [
-                        'PUT authority' => 'authority',
+                        'PUT auth' => 'auth',
                     ],
                 ],
                 [
