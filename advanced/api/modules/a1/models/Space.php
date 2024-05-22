@@ -28,6 +28,7 @@ use yii\db\Expression;
  * @property File $sample
  */
 class Space extends \yii\db\ActiveRecord
+
 {
 
     public function behaviors()
@@ -141,7 +142,7 @@ class Space extends \yii\db\ActiveRecord
         unset($fields['title']);
         $fields['image'] = function () {return $this->image;};
         $fields['mesh'] = function () {return $this->mesh;};
-        $fields['sample'] = function () {return $this->sample;};
+        //$fields['sample'] = function () {return $this->sample;};
         $fields['dat'] = function () {return $this->dat;};
         return $fields;
         // return ['name' => $this->name, 'image' => $this->image, 'mesh' => $this->mesh, 'sample' => $this->sample, 'dat' => $this->dat];

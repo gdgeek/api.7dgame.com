@@ -51,10 +51,11 @@ class SiteController extends \yii\rest\Controller
         $model = new Login();
         if ($model->load(Yii::$app->getRequest()->getBodyParams(), '')) {
             $token = $model->login();
-
-            $user = $model->user->getUser();
+           
+           // $user = $model->user->getUser();
 
             if ($token) {
+                $user = $model->user->getUser();
                 return [
                     'access_token' => $token,
                     'user' => $user,

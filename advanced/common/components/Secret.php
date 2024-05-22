@@ -6,7 +6,9 @@ use yii\base\BaseObject;
 class Secret extends BaseObject
 {
 
-    public $secretId;
-    public $secretKey;
+    public $id;
+    public $key;
+    //public $store;
+    public $cloud;
 
 }

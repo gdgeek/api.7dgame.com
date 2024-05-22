@@ -11,7 +11,6 @@ use Yii;
 use yii\base\Exception;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
-use yii\web\BadRequestHttpException;
 
 class VerseShareController extends ActiveController
 {
@@ -20,14 +19,6 @@ class VerseShareController extends ActiveController
     {
         $behaviors = parent::behaviors();
 
-        // unset($behaviors['authenticator']);
-        $behaviors['authenticator'] = [
-            'class' => CompositeAuth::class,
-            'authMethods' => [
-                JwtHttpBearerAuth::class,
-            ],
-        ];
-        $auth = $behaviors['authenticator'];
         // add CORS filter
         $behaviors['corsFilter'] = [
             'class' => \yii\filters\Cors::class,
@@ -46,11 +37,14 @@ class VerseShareController extends ActiveController
             ],
         ];
 
-        // re-add authentication filter
-        $behaviors['authenticator'] = $auth;
-        // avoid authentication on CORS-pre-flight requests (HTTP OPTIONS method)
-        $behaviors['authenticator']['except'] = ['options'];
+        $behaviors['authenticator'] = [
+            'class' => CompositeAuth::class,
+            'authMethods' => [
+                JwtHttpBearerAuth::class,
+            ],
+            'except' => ['options'],
 
+        ];
         $behaviors['access'] = [
             'class' => AccessControl::class,
         ];
@@ -62,28 +56,13 @@ class VerseShareController extends ActiveController
         $actions = parent::actions();
         unset($actions['create']);
         unset($actions['index']);
-
         return $actions;
     }
-
-    public function actionRemove($user_id, $verse_id)
+    public function actionPut()
     {
-
-        $model = null;
-        if (isset($verse_id)) {
-            $model = VerseShare::findOne(['verse_id' => $verse_id, 'user_id' => $user_id]);
-        }
-
-        if ($model == null) {
-            throw new BadRequestHttpException('无效id');
-        }
-        $id = $model->id;
-        $model->delete();
-        return $id;
-
+        return 123;
     }
-
-    public function actionIndex()
+    public function actionVerses()
     {
         $searchModel = new VerseSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
@@ -91,7 +70,7 @@ class VerseShareController extends ActiveController
         $query->select('verse.*')->leftJoin('verse_share', '`verse_share`.`verse_id` = `verse`.`id`')->andWhere(['verse_share.user_id' => Yii::$app->user->id]);
         return $dataProvider;
     }
-    public function actionList($verse_id)
+    public function actionIndex($verse_id)
     {
 
         $searchModel = new VerseShareSearch();
@@ -105,12 +84,13 @@ class VerseShareController extends ActiveController
     public function actionCreate()
     {
         $post = Yii::$app->request->post();
-        if (isset($post['username']) && isset($post['verse_id'])) {
+        if (isset($post['username']) && isset($post['verse_id']) && isset($post['editable'])) {
             $user = User::findByUsername($post['username']);
             if (isset($user)) {
                 $model = new VerseShare();
                 $model->user_id = $user->id;
                 $model->verse_id = $post['verse_id'];
+                $model->editable = $post['editable'];
                 if (isset($post['info'])) {
                     $model->info = $post['info'];
                 }
@@ -129,8 +109,7 @@ class VerseShareController extends ActiveController
             }
         } else {
             throw new Exception("缺少数据", 400);
-        }
+        }return 0;
 
-        return 0;
     }
 }

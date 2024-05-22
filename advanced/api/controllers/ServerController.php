@@ -52,16 +52,6 @@ class ServerController extends \yii\rest\Controller
         return $behaviors;
     }
 
-    /**
-     * @return array
-     * @throws \yii\base\Exception
-     * @throws \yii\base\InvalidConfigException
-     */
-    public function actionSts()
-    {
-        $store = Yii::$app->store;
-        return $store->tempKeys();
-    }
     public function actionUser()
     {
         $user = new \stdClass();

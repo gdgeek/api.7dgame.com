@@ -2,12 +2,11 @@
 
 namespace api\modules\a1\models;
 
+use api\modules\a1\models\EventLink;
 use api\modules\a1\models\File;
 use api\modules\a1\models\Meta;
 use api\modules\a1\models\Resource;
-use api\modules\a1\models\Space;
 use api\modules\v1\models\User;
-use api\modules\v1\models\VerseEvent;
 use api\modules\v1\models\VerseQuery;
 use Yii;
 use yii\behaviors\BlameableBehavior;
@@ -35,6 +34,7 @@ use yii\db\Expression;
 
  */
 class Verse extends \yii\db\ActiveRecord
+
 {
 
     public function behaviors()
@@ -74,40 +74,46 @@ class Verse extends \yii\db\ActiveRecord
             [['created_at', 'updated_at'], 'safe'],
             [['info', 'data'], 'string'],
             [['name'], 'string', 'max' => 255],
+            [['uuid'], 'string', 'max' => 255],
+            [['uuid'], 'unique'],
             [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['author_id' => 'id']],
             [['image_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['image_id' => 'id']],
             [['updater_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updater_id' => 'id']],
         ];
     }
+    public function extraFields()
+    {
+        $data = json_decode($this->data);
+
+        return [
+            'id',
+            'metas',
+            'name',
+            'description' => function () {
+                $info = json_decode($this->info);
+                return $info->description;
+            },
+            'uuid' => function () {
+                if (empty($this->uuid)) {
+                    $this->uuid = \Faker\Provider\Uuid::uuid();
+                    $this->save();
+                }
+                return $this->uuid;
+            },
+            'data',
+            'code' => function () {
+                $script = $this->script;
+                if ($this->script) {
+                    return $this->script->script;
+                }
+            },
+            'resources',
+        ];
+    }
     public function fields()
     {
-        $fields = parent::fields();
-        unset($fields['updater_id']);
-        unset($fields['image_id']);
-        unset($fields['updated_at']);
-        unset($fields['created_at']);
-        unset($fields['author_id']);
-        // unset($fields['id']);
-        unset($fields['info']);
 
-        $fields['description'] = function () {
-            return json_decode($this->info)->description;
-        };
-        $fields['connections'] = function () {
-            if ($this->verseEvent) {
-                return $this->verseEvent->data;
-            }
-        };
-        $fields['space'] = function () {
-            return $this->space;
-        };
-        $fields['modules'] = function () {
-            return $this->modules;
-        };
-        $fields['resources'] = function () {
-            return $this->resources;
-        };
-        return $fields;
+        return [];
     }
     /**
      * {@inheritdoc}
@@ -122,6 +128,7 @@ class Verse extends \yii\db\ActiveRecord
             'updated_at' => 'Updated At',
             'name' => 'Name',
             'info' => 'Info',
+            'uuid' => 'Uuid',
             'image_id' => 'Image Id',
             'data' => 'Data',
             'version' => 'Version',
@@ -136,82 +143,64 @@ class Verse extends \yii\db\ActiveRecord
     {
         return $this->hasMany(VerseCyber::className(), ['verse_id' => 'id']);
     }
+
+    /**
+     * Gets query for [[EventLinks]].
+     *
+     * @return \yii\db\ActiveQuery|EventLinkQuery
+     */
+    public function getEventLinks()
+    {
+        return $this->hasMany(EventLink::className(), ['verse_id' => 'id']);
+    }
     public function getResources()
     {
-        $modules = $this->modules;
+        $metas = $this->metas;
 
         $ids = [];
 
-        foreach ($modules as $module) {
-            $ids = array_merge_recursive($ids, $module->resourceIds);
+        foreach ($metas as $meta) {
+            $ids = array_merge_recursive($ids, $meta->resourceIds);
         }
 
         $items = Resource::find()->where(['id' => $ids])->all();
         return $items;
     }
-
-    public function getModules()
+    public function getNodes($inputs, $quest)
     {
-        $data = json_decode($this->data);
         $m = [];
-        $k = [];
-        $mUUID = [];
-        $kUUID = [];
-        foreach ($data->children->metas as $child) {
-            if ($child->type == 'Meta') {
-                $id = $child->parameters->id;
-                $mUUID[$id] = $child->parameters->uuid;
-                array_push($m, $id);
-            } else {
-                $id = $child->parameters->id;
-                $kUUID[$id] = $child->parameters->uuid;
-                array_push($k, $id);
-            }
+        $UUID = [];
+        foreach ($inputs as $child) {
+            $id = $child->parameters->id;
+            $UUID[$id] = $child->parameters->uuid;
+            array_push($m, $id);
         }
-        $knightQuery = $this->getMetaKnights()->where(['id' => $k]);
-        $metaQuery = $this->getMetas()->where(['id' => $m]);
-        $metas = $metaQuery->all();
 
-        foreach ($metas as $i => $item) {
+        $datas = $quest->where(['id' => $m])->all();
+
+        foreach ($datas as $i => $item) {
             if (!$item->uuid) {
-                $item->uuid = $mUUID[$item->id];
+                $item->uuid = $UUID[$item->id];
                 $item->save();
             }
         }
 
-        $knights = $knightQuery->all();
-        foreach ($knights as $i => $item) {
-            if (!$item->uuid) {
-                $item->uuid = $kUUID[$item->id];
-                $item->save();
-            }
-        }
-        return array_merge($metas, $knights);
+        return $datas;
     }
+/*
+public function getSpace()
+{
+$data = json_decode($this->data);
+if (isset($data->parameters) && isset($data->parameters->space)) {
+$space = $data->parameters->space;
+$model = Space::findOne($space->id);
+if ($model) {
+return $model;
+}
 
-    public function getSpace()
-    {
-        $data = json_decode($this->data);
-        if (isset($data->parameters) && isset($data->parameters->space)) {
-            $space = $data->parameters->space;
-            $model = Space::findOne($space->id);
-            if ($model) {
-                return $model;
-            }
-
-        }
-    }
-
-    /**
-     * Gets query for [[MetaKnights]].
-     *
-     * @return \yii\db\ActiveQuery|MetaKnightQuery
-     */
-    public function getMetaKnights()
-    {
-        return $this->hasMany(MetaKnight::className(), ['verse_id' => 'id']);
-    }
-
+}
+}
+ */
     /**
      * Gets query for [[Metas]].
      *
@@ -219,7 +208,17 @@ class Verse extends \yii\db\ActiveRecord
      */
     public function getMetas()
     {
-        return $this->hasMany(Meta::className(), ['verse_id' => 'id']);
+        $ret = [];
+        $data = json_decode($this->data);
+
+        if (isset($data->children)) {
+            foreach ($data->children->modules as $item) {
+                $ret[] = $item->parameters->meta_id;
+            }
+        }
+
+        return Meta::find()->where(['id' => $ret])->all();
+
     }
     /**
      * Gets query for [[VerseOpens]].
@@ -246,15 +245,6 @@ class Verse extends \yii\db\ActiveRecord
         return $this->hasOne(User::className(), ['id' => 'author_id']);
     }
 
-    /**
-     * Gets query for [[VerseEvents]].
-     *
-     * @return \yii\db\ActiveQuery|VerseEventQuery
-     */
-    public function getVerseEvent()
-    {
-        return $this->hasOne(VerseEvent::className(), ['verse_id' => 'id']);
-    }
     /**
      * Gets query for [[Image]].
      *
@@ -298,6 +288,20 @@ class Verse extends \yii\db\ActiveRecord
         $share = VerseShare::findOne(['verse_id' => $this->id, 'user_id' => Yii::$app->user->id]);
 
         return $share != null;
+    }
+
+    /**
+     * Gets query for [[VerseScripts]].
+     *
+     * @return \yii\db\ActiveQuery|VerseScriptQuery
+     */
+    public function getVerseScripts()
+    {
+        return $this->hasMany(VerseScript::className(), ['verse_id' => 'id']);
+    }
+    public function getScript()
+    {
+        return $this->hasOne(VerseScript::className(), ['verse_id' => 'id']);
     }
 
 }

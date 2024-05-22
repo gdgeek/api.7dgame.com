@@ -36,41 +36,6 @@ class TencentCloudController extends ActiveController
                 ],
             ],
         ];
-        /*
-        $behaviors = parent::behaviors();
-        $behaviors['authenticator'] = [
-        'class' => CompositeAuth::class,
-        'authMethods' => [
-        JwtHttpBearerAuth::class,
-        ],
-        ];
-        $auth = $behaviors['authenticator'];
-        // add CORS filter
-        $behaviors['corsFilter'] = [
-        'class' => \yii\filters\Cors::class,
-        'cors' => [
-        'Origin' => ['*'],
-        'Access-Control-Request-Method' => ['GET'],
-        'Access-Control-Request-Headers' => ['*'],
-        'Access-Control-Allow-Credentials' => null,
-        'Access-Control-Max-Age' => 86400,
-        'Access-Control-Expose-Headers' => [
-        'X-Pagination-Total-Count',
-        'X-Pagination-Page-Count',
-        'X-Pagination-Current-Page',
-        'X-Pagination-Per-Page',
-        ],
-        ],
-        ];
-        // re-add authentication filter
-        $behaviors['authenticator'] = $auth;
-        // avoid authentication on CORS-pre-flight requests (HTTP OPTIONS method)
-        $behaviors['authenticator']['except'] = ['options'];
-        $behaviors['access'] = [
-        'class' => AccessControl::class,
-        ];
-        return $behaviors;
-         */
 
         return $behaviors;
     }
@@ -78,10 +43,21 @@ class TencentCloudController extends ActiveController
     {
         return [];
     }
+    /*
+    public function actionStore()
+    {
+    $secret = \Yii::$app->secret;
+    return $secret->store;
+    }*/
+    public function actionCloud()
+    {
+        $cloud = \Yii::$app->secret->cloud;
+        return $cloud;
+    }
     public function actionToken($bucket, $region = 'ap-nanjing')
     {
 
-        $cred = new Credential(Yii::$app->secret->secretId, Yii::$app->secret->secretKey);
+        $cred = new Credential(Yii::$app->secret->id, Yii::$app->secret->key);
 
         // 实例化一个http选项，可选的，没有特殊需求可以跳过
         $httpProfile = new HttpProfile();

@@ -21,6 +21,8 @@ use yii\db\Expression;
  * @property string|null $data
  * @property int|null $image_id
  * @property int|null $mesh_id
+ * @property string|null $schema
+ * @property string|null $events
  *
  * @property User $author
  * @property File $image
@@ -28,6 +30,7 @@ use yii\db\Expression;
  * @property User $updater
  */
 class Knight extends \yii\db\ActiveRecord
+
 {
 
     public function behaviors()
@@ -48,6 +51,7 @@ class Knight extends \yii\db\ActiveRecord
                 'updatedByAttribute' => 'updater_id',
             ],
         ];
+
     }
     /**
      * {@inheritdoc}
@@ -65,7 +69,7 @@ class Knight extends \yii\db\ActiveRecord
         return [
             [['author_id', 'updater_id', 'image_id', 'mesh_id'], 'integer'],
             [['create_at', 'updated_at'], 'safe'],
-            [['info', 'data'], 'string'],
+            [['info', 'data', 'schema', 'events'], 'string'],
             [['title'], 'string', 'max' => 255],
             [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['author_id' => 'id']],
             [['image_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['image_id' => 'id']],
@@ -73,10 +77,34 @@ class Knight extends \yii\db\ActiveRecord
             [['updater_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updater_id' => 'id']],
         ];
     }
+
+    public function fields()
+    {
+        $fields = parent::fields();
+        //unset($fields['author_id']);
+        unset($fields['updater_id']);
+        unset($fields['updated_at']);
+        unset($fields['created_at']);
+        unset($fields['image_id']);
+        unset($fields['info']);
+        unset($fields['event_node_id']);
+        unset($fields['author_id']);
+        unset($fields['verse_id']);
+        return $fields;
+    }
+
     public function extraFields()
     {
-        return [
-            'image',
+        return [/*'verse', 'image',*/
+            /* 'author' => function () {
+            return $this->author;
+            },
+            'editor' => function () {
+            return $this->extraEditor();
+            },*/
+            'resources' => function () {
+                return $this->extraResources();
+            },
         ];
     }
     /**
@@ -95,6 +123,8 @@ class Knight extends \yii\db\ActiveRecord
             'data' => 'Data',
             'image_id' => 'Image ID',
             'mesh_id' => 'Mesh ID',
+            'schema' => 'Schema',
+            'events' => 'Events',
         ];
     }
 
@@ -107,11 +137,7 @@ class Knight extends \yii\db\ActiveRecord
     {
         return $this->hasOne(User::className(), ['id' => 'author_id']);
     }
-    public function getResourceIds()
-    {
-        $resourceIds = \api\modules\v1\helper\Meta2Resources::Handle(json_decode($this->data));
-        return $resourceIds;
-    }
+
     /**
      * Gets query for [[Image]].
      *
@@ -129,6 +155,7 @@ class Knight extends \yii\db\ActiveRecord
      */
     public function getMesh()
     {
+
         return $this->hasOne(Resource::className(), ['id' => 'mesh_id']);
     }
 
@@ -139,6 +166,18 @@ class Knight extends \yii\db\ActiveRecord
      */
     public function getUpdater()
     {
+
         return $this->hasOne(User::className(), ['id' => 'updater_id']);
+    }
+    public function getResourceIds()
+    {
+        $resourceIds = \api\modules\v1\helper\Meta2Resources::Handle(json_decode($this->data));
+        return $resourceIds;
+    }
+    public function extraResources()
+    {
+        $resourceIds = $this->resourceIds;
+        $items = Resource::find()->where(['id' => $resourceIds])->all();
+        return $items;
     }
 }

@@ -3,7 +3,6 @@ namespace api\modules\v1\controllers;
 
 use mdm\admin\components\AccessControl;
 use sizeg\jwt\JwtHttpBearerAuth;
-use Yii;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
 

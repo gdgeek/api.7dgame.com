@@ -16,18 +16,7 @@ class User extends ActiveRecord implements IdentityInterface
     const STATUS_ACTIVE = 10;
 
     public $token = null;
-/*
-private function getAssignments()
-{
-$manager = Configs::authManager();
-$assignments = $manager->getAssignments($this->id);
-$ret = [];
-foreach ($assignments as $key => $value) {
-$ret[] = $value->roleName;
 
-}
-return $ret;
-}*/
     public function getUser()
     {
         $user = new \stdClass();
@@ -82,12 +71,14 @@ return $ret;
         $signer = $jwt->getSigner('HS256');
         $key = $jwt->getKey();
         $time = time();
+
+        $jwt_parameter = \Yii::$app->jwt_parameter;
         $token = $jwt->getBuilder()
-            ->issuedBy('https://api.mrpp.com') // Configures the issuer (iss claim)
-            ->permittedFor('https://mrpp.com') // Configures the audience (aud claim)
-            ->identifiedBy('4f1g23a12aa', true) // Configures the id (jti claim), replicating as a header item
+            ->issuedBy($jwt_parameter->issuer) // Configures the issuer (iss claim)
+            ->permittedFor($jwt_parameter->audience) // Configures the audience (aud claim)
+            ->identifiedBy($jwt_parameter->id, true) // Configures the id (jti claim), replicating as a header item
             ->issuedAt($time) // Configures the time that the token was issue (iat claim)
-            ->expiresAt($time + 3600) // Configures the expiration time of the token (exp claim)
+            ->expiresAt($time + 21600) // Configures the expiration time of the token (exp claim)
             ->withClaim('uid', $this->id) // Configures a new claim, called "uid"
             ->getToken($signer, $key); // Retrieves the generated token
 

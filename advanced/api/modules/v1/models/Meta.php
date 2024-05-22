@@ -18,7 +18,7 @@ use yii\db\Expression;
  * @property int|null $updater_id
  * @property string $created_at
  * @property string $updated_at
- * @property int|null $verse_id
+ *
  * @property string|null $info
  * @property int|null $image_id
  * @property string|null $data
@@ -28,11 +28,14 @@ use yii\db\Expression;
  * @property User $author
  * @property File $image
  * @property User $updater
- * @property Verse $verse
- * @property MetaEvent $metaEvent
  * @property MetaRete[] $metaRetes
+ * @property string|null $events
+ * @property string|null $title
+ *
+ * @property MetaResource[] $metaResources
  */
 class Meta extends \yii\db\ActiveRecord
+
 {
 
     public function behaviors()
@@ -68,15 +71,14 @@ class Meta extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['author_id', 'updater_id', 'verse_id', 'image_id'], 'integer'],
+            [['author_id', 'updater_id', 'image_id', 'custom'], 'integer'],
             [['created_at', 'updated_at'], 'safe'],
-            [['info', 'data'], 'string'],
-            [['uuid'], 'string', 'max' => 255],
+            [['info', 'data', 'events'], 'string'],
+            [['uuid', 'title'], 'string', 'max' => 255],
             [['uuid'], 'unique'],
             [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['author_id' => 'id']],
             [['image_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['image_id' => 'id']],
             [['updater_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updater_id' => 'id']],
-            [['verse_id'], 'exist', 'skipOnError' => true, 'targetClass' => Verse::className(), 'targetAttribute' => ['verse_id' => 'id']],
         ];
     }
     public function fields()
@@ -85,10 +87,19 @@ class Meta extends \yii\db\ActiveRecord
         unset($fields['updater_id']);
         unset($fields['updated_at']);
         unset($fields['created_at']);
-        unset($fields['image_id']);
         unset($fields['info']);
+        $fields['image'] = function () {
+            return $this->image;
+        };
+        $fields['custom'] = function () {
+            return $this->custom;
+        };
+        $fields['resources'] = function () {
+            return $this->resources;
+        };
 
-        $fields['share'] = function () {return $this->share;};
+        $fields['editable'] = function () {return $this->editable();};
+        $fields['viewable'] = function () {return $this->viewable();};
         return $fields;
     }
     /**
@@ -102,14 +113,36 @@ class Meta extends \yii\db\ActiveRecord
             'updater_id' => 'Updater ID',
             'created_at' => 'Created At',
             'updated_at' => 'Updated At',
-            'verse_id' => 'Verse ID',
             'info' => 'Info',
             'image_id' => 'Image ID',
+            'custom' => 'Custom',
             'data' => 'Data',
             'uuid' => 'Uuid',
         ];
     }
-
+    public function viewable()
+    {
+        if (!isset(Yii::$app->user->identity)) {
+            return false;
+        }
+        $userid = Yii::$app->user->identity->id;
+        if ($userid == $this->author_id) {
+            return true;
+        }
+        
+        return true;
+    }
+    public function editable()
+    {
+        if (!isset(Yii::$app->user->identity)) {
+            return false;
+        }
+        $userid = Yii::$app->user->identity->id;
+        if ($userid == $this->author_id) {
+            return true;
+        }
+        return false;
+    }
     /**
      * Gets query for [[Author]].
      *
@@ -129,6 +162,17 @@ class Meta extends \yii\db\ActiveRecord
     {
         return $this->hasOne(User::className(), ['id' => 'updater_id']);
     }
+    public function getResourceIds()
+    {
+        $resourceIds = \api\modules\v1\helper\Meta2Resources::Handle(json_decode($this->data));
+        return $resourceIds;
+    }
+    public function getResources()
+    {
+        $resourceIds = $this->resourceIds;
+        $items = Resource::find()->where(['id' => $resourceIds])->all();
+        return $items;
+    }
 
     /**
      * Gets query for [[Cybers]].
@@ -140,24 +184,6 @@ class Meta extends \yii\db\ActiveRecord
         return $this->hasOne(Cyber::className(), ['meta_id' => 'id']);
     }
 
-    /**
-     * Gets query for [[Verse]].
-     *
-     * @return \yii\db\ActiveQuery|VerseQuery
-     */
-    public function getVerse()
-    {
-        return $this->hasOne(Verse::className(), ['id' => 'verse_id']);
-    }
-    /**
-     * Gets query for [[MetaEvent]].
-     *
-     * @return \yii\db\ActiveQuery|MetaEventQuery
-     */
-    public function getMetaEvent()
-    {
-        return $this->hasOne(MetaEvent::className(), ['meta_id' => 'id']);
-    }
     /**
      * Gets query for [[MetaRetes]].
      *
@@ -180,12 +206,10 @@ class Meta extends \yii\db\ActiveRecord
 
     public function extraFields()
     {
-        return ['verse', 'image',
+        return ['image',
+            'verseMetas',
             'author' => function () {
                 return $this->author;
-            },
-            'event' => function () {
-                return $this->metaEvent;
             },
             'script' => function () {
                 if ($this->cyber) {
@@ -196,26 +220,17 @@ class Meta extends \yii\db\ActiveRecord
             'cyber',
         ];
     }
-    public function getShare()
-    {
 
-        $share = VerseShare::findOne(['verse_id' => $this->verse_id, 'user_id' => Yii::$app->user->id]);
 
-        return $share != null;
-    }
-    /*
-    public function getResourceIds()
-    {
-    $resourceIds = \api\modules\v1\helper\Meta2Resources::Handle(json_decode($this->data));
-    return $resourceIds;
-    }
-    public function extraResources()
-    {
-    $resourceIds = $this->resourceIds;
-    $items = Resource::find()->where(['id' => $resourceIds])->all();
-    return $items;
-    }
+    /**
+     * Gets query for [[VerseMeta]].
+     *
+     * @return \yii\db\ActiveQuery|VerseMetaQuery
      */
+    public function getVerseMetas()
+    {
+        return $this->hasMany(VerseMeta::className(), ['meta_id' => 'id']);
+    }
 
     /**
      * {@inheritdoc}
@@ -225,4 +240,5 @@ class Meta extends \yii\db\ActiveRecord
     {
         return new MetaQuery(get_called_class());
     }
+
 }

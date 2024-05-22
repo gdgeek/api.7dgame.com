@@ -4,45 +4,25 @@ namespace api\modules\e1\models;
 
 use api\modules\v1\models\MetaKnightQuery;
 use Yii;
-use yii\behaviors\BlameableBehavior;
-use yii\behaviors\TimestampBehavior;
-use yii\db\Expression;
 
 /**
  * This is the model class for table "meta_knight".
  *
  * @property int $id
  * @property int $verse_id
- * @property int $knight_id
+ * @property int $meta_id
  * @property int $user_id
  * @property string|null $info
  * @property string|null $create_at
  *
- * @property Knight $knight
+ * @property Meta $meta
  * @property User $user
  * @property Verse $verse
  * @property string|null $uuid
  */
 class MetaKnight extends \yii\db\ActiveRecord
-{
 
-    public function behaviors()
-    {
-        return [
-            [
-                'class' => TimestampBehavior::class,
-                'attributes' => [
-                    \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => ['create_at'],
-                ],
-                'value' => new Expression('NOW()'),
-            ],
-            [
-                'class' => BlameableBehavior::class,
-                'createdByAttribute' => 'user_id',
-                'updatedByAttribute' => false,
-            ],
-        ];
-    }
+{
     /**
      * {@inheritdoc}
      */
@@ -57,13 +37,13 @@ class MetaKnight extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['verse_id'], 'required'],
-            [['verse_id', 'knight_id', 'user_id'], 'integer'],
+            [['verse_id', 'user_id'], 'required'],
+            [['verse_id', 'meta_id', 'user_id'], 'integer'],
             [['info'], 'string'],
             [['create_at'], 'safe'],
             [['uuid'], 'string', 'max' => 255],
             [['uuid'], 'unique'],
-            [['knight_id'], 'exist', 'skipOnError' => true, 'targetClass' => Knight::className(), 'targetAttribute' => ['knight_id' => 'id']],
+            [['meta_id'], 'exist', 'skipOnError' => true, 'targetClass' => Meta::className(), 'targetAttribute' => ['meta_id' => 'id']],
             [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['user_id' => 'id']],
             [['verse_id'], 'exist', 'skipOnError' => true, 'targetClass' => Verse::className(), 'targetAttribute' => ['verse_id' => 'id']],
         ];
@@ -77,60 +57,31 @@ class MetaKnight extends \yii\db\ActiveRecord
         return [
             'id' => 'ID',
             'verse_id' => 'Verse ID',
-            'knight_id' => 'Knight ID',
+            'meta_id' => 'Meta ID',
             'user_id' => 'User ID',
             'info' => 'Info',
             'create_at' => 'Create At',
             'uuid' => 'Uuid',
         ];
     }
-    public function getResourceIds()
-    {
-        if ($this->knight == null) {
-            return [];
-        }
-        return $this->knight->getResourceIds();
-    }
-    public function fields()
-    {
-        $fields = parent::fields();
 
-        return [
-            'id',
-            'data' => function ($model) {
-                $knight = $this->knight;
-                if (!$knight) {
-                    return null;
-                }
-                return $this->knight->data;
-            },
-            'knight_id',
-            'mesh' => function ($model) {
-                $knight = $this->knight;
-                if (!$knight) {
-                    return null;
-                }
-                return $this->knight->mesh;
-            },
-            'info' => function ($model) {
-                $knight = $this->knight;
-                if (!$knight) {
-                    return null;
-                }
-                return $this->knight->info;
-            },
-        ];
-    }
     /**
-     * Gets query for [[Knight]].
+     * Gets query for [[Meta]].
      *
      * @return \yii\db\ActiveQuery|yii\db\ActiveQuery
      */
-    public function getKnight()
+    public function getMeta()
     {
-        return $this->hasOne(Knight::className(), ['id' => 'knight_id']);
+        return $this->hasOne(Meta::className(), ['id' => 'meta_id']);
     }
 
+    public function getResourceIds()
+    {
+        if ($this->meta == null) {
+            return [];
+        }
+        return $this->meta->getResourceIds();
+    }
     /**
      * Gets query for [[User]].
      *
@@ -157,6 +108,29 @@ class MetaKnight extends \yii\db\ActiveRecord
      */
     public static function find()
     {
-        return new MetaKnightQuery(get_called_class());
+        return new \api\modules\v1\models\MetaKnightQuery(get_called_class());
+    }
+
+    public function fields()
+    {
+        $fields = parent::fields();
+        unset($fields['verse_id']);
+        unset($fields['meta_id']);
+        unset($fields['user_id']);
+        unset($fields['create_at']);
+        unset($fields['knight_id']);
+        $fields['type'] = function ($model) {
+            return $this->meta->type;
+        };
+        $fields['script'] = function ($model) {
+            return $this->meta->cyber;
+        };
+        $fields['data'] = function ($model) {
+            return $this->meta->data;
+        };
+        $fields['resources'] = function ($model) {
+            return $this->meta->resources;
+        };
+        return $fields;
     }
 }

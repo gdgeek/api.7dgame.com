@@ -8,6 +8,7 @@ use yii\behaviors\AttributesBehavior;
 use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
 use yii\db\Expression;
+use yii\helpers\ArrayHelper;
 
 /**
  * This is the model class for table "file".
@@ -27,13 +28,14 @@ use yii\db\Expression;
  * @property Video[] $videos
  */
 class File extends \yii\db\ActiveRecord
+
 {
 
     private $header = null;
     private function getFileHeader()
     {
-        if (isset($this->url) && $this->header == null) {
-            $this->header = get_headers($this->owner->url, true);
+        if (isset($this->filterUrl) && $this->header == null) {
+            $this->header = get_headers($this->filterUrl, true);
         }
         return $this->header;
     }
@@ -41,7 +43,7 @@ class File extends \yii\db\ActiveRecord
     {
         $header = $this->getFileHeader();
         if (isset($header)) {
-            $filesize = round($header['Content-Length'], 2);
+            $filesize = round(ArrayHelper::getValue($header, 'Content-Length', 0), 2);
             return $filesize;
         }
         return null;
@@ -50,17 +52,25 @@ class File extends \yii\db\ActiveRecord
     {
         $header = $this->getFileHeader();
         if (isset($header)) {
-            return json_decode($header['ETag']);
+            return json_decode(ArrayHelper::getValue($header, 'ETag'));
         }
         return null;
+    }
+    public function getFilterUrl()
+    {
+        if (preg_match('/^http[s]?:\/\/(\d+.\d+.\d+.\d+)[:]?\d+[\/]?/',
+            \Yii::$app->request->hostInfo, $matches)) {
+            return str_replace('[ip]', $matches[1], $this->url);
+        }
+        return $this->url;
     }
     public function getFileType()
     {
         $header = $this->getFileHeader();
         if (isset($header)) {
-            return $header['Content-Type'];
+            return ArrayHelper::getValue($header, 'Content-Type', 'application/octet-stream');
         }
-        return null;
+        return 'application/octet-stream';
 
     }
 
@@ -74,7 +84,9 @@ class File extends \yii\db\ActiveRecord
         unset($fields['created_at']);
         unset($fields['size']);
         unset($fields['filename']);
-
+        $fields['url'] = function () {
+            return $this->filterUrl;
+        };
         return $fields;
     }
     public function behaviors()

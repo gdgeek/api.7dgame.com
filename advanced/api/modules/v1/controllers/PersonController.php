@@ -1,9 +1,7 @@
 <?php
 namespace api\modules\v1\controllers;
 
-use api\modules\v1\models\Person;
 use api\modules\v1\models\PersonRegister;
-use api\modules\v1\models\PersonSearch;
 use mdm\admin\components\AccessControl;
 use mdm\admin\models\Assignment;
 use sizeg\jwt\JwtHttpBearerAuth;
@@ -11,7 +9,6 @@ use Yii;
 use yii\base\Exception;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
-use yii\web\NotFoundHttpException;
 
 class PersonController extends ActiveController
 {
@@ -52,46 +49,31 @@ class PersonController extends ActiveController
     public function actions()
     {
         $actions = parent::actions();
-        return [];
+        //unset($actions['index']);
+        unset($actions['create']);
+        unset($actions['update']);
+        //unset($actions['update']);
+        unset($actions['options']);
+        return $actions;
+
     }
+    /*
     protected function findModel($id)
     {
-        if (($model = Person::findOne($id)) !== null) {
-            return $model;
-        }
+    if (($model = Person::findOne($id)) !== null) {
+    return $model;
+    }
 
-        throw new NotFoundHttpException(Yii::t('app', 'The requested page does not exist.'));
+    throw new NotFoundHttpException(Yii::t('app', 'The requested page does not exist.'));
     }
     public function actionDelete($id)
     {
-        if (Yii::$app->user->id == $id) {
-            throw new Exception("不能删除自己", 400);
-        }
-        $model = $this->findModel($id);
-        if (!$model) {
-            throw new Exception(json_encode("无法找到目标", 400));
-
-        }
-        $roles = Yii::$app->user->identity->roles;
-        if (in_array("root", $model->roles)) {
-            throw new Exception("不能root用户", 400);
-        }
-
-        if (in_array("manager", $model->roles)) {
-            if (in_array("root", $roles)) {
-                throw new Exception("不能manager用户", 400);
-            }
-        }
-        if (!in_array("root", $roles) && !in_array("manager", $roles)) {
-            throw new Exception("没有删除权限", 400);
-        }
-        if ($model) {
-            $model->delete();
-            //  throw new Exception(json_encode(Yii::$app->user->identity->roles), 400);
-
-        }
+    $model = $this->findModel($id);
+    if ($model) {
+    $model->delete();
 
     }
+    }*/
     public function actionCreate()
     {
         $model = new PersonRegister();
@@ -119,12 +101,12 @@ class PersonController extends ActiveController
         }
 
     }
-
-    public function actionIndex()
-    {
-        $search = new PersonSearch();
-        $dataProvider = $search->search(Yii::$app->request->queryParams);
-        return $dataProvider;
-    }
+/*
+public function actionIndex()
+{
+$search = new PersonSearch();
+$dataProvider = $search->search(Yii::$app->request->queryParams);
+return $dataProvider;
+}*/
 
 }

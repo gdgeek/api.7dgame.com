@@ -1,7 +1,6 @@
 <?php
 namespace api\modules\a1\controllers;
 
-use Yii;
 use yii\rest\ActiveController;
 
 class VerseController extends ActiveController
@@ -39,6 +38,8 @@ class VerseController extends ActiveController
         unset($actions['update']);
         unset($actions['delete']);
         unset($actions['options']);
+        //  unset($actions['view']);
         return $actions;
     }
+
 }

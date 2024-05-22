@@ -7,6 +7,7 @@ use api\modules\v1\models\Trade;
 use api\modules\v1\models\User;
 use EasyWeChat\OfficialAccount\Application;
 use yii\web\Controller;
+use \Symfony\Component\HttpClient\Exception\ClientException;
 
 /**
  * MethodController implements the CRUD actions for Method model.
@@ -99,7 +100,7 @@ class WechatController extends Controller
         $trade = $order->trade;
         try {
             $result = $trade->placeOrder($order->user->wx_openid, $time_expire, $uuid);
-        } catch (\Symfony\Component\HttpClient\Exception\ClientException $e) {
+        } catch (ClientException $e) {
 
             return $this->render('error', ['exception' => $e, 'parameter' => $parameter]);
 
@@ -159,7 +160,7 @@ class WechatController extends Controller
             $openid = $message['FromUserName'];
             $user = $this->getUserByWXOpenid($openid);
             $this->saveTokenAndOpenID($token, $openid, $user);
-            return '欢迎登入【混合现实编程平台】';
+            return '欢迎登入【元宇宙实景编程平台】';
 
         }
         return '扫描二维码';
@@ -183,11 +184,11 @@ class WechatController extends Controller
 
         $server = $app->getServer();
 
-        $server->handlePaid(function (\EasyWeChat\Pay\Message $message, \Closure $next) use ( $app ) {
+        $server->handlePaid(function (\EasyWeChat\Pay\Message$message, \Closure$next) use ($app) {
 
-            \Yii::info(123, "mrpp");
+            //\Yii::info(123, "mrpp");
 
-           // $uuid = Trade::outTradeNo2Uuid($message->out_trade_no);
+            // $uuid = Trade::outTradeNo2Uuid($message->out_trade_no);
 
 //\Yii::info($uuid, "mrpp");
 
@@ -195,14 +196,10 @@ class WechatController extends Controller
 
             $api = $app->getClient();
 
-
             $account = $app->getMerchant();
 
-
-            $url = 'v3/pay/transactions/id/'.$transaction_id.'?mchid='.$account->getMerchantId();
+            $url = 'v3/pay/transactions/id/' . $transaction_id . '?mchid=' . $account->getMerchantId();
             $response = $api->get($url);
-
-
 
             $data = $response->toArray();
             \Yii::info(json_encode($response->toArray()), "mrpp");
@@ -211,28 +208,26 @@ class WechatController extends Controller
             \Yii::info($openid, "mrpp");
 
             $out_trade_no = $data['out_trade_no'];
-\Yii::info($out_trade_no, "mrpp");
-           $time = strtotime($data['success_time']);
- 
-\Yii::info($time, "mrpp");
+            \Yii::info($out_trade_no, "mrpp");
+            $time = strtotime($data['success_time']);
+
+            \Yii::info($time, "mrpp");
 
             $trade_state = $data['trade_state'];
-\Yii::info($trade_state, "mrpp");
+            \Yii::info($trade_state, "mrpp");
 
-            if($trade_state == 'SUCCESS'){
+            if ($trade_state == 'SUCCESS') {
                 $uuid = Trade::outTradeNo2Uuid($out_trade_no);
 
-\Yii::info($uuid, "mrpp");
+                \Yii::info($uuid, "mrpp");
 
                 $order = Order::findOne(['uuid' => $uuid]);
-                if($order->user->wx_openid == $openid){
+                if ($order->user->wx_openid == $openid) {
                     $order->state = 2;
                     $order->payed_time = date('Y-m-d H:i:s', $time);
                     $order->save();
                 }
             }
-
-
 
             // $message->out_trade_no 获取商户订单号
             // $message->payer['openid'] 获取支付者 openid
@@ -256,7 +251,7 @@ class WechatController extends Controller
         $app = $wechat->application();
 
         $server = $app->getServer();
-        $server->with(function ($message, \Closure $next) {
+        $server->with(function ($message, \Closure$next) {
 
             if (isset($message['MsgType'])) {
                 switch ($message['MsgType']) {
