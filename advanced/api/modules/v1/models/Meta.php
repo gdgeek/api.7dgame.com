@@ -98,8 +98,8 @@ class Meta extends \yii\db\ActiveRecord
             return $this->resources;
         };
 
-        $fields['editable'] = function () {return true;};
-        $fields['viewable'] = function () {return true;};
+        $fields['editable'] = function () {return $this->editable();};
+        $fields['viewable'] = function () {return $this->viewable();};
         return $fields;
     }
     /**
@@ -120,7 +120,29 @@ class Meta extends \yii\db\ActiveRecord
             'uuid' => 'Uuid',
         ];
     }
-
+    public function viewable()
+    {
+        if (!isset(Yii::$app->user->identity)) {
+            return false;
+        }
+        $userid = Yii::$app->user->identity->id;
+        if ($userid == $this->author_id) {
+            return true;
+        }
+        
+        return true;
+    }
+    public function editable()
+    {
+        if (!isset(Yii::$app->user->identity)) {
+            return false;
+        }
+        $userid = Yii::$app->user->identity->id;
+        if ($userid == $this->author_id) {
+            return true;
+        }
+        return false;
+    }
     /**
      * Gets query for [[Author]].
      *
@@ -185,6 +207,7 @@ class Meta extends \yii\db\ActiveRecord
     public function extraFields()
     {
         return ['image',
+            'verseMetas',
             'author' => function () {
                 return $this->author;
             },
@@ -196,6 +219,17 @@ class Meta extends \yii\db\ActiveRecord
             },
             'cyber',
         ];
+    }
+
+
+    /**
+     * Gets query for [[VerseMeta]].
+     *
+     * @return \yii\db\ActiveQuery|VerseMetaQuery
+     */
+    public function getVerseMetas()
+    {
+        return $this->hasMany(VerseMeta::className(), ['meta_id' => 'id']);
     }
 
     /**

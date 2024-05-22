@@ -228,9 +228,10 @@ return [
                         'p1/verse-open',
                         'p1/verse-publish',
                         'p1/verse-share',
+                        /*
                         'e1/verse',
                         'e1/meta',
-                        'e1/knight',
+                        'e1/knight',*/
                     ],
                 ],
                 [

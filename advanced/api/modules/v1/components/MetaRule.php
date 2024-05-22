@@ -5,6 +5,8 @@ namespace api\modules\v1\components;
 use api\modules\v1\models\Meta;
 use Yii;
 use yii\rbac\Rule;
+use yii\web\BadRequestHttpException;
+
 
 class MetaRule extends Rule
 {
@@ -21,11 +23,7 @@ class MetaRule extends Rule
             return false;
         }
         $userid = Yii::$app->user->identity->id;
-
-        if ($userid == $meta->author_id) {
-            return true;
-        }
-        return false;
+        return $meta->editable();
 
     }
 }
