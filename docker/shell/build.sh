@@ -1,0 +1,1 @@
+docker build -t api-mrpp-com:tag-2023012201 -f ./Dockerfile .

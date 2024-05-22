@@ -6,6 +6,7 @@ use api\modules\v1\models\File;
 use api\modules\v1\models\Knight;
 use api\modules\v1\models\Space;
 use api\modules\v1\models\User;
+use api\modules\v1\models\VerseShare;
 use Yii;
 use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
@@ -32,6 +33,7 @@ use yii\db\Expression;
 
  */
 class Verse extends \yii\db\ActiveRecord
+
 {
 
     public function behaviors()
@@ -83,7 +85,11 @@ class Verse extends \yii\db\ActiveRecord
         unset($fields['image_id']);
         unset($fields['updated_at']);
 
-        $fields['share'] = function () {return $this->share;};
+        // $fields['share'] = function () {return $this->share;};
+        $fields['editable'] = function () {return $this->editable();};
+        $fields['viewable'] = function () {return $this->viewable();};
+        $fields['links'] = function () {return $this->eventLinks;};
+
         return $fields;
     }
     /**
@@ -218,31 +224,31 @@ class Verse extends \yii\db\ActiveRecord
     public function extraFields()
     {
 
-        return ['metas', 'verseOpen', 'message', 'image',
-            'author' => function () {
-                return $this->author;
-            },
-            'space' => function () {
-                return $this->space;
-            },
-            'datas' => function () {
-                return $this->datas;
-            },
-            'resources' => function () {
-                return $this->resources;
-            },
-
+        return [
+            'metas',
+            'metaKnights',
+            'verseOpen',
+            'message',
+            'image',
+            'author',
+            'space',
+            'datas',
+            'resources',
+            'verseShare',
         ];
+
     }
+
     /**
-     * Gets query for [[VerseEvents]].
+     * Gets query for [[EventLinks]].
      *
-     * @return \yii\db\ActiveQuery|VerseEventQuery
+     * @return \yii\db\ActiveQuery|EventLinkQuery
      */
-    public function getVerseEvent()
+    public function getEventLinks()
     {
-        return $this->hasOne(VerseEvent::className(), ['verse_id' => 'id']);
+        return $this->hasMany(EventLink::className(), ['verse_id' => 'id']);
     }
+
     /**
      * Gets query for [[MetaKnights]].
      *
@@ -271,12 +277,46 @@ class Verse extends \yii\db\ActiveRecord
     {
         return $this->hasOne(VerseOpen::className(), ['verse_id' => 'id']);
     }
+    public function editable()
+    {
+        if (!isset(Yii::$app->user->identity)) {
+            return false;
+        }
+        $userid = Yii::$app->user->identity->id;
+        if ($userid == $this->author_id) {
+            return true;
+        }
+        $share = $this->verseShare;
+        if ($share && $share->editable) {
+            return true;
+        }
+        return false;
+    }
 
+    public function viewable()
+    {
+        if (!isset(Yii::$app->user->identity)) {
+            return false;
+        }
+        $userid = Yii::$app->user->identity->id;
+        if ($userid == $this->author_id) {
+            return true;
+        }
+        $share = $this->verseShare;
+        if ($share) {
+            return true;
+        }
+
+        $open = $this->verseOpen;
+        if ($open) {
+            return true;
+        }
+        return false;
+    }
     public function getVerseShare()
     {
 
-        $share = $this->hasOne(VerseShare::className(), ['verse_id' => $this->id, 'user_id' => Yii::$app->user->id]);
-
+        $share = VerseShare::findOne(['verse_id' => $this->id, 'user_id' => Yii::$app->user->id]);
         return $share;
     }
     public function getMessage()
@@ -321,14 +361,6 @@ class Verse extends \yii\db\ActiveRecord
     public static function find()
     {
         return new VerseQuery(get_called_class());
-    }
-
-    public function getShare()
-    {
-
-        $share = VerseShare::findOne(['verse_id' => $this->id, 'user_id' => Yii::$app->user->id]);
-
-        return $share != null;
     }
 
 }

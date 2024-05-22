@@ -57,11 +57,17 @@ class ServerController extends \yii\rest\Controller
      * @throws \yii\base\Exception
      * @throws \yii\base\InvalidConfigException
      */
-    public function actionSts()
+    /* public function actionSts($bucket, $region)
     {
-        $store = Yii::$app->store;
-        return $store->tempKeys();
+    $store = Yii::$app->store;
+    return $store->tempKeys($bucket, $region);
     }
+
+    public function actionStore()
+    {
+    $store = \Yii::$app->store;
+    return $store->store;
+    }*/
     public function actionUser()
     {
         $user = new \stdClass();

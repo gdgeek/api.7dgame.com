@@ -6,6 +6,7 @@ namespace backend\modules;
  * Lua module definition class
  */
 class Lua extends \yii\base\Module
+
 {
     /**
      * {@inheritdoc}
@@ -21,8 +22,8 @@ class Lua extends \yii\base\Module
 
         // custom initialization code goes here
     }
-	private $advanced =<<<EOF
-	
+    private $advanced = <<<EOF
+
 local logic_mt = {
 	__index = {
 		post = function(self, key, json_string)
@@ -41,7 +42,7 @@ local logic_mt = {
                self.handling['@update'](self, interval);
            end
         end,
-    
+
         init = function(self)
            if self.handling ~= nil and self.handling['@init'] ~=nil then
                self.handling['@init'](self);
@@ -59,23 +60,23 @@ local logic_mt = {
                self.handling['@destroy'](self);
            end
         end,
- 
+
 		callback = function(self, evt)
             CS.MrPP.Lua.LuaExecuter.Execute(evt.key, evt.value);
 		end,
 	}
 }
-                   
+
 
 Logic = {
 	Creater = function ()
-      
+
         return setmetatable({}, logic_mt)
     end
 }
-	
+
 EOF;
-	private $script = <<<EOF
+    private $script = <<<EOF
 local logic_mt = {
 	__index = {
 		post = function(self, key, json_string)
@@ -85,8 +86,8 @@ local logic_mt = {
 			--begin
 --{{coding}}
 			--end
-			
-       
+
+
 		end,
 		add_result = function(self, delegate)
 			if self.callbacklist == nil then
@@ -95,7 +96,7 @@ local logic_mt = {
 			table.insert(self.callbacklist, delegate)
 
 			print('add',delegate)
-		end,      
+		end,
 		remove_result = function(self, delegate)
 			for i=1, #self.callbacklist do
 				if CS.System.Object.Equals(self.callbacklist[i], delegate) then
@@ -113,11 +114,11 @@ local logic_mt = {
 				for i=1, #self.callbacklist do
 					self.callbacklist[i](self, evt)
 				end
-			end	
+			end
 		end,
 	}
 }
-                   
+
 
 Logic = {
 	Creater = function ()
@@ -127,14 +128,15 @@ Logic = {
 
 EOF;
 
-   
-	public function packing($func){
-		$pattern = "/--{{coding}}/";
-		return preg_replace($pattern, $func, $this->script);
-	}
-    public function getAdvanced($code){
-    
-		$pattern = "/--{{logic code}}/";
-		return preg_replace($pattern, $code, $this->advanced);
+    public function packing($func)
+    {
+        $pattern = "/--{{coding}}/";
+        return preg_replace($pattern, $func, $this->script);
+    }
+    public function getAdvanced($code)
+    {
+
+        $pattern = "/--{{logic code}}/";
+        return preg_replace($pattern, $code, $this->advanced);
     }
 }

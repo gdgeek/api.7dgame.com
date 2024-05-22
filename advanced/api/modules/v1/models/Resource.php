@@ -26,6 +26,7 @@ use yii\behaviors\BlameableBehavior;
  * @property User $updater
  */
 class Resource extends \yii\db\ActiveRecord
+
 {
     public function behaviors()
     {
@@ -151,14 +152,23 @@ class Resource extends \yii\db\ActiveRecord
         }
     }
 
+    /**
+     * Gets query for [[MetaResources]].
+     *
+     * @return \yii\db\ActiveQuery|MetaResourceQuery
+     */
+    public function getMetaResources()
+    {
+        return $this->hasMany(MetaResource::className(), ['resource_id' => 'id']);
+    }
+
     public function extraFields()
     {
         return [
             'file',
             'image',
-            'author' => function () {
-                return $this->author;
-            },
+            'metaResources',
+            'author',
         ];
     }
     /*

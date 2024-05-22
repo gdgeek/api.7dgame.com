@@ -30,6 +30,7 @@ use yii\db\Expression;
 
  */
 class Verse extends \yii\db\ActiveRecord
+
 {
 
     public function behaviors()
@@ -121,15 +122,6 @@ class Verse extends \yii\db\ActiveRecord
         ];
     }
 
-    /**
-     * Gets query for [[VerseEvents]].
-     *
-     * @return \yii\db\ActiveQuery|VerseEventQuery
-     */
-    public function getVerseEvent()
-    {
-        return $this->hasOne(VerseEvent::className(), ['verse_id' => 'id']);
-    }
     /**
      * Gets query for [[MetaKnights]].
      *

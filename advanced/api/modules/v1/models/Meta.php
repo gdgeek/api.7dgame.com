@@ -3,6 +3,7 @@
 namespace api\modules\v1\models;
 
 use api\modules\v1\models\Cyber;
+use api\modules\v1\models\EventNode;
 use api\modules\v1\models\File;
 use api\modules\v1\models\User;
 use Yii;
@@ -23,16 +24,19 @@ use yii\db\Expression;
  * @property int|null $image_id
  * @property string|null $data
  * @property string|null $uuid
+ * @property int|null $event_node_id
  *
  * @property Cyber[] $cybers
  * @property User $author
  * @property File $image
  * @property User $updater
  * @property Verse $verse
- * @property MetaEvent $metaEvent
  * @property MetaRete[] $metaRetes
+ *
+ * @property MetaResource[] $metaResources
  */
 class Meta extends \yii\db\ActiveRecord
+
 {
 
     public function behaviors()
@@ -68,12 +72,13 @@ class Meta extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['author_id', 'updater_id', 'verse_id', 'image_id'], 'integer'],
+            [['author_id', 'updater_id', 'verse_id', 'image_id', 'event_node_id'], 'integer'],
             [['created_at', 'updated_at'], 'safe'],
             [['info', 'data'], 'string'],
             [['uuid'], 'string', 'max' => 255],
             [['uuid'], 'unique'],
             [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['author_id' => 'id']],
+            [['event_node_id'], 'exist', 'skipOnError' => true, 'targetClass' => EventNode::className(), 'targetAttribute' => ['event_node_id' => 'id']],
             [['image_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['image_id' => 'id']],
             [['updater_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updater_id' => 'id']],
             [['verse_id'], 'exist', 'skipOnError' => true, 'targetClass' => Verse::className(), 'targetAttribute' => ['verse_id' => 'id']],
@@ -88,7 +93,10 @@ class Meta extends \yii\db\ActiveRecord
         unset($fields['image_id']);
         unset($fields['info']);
 
-        $fields['share'] = function () {return $this->share;};
+        $fields['event_node'] = function () {return $this->eventNode;};
+
+        $fields['editable'] = function () {return $this->verse->editable();};
+        $fields['viewable'] = function () {return $this->verse->viewable();};
         return $fields;
     }
     /**
@@ -107,9 +115,18 @@ class Meta extends \yii\db\ActiveRecord
             'image_id' => 'Image ID',
             'data' => 'Data',
             'uuid' => 'Uuid',
+            'event_node_id' => 'Event Node ID',
         ];
     }
 
+    /**
+     * Gets query for [[EventNode]].
+     * @return \yii\db\ActiveQuery|EventNodeQuery
+     */
+    public function getEventNode()
+    {
+        return $this->hasOne(EventNode::className(), ['id' => 'event_node_id']);
+    }
     /**
      * Gets query for [[Author]].
      *
@@ -149,15 +166,7 @@ class Meta extends \yii\db\ActiveRecord
     {
         return $this->hasOne(Verse::className(), ['id' => 'verse_id']);
     }
-    /**
-     * Gets query for [[MetaEvent]].
-     *
-     * @return \yii\db\ActiveQuery|MetaEventQuery
-     */
-    public function getMetaEvent()
-    {
-        return $this->hasOne(MetaEvent::className(), ['meta_id' => 'id']);
-    }
+
     /**
      * Gets query for [[MetaRetes]].
      *
@@ -184,9 +193,6 @@ class Meta extends \yii\db\ActiveRecord
             'author' => function () {
                 return $this->author;
             },
-            'event' => function () {
-                return $this->metaEvent;
-            },
             'script' => function () {
                 if ($this->cyber) {
                     return $this->cyber->script;
@@ -196,26 +202,6 @@ class Meta extends \yii\db\ActiveRecord
             'cyber',
         ];
     }
-    public function getShare()
-    {
-
-        $share = VerseShare::findOne(['verse_id' => $this->verse_id, 'user_id' => Yii::$app->user->id]);
-
-        return $share != null;
-    }
-    /*
-    public function getResourceIds()
-    {
-    $resourceIds = \api\modules\v1\helper\Meta2Resources::Handle(json_decode($this->data));
-    return $resourceIds;
-    }
-    public function extraResources()
-    {
-    $resourceIds = $this->resourceIds;
-    $items = Resource::find()->where(['id' => $resourceIds])->all();
-    return $items;
-    }
-     */
 
     /**
      * {@inheritdoc}
@@ -224,5 +210,23 @@ class Meta extends \yii\db\ActiveRecord
     public static function find()
     {
         return new MetaQuery(get_called_class());
+    }
+    public function afterDelete()
+    {
+        parent::afterDelete();
+        if ($this->eventNode != null) {
+            $this->eventNode->delete();
+        }
+    }
+    public function beforeSave($insert)
+    {
+        $ret = parent::beforeSave($insert);
+        if ($this->eventNode == null) {
+            $node = new EventNode();
+            $node->verse_id = $this->verse_id;
+            $node->save();
+            $this->event_node_id = $node->id;
+        }
+        return $ret;
     }
 }

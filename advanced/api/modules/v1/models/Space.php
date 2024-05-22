@@ -27,6 +27,7 @@ use yii\db\Expression;
  * @property File $sample
  */
 class Space extends \yii\db\ActiveRecord
+
 {
 
     public function behaviors()
@@ -81,9 +82,8 @@ class Space extends \yii\db\ActiveRecord
             'mesh',
             'sample',
             'dat',
-            'author' => function () {
-                return $this->author;
-            },
+            'author',
+            'verseSpaces',
         ];
     }
     public function afterDelete()
@@ -186,5 +186,15 @@ class Space extends \yii\db\ActiveRecord
     public static function find()
     {
         return new SpaceQuery(get_called_class());
+    }
+
+    /**
+     * Gets query for [[VerseSpaces]].
+     *
+     * @return \yii\db\ActiveQuery|VerseSpaceQuery
+     */
+    public function getVerseSpaces()
+    {
+        return $this->hasMany(VerseSpace::className(), ['space_id' => 'id']);
     }
 }

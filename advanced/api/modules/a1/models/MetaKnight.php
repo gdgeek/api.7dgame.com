@@ -2,6 +2,7 @@
 
 namespace api\modules\a1\models;
 
+use api\modules\v1\models\EventNode;
 use api\modules\v1\models\Knight;
 use api\modules\v1\models\User;
 use Yii;
@@ -22,6 +23,7 @@ use Yii;
  * @property Verse $verse
  */
 class MetaKnight extends \yii\db\ActiveRecord
+
 {
     /**
      * {@inheritdoc}
@@ -38,11 +40,12 @@ class MetaKnight extends \yii\db\ActiveRecord
     {
         return [
             [['verse_id', 'user_id'], 'required'],
-            [['verse_id', 'knight_id', 'user_id'], 'integer'],
+            [['verse_id', 'knight_id', 'user_id', 'event_node_id'], 'integer'],
             [['info'], 'string'],
             [['create_at'], 'safe'],
             [['uuid'], 'string', 'max' => 255],
             [['uuid'], 'unique'],
+            [['event_node_id'], 'exist', 'skipOnError' => true, 'targetClass' => EventNode::className(), 'targetAttribute' => ['event_node_id' => 'id']],
             [['knight_id'], 'exist', 'skipOnError' => true, 'targetClass' => Knight::className(), 'targetAttribute' => ['knight_id' => 'id']],
             [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['user_id' => 'id']],
             [['verse_id'], 'exist', 'skipOnError' => true, 'targetClass' => Verse::className(), 'targetAttribute' => ['verse_id' => 'id']],
@@ -73,6 +76,14 @@ class MetaKnight extends \yii\db\ActiveRecord
     public function getKnight()
     {
         return $this->hasOne(Knight::className(), ['id' => 'knight_id']);
+    }
+    /**
+     * Gets query for [[EventNode]].
+     * @return \yii\db\ActiveQuery|EventNodeQuery
+     */
+    public function getEventNode()
+    {
+        return $this->hasOne(EventNode::className(), ['id' => 'event_node_id']);
     }
     public function getResourceIds()
     {
@@ -117,9 +128,24 @@ class MetaKnight extends \yii\db\ActiveRecord
         unset($fields['knight_id']);
         unset($fields['user_id']);
         unset($fields['create_at']);
-        unset($fields['info']);
+        // unset($fields['info']);
+        unset($fields['event_node_id']);
+        unset($fields['id']);
+
+        $fields['inputs'] = function ($model) {
+            $ret = [];
+            foreach ($this->eventNode->eventInputs as $input) {
+                $ret[] = ['uuid' => $input->uuid, 'title' => $input->title];
+            }
+            return $ret;
+        };
         $fields['type'] = function ($model) {
-            return 'Knight';
+            $knight = $this->knight;
+            if (!$knight || $this->knight->type == null) {
+                return 'sample';
+            }
+
+            return $this->knight->type;
         };
         $fields['script'] = function ($model) {
             return '';

@@ -11,12 +11,16 @@ class VerseShareRule extends Rule
     public function execute($user, $item, $params)
     {
         $id = isset($params['id']) ? $params['id'] : null;
+
         if (!$id) {
             return false;
         }
 
         $share = VerseShare::findOne($id);
-        if (!$share) {
+
+        $userid = \Yii::$app->user->identity->id;
+
+        if (!$share || $share->verse->author_id != $userid) {
             return false;
         }
 

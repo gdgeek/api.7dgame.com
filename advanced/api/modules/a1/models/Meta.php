@@ -2,8 +2,8 @@
 
 namespace api\modules\a1\models;
 
-use api\modules\a1\models\MetaEvent;
 use api\modules\v1\models\Cyber;
+use api\modules\v1\models\EventNode;
 use api\modules\v1\models\File;
 use api\modules\v1\models\MetaQuery;
 use api\modules\v1\models\User;
@@ -32,10 +32,10 @@ use yii\db\Expression;
  * @property File $image
  * @property User $updater
  * @property Verse $verse
- * @property MetaEvent $metaEvent
  * @property MetaRete[] $metaRetes
  */
 class Meta extends \yii\db\ActiveRecord
+
 {
 
     public function behaviors()
@@ -71,16 +71,25 @@ class Meta extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['author_id', 'updater_id', 'verse_id', 'image_id'], 'integer'],
+            [['author_id', 'updater_id', 'verse_id', 'image_id', 'event_node_id'], 'integer'],
             [['created_at', 'updated_at'], 'safe'],
             [['info', 'data'], 'string'],
             [['uuid'], 'string', 'max' => 255],
             [['uuid'], 'unique'],
             [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['author_id' => 'id']],
+            [['event_node_id'], 'exist', 'skipOnError' => true, 'targetClass' => EventNode::className(), 'targetAttribute' => ['event_node_id' => 'id']],
             [['image_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['image_id' => 'id']],
             [['updater_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updater_id' => 'id']],
             [['verse_id'], 'exist', 'skipOnError' => true, 'targetClass' => Verse::className(), 'targetAttribute' => ['verse_id' => 'id']],
         ];
+    }
+    /**
+     * Gets query for [[EventNode]].
+     * @return \yii\db\ActiveQuery|EventNodeQuery
+     */
+    public function getEventNode()
+    {
+        return $this->hasOne(EventNode::className(), ['id' => 'event_node_id']);
     }
     public function fields()
     {
@@ -93,7 +102,23 @@ class Meta extends \yii\db\ActiveRecord
         unset($fields['image_id']);
         unset($fields['info']);
 
-        $fields['type'] = function () {return 'Mate';};
+        unset($fields['event_node_id']);
+        unset($fields['id']);
+        $fields['inputs'] = function ($model) {
+            $ret = [];
+            foreach ($this->eventNode->eventInputs as $input) {
+                $ret[] = ['uuid' => $input->uuid, 'title' => $input->title];
+            }
+            return $ret;
+        };
+        /*$fields['outputs'] = function ($model) {
+        $ret = [];
+        foreach ($this->eventNode->eventOutputs as $output) {
+        $ret[] = $output->uuid;
+        }
+        return $ret;
+        };*/
+        // $fields['type'] = function () {return 'Mate';};
         $fields['script'] = function () {
             if ($this->cyber && $this->cyber->script) {
                 return $this->cyber->script;
@@ -161,15 +186,7 @@ class Meta extends \yii\db\ActiveRecord
     {
         return $this->hasOne(Verse::className(), ['id' => 'verse_id']);
     }
-    /**
-     * Gets query for [[MetaEvents]].
-     *
-     * @return \yii\db\ActiveQuery|MetaEventQuery
-     */
-    public function getMetaEvent()
-    {
-        return $this->hasOne(MetaEvent::className(), ['meta_id' => 'id']);
-    }
+
     /**
      * Gets query for [[MetaRetes]].
      *

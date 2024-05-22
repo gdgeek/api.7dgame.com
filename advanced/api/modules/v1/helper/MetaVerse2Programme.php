@@ -223,7 +223,7 @@ case 'Toolbar':
 $ret->type = 'toolbar';
 $data = new \stdClass();
 // $data->addon =$addon;
-$data->destory = $addon->parameters->destory;
+$data->destroy = $addon->parameters->destroy;
 
 if (isset($addon->children->buttons)) {
 $data->buttons = [];

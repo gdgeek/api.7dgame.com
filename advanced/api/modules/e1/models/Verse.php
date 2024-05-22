@@ -3,6 +3,7 @@
 namespace api\modules\e1\models;
 
 use api\modules\v1\models\User;
+use api\modules\v1\models\VerseOpen;
 use api\modules\v1\models\VerseQuery;
 use api\modules\v1\models\VerseShare;
 use Yii;
@@ -31,6 +32,7 @@ use yii\db\Expression;
 
  */
 class Verse extends \yii\db\ActiveRecord
+
 {
 
     public function behaviors()
@@ -95,11 +97,42 @@ class Verse extends \yii\db\ActiveRecord
         $fields['resources'] = function () {
             return $this->resources;
         };
-        $fields['share'] = function () {
-            return $this->share;
-        };
+
+        $fields['editable'] = function () {return $this->editable();};
+        $fields['viewable'] = function () {return $this->viewable();};
 
         return $fields;
+    }
+    public function editable()
+    {
+
+        $userid = Yii::$app->user->identity->id;
+        if ($userid == $this->author_id) {
+            return true;
+        }
+        $share = $this->verseShare;
+        if ($share && $share->editable) {
+            return true;
+        }
+        return false;
+    }
+
+    public function viewable()
+    {
+        $userid = Yii::$app->user->identity->id;
+        if ($userid == $this->author_id) {
+            return true;
+        }
+        $share = $this->verseShare;
+        if ($share) {
+            return true;
+        }
+
+        $open = $this->verseOpen;
+        if ($open) {
+            return true;
+        }
+        return false;
     }
     /**
      * {@inheritdoc}
@@ -179,6 +212,11 @@ class Verse extends \yii\db\ActiveRecord
         return null;
 
     }
+    public function getVerseShare()
+    {
+        $share = VerseShare::findOne(['verse_id' => $this->id, 'user_id' => Yii::$app->user->id]);
+        return $share;
+    }
     public function getSpace()
     {
         $data = json_decode($this->data);
@@ -190,15 +228,6 @@ class Verse extends \yii\db\ActiveRecord
         }
     }
 
-    /**
-     * Gets query for [[VerseEvents]].
-     *
-     * @return \yii\db\ActiveQuery|VerseEventQuery
-     */
-    public function getVerseEvent()
-    {
-        return $this->hasOne(VerseEvent::className(), ['verse_id' => 'id']);
-    }
     /**
      * Gets query for [[MetaKnights]].
      *
@@ -280,12 +309,13 @@ class Verse extends \yii\db\ActiveRecord
     {
         return $this->hasMany(VerseRete::className(), ['verse_id' => 'id']);
     }
-    public function getShare()
-    {
+    /*
+public function getShare()
+{
 
-        $share = VerseShare::findOne(['verse_id' => $this->id, 'user_id' => Yii::$app->user->id]);
+$share = VerseShare::findOne(['verse_id' => $this->id, 'user_id' => Yii::$app->user->id]);
 
-        return $share != null;
-    }
+return $share != null;
+}*/
 
 }

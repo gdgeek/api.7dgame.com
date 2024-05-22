@@ -2,12 +2,12 @@
 
 namespace api\modules\a1\models;
 
+use api\modules\a1\models\EventLink;
 use api\modules\a1\models\File;
 use api\modules\a1\models\Meta;
 use api\modules\a1\models\Resource;
 use api\modules\a1\models\Space;
 use api\modules\v1\models\User;
-use api\modules\v1\models\VerseEvent;
 use api\modules\v1\models\VerseQuery;
 use Yii;
 use yii\behaviors\BlameableBehavior;
@@ -35,6 +35,7 @@ use yii\db\Expression;
 
  */
 class Verse extends \yii\db\ActiveRecord
+
 {
 
     public function behaviors()
@@ -87,23 +88,76 @@ class Verse extends \yii\db\ActiveRecord
         unset($fields['updated_at']);
         unset($fields['created_at']);
         unset($fields['author_id']);
-        // unset($fields['id']);
         unset($fields['info']);
 
         $fields['description'] = function () {
             return json_decode($this->info)->description;
         };
         $fields['connections'] = function () {
-            if ($this->verseEvent) {
-                return $this->verseEvent->data;
-            }
+            return $this->eventLinks;
+            //  return $this->eventLinks[0]->eventOutput->eventNode;
+            $ret = [];
+            foreach ($this->eventLinks as $item) {
+                $node = $item->eventOutput->eventNode->id;
+                if (!isset($ret[$node])) {
+                    $ret[$node] = new \stdClass();
+                    $ret[$node]->node = $node;
+                    $ret[$node]->linked = [];
+
+                }
+
+                $linked = \array_filter(
+                    $ret[$node]->linked,
+                    function ($l) use ($item) {
+                        return $l->uuid == $item->eventOutput->uuid;
+                    }
+                );
+                if (!$linked) {
+                    $linked = new \stdClass();
+                    $linked->uuid = $item->eventOutput->uuid;
+                    $linked->connections = [];
+                    array_push($ret[$node]->linked, $linked);
+                }
+
+                $connection = \array_filter(
+                    $linked->connections,
+                    function ($l) use ($item) {
+                        return
+                        $l->node == $item->eventInput->eventNode->id &&
+                        $l->uuid == $item->eventInput->uuid;
+                    }
+                );
+                if (!$connection) {
+                    $connection = new \stdClass();
+                    $connection->node = $item->eventInput->eventNode->id;
+                    $connection->uuid = $item->eventInput->uuid;
+
+                    array_push($linked->connections, $connection);
+
+                }
+
+            };
+            return json_encode(array_values($ret));
+
+        };
+        $fields['stories'] = function () {
+            return $this->verseScripts;
+
         };
         $fields['space'] = function () {
             return $this->space;
         };
+
         $fields['modules'] = function () {
-            return $this->modules;
+
+            $data = json_decode($this->data);
+
+            return array_merge(
+                $this->getNodes($data->children->metas, $this->getMetas()),
+                $this->getNodes($data->children->metaKnights, $this->getMetaKnights()),
+            );
         };
+
         $fields['resources'] = function () {
             return $this->resources;
         };
@@ -136,6 +190,16 @@ class Verse extends \yii\db\ActiveRecord
     {
         return $this->hasMany(VerseCyber::className(), ['verse_id' => 'id']);
     }
+
+    /**
+     * Gets query for [[EventLinks]].
+     *
+     * @return \yii\db\ActiveQuery|EventLinkQuery
+     */
+    public function getEventLinks()
+    {
+        return $this->hasMany(EventLink::className(), ['verse_id' => 'id']);
+    }
     public function getResources()
     {
         $modules = $this->modules;
@@ -149,44 +213,35 @@ class Verse extends \yii\db\ActiveRecord
         $items = Resource::find()->where(['id' => $ids])->all();
         return $items;
     }
+    public function getNodes($inputs, $quest)
+    {
+        $m = [];
+        $UUID = [];
+        foreach ($inputs as $child) {
+            $id = $child->parameters->id;
+            $UUID[$id] = $child->parameters->uuid;
+            array_push($m, $id);
+        }
+
+        $datas = $quest->where(['id' => $m])->all();
+        // $datas = $query->all();
+
+        foreach ($datas as $i => $item) {
+            if (!$item->uuid) {
+                $item->uuid = $UUID[$item->id];
+                $item->save();
+            }
+        }
+
+        return $datas;
+    }
 
     public function getModules()
     {
         $data = json_decode($this->data);
-        $m = [];
-        $k = [];
-        $mUUID = [];
-        $kUUID = [];
-        foreach ($data->children->metas as $child) {
-            if ($child->type == 'Meta') {
-                $id = $child->parameters->id;
-                $mUUID[$id] = $child->parameters->uuid;
-                array_push($m, $id);
-            } else {
-                $id = $child->parameters->id;
-                $kUUID[$id] = $child->parameters->uuid;
-                array_push($k, $id);
-            }
-        }
-        $knightQuery = $this->getMetaKnights()->where(['id' => $k]);
-        $metaQuery = $this->getMetas()->where(['id' => $m]);
-        $metas = $metaQuery->all();
-
-        foreach ($metas as $i => $item) {
-            if (!$item->uuid) {
-                $item->uuid = $mUUID[$item->id];
-                $item->save();
-            }
-        }
-
-        $knights = $knightQuery->all();
-        foreach ($knights as $i => $item) {
-            if (!$item->uuid) {
-                $item->uuid = $kUUID[$item->id];
-                $item->save();
-            }
-        }
-        return array_merge($metas, $knights);
+        $metas = $this->getNodes($data->children->metas, $this->getMetas());
+        $metaKnights = $this->getNodes($data->children->metaKnights, $this->getMetaKnights());
+        return array_merge($metas, $metaKnights);
     }
 
     public function getSpace()
@@ -247,15 +302,6 @@ class Verse extends \yii\db\ActiveRecord
     }
 
     /**
-     * Gets query for [[VerseEvents]].
-     *
-     * @return \yii\db\ActiveQuery|VerseEventQuery
-     */
-    public function getVerseEvent()
-    {
-        return $this->hasOne(VerseEvent::className(), ['verse_id' => 'id']);
-    }
-    /**
      * Gets query for [[Image]].
      *
      * @return \yii\db\ActiveQuery|FileQuery
@@ -298,6 +344,16 @@ class Verse extends \yii\db\ActiveRecord
         $share = VerseShare::findOne(['verse_id' => $this->id, 'user_id' => Yii::$app->user->id]);
 
         return $share != null;
+    }
+
+    /**
+     * Gets query for [[VerseScripts]].
+     *
+     * @return \yii\db\ActiveQuery|VerseScriptQuery
+     */
+    public function getVerseScripts()
+    {
+        return $this->hasMany(VerseScript::className(), ['verse_id' => 'id']);
     }
 
 }

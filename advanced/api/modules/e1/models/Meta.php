@@ -3,7 +3,6 @@
 namespace api\modules\e1\models;
 
 use api\modules\v1\models\Cyber;
-use api\modules\v1\models\MetaEvent;
 use api\modules\v1\models\MetaQuery;
 use api\modules\v1\models\User;
 use api\modules\v1\models\VerseShare;
@@ -31,10 +30,10 @@ use yii\db\Expression;
  * @property File $image
  * @property User $updater
  * @property Verse $verse
- * @property MetaEvent $metaEvent
  * @property MetaRete[] $metaRetes
  */
 class Meta extends \yii\db\ActiveRecord
+
 {
 
     public function behaviors()
@@ -84,13 +83,15 @@ class Meta extends \yii\db\ActiveRecord
     public function fields()
     {
         $fields = parent::fields();
-        unset($fields['author_id']);
-        // unset($fields['updater_id']);
+        //unset($fields['author_id']);
+        unset($fields['updater_id']);
         unset($fields['updated_at']);
         unset($fields['created_at']);
         unset($fields['image_id']);
         unset($fields['info']);
 
+        $fields['editable'] = function () {return $this->verse->editable();};
+        $fields['viewable'] = function () {return $this->verse->viewable();};
         return $fields;
     }
     /**
@@ -151,15 +152,7 @@ class Meta extends \yii\db\ActiveRecord
     {
         return $this->hasOne(Verse::className(), ['id' => 'verse_id']);
     }
-    /**
-     * Gets query for [[MetaEvent]].
-     *
-     * @return \yii\db\ActiveQuery|MetaEventQuery
-     */
-    public function getMetaEvent()
-    {
-        return $this->hasOne(MetaEvent::className(), ['meta_id' => 'id']);
-    }
+
     /**
      * Gets query for [[MetaRetes]].
      *
