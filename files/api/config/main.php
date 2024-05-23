@@ -167,9 +167,17 @@ return [
                         'v1/event-output',
                         'v1/event-link',
                         'v1/token',
-                        'v1/person',
                         'v1/space',
                         'v1/cyber',
+                        'v1/vp-guide',
+                    ],
+                ],
+
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/person',
+                    'extraPatterns' => [
+                        'PUT auth' => 'auth',
                     ],
                 ],
                 [
