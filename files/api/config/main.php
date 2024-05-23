@@ -169,6 +169,7 @@ return [
                         'v1/token',
                         'v1/space',
                         'v1/cyber',
+                        'v1/vp-guide',
                     ],
                 ],
 

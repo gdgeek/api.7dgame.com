@@ -144,6 +144,7 @@ class PersonController extends ActiveController
         if(in_array('admin', $roles) && ($auth == 'root' || $auth == 'admin')){
             throw new BadRequestHttpException('权限不足');
         }
+        
         $model = new Assignment($user->id);
       
         switch ($auth) {
