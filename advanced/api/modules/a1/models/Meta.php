@@ -89,7 +89,7 @@ class Meta extends \yii\db\ActiveRecord
         unset($fields['info']);
         //unset($fields['custom']);
         $fields['type'] = function ($model) {
-            return $model->custom != 0 ? 'sample' : 'module';
+            return $model->prefab == 0 ? 'sample' : 'module';
         };
         //unset($fields['id']);
 

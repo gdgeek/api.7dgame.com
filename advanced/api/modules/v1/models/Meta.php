@@ -71,7 +71,7 @@ class Meta extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['author_id', 'updater_id', 'image_id', 'custom'], 'integer'],
+            [['author_id', 'updater_id', 'image_id', 'prefab'], 'integer'],
             [['created_at', 'updated_at'], 'safe'],
             [['info', 'data', 'events'], 'string'],
             [['uuid', 'title'], 'string', 'max' => 255],
@@ -90,8 +90,8 @@ class Meta extends \yii\db\ActiveRecord
         $fields['image'] = function () {
             return $this->image;
         };
-        $fields['custom'] = function () {
-            return $this->custom;
+        $fields['prefab'] = function () {
+            return $this->prefab;
         };
         $fields['resources'] = function () {
             return $this->resources;
@@ -114,7 +114,7 @@ class Meta extends \yii\db\ActiveRecord
             'updated_at' => 'Updated At',
             'info' => 'Info',
             'image_id' => 'Image ID',
-            'custom' => 'Custom',
+            'prefab' => 'Prefab',
             'data' => 'Data',
             'uuid' => 'Uuid',
         ];

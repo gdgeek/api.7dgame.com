@@ -64,13 +64,13 @@ class MetaController extends ActiveController
     {
         $searchModel = new MetaSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-        $dataProvider->query->andWhere(['id' => $id, 'custom' => 1]);
+        $dataProvider->query->andWhere(['id' => $id, 'prefab' => 0]);
         return $dataProvider->query->one();
     }
     public function actionDelete($id)
     {
         $model = \api\modules\v1\models\Meta::findOne($id);
-        if ($model->custom == 0) {
+        if ($model->prefab == 1) {
           throw new \yii\web\ForbiddenHttpException('You can not delete this item');
         }
         $model->delete();
@@ -80,7 +80,7 @@ class MetaController extends ActiveController
     {
         $model = \api\modules\v1\models\Meta::findOne($id);
         $model->load(Yii::$app->getRequest()->getBodyParams(), '');
-        $model->custom = 1;
+        $model->prefab = 0;
         if ($model->save()) {
             return $model;
         } else {
@@ -91,7 +91,7 @@ class MetaController extends ActiveController
     {
         $model = new \api\modules\v1\models\Meta();
         $model->load(Yii::$app->getRequest()->getBodyParams(), '');
-        $model->custom = 1;
+        $model->prefab = 0;
         if ($model->save()) {
             return $model;
         } else {
@@ -102,7 +102,7 @@ class MetaController extends ActiveController
     {
         $searchModel = new MetaSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-        $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id, 'custom' => 1]);
+        $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id, 'prefab' => 0]);
         return $dataProvider;
     }
 
