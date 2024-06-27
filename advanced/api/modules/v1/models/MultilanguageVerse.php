@@ -36,6 +36,8 @@ class MultilanguageVerse extends \yii\db\ActiveRecord
             [['language'], 'string', 'max' => 256],
             [['name', 'description'], 'string', 'max' => 255],
             [['verse_id'], 'exist', 'skipOnError' => true, 'targetClass' => Verse::className(), 'targetAttribute' => ['verse_id' => 'id']],
+            [['verse_id', 'language'], 'unique', 'targetAttribute' => ['verse_id', 'language']],
+       
         ];
     }
 
