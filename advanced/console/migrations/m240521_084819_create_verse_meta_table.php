@@ -25,7 +25,7 @@ class m240521_084819_create_verse_meta_table extends Migration
             'id' => $this->primaryKey(),
             'verse_id' => $this->integer()->notNull(),
             'meta_id' => $this->integer()->notNull(),
-        ]);
+        ], $tableOptions);
 
         // creates index for column `verse_id`
         $this->createIndex(

@@ -7,6 +7,7 @@ use api\modules\a1\models\File;
 use api\modules\a1\models\Meta;
 use api\modules\a1\models\Resource;
 use api\modules\v1\models\User;
+use api\modules\v1\models\MultilanguageVerse;
 use api\modules\v1\models\VerseQuery;
 use Yii;
 use yii\behaviors\BlameableBehavior;
@@ -84,12 +85,24 @@ class Verse extends \yii\db\ActiveRecord
     public function extraFields()
     {
         $data = json_decode($this->data);
-
+        $language = Yii::$app->request->get('language');
+        if(!isset($language)){
+            $language = 'en-us';
+        }
+        $context = MultilanguageVerse::find()->where(['verse_id' => $this->id, 'language' => $language])->one();
         return [
             'id',
             'metas',
-            'name',
-            'description' => function () {
+            'name' => function() use($context){
+                if(isset($context)){
+                    return $context->name;
+                }    
+                return $this->name;
+            },
+            'description' => function() use($context){
+                if(isset($context)){
+                    return $context->description;
+                }    
                 $info = json_decode($this->info);
                 return $info->description;
             },
@@ -166,6 +179,8 @@ class Verse extends \yii\db\ActiveRecord
         $items = Resource::find()->where(['id' => $ids])->all();
         return $items;
     }
+
+
     public function getNodes($inputs, $quest)
     {
         $m = [];

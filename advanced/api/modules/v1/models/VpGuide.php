@@ -29,7 +29,7 @@ class VpGuide extends \yii\db\ActiveRecord
         $fields['level'] = function () {return $this->level;};
         return $fields;
     }
-    /**
+    /**utf8mb4_bin
      * {@inheritdoc}
      */
     public function rules()

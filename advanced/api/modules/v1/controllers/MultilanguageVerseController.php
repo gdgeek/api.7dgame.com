@@ -1,17 +1,20 @@
 <?php
-namespace api\modules\a1\controllers;
+namespace api\modules\v1\controllers;
 
-use yii\data\ActiveDataProvider;
+use mdm\admin\components\AccessControl;
+use sizeg\jwt\JwtHttpBearerAuth;
+use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
 
-class VpGuideController extends ActiveController
+class MultilanguageVerseController extends ActiveController
 {
 
-    public $modelClass = 'api\modules\a1\models\VpGuide';
+    public $modelClass = 'api\modules\v1\models\MultilanguageVerse';
     public function behaviors()
     {
         $behaviors = parent::behaviors();
 
+        // add CORS filter
         $behaviors['corsFilter'] = [
             'class' => \yii\filters\Cors::class,
             'cors' => [
@@ -29,31 +32,20 @@ class VpGuideController extends ActiveController
             ],
         ];
 
+        // unset($behaviors['authenticator']);
+        $behaviors['authenticator'] = [
+            'class' => CompositeAuth::class,
+            'authMethods' => [
+                JwtHttpBearerAuth::class,
+            ],
+            'except' => ['options'],
+        ];
+
+        $behaviors['access'] = [
+            'class' => AccessControl::class,
+        ];
+
         return $behaviors;
-    }
-    public function actions()
-    {
-        $actions = parent::actions();
-        unset($actions['index']);
-        unset($actions['create']);
-        unset($actions['update']);
-        unset($actions['delete']);
-        unset($actions['options']);
-        //  unset($actions['view']);
-        return $actions;
-    }
-    public function actionIndex()
-    {
-     
-        $papeSize = \Yii::$app->request->get('pageSize', 15);
-        $activeData = new ActiveDataProvider([
-            'query' => \api\modules\a1\models\VpGuide::find(),
-            'pagination' => [
-                'pageSize' => $papeSize,
-            ]
-        ]);
-        return $activeData;
-       
     }
 
 }

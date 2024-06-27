@@ -24,7 +24,7 @@ class m240506_100238_create_vp_guide_table extends Migration
             'id' => $this->primaryKey(),
             'order' => $this->integer(),
             'level_id' => $this->integer()->notNull()->unique(),
-        ]);
+        ], $tableOptions);
 
         // creates index for column `level_id`
         $this->createIndex(

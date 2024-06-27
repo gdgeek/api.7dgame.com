@@ -157,6 +157,7 @@ return [
                         'v1/message',
                         'v1/reply',
                         'v1/message-tags',
+                        'v1/multilanguage-verse',
                         'v1/tags',
                         'v1/knight',
                         'v1/meta-knight',

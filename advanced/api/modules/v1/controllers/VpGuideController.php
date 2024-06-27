@@ -5,6 +5,7 @@ use yii\helpers\HtmlPurifier;
 use yii\web\BadRequestHttpException;
 use yii\filters\auth\CompositeAuth;
 
+use yii\data\ActiveDataProvider;
 use yii\rest\ActiveController;
 
 use mdm\admin\components\AccessControl;
@@ -47,6 +48,26 @@ class VpGuideController extends ActiveController
             'class' => AccessControl::class,
         ];
         return $behaviors;
+    }
+    public function actions()
+    {
+        $actions = parent::actions();
+        unset($actions['index']);
+       
+        return $actions;
+    }
+    public function actionIndex()
+    {
+     
+        $papeSize = \Yii::$app->request->get('pageSize', 15);
+        $activeData = new ActiveDataProvider([
+            'query' => \api\modules\a1\models\VpGuide::find(),
+            'pagination' => [
+                'pageSize' => $papeSize,
+            ]
+        ]);
+        return $activeData;
+       
     }
 
 }
