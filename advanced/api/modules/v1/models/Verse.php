@@ -7,6 +7,8 @@ use api\modules\v1\models\File;
 use api\modules\v1\models\Space;
 use api\modules\v1\models\User;
 use api\modules\v1\models\VerseShare;
+use api\modules\v1\models\MultilanguageVerse;
+
 use Yii;
 use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
@@ -87,7 +89,7 @@ class Verse extends \yii\db\ActiveRecord
 
         $fields['editable'] = function () {return $this->editable();};
         $fields['viewable'] = function () {return $this->viewable();};
-        $fields['links'] = function () {return $this->eventLinks;};
+      //  $fields['links'] = function () {return $this->eventLinks;};
 
         return $fields;
     }
@@ -158,6 +160,7 @@ class Verse extends \yii\db\ActiveRecord
             'script',
             'resources',
             'verseShare',
+            'languages',
         ];
 
     }
@@ -167,21 +170,32 @@ class Verse extends \yii\db\ActiveRecord
      *
      * @return \yii\db\ActiveQuery|EventLinkQuery
      */
+    /*
     public function getEventLinks()
     {
         return $this->hasMany(EventLink::className(), ['verse_id' => 'id']);
     }
+    */
 
+
+    /**
+     * Gets query for [[Languages]].
+     *
+     * @return \yii\db\ActiveQuery|LanguageQuery
+     */
+    public function getLanguages(){
+        return $this->hasMany(MultilanguageVerse::className(), ['verse_id' => 'id']);
+    }
     /**
      * Gets query for [[MetaKnights]].
      *
      * @return \yii\db\ActiveQuery|MetaKnightQuery
-
+    */
+    /*
     public function getMetaKnights()
     {
     return $this->hasMany(MetaKnight::className(), ['verse_id' => 'id']);
-    }
-     */
+    }*/
     /**
      * Gets query for [[Metas]].
      *
