@@ -48,7 +48,12 @@ class VpGuide extends \yii\db\ActiveRecord
             'level_id' => 'Level ID',
         ];
     }
-
+    public function fields()
+    {
+        $fields = parent::fields();
+        $fields['level'] = function () {return $this->level;};
+        return $fields;
+    }
     /**
      * Gets query for [[Level]].
      *

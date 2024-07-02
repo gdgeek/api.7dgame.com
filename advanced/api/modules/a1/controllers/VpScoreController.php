@@ -1,21 +1,13 @@
 <?php
-namespace api\modules\v1\controllers;
-use Yii;
-use yii\helpers\HtmlPurifier;
-use yii\web\BadRequestHttpException;
-use yii\filters\auth\CompositeAuth;
+namespace api\modules\a1\controllers;
 
 use yii\data\ActiveDataProvider;
 use yii\rest\ActiveController;
 
-use mdm\admin\components\AccessControl;
-
-use api\modules\v1\models\SpaceSearch;
-use sizeg\jwt\JwtHttpBearerAuth;
-class VpGuideController extends ActiveController
+class VpScoreController extends ActiveController
 {
 
-    public $modelClass = 'api\modules\v1\models\VpGuide';
+    public $modelClass = 'api\modules\a1\models\VpScore';
     public function behaviors()
     {
         $behaviors = parent::behaviors();
@@ -36,38 +28,28 @@ class VpGuideController extends ActiveController
                 ],
             ],
         ];
-        $behaviors['authenticator'] = [
-            'class' => CompositeAuth::class,
-            'authMethods' => [
-                JwtHttpBearerAuth::class,
-            ],
-            'except' => ['options'],
-        ];
 
-        $behaviors['access'] = [
-            'class' => AccessControl::class,
-        ];
         return $behaviors;
     }
     public function actions()
     {
         $actions = parent::actions();
         unset($actions['index']);
-       
+        unset($actions['create']);
+        unset($actions['update']);
+        unset($actions['delete']);
+        unset($actions['options']);
+        unset($actions['view']);
         return $actions;
     }
-    public function actionIndex()
+    public function actionCreate()
     {
-     
-        $papeSize = \Yii::$app->request->get('pageSize', 15);
-        $activeData = new ActiveDataProvider([
-            'query' =>$this->modelClass::find(),
-            'pagination' => [
-                'pageSize' => $papeSize,
-            ]
-        ]);
-        return $activeData;
-       
+        $model = new $this->modelClass();
+        $model->load(\Yii::$app->request->post(), '');
+        if ($model->save()) {
+            return $model;
+        } else {
+            return $model->errors;
+        }
     }
-
 }

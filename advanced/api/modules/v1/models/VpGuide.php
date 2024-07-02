@@ -25,7 +25,7 @@ class VpGuide extends \yii\db\ActiveRecord
     public function fields()
     {
         $fields = parent::fields();
-        
+        $fields['a'] = function(){return 1;};
         $fields['level'] = function () {return $this->level;};
         return $fields;
     }
