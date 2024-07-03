@@ -42,17 +42,44 @@ class VpGuideController extends ActiveController
         //  unset($actions['view']);
         return $actions;
     }
+   
     public function actionIndex()
     {
-     
+        
+        $get = \Yii::$app->request->get();
+        if(isset($get['version'])){
+            $cache = \Yii::$app->cache;
+            if(isset($get['refresh'])){
+                unset($get['refresh']);
+                $key = json_encode($get);
+                $cache->delete($key);
+            }
+            $key = json_encode($get);
+            $data = $cache->get($key);
+          
+            if ($data === false) {
+               
+                $papeSize = \Yii::$app->request->get('pageSize', 15);
+                $data = new ActiveDataProvider([
+                    'query' => \api\modules\a1\models\VpGuide::find(),
+                    'pagination' => [
+                        'pageSize' => $papeSize,
+                    ]
+                ]);
+                $cache->set($key, $data);
+            }
+            return $data;
+        }
+
         $papeSize = \Yii::$app->request->get('pageSize', 15);
-        $activeData = new ActiveDataProvider([
+        $data = new ActiveDataProvider([
             'query' => \api\modules\a1\models\VpGuide::find(),
             'pagination' => [
                 'pageSize' => $papeSize,
             ]
         ]);
-        return $activeData;
+        return $data;
+       
        
     }
 
