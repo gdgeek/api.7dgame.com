@@ -3,6 +3,7 @@
 namespace api\modules\v1\components;
 
 use api\modules\v1\models\MultilanguageVerse;
+use api\modules\v1\components\rule\VerseDeriveRule;
 use Yii;
 use yii\rbac\Rule;
 use yii\web\BadRequestHttpException;

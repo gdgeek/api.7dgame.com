@@ -1,6 +1,6 @@
 <?php
 
-namespace api\modules\v1\components;
+namespace api\modules\v1\components\rule;
 use api\modules\v1\models\Verse;
 use Yii;
 use yii\rbac\Rule;
