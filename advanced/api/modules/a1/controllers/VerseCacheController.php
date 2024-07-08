@@ -5,7 +5,7 @@ use yii\rest\ActiveController;
 use Yii;
 use api\modules\a1\models\VerseSearch;
 
-class CacheController extends ActiveController
+class VerseCacheController extends ActiveController
 {
 
     public $modelClass = 'api\modules\a1\models\Verse';
@@ -40,7 +40,7 @@ class CacheController extends ActiveController
         unset($actions['update']);
         unset($actions['delete']);
         unset($actions['options']);
-          unset($actions['view']);
+        unset($actions['view']);
         return $actions;
     }
     public function actionView($id){
@@ -49,12 +49,18 @@ class CacheController extends ActiveController
         $version = \Yii::$app->request->get('version');
        
         if(isset($get['version'])){
-            $key = $id .':'. json_encode($get['expand']);
+          
             $cache = Yii::$app->cache;
-            $data = $cache->get($key);
-            if(isset($get['refresh']) && $data !== false){
+
+            if(isset($get['refresh'])){
+                unset($get['refresh']);
+                $key = json_encode($get);
                 $cache->delete($key);
             }
+
+            $key = json_encode($get);
+            $data = $cache->get($key);
+           
             if ($data === false) {
                 $searchModel = new VerseSearch();
                 $dataProvider = $searchModel->search(Yii::$app->request->queryParams);

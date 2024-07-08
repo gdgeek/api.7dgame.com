@@ -4,7 +4,7 @@ namespace api\modules\a1\controllers;
 use yii\data\ActiveDataProvider;
 use yii\rest\ActiveController;
 
-class VpGuideController extends ActiveController
+class VpGuideCacheController extends ActiveController
 {
 
     public $modelClass = 'api\modules\a1\models\VpGuide';
@@ -34,15 +34,15 @@ class VpGuideController extends ActiveController
     public function actions()
     {
         $actions = parent::actions();
-       //unset($actions['index']);
+        unset($actions['index']);
         unset($actions['create']);
         unset($actions['update']);
         unset($actions['delete']);
         unset($actions['options']);
-        unset($actions['view']);
+        //  unset($actions['view']);
         return $actions;
     }
-   /*
+   
     public function actionIndex()
     {
         
@@ -81,6 +81,6 @@ class VpGuideController extends ActiveController
         return $data;
        
        
-    }*/
+    }
 
 }
