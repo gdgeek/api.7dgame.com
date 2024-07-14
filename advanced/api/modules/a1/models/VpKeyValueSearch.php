@@ -61,8 +61,8 @@ class VpKeyValueSearch extends VpKeyValue
             'id' => $this->id,
         ]);
 
-        $query->andFilterWhere(['=', 'key', $this->key])
-            ->andFilterWhere(['like', 'value', $this->value]);
+        $query->orFilterWhere(['like', 'key', $this->key])
+            ->orFilterWhere(['like', 'value', $this->value]);
 
         return $dataProvider;
     }
