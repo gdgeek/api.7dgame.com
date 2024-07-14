@@ -62,24 +62,5 @@ class VerseController extends ActiveController
         return $dataProvider;
     }
 
-    /*
-public function actionOpen()
-{
-$searchModel = new VerseSearch();
-$dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-$query = $dataProvider->query;
-$query->select('verse.*')->leftJoin('verse_open', '`verse_open`.`verse_id` = `verse`.`id`')->andWhere(['NOT', ['verse_open.id' => null]]);
-return $dataProvider;
-}
-
-public function actionShare()
-{
-$searchModel = new VerseSearch();
-$dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-$query = $dataProvider->query;
-$query->select('verse.*')->leftJoin('verse_share', '`verse_share`.`verse_id` = `verse`.`id`')->andWhere(['verse_share.user_id' => Yii::$app->user->id]);
-return $dataProvider;
-}
- */
 
 }

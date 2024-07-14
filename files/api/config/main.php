@@ -245,7 +245,7 @@ return [
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',
-                    'controller' => ['a1/verse','a1/vp-guide','a1/verse-cache','a1/vp-guide-cache'],
+                    'controller' => ['a1/verse','a1/vp-guide','a1/verse-cache','a1/vp-guide-cache', 'a1/vp-key-value'],
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',
