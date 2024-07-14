@@ -55,6 +55,7 @@ class VpKeyValueSearch extends VpKeyValue
             // $query->where('0=1');
             return $dataProvider;
         }
+        //vision, minimum
 
         // grid filtering conditions
         $query->andFilterWhere([
