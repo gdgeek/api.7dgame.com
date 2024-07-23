@@ -14,16 +14,20 @@ return [
     'modules' => [
         'v1' => [
             'class' => 'api\modules\v1\Module',
-        ],
+        ],/*
         'a1' => [
             'class' => 'api\modules\a1\Module',
-        ],
+        ],*/
         'e1' => [
             'class' => 'api\modules\e1\Module',
         ],
+        'vp' => [
+            'class' => 'api\modules\vp\Module',
+        ],
+        /*
         'p1' => [
             'class' => 'api\modules\p1\Module',
-        ],
+        ],*/
     ],
     'components' => [
 
@@ -64,6 +68,14 @@ return [
             'enableStrictParsing' => true,
             'showScriptName' => false,
             'rules' => [
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'vp/verification',
+                    'extraPatterns' => [
+                        'GET check' => 'check',
+                        'GET index' => 'index',
+                    ],
+                ],
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/tencent-cloud',
@@ -230,23 +242,21 @@ return [
                     'extraPatterns' => [
                         'GET knights' => 'knights',
                     ],
-                ],
+                ],/*
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => [
                         'p1/verse-open',
                         'p1/verse-publish',
                         'p1/verse-share',
-                        /*
-                        'e1/verse',
-                        'e1/meta',
-                        'e1/knight',*/
                     ],
-                ],
+                ],*/
+                /*
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => ['a1/verse','a1/vp-guide','a1/verse-cache','a1/vp-guide-cache', 'a1/vp-key-value'],
-                ],
+                ],*/
+                /*
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'p1/site',
@@ -255,7 +265,7 @@ return [
                         'GET logout' => 'logout',
                         'GET user' => 'user',
                     ],
-                ],
+                ],*/
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/cyber-script',
