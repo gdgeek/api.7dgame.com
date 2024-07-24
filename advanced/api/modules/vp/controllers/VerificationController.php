@@ -18,45 +18,44 @@ class VerificationController extends \yii\rest\Controller
        return $pem;
     }
     public function actionCheck(){
-        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http';
- 
-        // 获取主机名(包括域名和端口)
-        $host = $_SERVER['HTTP_HOST'];
-        
-        // 获取资源路径
-        $uri = $_SERVER['REQUEST_URI'];
-        
-        // 组合完整的URL
-        $url = $protocol . '://' . $host . $uri;
-        
-        $cache = \Yii::$app->cache;
-        $lastUrl = $cache->get('url');
-        $cache->set('url', $url);
-        return $lastUrl;
-        $get = \Yii::$app->request->get();
-        $publicKeyUrl = $get['publicKeyUrl'];
-        $publicKeyUrl = filter_var($publicKeyUrl, FILTER_SANITIZE_URL);
-        $pkURL =  urlencode($publicKeyUrl);
-        $signature = base64_decode($get['signature']);
-       // $signature = filter_var($signature, FILTER_SANITIZE_STRING);
-        $salt = base64_decode($get['salt']);
-        //$salt = filter_var($salt, FILTER_SANITIZE_STRING);
-        $timestamp = $get['timestamp'];
-        //$timestamp = filter_var($timestamp, FILTER_SANITIZE_STRING);
+       
+  
 
-        $playerId = $get['playerId'];
-        $bundleId = $get['bundleId'];
-        $certificate = file_get_contents ($publicKeyUrl);
+
+        $data = [
+            "publicKeyUrl" => "https%3a%2f%2fstatic.gc.apple.com%2fpublic-key%2fgc-prod-10.cer",
+            "signature" => "ZGSMDFVRCZsZdrwK9lBfjypo3sSrateCIETsZFSmLI4W6vqappEcy5sCzTnBf1zyEkok8cHzhhzRbj%2bC6AbI9mayu7BefU1bmlVpcLpHOE53Kk7pStaTSAsCorSPPdvy1BkgGkoyd9gu4ALwHvf%2bJoT6aGhySHqSj6Ao1qi%2fxar3Ur32LKNq1FaDbCBEf%2f7Zgx2uwqGWQi%2bkJPhlQierNFm0d1uiquPRYYR2rhrOFjU0QULCWvXETODbkKyUsXmnooSd%2bkeLiqL%2b32gjoEP8U%2bYb%2bdakjEBZaONfYDzmL8d%2biBvI90suDKBalax6IBPtItSgKOMU5RfxKmrqO0zZ0V9E4A8zisjk7TlrA3NKBL5C2KXMuWh0CMUqYGAOEy2SXuDSSx6%2fCXtPWRtPD9yXKml%2fzU7pN1EMyRsmJFL0E58TtxabdhgD%2bKG%2bDrSVQbPr%2blBIjiQVgnBuZti7DvG1cUlBAPLqM96Nikt7ZEyPVSZR0Hje%2f2f6wUv0exGIxqU19CaiIciHMuMRAwDzCwq4AaQGtvWMjGH2ZdB2OU%2fdyF1ZqYcr%2f87v7odO6eLNDxyXtQeNiDJB6gl9rb8oKyDNnEU5%2fTNm0Igv%2fgsmzVuxOC6kwzhLs0XCGI%2fWvIjLJum%2bD%2fuFbk6Vd7mNCjegM6u5KWW%2fwd%2b5AUoRvMzRnlBlKww%3d",
+            "salt" => "llLBIA%3d%3d",
+            "timestamp" => "1721799800593",
+            "teamPlayerId" => "T%3a_117db69b8df505c850cfda303378c2e7",
+            "bundleId" => "com.NoOverwork.VoxelParty"
+        ];
+        $publicKeyUrl = urldecode($data['publicKeyUrl']);
+        $signature = base64_decode(urldecode($data['signature']));
+       
+       
+        $salt = base64_decode(urldecode($data['salt']));
+        $timestamp = pack("J",$data['timestamp']);
+        $teamPlayerId =  urldecode($data['teamPlayerId']);
+        $bundleId =  urldecode($data['bundleId']);
+       
+
+        $dataBuffer = $teamPlayerId . $bundleId . $timestamp . $salt;
+        
+        $pkURL =  urldecode($publicKeyUrl);
+        $certificate = file_get_contents ($pkURL);
         $pemData = $this->der2pem($certificate);
-        $ok = openssl_verify($dataToUse, $signatureToUse, $pubkeyid, OPENSSL_ALGO_SHA256);
         $pubkeyid = openssl_pkey_get_public($pemData);
-        //$publicKeyURL = filter_var($headers['Publickeyurl'], FILTER_SANITIZE_URL);
-           
-        /*
-            
-            $publicKeyURL = filter_var($headers['Publickeyurl'], FILTER_SANITIZE_URL);
-            $pkURL = urlencode($publicKeyURL);
-        */
-        return  $get;
+        
+        $ok = openssl_verify(
+                    $dataBuffer, 
+                    $signature, 
+                    $pubkeyid, 
+                    OPENSSL_ALGO_SHA256
+                );
+        return [
+            "ok" => $ok
+        ];
+        
     }
 }
