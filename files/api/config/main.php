@@ -74,7 +74,13 @@ return [
                     'extraPatterns' => [
                         'GET check' => 'check',
                         'GET log' => 'log',
+                        'GET test' => 'test',
+                        'GET token' => 'token',
                     ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'vp/guide',
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',

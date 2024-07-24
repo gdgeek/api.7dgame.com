@@ -1,6 +1,6 @@
 <?php
 namespace api\modules\vp\controllers;
-
+use api\modules\vp\models\VpToken;
 use yii\rest\ActiveController;
 
 class SiteController extends \yii\rest\Controller
@@ -23,40 +23,133 @@ class SiteController extends \yii\rest\Controller
         return $log;
 
     }
+    private function check($data){
+
+        $cache = \Yii::$app->cache;
+        
+        $playerId =  urldecode($data['playerId']);
+        $bundleId =  urldecode($data['bundleId']);
+        $key = $playerId .'@'. $bundleId;
+        $token = VpToken::find()->where(['key' => $key])->one();
+        if($token != null){
+            
+        }
+       /* if($token == null){
+            throw new \Exception("invalid token");
+        }*/
+        $publicKeyUrl = urldecode($data['publicKeyUrl']);
+        if(strpos($publicKeyUrl, "https://static.gc.apple.com/") !== 0){
+            throw new \Exception("invalid public key url");
+        }
+        $signature = base64_decode(urldecode($data['signature']));
+        $salt = base64_decode(urldecode($data['salt']));
+        $tt = $data['timestamp']; 
+
+        $current = time();
+        if(abs($current * 1000 - $tt) > 3000000000){
+            throw new \Exception("timestamp expired");
+        }
+        $timestamp = pack("J", $tt);
+      
+        $dataBuffer = $playerId . $bundleId . $timestamp . $salt;
+        $pkURL =  urldecode($publicKeyUrl);
+        $certificate = file_get_contents ($pkURL);
+        $pemData = $this->der2pem($certificate);
+        $pubkeyid = openssl_pkey_get_public($pemData);
+        $ok = openssl_verify(
+                    $dataBuffer, 
+                    $signature, 
+                    $pubkeyid, 
+                    OPENSSL_ALGO_SHA256
+                );
+        return $ok;
+    }
+    public function actionToken(){
+        $data = \Yii::$app->request->get();
+        try{
+            $tk = $data['token'];
+            
+            $playerId =  urldecode($data['playerId']);
+            $bundleId =  urldecode($data['bundleId']);
+            $key = $playerId .'@'. $bundleId;
+            $token = VpToken::find()->where(['token' => $tk, 'key' => $key])->one();
+            if($token == null){
+               throw new \Exception("invalid token");
+            }
+            $updated_at = $token->updated_at;
+            if(time() - strtotime($updated_at) > 360000){
+                throw new \Exception("token expired");
+            }
+            $token->token = \Yii::$app->security->generateRandomString();
+            $token->save();
+            return [
+                "ret" => true,
+                "token" => $token->token
+            ];
+        }catch(\Exception $e){
+            return [
+                "ret" => false,
+                "msg" => $e->getMessage()
+            ];
+        }
+    }
+    public function actionTest(){
+        
+        $data = [
+            "publicKeyUrl" => "https%3a%2f%2fstatic.gc.apple.com%2fpublic-key%2fgc-prod-10.cer",
+            "signature" => "ZGSMDFVRCZsZdrwK9lBfjypo3sSrateCIETsZFSmLI4W6vqappEcy5sCzTnBf1zyEkok8cHzhhzRbj%2bC6AbI9mayu7BefU1bmlVpcLpHOE53Kk7pStaTSAsCorSPPdvy1BkgGkoyd9gu4ALwHvf%2bJoT6aGhySHqSj6Ao1qi%2fxar3Ur32LKNq1FaDbCBEf%2f7Zgx2uwqGWQi%2bkJPhlQierNFm0d1uiquPRYYR2rhrOFjU0QULCWvXETODbkKyUsXmnooSd%2bkeLiqL%2b32gjoEP8U%2bYb%2bdakjEBZaONfYDzmL8d%2biBvI90suDKBalax6IBPtItSgKOMU5RfxKmrqO0zZ0V9E4A8zisjk7TlrA3NKBL5C2KXMuWh0CMUqYGAOEy2SXuDSSx6%2fCXtPWRtPD9yXKml%2fzU7pN1EMyRsmJFL0E58TtxabdhgD%2bKG%2bDrSVQbPr%2blBIjiQVgnBuZti7DvG1cUlBAPLqM96Nikt7ZEyPVSZR0Hje%2f2f6wUv0exGIxqU19CaiIciHMuMRAwDzCwq4AaQGtvWMjGH2ZdB2OU%2fdyF1ZqYcr%2f87v7odO6eLNDxyXtQeNiDJB6gl9rb8oKyDNnEU5%2fTNm0Igv%2fgsmzVuxOC6kwzhLs0XCGI%2fWvIjLJum%2bD%2fuFbk6Vd7mNCjegM6u5KWW%2fwd%2b5AUoRvMzRnlBlKww%3d",
+            "salt" => "llLBIA%3d%3d",
+            "timestamp" => "1721799800593",
+            "playerId" => "T%3a_117db69b8df505c850cfda303378c2e7",
+            "bundleId" => "com.NoOverwork.VoxelParty"
+        ];
+        try{
+             $ok = $this->check($data);
+             $ret = ($ok != 0);
+             if($ret){
+                $playerId =  urldecode($data['playerId']);
+                $bundleId =  urldecode($data['bundleId']);
+                $key = $playerId .'@'. $bundleId;
+                $token = VpToken::find()->where(['key' => $key])->one();
+                if($token == null){
+                    $token = new VpToken();
+                    $token->key = $key;
+                }
+                $token->token = \Yii::$app->security->generateRandomString();
+                $token->save();
+                return [
+                 "ret" => $ret,
+                 "token" => $token->token
+                ];
+             }
+             return [
+                "ret" => $ret,
+            ];
+         }catch(\Exception $e){
+             return [
+                 "ret" => false,
+                 "msg" => $e->getMessage()
+             ];
+         }
+    }
     public function actionCheck(){
        
         $cache = \Yii::$app->cache;
-  
-       
         $data = \Yii::$app->request->get();
-        $cache->set('log', json_encode($data));
         try{
-            $publicKeyUrl = urldecode($data['publicKeyUrl']);
-            $signature = base64_decode(urldecode($data['signature']));
-        
-        
-            $salt = base64_decode(urldecode($data['salt']));
-            $timestamp = pack("J",$data['timestamp']);
-            $playerId =  urldecode($data['playerId']);
-            $bundleId =  urldecode($data['bundleId']);
-        
-
-            $dataBuffer = $playerId . $bundleId . $timestamp . $salt;
-            
-            $pkURL =  urldecode($publicKeyUrl);
-            $certificate = file_get_contents ($pkURL);
-            $pemData = $this->der2pem($certificate);
-            $pubkeyid = openssl_pkey_get_public($pemData);
-            
-            $ok = openssl_verify(
-                        $dataBuffer, 
-                        $signature, 
-                        $pubkeyid, 
-                        OPENSSL_ALGO_SHA256
-                    );
-
+            $ok = $this->check($data);
+            $ret = ($ok != 0);
+            if($ret){
+                $token = new VpToken();
+                $playerId =  urldecode($data['playerId']);
+                $bundleId =  urldecode($data['bundleId']);
+                $key = $playerId .'@'. $bundleId;
+                $token->key = $key;
+                $token->token = \Yii::$app->security->generateRandomString();
+                $token->save();
+             }
             return [
-                "ret" => true
+                "ret" => $ret,
             ];
         }catch(\Exception $e){
             return [

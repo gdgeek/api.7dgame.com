@@ -1,13 +1,13 @@
 <?php
-namespace api\modules\a1\controllers;
+namespace api\modules\vp\controllers;
 
 use yii\data\ActiveDataProvider;
 use yii\rest\ActiveController;
-
-class VpGuideController extends ActiveController
+use api\modules\vp\helper\KeyTokenAuth;
+class GuideController extends ActiveController
 {
 
-    public $modelClass = 'api\modules\a1\models\VpGuide';
+    public $modelClass = 'api\modules\vp\models\Guide';
     public function behaviors()
     {
         $behaviors = parent::behaviors();
@@ -29,6 +29,9 @@ class VpGuideController extends ActiveController
             ],
         ];
 
+        $behaviors['authenticator'] = [
+            'class' => KeyTokenAuth::className(),
+        ];
         return $behaviors;
     }
     public function actions()
