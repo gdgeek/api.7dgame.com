@@ -70,10 +70,10 @@ return [
             'rules' => [
                 [
                     'class' => 'yii\rest\UrlRule',
-                    'controller' => 'vp/verification',
+                    'controller' => 'vp/site',
                     'extraPatterns' => [
                         'GET check' => 'check',
-                        'GET index' => 'index',
+                        'GET log' => 'log',
                     ],
                 ],
                 [
