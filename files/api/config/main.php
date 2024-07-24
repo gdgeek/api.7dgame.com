@@ -14,13 +14,13 @@ return [
     'modules' => [
         'v1' => [
             'class' => 'api\modules\v1\Module',
-        ],/*
+        ],
         'a1' => [
             'class' => 'api\modules\a1\Module',
-        ],*/
-        'e1' => [
-            'class' => 'api\modules\e1\Module',
         ],
+       /* 'e1' => [
+            'class' => 'api\modules\e1\Module',
+        ],*/
         'vp' => [
             'class' => 'api\modules\vp\Module',
         ],
@@ -251,11 +251,11 @@ return [
                         'p1/verse-share',
                     ],
                 ],*/
-                /*
+                
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => ['a1/verse','a1/vp-guide','a1/verse-cache','a1/vp-guide-cache', 'a1/vp-key-value'],
-                ],*/
+                ],
                 /*
                 [
                     'class' => 'yii\rest\UrlRule',
