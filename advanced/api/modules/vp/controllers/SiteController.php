@@ -29,22 +29,17 @@ class SiteController extends \yii\rest\Controller
         
         $playerId =  urldecode($data['playerId']);
         $bundleId =  urldecode($data['bundleId']);
-        $key = $playerId .'@'. $bundleId;
-        $token = VpToken::find()->where(['key' => $key])->one();
-        if($token != null){
-            
-        }
-       /* if($token == null){
-            throw new \Exception("invalid token");
-        }*/
+
+        $signature = base64_decode(urldecode($data['signature']));
+        $salt = base64_decode(urldecode($data['salt']));
+      
+       
         $publicKeyUrl = urldecode($data['publicKeyUrl']);
         if(strpos($publicKeyUrl, "https://static.gc.apple.com/") !== 0){
             throw new \Exception("invalid public key url");
         }
-        $signature = base64_decode(urldecode($data['signature']));
-        $salt = base64_decode(urldecode($data['salt']));
-        $tt = $data['timestamp']; 
 
+        $tt = $data['timestamp']; 
         $current = time();
         if(abs($current * 1000 - $tt) > 3000000000){
             throw new \Exception("timestamp expired");
@@ -64,14 +59,40 @@ class SiteController extends \yii\rest\Controller
                 );
         return $ok;
     }
+    public function checkToken($data){
+        if(!isset($data['token'])){
+            return false;
+        }
+        if(!isset($data['playerId'])){
+            return false;
+        }
+        if(!isset($data['bundleId'])){
+            return false;
+        }
+
+        $tk = $data['token'];
+      
+        $key = $this->key($data);
+        if($key == null){
+            throw new \Exception("invalid key");
+        }
+        
+        $token = VpToken::find()->where(['token' => $tk, 'key' => $key])->one();
+        if($token == null){
+            return false;
+        }
+        //检查过期
+        return true;
+    }
     public function actionToken(){
         $data = \Yii::$app->request->get();
+        
         try{
             $tk = $data['token'];
-            
-            $playerId =  urldecode($data['playerId']);
-            $bundleId =  urldecode($data['bundleId']);
-            $key = $playerId .'@'. $bundleId;
+            $key = $this->key($data);
+            if($key == null){
+                throw new \Exception("invalid key");
+            }
             $token = VpToken::find()->where(['token' => $tk, 'key' => $key])->one();
             if($token == null){
                throw new \Exception("invalid token");
@@ -80,7 +101,7 @@ class SiteController extends \yii\rest\Controller
             if(time() - strtotime($updated_at) > 360000){
                 throw new \Exception("token expired");
             }
-            $token->token = \Yii::$app->security->generateRandomString();
+           // $token->token = \Yii::$app->security->generateRandomString();
             $token->save();
             return [
                 "ret" => true,
@@ -93,6 +114,15 @@ class SiteController extends \yii\rest\Controller
             ];
         }
     }
+    private function key($data){
+        if(!isset($data['playerId']) || !isset($data['bundleId'])){
+          return null;
+        }
+        $playerId =  urldecode($data['playerId']);
+        $bundleId =  urldecode($data['bundleId']);
+        $key = $playerId .'@'. $bundleId;
+        return $key;
+    }
     public function actionTest(){
         
         $data = [
@@ -104,12 +134,21 @@ class SiteController extends \yii\rest\Controller
             "bundleId" => "com.NoOverwork.VoxelParty"
         ];
         try{
-             $ok = $this->check($data);
-             $ret = ($ok != 0);
-             if($ret){
-                $playerId =  urldecode($data['playerId']);
-                $bundleId =  urldecode($data['bundleId']);
-                $key = $playerId .'@'. $bundleId;
+            $pass = $this->checkToken($data);
+            if($pass){
+                return [
+                    "ret" => true,
+                    "token" => $data['token'],
+                    "msg" => "token pass"
+                ];
+            }
+            $ok = $this->check($data);//game center chenk
+            $ret = ($ok != 0);
+            if($ret){//构建token
+                $key = $this->key($data);
+                if($key == null){
+                    throw new \Exception("invalid key");
+                }
                 $token = VpToken::find()->where(['key' => $key])->one();
                 if($token == null){
                     $token = new VpToken();
@@ -118,13 +157,17 @@ class SiteController extends \yii\rest\Controller
                 $token->token = \Yii::$app->security->generateRandomString();
                 $token->save();
                 return [
-                 "ret" => $ret,
-                 "token" => $token->token
+                    "ret" => true,
+                    "token" => $token->token,
+                    "msg" => "game center pass"
                 ];
+             }else{
+                return [
+                    "ret" => false,
+                    "msg" => "game center no pass!"
+                 ];
              }
-             return [
-                "ret" => $ret,
-            ];
+            
          }catch(\Exception $e){
              return [
                  "ret" => false,
@@ -137,26 +180,46 @@ class SiteController extends \yii\rest\Controller
         $cache = \Yii::$app->cache;
         $data = \Yii::$app->request->get();
         try{
-            $ok = $this->check($data);
+            $pass = $this->checkToken($data);
+            if($pass){
+                return [
+                    "ret" => true,
+                    "token" => $data['token'],
+                    "msg" => "token pass"
+                ];
+            }
+            $ok = $this->check($data);//game center chenk
             $ret = ($ok != 0);
-            if($ret){
-                $token = new VpToken();
-                $playerId =  urldecode($data['playerId']);
-                $bundleId =  urldecode($data['bundleId']);
-                $key = $playerId .'@'. $bundleId;
-                $token->key = $key;
+            if($ret){//构建token
+                $key = $this->key($data);
+                if($key == null){
+                    throw new \Exception("invalid key");
+                }
+                $token = VpToken::find()->where(['key' => $key])->one();
+                if($token == null){
+                    $token = new VpToken();
+                    $token->key = $key;
+                }
                 $token->token = \Yii::$app->security->generateRandomString();
                 $token->save();
+                return [
+                    "ret" => true,
+                    "token" => $token->token,
+                    "msg" => "game center pass"
+                ];
+             }else{
+                return [
+                    "ret" => false,
+                    "msg" => "game center no pass!"
+                 ];
              }
-            return [
-                "ret" => $ret,
-            ];
-        }catch(\Exception $e){
-            return [
-                "ret" => false,
-                "msg" => $e->getMessage()
-            ];
-        }
+            
+         }catch(\Exception $e){
+             return [
+                 "ret" => false,
+                 "msg" => $e->getMessage()
+             ];
+         }
         
     }
 }
