@@ -43,6 +43,9 @@ return [
             'enableSession' => false,
             'loginUrl' => null,
         ],
+        'player' => [
+            'class' => 'api\modules\vp\helper\Player',
+        ],
         'log' => [
             'traceLevel' => 3, //YII_DEBUG ? 3 : 0,
             'targets' => [

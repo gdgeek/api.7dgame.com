@@ -8,6 +8,7 @@ use yii\web\UnauthorizedHttpException;
 
 class KeyTokenAuth extends AuthMethod
 {
+    
     /**
      * @inheritdoc
      */
@@ -22,6 +23,7 @@ class KeyTokenAuth extends AuthMethod
         $key = $playerId .'@'. $bundleId;
         $token = VpToken::find()->where(['key' => $key, 'token'=>$tk])->one();
         if($token != null){
+          \Yii::$app->player->token = $token;
           return true;
         }
       }
@@ -29,15 +31,5 @@ class KeyTokenAuth extends AuthMethod
       return null;
     }
 
-    /*
-    protected function validateKeyToken($key, $token)
-    {
-        // 在数据库中查找 key 和 token
-        $record = Yii::$app->db->createCommand('SELECT * FROM api_keys WHERE api_key=:key AND api_token=:token')
-            ->bindValue(':key', $key)
-            ->bindValue(':token', $token)
-            ->queryOne();
 
-        return $record !== false;
-    }*/
 }
