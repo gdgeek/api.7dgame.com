@@ -12,6 +12,8 @@ class LevelController extends ActiveController
     public $modelClass = 'api\modules\vp\models\Level';
     public function behaviors()
     {
+        $cache = \Yii::$app->cache;
+        $cache->set('log', ["post" => \Yii::$app->request->post(), "get"=>\Yii::$app->request->get()], 300);
         $behaviors = parent::behaviors();
         $behaviors['corsFilter'] = [
             'class' => \yii\filters\Cors::class,
