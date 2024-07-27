@@ -48,7 +48,7 @@ class LevelController extends ActiveController
     public function actionRecode(){
        
         $cache = \Yii::$app->cache;
-        $cache->set('log', ["post" => \Yii::$app->request->post(), "get"=>Yii::$app->request->get()]);
+        //$cache->set('log', ["post" => \Yii::$app->request->post(), "get"=>Yii::$app->request->get()]);
         $player_id = \Yii::$app->player->token->id;
         $post = Yii::$app->request->post();
         $guide_id = Yii::$app->request->get('guide_id', Yii::$app->request->post('guide_id', '-1'));

@@ -121,6 +121,7 @@ class SiteController extends \yii\rest\Controller
             ];
         }
     }
+    
     private function key($data){
         if(!isset($data['playerId']) || !isset($data['bundleId'])){
           return null;
@@ -133,7 +134,7 @@ class SiteController extends \yii\rest\Controller
     public function actionTest(){
         
         $cache = \Yii::$app->cache;
-        $cache->set('log', \Yii::$app->request->get());
+        //$cache->set('log', \Yii::$app->request->get());
        /*  $data = [
             "publicKeyUrl" => "https%3a%2f%2fstatic.gc.apple.com%2fpublic-key%2fgc-prod-10.cer",
             "signature" => "ZGSMDFVRCZsZdrwK9lBfjypo3sSrateCIETsZFSmLI4W6vqappEcy5sCzTnBf1zyEkok8cHzhhzRbj%2bC6AbI9mayu7BefU1bmlVpcLpHOE53Kk7pStaTSAsCorSPPdvy1BkgGkoyd9gu4ALwHvf%2bJoT6aGhySHqSj6Ao1qi%2fxar3Ur32LKNq1FaDbCBEf%2f7Zgx2uwqGWQi%2bkJPhlQierNFm0d1uiquPRYYR2rhrOFjU0QULCWvXETODbkKyUsXmnooSd%2bkeLiqL%2b32gjoEP8U%2bYb%2bdakjEBZaONfYDzmL8d%2biBvI90suDKBalax6IBPtItSgKOMU5RfxKmrqO0zZ0V9E4A8zisjk7TlrA3NKBL5C2KXMuWh0CMUqYGAOEy2SXuDSSx6%2fCXtPWRtPD9yXKml%2fzU7pN1EMyRsmJFL0E58TtxabdhgD%2bKG%2bDrSVQbPr%2blBIjiQVgnBuZti7DvG1cUlBAPLqM96Nikt7ZEyPVSZR0Hje%2f2f6wUv0exGIxqU19CaiIciHMuMRAwDzCwq4AaQGtvWMjGH2ZdB2OU%2fdyF1ZqYcr%2f87v7odO6eLNDxyXtQeNiDJB6gl9rb8oKyDNnEU5%2fTNm0Igv%2fgsmzVuxOC6kwzhLs0XCGI%2fWvIjLJum%2bD%2fuFbk6Vd7mNCjegM6u5KWW%2fwd%2b5AUoRvMzRnlBlKww%3d",
@@ -196,7 +197,7 @@ class SiteController extends \yii\rest\Controller
        
         
         $cache = \Yii::$app->cache;
-        $cache->set('log', \Yii::$app->request->get());
+       //$cache->set('log', \Yii::$app->request->get());
         $data = \Yii::$app->request->get();
 
         try{
