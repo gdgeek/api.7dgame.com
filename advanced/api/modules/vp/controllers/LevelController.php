@@ -5,6 +5,7 @@ use yii\data\ActiveDataProvider;
 use yii\rest\ActiveController;
 use api\modules\vp\helper\KeyTokenAuth;
 use api\modules\vp\models\Level;
+use Yii;
 class LevelController extends ActiveController
 {
 
@@ -48,18 +49,20 @@ class LevelController extends ActiveController
         $cache->set('log', ["post" => \Yii::$app->request->post(), "get"=>Yii::$app->request->get()]);
         $player_id = \Yii::$app->player->token->id;
         $post = Yii::$app->request->post();
-        if(!isset($post["guide_id"])){
+        $guide_id = Yii::$app->request->get('guide_id', Yii::$app->request->post('guide_id', '-1'));
+        if( $guide_id == "-1"){
             throw new \Exception("no guide_id");
         }
-        $guide_id = $post["guide_id"];
+       
 
-        $model = Level::find()->where(['player_id' => $player_id, 'guide_id' => $guide_id]);
+        $model = Level::find()->where(['player_id' => $player_id, 'guide_id' => $guide_id])->one();
        
         if($model == null){
             $model = new Level();
         }  
         $model->load(\Yii::$app->request->post(), '');
         $model->player_id = \Yii::$app->player->token->id;
+        $model->guide_id = $guide_id;
         $model->save();
         return $model;
         

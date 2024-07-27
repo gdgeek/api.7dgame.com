@@ -17,7 +17,7 @@ use yii\behaviors\TimestampBehavior;
  * @property string $created_at
  * @property string $updated_at
  *
- * @property VpGuide $guide
+ * @property Guide $guide
  * @property VpToken $player
  */
 class Level extends \yii\db\ActiveRecord
@@ -55,7 +55,7 @@ class Level extends \yii\db\ActiveRecord
             [['player_id', 'guide_id', 'score'], 'integer'],
             [['record'], 'number'],
             [['created_at', 'updated_at'], 'safe'],
-            [['guide_id'], 'exist', 'skipOnError' => true, 'targetClass' => VpGuide::className(), 'targetAttribute' => ['guide_id' => 'id']],
+            [['guide_id'], 'exist', 'skipOnError' => true, 'targetClass' => Guide::className(), 'targetAttribute' => ['guide_id' => 'id']],
             [['player_id'], 'exist', 'skipOnError' => true, 'targetClass' => VpToken::className(), 'targetAttribute' => ['player_id' => 'id']],
             [['guide_id', 'player_id'], 'unique', 'targetAttribute' => ['guide_id', 'player_id']],
 
@@ -81,11 +81,11 @@ class Level extends \yii\db\ActiveRecord
     /**
      * Gets query for [[Guide]].
      *
-     * @return \yii\db\ActiveQuery|VpGuideQuery
+     * @return \yii\db\ActiveQuery|GuideQuery
      */
     public function getGuide()
     {
-        return $this->hasOne(VpGuide::className(), ['id' => 'guide_id']);
+        return $this->hasOne(Guide::className(), ['id' => 'guide_id']);
     }
 
     /**
