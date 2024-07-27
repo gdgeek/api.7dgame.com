@@ -87,6 +87,15 @@ return [
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',
+                    'controller' => 'vp/level',
+                    'extraPatterns' => [
+                        'GET recode' => 'recode',
+                        'POST recode' => 'recode',
+                        'GET log' => 'log',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/tencent-cloud',
                     'extraPatterns' => [
                         'GET token' => 'token',

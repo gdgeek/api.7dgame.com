@@ -5,7 +5,7 @@ use yii\data\ActiveDataProvider;
 use yii\rest\ActiveController;
 use api\modules\vp\helper\KeyTokenAuth;
 use api\modules\vp\models\Level;
-class GuideController extends ActiveController
+class LevelController extends ActiveController
 {
 
     public $modelClass = 'api\modules\vp\models\Level';
@@ -35,10 +35,17 @@ class GuideController extends ActiveController
         return $behaviors;
     }
    
-   
+    public function actionLog(){
+        $cache = \Yii::$app->cache;
+        $log = $cache->get('log');
+        return $log;
+
+    }
    
     public function actionRecode(){
        
+        $cache = \Yii::$app->cache;
+        $cache->set('log', ["post" => \Yii::$app->request->post(), "get"=>Yii::$app->request->get()]);
         $player_id = \Yii::$app->player->token->id;
         $post = Yii::$app->request->post();
         if(!isset($post["guide_id"])){
