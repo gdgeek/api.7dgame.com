@@ -93,33 +93,27 @@ class SiteController extends \yii\rest\Controller
     }
     public function actionToken(){
         $data = \Yii::$app->request->get();
-        
-        try{
-            $tk = $data['token'];
-            $key = $this->key($data);
-            if($key == null){
-                throw new \Exception("invalid key");
-            }
-            $token = VpToken::find()->where(['token' => $tk, 'key' => $key])->one();
-            if($token == null){
-               throw new \Exception("invalid token");
-            }
-            $updated_at = $token->updated_at;
-            if(time() - strtotime($updated_at) > 360000){
-                throw new \Exception("token expired");
-            }
-           // $token->token = \Yii::$app->security->generateRandomString();
-            $token->save();
-            return [
-                "ret" => true,
-                "token" => $token->token
-            ];
-        }catch(\Exception $e){
-            return [
-                "ret" => false,
-                "msg" => $e->getMessage()
-            ];
+    
+        $tk = $data['token'];
+        $key = $this->key($data);
+        if($key == null){
+            throw new \Exception("invalid key");
         }
+        $token = VpToken::find()->where(['token' => $tk, 'key' => $key])->one();
+        if($token == null){
+            throw new \Exception("invalid token");
+        }
+        $updated_at = $token->updated_at;
+        if(time() - strtotime($updated_at) > 360000){
+            throw new \Exception("token expired");
+        }
+        // $token->token = \Yii::$app->security->generateRandomString();
+        $token->save();
+        return [
+            "ret" => true,
+            "token" => $token->token
+        ];
+        
     }
     
     private function key($data){
@@ -151,96 +145,80 @@ class SiteController extends \yii\rest\Controller
             "playerId" => "T:_117db69b8df505c850cfda303378c2e7",
             "bundleId" => "com.NoOverwork.VoxelParty"
         ];
-        try{
-            $pass = $this->checkToken($data);
-            if($pass){
-                return [
-                    "ret" => true,
-                    "token" => $data['token'],
-                    "msg" => "token pass"
-                ];
+    
+        $pass = $this->checkToken($data);
+        if($pass){
+            return [
+                "ret" => true,
+                "token" => $data['token'],
+                "msg" => "token pass"
+            ];
+        }
+        $ok = $this->check($data);//game center chenk
+        $ret = ($ok != 0);
+        if($ret){//构建token
+            $key = $this->key($data);
+            if($key == null){
+                throw new \Exception("invalid key");
             }
-            $ok = $this->check($data);//game center chenk
-            $ret = ($ok != 0);
-            if($ret){//构建token
-                $key = $this->key($data);
-                if($key == null){
-                    throw new \Exception("invalid key");
-                }
-                $token = VpToken::find()->where(['key' => $key])->one();
-                if($token == null){
-                    $token = new VpToken();
-                    $token->key = $key;
-                }
-                $token->token = \Yii::$app->security->generateRandomString();
-                $token->save();
-                return [
-                    "ret" => true,
-                    "token" => $token->token,
-                    "msg" => "game center pass"
-                ];
-             }else{
-                return [
-                    "ret" => false,
-                    "msg" => "game center no pass!"
-                 ];
-             }
-            
-         }catch(\Exception $e){
-             return [
-                 "ret" => false,
-                 "msg" => $e->getMessage()
-             ];
-         }
+            $token = VpToken::find()->where(['key' => $key])->one();
+            if($token == null){
+                $token = new VpToken();
+                $token->key = $key;
+            }
+            $token->token = \Yii::$app->security->generateRandomString();
+            if(!$token->validate()){
+                throw new \Exception(json_encode($token->errors));
+            }
+            $token->save();
+            return [
+                "ret" => true,
+                "token" => $token->token,
+                "msg" => "game center pass"
+            ];
+        }else{
+            throw new \Exception("game center no pass!");
+        }
     }
     public function actionCheck(){
        
         
         $cache = \Yii::$app->cache;
-       //$cache->set('log', \Yii::$app->request->get());
         $data = \Yii::$app->request->get();
 
-        try{
-            $pass = $this->checkToken($data);
-            if($pass){
-                return [
-                    "ret" => true,
-                    "token" => $data['token'],
-                    "msg" => "token pass"
-                ];
+        $pass = $this->checkToken($data);
+        if($pass){
+            return [
+                "ret" => true,
+                "token" => $data['token'],
+                "msg" => "token pass"
+            ];
+        }
+        $ok = $this->check($data);//game center chenk
+        $ret = ($ok != 0);
+        if($ret){//构建token
+            $key = $this->key($data);
+            if($key == null){
+                throw new \Exception("invalid key");
             }
-            $ok = $this->check($data);//game center chenk
-            $ret = ($ok != 0);
-            if($ret){//构建token
-                $key = $this->key($data);
-                if($key == null){
-                    throw new \Exception("invalid key");
-                }
-                $token = VpToken::find()->where(['key' => $key])->one();
-                if($token == null){
-                    $token = new VpToken();
-                    $token->key = $key;
-                }
-                $token->token = \Yii::$app->security->generateRandomString();
-                $token->save();
-                return [
-                    "ret" => true,
-                    "token" => $token->token,
-                    "msg" => "game center pass"
-                ];
-             }else{
-                return [
-                    "ret" => false,
-                    "msg" => "game center no pass!"
-                 ];
-             }
+            $token = VpToken::find()->where(['key' => $key])->one();
+            if($token == null){
+                $token = new VpToken();
+                $token->key = $key;
+            }
+            $token->token = \Yii::$app->security->generateRandomString();
+            $token->save();
+            return [
+                "ret" => true,
+                "token" => $token->token,
+                "msg" => "game center pass"
+            ];
+            }else{
+                throw new \Exception("game center no pass!");
+          
+            }
             
-         }catch(\Exception $e){
-             return [
-                 "ret" => false,
-                 "msg" => $e->getMessage()
-             ];
-         }
+         
         
     }
 }

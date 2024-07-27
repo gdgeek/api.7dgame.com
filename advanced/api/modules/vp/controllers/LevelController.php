@@ -42,53 +42,45 @@ class LevelController extends ActiveController
    
     public function actionRecode(){
        
-        try{
-            $cache = \Yii::$app->cache;
-            //$cache->set('log', ["post" => \Yii::$app->request->post(), "get"=>Yii::$app->request->get()]);
-            $player_id = \Yii::$app->player->token->id;
-            $post = Yii::$app->request->post();
-            
-            if(Yii::$app->request->isGet){
-                $data = Yii::$app->request->get();
-            
-            }else{
-                $data = Yii::$app->request->post();
-            }
+    
+        $cache = \Yii::$app->cache;
+        $player_id = \Yii::$app->player->token->id;
+        $post = Yii::$app->request->post();
         
-            if(!isset($data["guide_id"])){
-                throw new \Exception("no guide_id");
-            }
+        if(Yii::$app->request->isGet){
+            $data = Yii::$app->request->get();
         
-            $guide_id = $data["guide_id"];
-
-            $model = Level::find()->where(['player_id' => $player_id, 'guide_id' => $guide_id])->one();
-        
-            if($model == null){
-                $model = new Level();
-            }  
-            $model->load(\Yii::$app->request->post(), '');
-            $model->player_id = \Yii::$app->player->token->id;
-            $model->guide_id = $guide_id;
-           
-            $model->save();
-            
-            if($model->validate()){
-                $model->save();
-                return [
-                    "ret" => true,
-                    "model"=> $model,
-                ];
-            }else{
-                throw  new \Exception(json_encode($model->errors));
-            }
-            
-        }catch(\Exception $e){
-            return [
-                "ret" => false,
-                "msg" => $e->getMessage()
-            ];
+        }else{
+            $data = Yii::$app->request->post();
         }
+    
+        if(!isset($data["guide_id"])){
+            throw new \Exception("no guide_id");
+        }
+    
+        $guide_id = $data["guide_id"];
+
+        $model = Level::find()->where(['player_id' => $player_id, 'guide_id' => $guide_id])->one();
+    
+        if($model == null){
+            $model = new Level();
+        }  
+        $model->load(\Yii::$app->request->post(), '');
+        $model->player_id = \Yii::$app->player->token->id;
+        $model->guide_id = $guide_id;
         
+        $model->save();
+        
+        if($model->validate()){
+            $model->save();
+            return [
+                "ret" => true,
+                "model"=> $model,
+            ];
+        }else{
+            throw  new \Exception(json_encode($model->errors));
+        }
+            
     }
    
     public function actions()
