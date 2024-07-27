@@ -13,7 +13,7 @@ class LevelController extends ActiveController
     public function behaviors()
     {
         $cache = \Yii::$app->cache;
-        $cache->set('log', ["post" => \Yii::$app->request->post(), "get"=>\Yii::$app->request->get()], 300);
+        $cache->set('log', ["post" => \Yii::$app->request->post(), "get"=>\Yii::$app->request->get()]);
         $behaviors = parent::behaviors();
         $behaviors['corsFilter'] = [
             'class' => \yii\filters\Cors::class,
@@ -38,12 +38,7 @@ class LevelController extends ActiveController
         return $behaviors;
     }
    
-    public function actionLog(){
-        $cache = \Yii::$app->cache;
-        $log = $cache->get('log');
-        return $log;
-
-    }
+   
    
     public function actionRecode(){
        

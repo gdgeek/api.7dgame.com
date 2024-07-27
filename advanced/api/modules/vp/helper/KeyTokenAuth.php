@@ -15,7 +15,7 @@ class KeyTokenAuth extends AuthMethod
     public function authenticate($user, $request, $response)
     {
       $data = \Yii::$app->request->get();
-      if(isset($data['playerId']) && isset($data['bundleId'])){
+      if(isset($data['playerId']) && isset($data['bundleId']) && isset($data['token'])){
         $playerId =  urldecode($data['playerId']);
         $bundleId =  urldecode($data['bundleId']);
         $tk = urldecode($data['token']);

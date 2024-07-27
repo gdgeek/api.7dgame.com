@@ -91,6 +91,7 @@ return [
                     'extraPatterns' => [
                         'GET recode' => 'recode',
                         'POST recode' => 'recode',
+                        'PUT recode' => 'recode',
                         'GET log' => 'log',
                     ],
                 ],

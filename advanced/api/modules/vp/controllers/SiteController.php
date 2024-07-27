@@ -77,7 +77,7 @@ class SiteController extends \yii\rest\Controller
             return false;
         }
 
-        $tk = $data['token'];
+        $tk = $this->testDecode($data['token']);
       
         $key = $this->key($data);
         if($key == null){
@@ -126,8 +126,8 @@ class SiteController extends \yii\rest\Controller
         if(!isset($data['playerId']) || !isset($data['bundleId'])){
           return null;
         }
-        $playerId =  urldecode($data['playerId']);
-        $bundleId =  urldecode($data['bundleId']);
+        $playerId =  urldecode($this->testDecode($data['playerId']));
+        $bundleId =  urldecode($this->testDecode($data['bundleId']));
         $key = $playerId .'@'. $bundleId;
         return $key;
     }
