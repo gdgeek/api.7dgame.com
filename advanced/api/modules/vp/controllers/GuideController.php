@@ -45,5 +45,23 @@ class GuideController extends ActiveController
         unset($actions['view']);
         return $actions;
     }
+
+
+    public function actionIndex()
+    {
+        
+       
+
+        $papeSize = \Yii::$app->request->get('pageSize', 15);
+        $data = new ActiveDataProvider([
+            'query' => \api\modules\a1\models\VpGuide::find(),
+            'pagination' => [
+                'pageSize' => $papeSize,
+            ]
+        ]);
+        return $data;
+       
+       
+    }
    
 }

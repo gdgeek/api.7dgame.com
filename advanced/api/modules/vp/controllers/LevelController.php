@@ -66,6 +66,7 @@ class LevelController extends ActiveController
             $model = new Level();
             $model->player_id = \Yii::$app->player->token->id;
             $model->guide_id = $guide_id;
+            $model->record = 999;
         }
         $msg = "old record";
         if(isset($data['record']) &&( !isset($model->record) || $data['record'] < $model->record)){
