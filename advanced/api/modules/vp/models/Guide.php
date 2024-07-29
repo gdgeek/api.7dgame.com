@@ -45,7 +45,7 @@ class Guide extends \yii\db\ActiveRecord
             if($level == null){
                 return null;
             }
-            return ["score" => $level->score, "record" => $level->record];
+            return ["score" => $level->score, "record" => $level->record, "defined"=> true];
         };
         unset($fields['order']);
        // $fields['playerId'] = function() {return \Yii::$app->player->token->id;};
