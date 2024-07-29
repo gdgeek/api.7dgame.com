@@ -11,7 +11,7 @@ use Yii;
  * @property int $page
  * @property string|null $info
  */
-class VpMap extends \yii\db\ActiveRecord
+class Map extends \yii\db\ActiveRecord
 {
     /**
      * {@inheritdoc}
@@ -48,10 +48,10 @@ class VpMap extends \yii\db\ActiveRecord
 
     /**
      * {@inheritdoc}
-     * @return VpMapQuery the active query used by this AR class.
+     * @return MapQuery the active query used by this AR class.
      */
     public static function find()
     {
-        return new VpMapQuery(get_called_class());
+        return new MapQuery(get_called_class());
     }
 }

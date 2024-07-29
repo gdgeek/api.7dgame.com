@@ -40,7 +40,7 @@ class LevelController extends ActiveController
    
    
    
-    public function actionRecode(){
+    public function actionRecord(){
        
     
         $cache = \Yii::$app->cache;
@@ -66,11 +66,10 @@ class LevelController extends ActiveController
             $model = new Level();
             $model->player_id = \Yii::$app->player->token->id;
             $model->guide_id = $guide_id;
-            $model->recode = 99;
         }
         $msg = "old record";
-        if(isset($data['recode']) && $data['recode'] < $model->recode){
-            $model->recode = $data['recode'];
+        if(isset($data['record']) &&( !isset($model->record) || $data['record'] < $model->record)){
+            $model->record = $data['record'];
             $msg = "new record";
         }
         if(isset($data['score'])){

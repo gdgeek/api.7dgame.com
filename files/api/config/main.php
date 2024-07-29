@@ -89,8 +89,8 @@ return [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'vp/level',
                     'extraPatterns' => [
-                        'GET recode' => 'recode',
-                        'POST recode' => 'recode',
+                        'GET record' => 'record',
+                        'POST record' => 'record',
                         'GET log' => 'log',
                     ],
                 ],

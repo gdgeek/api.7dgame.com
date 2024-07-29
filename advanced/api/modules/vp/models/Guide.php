@@ -37,6 +37,14 @@ class Guide extends \yii\db\ActiveRecord
         ];
     }
 
+    public function fields()
+    {
+        $fields = parent::fields();
+        $fields['record'] = function () {return $this->level;};
+        unset($fields['order']);
+       // $fields['playerId'] = function() {return \Yii::$app->player->token->id;};
+        return $fields;
+    }
     /**
      * {@inheritdoc}
      */
@@ -48,12 +56,6 @@ class Guide extends \yii\db\ActiveRecord
             'level_id' => 'Level ID',
         ];
     }
-    public function fields()
-    {
-        $fields = parent::fields();
-      //  $fields['level'] = function () {return $this->level;};
-        return $fields;
-    }
     /**
      * Gets query for [[Level]].
      *
@@ -61,7 +63,12 @@ class Guide extends \yii\db\ActiveRecord
      */
     public function getLevel()
     {
-        return $this->hasOne(Verse::className(), ['id' => 'level_id']);
+        $player_id = \Yii::$app->player->token->id;
+        $model = Level::find()->where(['player_id' => $player_id, 'guide_id' => $this->id])->one();
+        if($model == null){
+          return null;
+        }
+        return ["score" =>$model->score, "record" => $model->record];
     }
 
     /**
