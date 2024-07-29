@@ -1,6 +1,6 @@
 <?php
 namespace api\modules\vp\controllers;
-use api\modules\vp\models\VpToken;
+use api\modules\vp\models\Token;
 use yii\rest\ActiveController;
 
 class SiteController extends \yii\rest\Controller
@@ -84,7 +84,7 @@ class SiteController extends \yii\rest\Controller
             throw new \Exception("invalid key");
         }
         
-        $token = VpToken::find()->where(['token' => $tk, 'key' => $key])->one();
+        $token = Token::find()->where(['token' => $tk, 'key' => $key])->one();
         if($token == null){
             return false;
         }
@@ -99,7 +99,7 @@ class SiteController extends \yii\rest\Controller
         if($key == null){
             throw new \Exception("invalid key");
         }
-        $token = VpToken::find()->where(['token' => $tk, 'key' => $key])->one();
+        $token = Token::find()->where(['token' => $tk, 'key' => $key])->one();
         if($token == null){
 
             $cache = \Yii::$app->cache;
@@ -138,7 +138,8 @@ class SiteController extends \yii\rest\Controller
             "salt" => "llLBIA%3d%3d",
             "timestamp" => "1721799800593",
             "playerId" => "T%3a_117db69b8df505c850cfda303378c2e7",
-            "bundleId" => "com.NoOverwork.VoxelParty"
+            "bundleId" => "com.NoOverwork.VoxelParty",
+            "name" => "test"
         ];*/
        $data = [
             "publicKeyUrl" => "https://static.gc.apple.com/public-key/gc-prod-10.cer",
@@ -146,7 +147,8 @@ class SiteController extends \yii\rest\Controller
             "salt" => "+quyuw==",
             "timestamp" => "1722035639333",
             "playerId" => "T:_117db69b8df505c850cfda303378c2e7",
-            "bundleId" => "com.NoOverwork.VoxelParty"
+            "bundleId" => "com.NoOverwork.VoxelParty",
+            "name" => "test"
         ];
     
         $pass = $this->checkToken($data);
@@ -164,10 +166,13 @@ class SiteController extends \yii\rest\Controller
             if($key == null){
                 throw new \Exception("invalid key");
             }
-            $token = VpToken::find()->where(['key' => $key])->one();
+            $token = Token::find()->where(['key' => $key])->one();
             if($token == null){
-                $token = new VpToken();
+                $token = new Token();
                 $token->key = $key;
+            }
+            if(isset($data['name'])){
+                $token->name = $data['name'];
             }
             $token->token = \Yii::$app->security->generateRandomString();
             if(!$token->validate()){
@@ -204,10 +209,13 @@ class SiteController extends \yii\rest\Controller
             if($key == null){
                 throw new \Exception("invalid key");
             }
-            $token = VpToken::find()->where(['key' => $key])->one();
+            $token = Token::find()->where(['key' => $key])->one();
             if($token == null){
-                $token = new VpToken();
+                $token = new Token();
                 $token->key = $key;
+            }
+            if(isset($data['name'])){
+                $token->name = $data['name'];
             }
             $token->token = \Yii::$app->security->generateRandomString();
             $token->save();

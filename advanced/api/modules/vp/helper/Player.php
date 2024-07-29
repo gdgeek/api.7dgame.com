@@ -1,7 +1,7 @@
 <?php
 namespace api\modules\vp\helper;
 
-use api\modules\vp\models\VpToken;
+use api\modules\vp\models\Token;
 use Yii;
 use yii\filters\auth\AuthMethod;
 use yii\web\UnauthorizedHttpException;

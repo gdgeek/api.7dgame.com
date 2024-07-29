@@ -18,7 +18,7 @@ use yii\behaviors\TimestampBehavior;
  * @property string $updated_at
  *
  * @property Guide $guide
- * @property VpToken $player
+ * @property Token $player
  */
 class Level extends \yii\db\ActiveRecord
 {
@@ -56,7 +56,7 @@ class Level extends \yii\db\ActiveRecord
             [['record'], 'number'],
             [['created_at', 'updated_at'], 'safe'],
             [['guide_id'], 'exist', 'skipOnError' => true, 'targetClass' => Guide::className(), 'targetAttribute' => ['guide_id' => 'id']],
-            [['player_id'], 'exist', 'skipOnError' => true, 'targetClass' => VpToken::className(), 'targetAttribute' => ['player_id' => 'id']],
+            [['player_id'], 'exist', 'skipOnError' => true, 'targetClass' => Token::className(), 'targetAttribute' => ['player_id' => 'id']],
             [['guide_id', 'player_id'], 'unique', 'targetAttribute' => ['guide_id', 'player_id']],
 
         ];
@@ -91,11 +91,11 @@ class Level extends \yii\db\ActiveRecord
     /**
      * Gets query for [[Player]].
      *
-     * @return \yii\db\ActiveQuery|VpTokenQuery
+     * @return \yii\db\ActiveQuery|TokenQuery
      */
     public function getPlayer()
     {
-        return $this->hasOne(VpToken::className(), ['id' => 'player_id']);
+        return $this->hasOne(Token::className(), ['id' => 'player_id']);
     }
 
     /**
