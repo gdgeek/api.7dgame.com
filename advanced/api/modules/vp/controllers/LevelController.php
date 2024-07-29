@@ -64,10 +64,19 @@ class LevelController extends ActiveController
     
         if($model == null){
             $model = new Level();
-        }  
-        $model->load(\Yii::$app->request->post(), '');
-        $model->player_id = \Yii::$app->player->token->id;
-        $model->guide_id = $guide_id;
+            $model->player_id = \Yii::$app->player->token->id;
+            $model->guide_id = $guide_id;
+            $model->recode = 99;
+        }
+        $msg = "old record";
+        if(isset($data['recode']) && $data['recode'] < $model->recode){
+            $model->recode = $data['recode'];
+            $msg = "new record";
+        }
+        if(isset($data['score'])){
+            $model->score = $data['score'];
+        }
+     
         
         $model->save();
         
@@ -76,6 +85,7 @@ class LevelController extends ActiveController
             return [
                 "ret" => true,
                 "model"=> $model,
+                "msg"=> $msg,
             ];
         }else{
             throw  new \Exception(json_encode($model->errors));
