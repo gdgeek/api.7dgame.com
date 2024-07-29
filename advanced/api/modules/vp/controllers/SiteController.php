@@ -101,6 +101,9 @@ class SiteController extends \yii\rest\Controller
         }
         $token = VpToken::find()->where(['token' => $tk, 'key' => $key])->one();
         if($token == null){
+
+            $cache = \Yii::$app->cache;
+            $cache->set('log', $data);
             throw new \Exception("invalid token");
         }
         $updated_at = $token->updated_at;
