@@ -71,7 +71,7 @@ class Guide extends \yii\db\ActiveRecord
     {
         $player_id = \Yii::$app->player->token->id;
         $model = Level::find()->where(['player_id' => $player_id, 'guide_id' => $this->id])->one();
-        return $model
+        return $model;
        
     }
 
