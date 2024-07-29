@@ -37,7 +37,7 @@ class GuideController extends ActiveController
     public function actions()
     {
         $actions = parent::actions();
-       //unset($actions['index']);
+       unset($actions['index']);
         unset($actions['create']);
         unset($actions['update']);
         unset($actions['delete']);
@@ -50,11 +50,11 @@ class GuideController extends ActiveController
     public function actionIndex()
     {
         
-       
 
         $papeSize = \Yii::$app->request->get('pageSize', 15);
+        $page = \Yii::$app->request->get('page', 0);
         $data = new ActiveDataProvider([
-            'query' => \api\modules\a1\models\VpGuide::find(),
+            'query' => \api\modules\vp\models\Guide::find(),
             'pagination' => [
                 'pageSize' => $papeSize,
             ]
