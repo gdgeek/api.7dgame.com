@@ -84,7 +84,11 @@ class LevelController extends ActiveController
             $model->save();
             return [
                 "ret" => true,
-                "model"=> $model,
+                "user_data"=> [
+                    "record" => $model->record,
+                    "score" => $model->score,
+                    "defined"=> true
+                ],
                 "msg"=> $msg,
             ];
         }else{

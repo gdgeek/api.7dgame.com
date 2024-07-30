@@ -224,12 +224,8 @@ class SiteController extends \yii\rest\Controller
                 "token" => $token->token,
                 "msg" => "game center pass"
             ];
-            }else{
-                throw new \Exception("game center no pass!");
-          
-            }
-            
-         
-        
+        }else{
+            throw new \Exception("game center no pass!");
+        }
     }
 }
