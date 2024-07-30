@@ -5,6 +5,7 @@ use yii\helpers\HtmlPurifier;
 use yii\web\BadRequestHttpException;
 use yii\filters\auth\CompositeAuth;
 
+use api\modules\v1\models\VerseSearch;
 use yii\data\ActiveDataProvider;
 use yii\rest\ActiveController;
 
@@ -68,6 +69,17 @@ class VpGuideController extends ActiveController
         ]);
         return $activeData;
        
+    }
+
+    public function actionVerses()
+    {
+       
+        $searchModel = new VerseSearch();
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+        $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id])
+            ->leftJoin('vp_guide', 'verse.id = vp_guide.level_id')
+            ->andWhere(['vp_guide.level_id' => null])->all();
+        return $dataProvider;
     }
 
 }

@@ -209,11 +209,17 @@ return [
                         'v1/token',
                         'v1/space',
                         'v1/cyber',
-                        'v1/vp-guide',
                         'v1/vp-map',
                     ],
                 ],
 
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/vp-guide',
+                    'extraPatterns' => [
+                        'GET verses' => 'verses',
+                    ],
+                ],
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/person',

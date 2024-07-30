@@ -48,6 +48,7 @@ class Guide extends \yii\db\ActiveRecord
             return ["score" => $level->score, "record" => $level->record, "defined"=> true];
         };
         unset($fields['order']);
+        unset($fields['map_id']);
         return $fields;
     }
     /**

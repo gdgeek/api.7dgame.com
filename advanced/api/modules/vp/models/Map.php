@@ -36,6 +36,13 @@ class Map extends \yii\db\ActiveRecord
     public function fields()
     {
         $fields = parent::fields();
+       
+        unset($fields['id']);
+       // unset($fields['info']);
+        $fields['count'] = function () {
+            $count = Map::find()->count('*');
+            return $count;
+        };
         $fields['guides'] = function () {
             return $this->guides;
         };

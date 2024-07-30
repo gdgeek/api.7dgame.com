@@ -54,13 +54,23 @@ class VerseController extends ActiveController
         unset($actions['index']);
         return $actions;
     }
-    public function actionIndex()
+    public function actionIndex($guide = false)
     {
+        if($guide){
+            $searchModel = new VerseSearch();
+            $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+            $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id])
+            ->leftJoin('vp_guide', 'verse.id = vp_guide.level_id')
+            ->andWhere(['vp_guide.level_id' => null])->all();
+            return $dataProvider;
+        }
         $searchModel = new VerseSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
         $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id]);
         return $dataProvider;
+
     }
 
+    
 
 }
