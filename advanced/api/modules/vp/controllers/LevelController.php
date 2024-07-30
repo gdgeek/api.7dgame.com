@@ -38,7 +38,11 @@ class LevelController extends ActiveController
         return $behaviors;
     }
    
-   
+    public function actionStars(){
+
+        return \Yii::$app->player->stars();
+    
+    }
    
     public function actionRecord(){
        
@@ -87,8 +91,10 @@ class LevelController extends ActiveController
                 "user_data"=> [
                     "record" => $model->record,
                     "score" => $model->score,
-                    "defined"=> true
+                    "defined"=> true,
+                    
                 ],
+                "stars" => \Yii::$app->player->stars(),
                 "msg"=> $msg,
             ];
         }else{

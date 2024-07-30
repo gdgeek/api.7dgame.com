@@ -92,6 +92,7 @@ return [
                         'GET record' => 'record',
                         'POST record' => 'record',
                         'GET log' => 'log',
+                        'GET stars' => 'stars',
                     ],
                 ],
                 [

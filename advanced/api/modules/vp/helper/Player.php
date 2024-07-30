@@ -5,10 +5,16 @@ use api\modules\vp\models\Token;
 use Yii;
 use yii\filters\auth\AuthMethod;
 use yii\web\UnauthorizedHttpException;
+use api\modules\vp\models\Level;
 
 class Player
 {
   public $token = null;
+  public function stars(){
+    $player_id = $this->token->id;
+    $stars = Level::find()->where(['player_id' => $player_id])->count('*');
+    return $stars;
+  }
   public function test(){
     return $this->token->token;
   }
