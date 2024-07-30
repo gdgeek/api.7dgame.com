@@ -1,19 +1,28 @@
 <?php
-namespace api\modules\vp\controllers;
+namespace api\modules\v1\controllers;
 
 use yii\data\ActiveDataProvider;
 use yii\rest\ActiveController;
-use api\modules\vp\helper\KeyTokenAuth;
-use api\modules\vp\models\Guide;
+use api\modules\v1\models\VpGuide;
+use Yii;
+use yii\helpers\HtmlPurifier;
+use yii\web\BadRequestHttpException;
+use yii\filters\auth\CompositeAuth;
 
-class MapController extends ActiveController
+
+use mdm\admin\components\AccessControl;
+
+use api\modules\v1\models\SpaceSearch;
+use sizeg\jwt\JwtHttpBearerAuth;
+class VpMapController extends ActiveController
 {
 
-    public $modelClass = 'api\modules\vp\models\Map';
+    public $modelClass = 'api\modules\v1\models\VpMap';
     public function behaviors()
     {
         $behaviors = parent::behaviors();
 
+        // add CORS filter
         $behaviors['corsFilter'] = [
             'class' => \yii\filters\Cors::class,
             'cors' => [
@@ -30,11 +39,16 @@ class MapController extends ActiveController
                 ],
             ],
         ];
-
         $behaviors['authenticator'] = [
-            'class' => KeyTokenAuth::className(),
+            'class' => CompositeAuth::class,
+            'authMethods' => [
+                JwtHttpBearerAuth::class,
+            ],
+            'except' => ['options'],
         ];
-        
+        $behaviors['access'] = [
+            'class' => AccessControl::class,
+        ];
         return $behaviors;
     }
     public function actions()
@@ -52,7 +66,7 @@ class MapController extends ActiveController
 
         $papeSize = \Yii::$app->request->get('pageSize', 1);
         $data = new ActiveDataProvider([
-            'query' => \api\modules\vp\models\Map::find(),
+            'query' => \api\modules\v1\models\VpMap::find(),
             'pagination' => [
                 'pageSize' => $papeSize,
             ]
@@ -61,7 +75,7 @@ class MapController extends ActiveController
     }
     public function actionPage($page){
         
-        $model = \api\modules\vp\models\Map::find()->where(['page' => $page])->one();
+        $model = \api\modules\v1\models\VpMap::find()->where(['page' => $page])->one();
         return $model;
     }
     public function actionSetup(){

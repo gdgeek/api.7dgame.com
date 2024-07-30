@@ -87,6 +87,14 @@ return [
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',
+                    'controller' => 'vp/map',
+                    'extraPatterns' => [
+                        'GET page' => 'page',
+                        'GET setup' => 'setup',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
                     'controller' => 'vp/level',
                     'extraPatterns' => [
                         'GET record' => 'record',
@@ -202,6 +210,7 @@ return [
                         'v1/space',
                         'v1/cyber',
                         'v1/vp-guide',
+                        'v1/vp-map',
                     ],
                 ],
 

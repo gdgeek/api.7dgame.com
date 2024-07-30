@@ -30,8 +30,8 @@ class Guide extends \yii\db\ActiveRecord
     {
         return [
             
-            [['order', 'level_id'], 'integer'],
-            [['level_id'], 'required'],
+            [['order', 'level_id', 'map_id'], 'integer'],
+            [['level_id', 'map_id'], 'required'],
             [['level_id'], 'unique'],
             [['level_id'], 'exist', 'skipOnError' => true, 'targetClass' => Verse::className(), 'targetAttribute' => ['level_id' => 'id']],
         ];
@@ -48,7 +48,6 @@ class Guide extends \yii\db\ActiveRecord
             return ["score" => $level->score, "record" => $level->record, "defined"=> true];
         };
         unset($fields['order']);
-       // $fields['playerId'] = function() {return \Yii::$app->player->token->id;};
         return $fields;
     }
     /**

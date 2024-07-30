@@ -25,7 +25,6 @@ class VpGuide extends \yii\db\ActiveRecord
     public function fields()
     {
         $fields = parent::fields();
-        $fields['a'] = function(){return 1;};
         $fields['level'] = function () {return $this->level;};
         return $fields;
     }
@@ -36,8 +35,8 @@ class VpGuide extends \yii\db\ActiveRecord
     {
         return [
             
-            [['order', 'level_id'], 'integer'],
-            [['level_id'], 'required'],
+            [['order', 'level_id', 'map_id'], 'integer'],
+            [['level_id', 'map_id'], 'required'],
             [['level_id'], 'unique'],
             [['level_id'], 'exist', 'skipOnError' => true, 'targetClass' => Verse::className(), 'targetAttribute' => ['level_id' => 'id']],
         ];

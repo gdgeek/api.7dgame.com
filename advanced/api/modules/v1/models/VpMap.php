@@ -1,6 +1,6 @@
 <?php
 
-namespace api\modules\vp\models;
+namespace api\modules\v1\models;
 
 use Yii;
 
@@ -11,7 +11,7 @@ use Yii;
  * @property int $page
  * @property string|null $info
  */
-class Map extends \yii\db\ActiveRecord
+class VpMap extends \yii\db\ActiveRecord
 {
     /**
      * {@inheritdoc}
@@ -55,7 +55,7 @@ class Map extends \yii\db\ActiveRecord
     }
     public function getGuides()
     {
-        return $this->hasMany(Guide::className(), ['map_id' => 'id'])->orderBy(['order' => SORT_ASC]);
+        return $this->hasMany(VpGuide::className(), ['map_id' => 'id'])->orderBy(['order' => SORT_ASC]);
     }
     /**
      * {@inheritdoc}
@@ -63,6 +63,6 @@ class Map extends \yii\db\ActiveRecord
      */
     public static function find()
     {
-        return new MapQuery(get_called_class());
+        return new VpMapQuery(get_called_class());
     }
 }
