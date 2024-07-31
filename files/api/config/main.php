@@ -84,6 +84,9 @@ return [
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'vp/guide',
+                    'extraPatterns' => [
+                        'GET verse' => 'verse',
+                    ],
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',

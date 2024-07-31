@@ -4,6 +4,8 @@ namespace api\modules\vp\controllers;
 use yii\data\ActiveDataProvider;
 use yii\rest\ActiveController;
 use api\modules\vp\helper\KeyTokenAuth;
+
+use api\modules\vp\models\Guide;
 class GuideController extends ActiveController
 {
 
@@ -33,6 +35,10 @@ class GuideController extends ActiveController
             'class' => KeyTokenAuth::className(),
         ];
         return $behaviors;
+    }
+    public function actionVerse($id){
+        $guide = Guide::find()->where(['id' => $id])->one();
+        return $guide->verse;
     }
     public function actions()
     {

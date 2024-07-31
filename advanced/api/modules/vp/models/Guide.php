@@ -1,7 +1,7 @@
 <?php
 
 namespace api\modules\vp\models;
-use api\modules\a1\models\Verse;
+use api\modules\vp\models\Verse;
 use Yii;
 
 /**
@@ -73,6 +73,10 @@ class Guide extends \yii\db\ActiveRecord
         $model = Level::find()->where(['player_id' => $player_id, 'guide_id' => $this->id])->one();
         return $model;
        
+    }
+    public function getVerse()
+    {
+        return $this->hasOne(Verse::className(), ['id' => 'level_id']);
     }
 
     /**
