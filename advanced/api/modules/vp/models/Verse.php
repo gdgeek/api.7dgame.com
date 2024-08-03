@@ -268,7 +268,6 @@ class Verse extends \yii\db\ActiveRecord
     {
         return $this->hasOne(User::className(), ['id' => 'updater_id']);
     }
- 
     /**
      * {@inheritdoc}
      * @return VerseQuery the active query used by this AR class.
