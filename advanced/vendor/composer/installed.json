@@ -1148,6 +1148,61 @@
             "install-path": "../fakerphp/faker"
         },
         {
+            "name": "firebase/php-jwt",
+            "version": "v5.5.1",
+            "version_normalized": "5.5.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/firebase/php-jwt.git",
+                "reference": "83b609028194aa042ea33b5af2d41a7427de80e6"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://mirrors.huaweicloud.com/repository/php/firebase/php-jwt/v5.5.1/firebase-php-jwt-v5.5.1.zip",
+                "reference": "83b609028194aa042ea33b5af2d41a7427de80e6",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": ">=4.8 <=9"
+            },
+            "suggest": {
+                "paragonie/sodium_compat": "Support EdDSA (Ed25519) signatures when libsodium is not present"
+            },
+            "time": "2021-11-08T20:18:51+00:00",
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "Firebase\\JWT\\": "src"
+                }
+            },
+            "license": [
+                "BSD-3-Clause"
+            ],
+            "authors": [
+                {
+                    "name": "Neuman Vong",
+                    "email": "neuman+pear@twilio.com",
+                    "role": "Developer"
+                },
+                {
+                    "name": "Anant Narayanan",
+                    "email": "anant@php.net",
+                    "role": "Developer"
+                }
+            ],
+            "description": "A simple library to encode and decode JSON Web Tokens (JWT) in PHP. Should conform to the current spec.",
+            "homepage": "https://github.com/firebase/php-jwt",
+            "keywords": [
+                "jwt",
+                "php"
+            ],
+            "install-path": "../firebase/php-jwt"
+        },
+        {
             "name": "fortawesome/font-awesome",
             "version": "v4.7.0",
             "version_normalized": "4.7.0.0",
@@ -1803,6 +1858,74 @@
                 }
             ],
             "install-path": "../lcobucci/jwt"
+        },
+        {
+            "name": "league/oauth2-client",
+            "version": "2.7.0",
+            "version_normalized": "2.7.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/thephpleague/oauth2-client.git",
+                "reference": "160d6274b03562ebeb55ed18399281d8118b76c8"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://mirrors.huaweicloud.com/repository/php/league/oauth2-client/2.7.0/league-oauth2-client-2.7.0.zip",
+                "reference": "160d6274b03562ebeb55ed18399281d8118b76c8",
+                "shasum": ""
+            },
+            "require": {
+                "guzzlehttp/guzzle": "^6.0 || ^7.0",
+                "paragonie/random_compat": "^1 || ^2 || ^9.99",
+                "php": "^5.6 || ^7.0 || ^8.0"
+            },
+            "require-dev": {
+                "mockery/mockery": "^1.3.5",
+                "php-parallel-lint/php-parallel-lint": "^1.3.1",
+                "phpunit/phpunit": "^5.7 || ^6.0 || ^9.5",
+                "squizlabs/php_codesniffer": "^2.3 || ^3.0"
+            },
+            "time": "2023-04-16T18:19:15+00:00",
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-2.x": "2.0.x-dev"
+                }
+            },
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "League\\OAuth2\\Client\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Alex Bilbie",
+                    "email": "hello@alexbilbie.com",
+                    "homepage": "http://www.alexbilbie.com",
+                    "role": "Developer"
+                },
+                {
+                    "name": "Woody Gilk",
+                    "homepage": "https://github.com/shadowhand",
+                    "role": "Contributor"
+                }
+            ],
+            "description": "OAuth 2.0 Client Library",
+            "keywords": [
+                "Authentication",
+                "SSO",
+                "authorization",
+                "identity",
+                "idp",
+                "oauth",
+                "oauth2",
+                "single sign on"
+            ],
+            "install-path": "../league/oauth2-client"
         },
         {
             "name": "linslin/yii2-curl",
@@ -2630,6 +2753,68 @@
                 "source": "https://github.com/paragonie/random_compat"
             },
             "install-path": "../paragonie/random_compat"
+        },
+        {
+            "name": "patrickbussmann/oauth2-apple",
+            "version": "0.2.3",
+            "version_normalized": "0.2.3.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/patrickbussmann/oauth2-apple.git",
+                "reference": "5598a94a36cb88e6824ef946bacc519d1e699fc4"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://mirrors.huaweicloud.com/repository/php/patrickbussmann/oauth2-apple/0.2.3/patrickbussmann-oauth2-apple-0.2.3.zip",
+                "reference": "5598a94a36cb88e6824ef946bacc519d1e699fc4",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "firebase/php-jwt": "^5.2",
+                "lcobucci/jwt": "~3.3.3",
+                "league/oauth2-client": "^2.0"
+            },
+            "require-dev": {
+                "ext-json": "*",
+                "mockery/mockery": "~1.3.3",
+                "phpunit/phpunit": "^4.8|^7.5",
+                "squizlabs/php_codesniffer": "~2.0"
+            },
+            "time": "2021-01-05T18:33:41+00:00",
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "0.3.x-dev"
+                }
+            },
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "League\\OAuth2\\Client\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Patrick Bußmann",
+                    "email": "patrick.bussmann@bussmann-it.de",
+                    "homepage": "https://github.com/patrickbussmann"
+                }
+            ],
+            "description": "Sign in with Apple OAuth 2.0 Client Provider for The PHP League OAuth2-Client",
+            "keywords": [
+                "apple",
+                "authorisation",
+                "authorization",
+                "client",
+                "oauth",
+                "oauth2",
+                "sign-in-with-apple"
+            ],
+            "install-path": "../patrickbussmann/oauth2-apple"
         },
         {
             "name": "phar-io/manifest",

@@ -40,7 +40,9 @@
     "charlesportwoodii/yii2-psr7-bridge": "dev-master",
     "linslin/yii2-curl": "*",
     "markrogoyski/math-php": "2.*",
-    "tencentcloud/sts": "^3.0"
+    "tencentcloud/sts": "^3.0",
+    "league/oauth2-client": "^2.7",
+    "patrickbussmann/oauth2-apple": "*"
   },
   "antkaz/yii2-vue": "^1.0",
   "2amigos/yii2-file-upload-widget": "~1.0",
@@ -70,10 +72,6 @@
     {
       "type": "composer",
       "url": "https://mirrors.huaweicloud.com/repository/php"
-    },
-    {
-      "type": "composer",
-      "url": "https://asset-packagist.org"
     }
   ]
 }
