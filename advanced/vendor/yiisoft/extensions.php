@@ -30,15 +30,6 @@ return array (
       '@dmstr' => $vendorDir . '/dmstr/yii2-adminlte-asset',
     ),
   ),
-  '2amigos/yii2-ckeditor-widget' => 
-  array (
-    'name' => '2amigos/yii2-ckeditor-widget',
-    'version' => '2.2.0.0',
-    'alias' => 
-    array (
-      '@dosamigos/ckeditor' => $vendorDir . '/2amigos/yii2-ckeditor-widget/src',
-    ),
-  ),
   'yii2tech/file-storage' => 
   array (
     'name' => 'yii2tech/file-storage',
@@ -100,15 +91,6 @@ return array (
     'alias' => 
     array (
       '@yii/bootstrap' => $vendorDir . '/yiisoft/yii2-bootstrap/src',
-    ),
-  ),
-  'yiisoft/yii2-swiftmailer' => 
-  array (
-    'name' => 'yiisoft/yii2-swiftmailer',
-    'version' => '2.1.3.0',
-    'alias' => 
-    array (
-      '@yii/swiftmailer' => $vendorDir . '/yiisoft/yii2-swiftmailer/src',
     ),
   ),
   'linslin/yii2-curl' => 

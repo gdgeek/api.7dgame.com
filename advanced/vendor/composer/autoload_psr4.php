@@ -6,7 +6,6 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
-    'yii\\swiftmailer\\' => array($vendorDir . '/yiisoft/yii2-swiftmailer/src'),
     'yii\\gii\\' => array($vendorDir . '/yiisoft/yii2-gii/src'),
     'yii\\faker\\' => array($vendorDir . '/yiisoft/yii2-faker/src'),
     'yii\\debug\\' => array($vendorDir . '/yiisoft/yii2-debug/src'),
@@ -21,7 +20,6 @@ return array(
     'rmrevin\\yii\\fontawesome\\' => array($vendorDir . '/rmrevin/yii2-fontawesome'),
     'mdm\\admin\\' => array($vendorDir . '/mdmsoft/yii2-admin'),
     'linslin\\yii2\\curl\\' => array($vendorDir . '/linslin/yii2-curl'),
-    'dosamigos\\ckeditor\\' => array($vendorDir . '/2amigos/yii2-ckeditor-widget/src'),
     'dmstr\\' => array($vendorDir . '/dmstr/yii2-adminlte-asset'),
     'cebe\\markdown\\' => array($vendorDir . '/cebe/markdown'),
     'antkaz\\vue\\' => array($vendorDir . '/antkaz/yii2-vue/src'),
@@ -33,7 +31,6 @@ return array(
     'Symfony\\Polyfill\\Mbstring\\' => array($vendorDir . '/symfony/polyfill-mbstring'),
     'Symfony\\Polyfill\\Intl\\Normalizer\\' => array($vendorDir . '/symfony/polyfill-intl-normalizer'),
     'Symfony\\Polyfill\\Intl\\Idn\\' => array($vendorDir . '/symfony/polyfill-intl-idn'),
-    'Symfony\\Polyfill\\Iconv\\' => array($vendorDir . '/symfony/polyfill-iconv'),
     'Symfony\\Polyfill\\Ctype\\' => array($vendorDir . '/symfony/polyfill-ctype'),
     'Symfony\\Contracts\\Service\\' => array($vendorDir . '/symfony/service-contracts'),
     'Symfony\\Contracts\\HttpClient\\' => array($vendorDir . '/symfony/http-client-contracts'),
@@ -50,7 +47,7 @@ return array(
     'Psr\\SimpleCache\\' => array($vendorDir . '/psr/simple-cache/src'),
     'Psr\\Log\\' => array($vendorDir . '/psr/log/src'),
     'Psr\\Http\\Server\\' => array($vendorDir . '/psr/http-server-handler/src'),
-    'Psr\\Http\\Message\\' => array($vendorDir . '/psr/http-message/src', $vendorDir . '/psr/http-factory/src'),
+    'Psr\\Http\\Message\\' => array($vendorDir . '/psr/http-factory/src', $vendorDir . '/psr/http-message/src'),
     'Psr\\Http\\Client\\' => array($vendorDir . '/psr/http-client/src'),
     'Psr\\Container\\' => array($vendorDir . '/psr/container/src'),
     'Psr\\Cache\\' => array($vendorDir . '/psr/cache/src'),
@@ -69,10 +66,7 @@ return array(
     'GuzzleHttp\\' => array($vendorDir . '/guzzlehttp/guzzle/src'),
     'Firebase\\JWT\\' => array($vendorDir . '/firebase/php-jwt/src'),
     'Faker\\' => array($vendorDir . '/fakerphp/faker/src/Faker'),
-    'Egulias\\EmailValidator\\' => array($vendorDir . '/egulias/email-validator/src'),
     'EasyWeChat\\' => array($vendorDir . '/w7corp/easywechat/src'),
-    'Doctrine\\Deprecations\\' => array($vendorDir . '/doctrine/deprecations/lib/Doctrine/Deprecations'),
-    'Doctrine\\Common\\Lexer\\' => array($vendorDir . '/doctrine/lexer/src'),
     'DeepCopy\\' => array($vendorDir . '/myclabs/deep-copy/src/DeepCopy'),
     'Da\\QrCode\\' => array($vendorDir . '/2amigos/qrcode-library/src'),
     'Codeception\\' => array($vendorDir . '/codeception/verify/src/Codeception'),
