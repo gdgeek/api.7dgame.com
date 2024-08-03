@@ -4,20 +4,25 @@ namespace MathPHP\LinearAlgebra;
 
 use MathPHP\Exception;
 use MathPHP\Number\Complex;
+use MathPHP\Number\ObjectArithmetic;
 
 /**
  * Matrix factory to create matrices of all types.
  * Use factory instead of instantiating individual Matrix classes.
+ *
+ * template T = int[][]|float[][]|Complex[][]|object[][]
  */
 class MatrixFactory
 {
     /**
      * Factory method
      *
-     * @param  number[][] $A 2-dimensional array of Matrix data
+     * @template T = int|float|Complex|object
+     *
+     * @param T[][]      $A 2-dimensional array of Matrix data
      * @param float|null $ε Optional error tolerance
      *
-     * @return Matrix
+     * @return Matrix<T>|NumericMatrix|ComplexMatrix|ObjectMatrix|ObjectSquareMatrix
      *
      * @throws Exception\BadDataException
      * @throws Exception\IncorrectTypeException
@@ -33,12 +38,16 @@ class MatrixFactory
         switch ($matrix_type) {
             case 'numeric':
             case 'numeric_square':
+                /** @var array<array<int|float>> $A */
                 return self::createNumeric($A, $ε);
             case 'complex':
+                /** @var array<array<Complex>> $A */
                 return new ComplexMatrix($A);
             case 'object':
+                /** @var array<array<ObjectArithmetic>> $A */
                 return new ObjectMatrix($A);
             case 'object_square':
+                /** @var array<array<ObjectArithmetic>> $A */
                 return new ObjectSquareMatrix($A);
         }
 
@@ -46,8 +55,8 @@ class MatrixFactory
     }
 
     /**
-     * @param number[][] $A
-     * @param float|null $ε Optional error tolerance
+     * @param int[][]|float[][] $A
+     * @param float|null        $ε Optional error tolerance
      *
      * @return NumericMatrix
      *
@@ -82,10 +91,10 @@ class MatrixFactory
      *   R = [2  2 8 4]
      *       [1 13 1 5]
      *
-     * @param  Vector[] $A array of Vectors
+     * @param Vector[]   $A array of Vectors
      * @param float|null $ε Optional error tolerance
      *
-     * @return Matrix
+     * @return NumericMatrix
      *
      * @throws Exception\MatrixException if the Vectors are not all the same length
      * @throws Exception\IncorrectTypeException
@@ -121,9 +130,11 @@ class MatrixFactory
      *     [⋮ ]
      *     [xm]
      *
-     * @param array $A m × 1 vector representing the matrix
+     * @template T = int|float|Complex|object
      *
-     * @return Matrix
+     * @param T[] $A m × 1 vector representing the matrix
+     *
+     * @return Matrix<T>|NumericMatrix|ComplexMatrix|ObjectMatrix|ObjectSquareMatrix
      */
     public static function createFromColumnVector(array $A): Matrix
     {
@@ -147,9 +158,11 @@ class MatrixFactory
      *
      * x = [x₁ x₂ ⋯ xn]
      *
-     * @param array $A 1 × n vector representing the matrix
+     * @template T = int|float|Complex|object
      *
-     * @return Matrix
+     * @param T[] $A 1 × n vector representing the matrix
+     *
+     * @return Matrix<T>|NumericMatrix|ComplexMatrix|ObjectMatrix|ObjectSquareMatrix
      */
     public static function createFromRowVector(array $A): Matrix
     {
@@ -166,7 +179,7 @@ class MatrixFactory
     /**
      * Factory method
      *
-     * @param  array[] $A 2-dimensional array of Matrix data
+     * @param  callable[][] $A 2-dimensional array of Matrix data
      *
      * @return FunctionMatrix
      */
@@ -205,7 +218,7 @@ class MatrixFactory
      *  A = [0 1 0]
      *      [0 0 1]
      *
-     * @param int   $n size of matrix
+     * @param  int $n size of matrix
      *
      * @return NumericSquareMatrix
      *
@@ -294,6 +307,7 @@ class MatrixFactory
         $bottom_row = \array_pop($I);
         \array_unshift($I, $bottom_row);
 
+        /** @var array<array<int|float>> $I */
         return new NumericSquareMatrix($I);
     }
 
@@ -303,7 +317,7 @@ class MatrixFactory
      *
      * @param  int $n
      *
-     * @return Matrix
+     * @return NumericMatrix|ComplexMatrix|ObjectMatrix|ObjectSquareMatrix
      *
      * @throws Exception\BadDataException
      * @throws Exception\IncorrectTypeException
@@ -443,7 +457,7 @@ class MatrixFactory
      * A = [0 2 0]
      *     [0 0 3]
      *
-     * @param array $D elements of the diagonal
+     * @param array<int|float> $D elements of the diagonal
      *
      * @return NumericDiagonalMatrix
      *
@@ -510,7 +524,7 @@ class MatrixFactory
     /**
      * Create the Vandermonde Matrix from a simple array.
      *
-     * @param array $M (α₁, α₂, α₃ ⋯ αm)
+     * @param array<int|float> $M (α₁, α₂, α₃ ⋯ αm)
      * @param int   $n
      *
      * @return NumericMatrix
@@ -602,7 +616,9 @@ class MatrixFactory
     /**
      * Check input parameters
      *
-     * @param  array    $A
+     * @template T = int|float|Complex|object
+     *
+     * @param  array<array<T>> $A
      *
      * @throws Exception\BadDataException if array data not provided for matrix creation
      * @throws Exception\MatrixException if any row has a different column count
@@ -612,13 +628,14 @@ class MatrixFactory
         if (empty($A)) {
             throw new Exception\BadDataException('Array data not provided for Matrix creation');
         }
+        if (!isset($A[0]) || !\is_array($A[0])) {
+            throw new Exception\BadDataException('Array of array data not provided for Matrix creation');
+        }
 
-        if (isset($A[0]) && \is_array($A[0])) {
-            $column_count = \count($A[0]);
-            foreach ($A as $i => $row) {
-                if (\count($row) !== $column_count) {
-                    throw new Exception\MatrixException("Row $i has a different column count: " . \count($row) . "; was expecting $column_count.");
-                }
+        $column_count = \count($A[0]);
+        foreach ($A as $i => $row) {
+            if (\count($row) !== $column_count) {
+                throw new Exception\MatrixException("Row $i has a different column count: " . \count($row) . "; was expecting $column_count.");
             }
         }
     }
@@ -626,7 +643,7 @@ class MatrixFactory
     /**
      * Determine what type of matrix to create
      *
-     * @param  array[] $A 2-dimensional array of Matrix data
+     * @param  array<array<mixed>> $A 2-dimensional array of Matrix data
      *
      * @return string indicating what matrix type to create
      */

@@ -2,9 +2,8 @@
 
 namespace League\OAuth2\Client\Token;
 
-use Firebase\JWT\JWK;
 use Firebase\JWT\JWT;
-use GuzzleHttp\ClientInterface;
+use Firebase\JWT\Key;
 use InvalidArgumentException;
 
 class AppleAccessToken extends AccessToken
@@ -25,35 +24,41 @@ class AppleAccessToken extends AccessToken
     protected $isPrivateEmail;
 
     /**
-     * @var ClientInterface
-     */
-    protected $httpClient;
-
-    /**
      * Constructs an access token.
      *
-     * @param ClientInterface $httpClient the http client to use
+     * @param Key[] $keys Valid Apple JWT keys
      * @param array $options An array of options returned by the service provider
      *     in the access token request. The `access_token` option is required.
      * @throws InvalidArgumentException if `access_token` is not provided in `$options`.
      *
      * @throws \Exception
      */
-    public function __construct($httpClient, array $options = [])
+    public function __construct(array $keys, array $options = [])
     {
-        $this->httpClient = $httpClient;
-
         if (array_key_exists('refresh_token', $options)) {
             if (empty($options['id_token'])) {
                 throw new InvalidArgumentException('Required option not passed: "id_token"');
             }
 
             $decoded = null;
-            $keys = $this->getAppleKey();
             $last = end($keys);
             foreach ($keys as $key) {
                 try {
-                    $decoded = JWT::decode($options['id_token'], $key, ['RS256']);
+                    try {
+                        $decoded = JWT::decode($options['id_token'], $key);
+                    } catch (\UnexpectedValueException $e) {
+                        $decodeMethodReflection = new \ReflectionMethod(JWT::class, 'decode');
+                        $decodeMethodParameters = $decodeMethodReflection->getParameters();
+                        // Backwards compatibility for firebase/php-jwt >=5.2.0 <=5.5.1 supported by PHP 5.6
+                        if (array_key_exists(2, $decodeMethodParameters) &&
+                            'allowed_algs' === $decodeMethodParameters[2]->getName()
+                        ) {
+                            $decoded = JWT::decode($options['id_token'], $key, ['RS256']);
+                        } else {
+                            $headers = (object) ['alg' => 'RS256'];
+                            $decoded = JWT::decode($options['id_token'], $key, $headers);
+                        }
+                    }
                     break;
                 } catch (\Exception $exception) {
                     if ($last === $key) {
@@ -86,20 +91,6 @@ class AppleAccessToken extends AccessToken
         if (isset($options['email'])) {
             $this->email = $options['email'];
         }
-    }
-
-    /**
-     * @return array Apple's JSON Web Key
-     */
-    protected function getAppleKey()
-    {
-        $response = $this->httpClient->request('GET', 'https://appleid.apple.com/auth/keys');
-
-        if ($response) {
-            return JWK::parseKeySet(json_decode($response->getBody()->getContents(), true));
-        }
-
-        return false;
     }
 
     /**

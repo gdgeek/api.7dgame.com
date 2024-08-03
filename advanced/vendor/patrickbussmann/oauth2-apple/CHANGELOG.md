@@ -1,7 +1,7 @@
 # Changelog
 All Notable changes to `oauth2-apple` will be documented in this file
 
-## 0.3.0 - 202X-XX-XX
+## 0.4.0 - 202X-XX-XX
 
 ### Added
 - Nothing
@@ -17,6 +17,59 @@ All Notable changes to `oauth2-apple` will be documented in this file
 
 ### Security
 - Nothing
+
+## 0.3.0 - 2024-05-18
+
+### Added
+- Allow lcobucci/jwt ^5.0 [#44](https://github.com/patrickbussmann/oauth2-apple/pull/44)
+
+### Fixed
+- Handle different JWT::decode signatures [#54](https://github.com/patrickbussmann/oauth2-apple/pull/54)
+
+## 0.2.10 - 2022-10-01
+
+### Added
+- "sub" to Resource Owner->toArray() [#38](https://github.com/patrickbussmann/oauth2-apple/pull/38)
+- Apple Key retrieval when using Guzzle Logging [#39](https://github.com/patrickbussmann/oauth2-apple/pull/39)
+
+## 0.2.9 - 2022-07-09
+
+### Added
+- Method for revoking access and refresh tokens [#37](https://github.com/patrickbussmann/oauth2-apple/issues/37)
+
+## 0.2.8 - 2022-05-10
+
+### Fixed
+- Issue with firebase/php-jwt v5 [#34](https://github.com/patrickbussmann/oauth2-apple/issues/34) (thanks to [tjveldhuizen](https://github.com/tjveldhuizen))
+
+## 0.2.7 - 2022-04-29
+
+### Added
+- Support for firebase/php-jwt v6 [#31](https://github.com/patrickbussmann/oauth2-apple/pull/31) (thanks to [bashgeek](https://github.com/bashgeek))
+
+## 0.2.6 - 2021-08-25
+
+### Added
+- GitHub Actions CI
+
+### Removed
+- Travis CI
+
+### Fixed
+- Fixed bug with serialization of AppleAccessToken [#29](https://github.com/patrickbussmann/oauth2-apple/pull/29) (thanks to [tjveldhuizen](https://github.com/tjveldhuizen))
+
+## 0.2.5 - 2021-03-10
+
+### Fixed
+- Fix BC-break for combination of PHP 7.4 and lcobucci/jwt 3.4 [#25](https://github.com/patrickbussmann/oauth2-apple/pull/25) (thanks to [tjveldhuizen](https://github.com/tjveldhuizen))
+
+## 0.2.4 - 2021-01-17
+
+### Added
+- Codecov for Code Coverage
+
+### Fixed
+- Few compatibility issues with PHP 8 and PHP 5.6 (Read [#16](https://github.com/patrickbussmann/oauth2-apple/pull/16) for more details)
 
 ## 0.2.3 - 2021-01-05
 

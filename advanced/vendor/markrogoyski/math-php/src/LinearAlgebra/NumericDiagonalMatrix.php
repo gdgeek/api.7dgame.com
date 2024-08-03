@@ -15,7 +15,7 @@ class NumericDiagonalMatrix extends NumericSquareMatrix
     /**
      * Constructor
      *
-     * @param array $A
+     * @param array<array<int|float>> $A
      */
     public function __construct(array $A)
     {

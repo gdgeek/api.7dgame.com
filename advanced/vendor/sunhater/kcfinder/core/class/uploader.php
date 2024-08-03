@@ -17,7 +17,7 @@ namespace kcfinder;
 class uploader {
 
 /** Release version */
-    const VERSION = "3.20";
+    const VERSION = "3.20-test2";
 
 /** Config session-overrided settings
   * @var array */

@@ -14,26 +14,26 @@ use MathPHP\Exception;
  */
 class Quaternion implements ObjectArithmetic
 {
-    /** @var number Real part of the quaternionic number */
+    /** @var int|float Real part of the quaternionic number */
     protected $r;
 
-    /** @var number First Imaginary part of the quaternionic number */
+    /** @var int|float First Imaginary part of the quaternionic number */
     protected $i;
 
-    /** @var number Second Imaginary part of the quaternionic number */
+    /** @var int|float Second Imaginary part of the quaternionic number */
     protected $j;
 
-    /** @var number Third Imaginary part of the quaternionic number */
+    /** @var int|float Third Imaginary part of the quaternionic number */
     protected $k;
 
     /** Floating-point range near zero to consider insignificant */
     const EPSILON = 1e-6;
 
     /**
-     * @param number $r Real part
-     * @param number $i Imaginary part
-     * @param number $j Imaginary part
-     * @param number $k Imaginary part
+     * @param int|float $r Real part
+     * @param int|float $i Imaginary part
+     * @param int|float $j Imaginary part
+     * @param int|float $k Imaginary part
      */
     public function __construct($r, $i, $j, $k)
     {
@@ -78,7 +78,7 @@ class Quaternion implements ObjectArithmetic
      *
      * @param string $part
      *
-     * @return number
+     * @return int|float
      *
      * @throws Exception\BadParameterException if something other than r or i is attempted
      */
@@ -121,7 +121,7 @@ class Quaternion implements ObjectArithmetic
      *        _________________
      * |z| = √a² + b² + c² + d²
      *
-     * @return number
+     * @return int|float
      */
     public function abs()
     {
@@ -171,7 +171,7 @@ class Quaternion implements ObjectArithmetic
      *
      * (a + bi + cj + dk) - (e + fi + gj + hk) = (a + e) + (b + f)i + (c + g)j + (d + h)k
      *
-     * @param mixed $q
+     * @param int|float|Quaternion $q
      *
      * @return Quaternion
      *
@@ -179,10 +179,10 @@ class Quaternion implements ObjectArithmetic
      */
     public function add($q): Quaternion
     {
-        if (!is_numeric($q) && ! $q instanceof Quaternion) {
-            throw new Exception\IncorrectTypeException('Argument must be real or quaternion' . print_r($q, true));
+        if (!\is_numeric($q) && ! $q instanceof Quaternion) {
+            throw new Exception\IncorrectTypeException('Argument must be real or quaternion' . \print_r($q, true));
         }
-        if (is_numeric($q)) {
+        if (\is_numeric($q)) {
             $r = $this->r + $q;
             return new Quaternion($r, $this->i, $this->j, $this->k);
         }
@@ -201,7 +201,7 @@ class Quaternion implements ObjectArithmetic
      *
      * (a + bi + cj + dk) - (e + fi + gj + hk) = (a - e) + (b - f)i + (c - g)j + (d - h)k
      *
-     * @param mixed $q
+     * @param int|float|Quaternion $q
      *
      * @return Quaternion
      *
@@ -212,7 +212,7 @@ class Quaternion implements ObjectArithmetic
         if (!is_numeric($q) && ! $q instanceof Quaternion) {
             throw new Exception\IncorrectTypeException('Argument must be real or quaternion' . print_r($q, true));
         }
-        if (is_numeric($q)) {
+        if (\is_numeric($q)) {
             $r = $this->r - $q;
             return new Quaternion($r, $this->i, $this->j, $this->k);
         }
@@ -237,7 +237,7 @@ class Quaternion implements ObjectArithmetic
      *
      * Note: Quaternion multiplication is not commutative.
      *
-     * @param mixed $q
+     * @param int|float|Quaternion $q
      *
      * @return Quaternion
      *
@@ -248,7 +248,7 @@ class Quaternion implements ObjectArithmetic
         if (!is_numeric($q) && ! $q instanceof Quaternion) {
             throw new Exception\IncorrectTypeException('Argument must be real or quaternion' . print_r($q, true));
         }
-        if (is_numeric($q)) {
+        if (\is_numeric($q)) {
             return new Quaternion($this->r * $q, $this->i * $q, $this->j * $q, $this->k * $q);
         }
 
@@ -268,7 +268,7 @@ class Quaternion implements ObjectArithmetic
      * Dividing two quaternions is accomplished by multiplying the first by the inverse of the second
      * This is not commutative!
      *
-     * @param mixed $q
+     * @param int|float|Quaternion $q
      *
      * @return Quaternion
      *
@@ -280,7 +280,7 @@ class Quaternion implements ObjectArithmetic
             throw new Exception\IncorrectTypeException('Argument must be real or quaternion' . print_r($q, true));
         }
 
-        if (is_numeric($q)) {
+        if (\is_numeric($q)) {
             $r = $this->r / $q;
             $i = $this->i / $q;
             $j = $this->j / $q;
@@ -317,6 +317,9 @@ class Quaternion implements ObjectArithmetic
     /**
      * Stringify an additional part of the quaternion
      *
+     * @param int|float $q
+     * @param string $unit
+     * @param string $string
      * @return string
      */
     private static function stringifyNumberPart($q, string $unit = '', string $string = ''): string

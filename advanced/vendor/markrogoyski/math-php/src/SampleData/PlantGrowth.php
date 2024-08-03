@@ -65,10 +65,11 @@ class PlantGrowth
      * Raw data with each observation labeled
      * [['weight' => 4.17, 'group' => 'ctrl'], ['weight' => 5.58, 'group' => 'ctrl'], ... ]
      *
-     * @return number[]
+     * @return array<int, array<string, float>>
      */
     public function getLabeledData(): array
     {
+        /** @var array<int, array<string, float>> */
         return \array_map(
             function (array $data) {
                 return \array_combine(self::LABELS, $data);
@@ -80,7 +81,7 @@ class PlantGrowth
     /**
      * Weight observations
      *
-     * @return number[]
+     * @return float[]
      */
     public function getWeight(): array
     {
@@ -94,6 +95,6 @@ class PlantGrowth
      */
     public function getGroup(): array
     {
-        return \array_column(self::DATA, 0);
+        return \array_column(self::DATA, 1);
     }
 }

@@ -79,6 +79,8 @@ class NonInteger
      * @param bool $rational return results as a Rational object
      *
      * @return float[]|Rational[]
+     *
+     * @throws Exception\OutOfBoundsException
      */
     public static function hyperharmonic(int $n, int $r, $rational = false): array
     {
@@ -104,8 +106,8 @@ class NonInteger
                     $sequence[$k] = $∑;
                 }
             }
-        } catch (\TypeError $e) {
-            throw new Exception\OutOfBoundsException('Numbers too large to maintain integer precision', -1, $e);
+        } catch (\TypeError|\Error $e) {
+            throw new Exception\OutOfBoundsException("Numbers too large to maintain integer precision for hyperharmonic, or recursion depth level exceeded (n:$n, r:$r): " . $e->getMessage(), -1, $e);
         }
 
         if ($rational == true) {

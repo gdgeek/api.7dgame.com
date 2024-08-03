@@ -14,20 +14,20 @@ use MathPHP\Functions\Special;
  * part of the complex number.
  * https://en.wikipedia.org/wiki/Complex_number
  *
- * @property-read number $r
- * @property-read number $i
+ * @property-read int|float $r
+ * @property-read int|float $i
  */
 class Complex implements ObjectArithmetic
 {
     /**
      * Real part of the complex number
-     * @var number
+     * @var int|float
      */
     protected $r;
 
     /**
      * Imaginary part fo the complex number
-     * @var number
+     * @var int|float
      */
     protected $i;
 
@@ -39,8 +39,8 @@ class Complex implements ObjectArithmetic
     /**
      * Constructor
      *
-     * @param number $r Real part
-     * @param number $i Imaginary part
+     * @param int|float $r Real part
+     * @param int|float $i Imaginary part
      */
     public function __construct($r, $i)
     {
@@ -84,7 +84,7 @@ class Complex implements ObjectArithmetic
      *
      * @param string $part
      *
-     * @return number
+     * @return int|float
      *
      * @throws Exception\BadParameterException if something other than r or i is attempted
      */
@@ -124,7 +124,7 @@ class Complex implements ObjectArithmetic
      *        _______
      * |z| = √a² + b²
      *
-     * @return number
+     * @return int|float
      */
     public function abs()
     {
@@ -139,7 +139,7 @@ class Complex implements ObjectArithmetic
      * If z = a + bi
      * arg(z) = atan(b, a)
      *
-     * @return number
+     * @return int|float
      */
     public function arg()
     {
@@ -192,7 +192,7 @@ class Complex implements ObjectArithmetic
      *           √         2
      *
      *
-     * @return array Complex[] (two roots)
+     * @return array{Complex, Complex} (two roots)
      */
     public function roots(): array
     {
@@ -244,7 +244,7 @@ class Complex implements ObjectArithmetic
      *  r = |z|
      *  θ = arg(z) (in radians)
      *
-     * @return number[]
+     * @return int[]|float[]
      */
     public function polarForm(): array
     {
@@ -383,7 +383,7 @@ class Complex implements ObjectArithmetic
      *  - https://en.wikipedia.org/wiki/Complex_number#Exponentiation
      *  - https://mathworld.wolfram.com/ComplexExponentiation.html
      *
-     * @param Complex|number $c
+     * @param Complex|int|float $c
      *
      * @return Complex
      *

@@ -23,6 +23,7 @@ use MathPHP\LinearAlgebra\Vector;
  *   - Cosine similarity
  *   - Bray Curtis
  *   - Canberra
+ *   - Chebyshev
  *
  * In statistics, probability theory, and information theory, a statistical distance quantifies the distance between
  * two statistical objects, which can be two random variables, or two probability distributions or samples, or the
@@ -49,8 +50,8 @@ class Distance
      * BC(p,q) = ∑ √(p(x) q(x))
      *          x∈X
      *
-     * @param array $p distribution p
-     * @param array $q distribution q
+     * @param array<int|float> $p distribution p
+     * @param array<int|float> $q distribution q
      *
      * @return float distance between distributions
      *
@@ -84,8 +85,8 @@ class Distance
      * H(P,Q) = -- √ ∑ (√pᵢ - √qᵢ)²
      *          √2
      *
-     * @param array $p distribution p
-     * @param array $q distribution q
+     * @param array<int|float> $p distribution p
+     * @param array<int|float> $q distribution q
      *
      * @return float difference between distributions
      *
@@ -146,8 +147,8 @@ class Distance
      *
      * D(P‖Q) = Kullback-Leibler divergence
      *
-     * @param array $p distribution p
-     * @param array $q distribution q
+     * @param array<int|float> $p distribution p
+     * @param array<int|float> $q distribution q
      *
      * @return float
      *
@@ -373,8 +374,8 @@ class Distance
      *  -----------
      *  ∑｜uᵢ + vᵢ｜
      *
-     * @param array $u
-     * @param array $v
+     * @param array<float> $u
+     * @param array<float> $v
      *
      * @return float
      */
@@ -423,8 +424,8 @@ class Distance
      * d(p,q) = ∑ --------------
      *            ｜pᵢ｜ + ｜qᵢ｜
      *
-     * @param array $p
-     * @param array $q
+     * @param array<float> $p
+     * @param array<float> $q
      *
      * @return float
      */
@@ -468,6 +469,37 @@ class Distance
             },
             $｜p − q｜,
             $｜p｜ ＋ ｜q｜
+        ));
+    }
+
+    /**
+     * Chebyshev Distance
+     * A metric defined on a real coordinate space where the distance between two points
+     * is the greatest of their differences along any coordinate dimension.
+     *
+     * D(x, y) = max(｜xᵢ − yᵢ｜)
+     *
+     * https://en.wikipedia.org/wiki/Chebyshev_distance
+     *
+     * @param array<float> $xs
+     * @param array<float> $ys
+     *
+     * @return float
+     *
+     * @throws Exception\BadDataException
+     */
+    public static function chebyshev(array $xs, array $ys): float
+    {
+        if (\count($xs) !== \count($ys)) {
+            throw new Exception\BadDataException('xs and ys must have the same number of elements');
+        }
+
+        return (float) \max(\array_map(
+            function (float $xᵢ, $yᵢ) {
+                return \abs($xᵢ - $yᵢ);
+            },
+            $xs,
+            $ys
         ));
     }
 }

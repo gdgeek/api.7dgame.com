@@ -67,27 +67,7 @@ class JwtHttpBearerAuth extends AuthMethod
         parent::init();
         $this->jwt = Instance::ensure($this->jwt, Jwt::className());
     }
-    public function urlAuthenticate($user, $request, $response){
-        $post = $request->post();
-        $get = $request->get();
-        $token = null;
-        if(isset($post['token'])){
-            $token = $post['token'];
-        }else if(isset($get['token'])){
-            $token = $get['token'];
-        }
-        $token = $this->loadToken($token);
-        if ($token === null) {
-            return null;
-        }
-        if ($this->auth) {
-            $identity = call_user_func($this->auth, $token, get_class($this));
-        } else {
-            $identity = $user->loginByAccessToken($token, get_class($this));
-        }
 
-        return $identity;
-    }
     /**
      * @inheritdoc
      */
@@ -99,17 +79,17 @@ class JwtHttpBearerAuth extends AuthMethod
             if ($token === null) {
                 return null;
             }
+
             if ($this->auth) {
                 $identity = call_user_func($this->auth, $token, get_class($this));
             } else {
-                
                 $identity = $user->loginByAccessToken($token, get_class($this));
             }
 
             return $identity;
         }
-        return $this->urlAuthenticate($user, $request, $response);
-       // return null;
+
+        return null;
     }
 
     /**

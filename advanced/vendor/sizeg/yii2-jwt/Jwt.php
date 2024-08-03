@@ -4,6 +4,7 @@ namespace sizeg\jwt;
 
 use Lcobucci\JWT\Builder;
 use Lcobucci\JWT\Claim\Factory as ClaimFactory;
+use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Parser;
 use Lcobucci\JWT\Parsing\Decoder;
 use Lcobucci\JWT\Parsing\Encoder;
@@ -120,7 +121,7 @@ class Jwt extends Component
     public function loadToken($token, $validate = true, $verify = true)
     {
         try {
-            $token = $this->getParser()->parse((string) $token);
+            $token = $this->getParser()->parse((string)$token);
         } catch (\RuntimeException $e) {
             Yii::warning('Invalid JWT provided: ' . $e->getMessage(), 'jwt');
             return null;
@@ -163,9 +164,8 @@ class Jwt extends Component
      */
     public function verifyToken(Token $token)
     {
-        $alg = $token->getHeader('alg');
-
-        if (empty($this->supportedAlgs[$alg])) {
+        $alg = $token->headers()->get('alg');
+        if (!$alg || empty($this->supportedAlgs[$alg])) {
             throw new InvalidArgumentException('Algorithm not supported');
         }
 
@@ -173,5 +173,40 @@ class Jwt extends Component
         $signer = Yii::createObject($this->supportedAlgs[$alg]);
 
         return $token->verify($signer, $this->key);
+    }
+
+    /**
+     * @param Signer $signer
+     * @param Key $key
+     * @param Encoder|null $encoder
+     * @param Decoder|null $decoder
+     * @return Configuration
+     */
+    public function getConfigurationForSymmetricSigner(Signer $signer, Key $key, Encoder $encoder = null, Decoder $decoder = null)
+    {
+        return Configuration::forSymmetricSigner($signer, $key, $encoder, $decoder);
+    }
+
+    /**
+     * @param Signer $signer
+     * @param Key $signingKey
+     * @param Key $verificationKey
+     * @param Encoder|null $encoder
+     * @param Decoder|null $decoder
+     * @return Configuration
+     */
+    public function getConfigurationForAsymmetricSigner(Signer $signer, Key $signingKey, Key $verificationKey, Encoder $encoder = null, Decoder $decoder = null)
+    {
+        return Configuration::forAsymmetricSigner($signer, $signingKey, $verificationKey, $encoder, $decoder);
+    }
+
+    /**
+     * @param Encoder|null $encoder
+     * @param Decoder|null $decoder
+     * @return Configuration
+     */
+    public function getConfigurationForUnsecuredSigner(Encoder $encoder = null, Decoder $decoder = null)
+    {
+        return Configuration::forUnsecuredSigner($encoder, $decoder);
     }
 }

@@ -1,8 +1,8 @@
 <?php
 /**
- * @link http://www.yiiframework.com/
+ * @link https://www.yiiframework.com/
  * @copyright Copyright (c) 2008 Yii Software LLC
- * @license http://www.yiiframework.com/license/
+ * @license https://www.yiiframework.com/license/
  */
 
 namespace yii\db;
@@ -24,11 +24,12 @@ use yii\base\InvalidConfigException;
  *
  * @author Dmytro Naumenko <d.naumenko.a@gmail.com>
  * @since 2.0.14
+ * @phpcs:disable Squiz.NamingConventions.ValidVariableName.PrivateNoUnderscore
  */
 class ArrayExpression implements ExpressionInterface, \ArrayAccess, \Countable, \IteratorAggregate
 {
     /**
-     * @var null|string the type of the array elements. Defaults to `null` which means the type is
+     * @var string|null the type of the array elements. Defaults to `null` which means the type is
      * not explicitly specified.
      *
      * Note that in case when type is not specified explicitly and DBMS can not guess it from the context,
@@ -68,7 +69,7 @@ class ArrayExpression implements ExpressionInterface, \ArrayAccess, \Countable, 
     }
 
     /**
-     * @return null|string
+     * @return string|null
      */
     public function getType()
     {

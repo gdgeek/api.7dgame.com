@@ -8,13 +8,16 @@ use MathPHP\Statistics\Distance;
 
 /**
  * 1 x n Vector
+ *
+ * @implements \Iterator<int|float>
+ * @implements \ArrayAccess<int, int|float>
  */
 class Vector implements \Countable, \Iterator, \ArrayAccess, \JsonSerializable
 {
     /** @var int Number of elements */
     private $n;
 
-    /** @var array of numbers */
+    /** @var array<int|float> of numbers */
     private $A;
 
     /** @var int Iterator position */
@@ -23,7 +26,7 @@ class Vector implements \Countable, \Iterator, \ArrayAccess, \JsonSerializable
     /**
      * Constructor
      *
-     * @param array $A 1 x n vector
+     * @param array<int|float> $A 1 x n vector
      *
      * @throws Exception\BadDataException if the Vector is empty
      */
@@ -50,7 +53,7 @@ class Vector implements \Countable, \Iterator, \ArrayAccess, \JsonSerializable
     /**
      * Get matrix
      *
-     * @return array
+     * @return array<int|float>
      */
     public function getVector(): array
     {
@@ -72,7 +75,7 @@ class Vector implements \Countable, \Iterator, \ArrayAccess, \JsonSerializable
      *
      * @param  int $i index
      *
-     * @return number
+     * @return int|float
      *
      * @throws Exception\VectorException
      */
@@ -146,7 +149,7 @@ class Vector implements \Countable, \Iterator, \ArrayAccess, \JsonSerializable
     /**
      * Sum of all elements
      *
-     * @return number
+     * @return float|int
      */
     public function sum()
     {
@@ -157,7 +160,7 @@ class Vector implements \Countable, \Iterator, \ArrayAccess, \JsonSerializable
      * Vector length (magnitude)
      * Same as l2-norm
      *
-     * @return number
+     * @return int|float
      */
     public function length()
     {
@@ -167,7 +170,9 @@ class Vector implements \Countable, \Iterator, \ArrayAccess, \JsonSerializable
     /**
      * Max of all the elements
      *
-     * @return number
+     * @return int|float|false
+     *
+     * Note: Remove false from return value after PHP 8.0
      */
     public function max()
     {
@@ -177,7 +182,9 @@ class Vector implements \Countable, \Iterator, \ArrayAccess, \JsonSerializable
     /**
      * Min of all the elements
      *
-     * @return number
+     * @return int|float|false
+     *
+     * Note: Remove false from return value after PHP 8.0
      */
     public function min()
     {
@@ -190,7 +197,7 @@ class Vector implements \Countable, \Iterator, \ArrayAccess, \JsonSerializable
      *
      * @param Vector $B
      *
-     * @return number
+     * @return float|int
      *
      * @throws Exception\VectorException
      */
@@ -214,7 +221,7 @@ class Vector implements \Countable, \Iterator, \ArrayAccess, \JsonSerializable
      *
      * @param Vector $B
      *
-     * @return number
+     * @return float|int
      */
     public function innerProduct(Vector $B)
     {
@@ -229,7 +236,7 @@ class Vector implements \Countable, \Iterator, \ArrayAccess, \JsonSerializable
      *
      * @param Vector $B
      *
-     * @return number
+     * @return float|int
      *
      * @throws Exception\VectorException
      */
@@ -276,7 +283,7 @@ class Vector implements \Countable, \Iterator, \ArrayAccess, \JsonSerializable
      *
      * @param Vector $B
      *
-     * @return float|int
+     * @return float
      *
      * @throws Exception\BadDataException
      */
@@ -292,7 +299,7 @@ class Vector implements \Countable, \Iterator, \ArrayAccess, \JsonSerializable
      *
      * @param Vector $B
      *
-     * @return float|int The euclidean distance between the vectors
+     * @return float The euclidean distance between the vectors
      *
      * @throws Exception\BadDataException
      */
@@ -310,7 +317,7 @@ class Vector implements \Countable, \Iterator, \ArrayAccess, \JsonSerializable
      * @param Vector $B
      * @param int    $p
      *
-     * @return float|int
+     * @return float
      *
      * @throws Exception\BadDataException
      */
@@ -427,7 +434,7 @@ class Vector implements \Countable, \Iterator, \ArrayAccess, \JsonSerializable
      * Scalar multiplication (scale)
      * kA = [k * a₁, k * a₂, k * a₃ ...]
      *
-     * @param number $k Scale factor
+     * @param int|float $k Scale factor
      *
      * @return Vector
      */
@@ -440,7 +447,7 @@ class Vector implements \Countable, \Iterator, \ArrayAccess, \JsonSerializable
      * Scalar divide
      * kA = [k / a₁, k / a₂, k / a₃ ...]
      *
-     * @param number $k Scale factor
+     * @param int|float $k Scale factor
      *
      * @return Vector
      */
@@ -481,6 +488,7 @@ class Vector implements \Countable, \Iterator, \ArrayAccess, \JsonSerializable
             }
         }
 
+        /** @var NumericMatrix */
         return MatrixFactory::create($R);
     }
 
@@ -660,7 +668,7 @@ class Vector implements \Countable, \Iterator, \ArrayAccess, \JsonSerializable
      *
      * |x|₁ = ∑|xᵢ|
      *
-     * @return number
+     * @return float|int
      */
     public function l1Norm()
     {
@@ -677,7 +685,7 @@ class Vector implements \Countable, \Iterator, \ArrayAccess, \JsonSerializable
      *         ______
      * |x|₂ = √∑|xᵢ|²
      *
-     * @return number
+     * @return float
      */
     public function l2Norm()
     {
@@ -692,9 +700,9 @@ class Vector implements \Countable, \Iterator, \ArrayAccess, \JsonSerializable
      *
      * |x|p = (∑|xᵢ|ᵖ)¹/ᵖ
      *
-     * @param number $p
+     * @param int|float $p
      *
-     * @return number
+     * @return int|float
      */
     public function pNorm($p)
     {
@@ -706,7 +714,9 @@ class Vector implements \Countable, \Iterator, \ArrayAccess, \JsonSerializable
      *
      * |x|∞ = max |x|
      *
-     * @return number
+     * @return int|float|false
+     *
+     * Note: Remove false from return value after PHP 8.0
      */
     public function maxNorm()
     {
@@ -757,7 +767,7 @@ class Vector implements \Countable, \Iterator, \ArrayAccess, \JsonSerializable
 
     /**
      * @param mixed $i
-     * @return mixed
+     * @return int|float
      */
     #[\ReturnTypeWillChange]
     public function offsetGet($i)
@@ -766,8 +776,8 @@ class Vector implements \Countable, \Iterator, \ArrayAccess, \JsonSerializable
     }
 
     /**
-     * @param mixed $i
-     * @param mixed $value
+     * @param int $i
+     * @param int|float $value
      * @throws Exception\VectorException
      */
     public function offsetSet($i, $value): void
@@ -776,7 +786,7 @@ class Vector implements \Countable, \Iterator, \ArrayAccess, \JsonSerializable
     }
 
     /**
-     * @param mixed $i
+     * @param int $i
      * @throws Exception\VectorException
      */
     public function offsetUnset($i): void
@@ -789,7 +799,7 @@ class Vector implements \Countable, \Iterator, \ArrayAccess, \JsonSerializable
      **************************************************************************/
 
     /**
-     * @return array
+     * @return array<int|float>
      */
     public function jsonSerialize(): array
     {
@@ -805,18 +815,27 @@ class Vector implements \Countable, \Iterator, \ArrayAccess, \JsonSerializable
         $this->i = 0;
     }
 
+    /**
+     * @return int|float
+     */
     #[\ReturnTypeWillChange]
     public function current()
     {
         return $this->A[$this->i];
     }
 
+    /**
+     * @return int
+     */
     #[\ReturnTypeWillChange]
     public function key()
     {
         return $this->i;
     }
 
+    /**
+     * @return void
+     */
     public function next(): void
     {
         ++$this->i;

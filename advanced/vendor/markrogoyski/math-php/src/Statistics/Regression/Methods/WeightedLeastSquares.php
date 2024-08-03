@@ -44,9 +44,9 @@ trait WeightedLeastSquares
      *        _     __
      *       (x)² - x²
      *
-     * @param  array $ys y values
-     * @param  array $xs x values
-     * @param  array $ws weight values
+     * @param  array<float> $ys y values
+     * @param  array<float> $xs x values
+     * @param  array<float> $ws weight values
      * @param  int   $order
      *
      * @return NumericMatrix [[m], [b]]
@@ -57,10 +57,12 @@ trait WeightedLeastSquares
     {
         // y = Xa
         $X = MatrixFactory::vandermonde($xs, $order + 1);
+        /** @var NumericMatrix $y */
         $y = MatrixFactory::createFromColumnVector($ys);
         $W = MatrixFactory::diagonal($ws);
 
         // a = (XᵀWX)⁻¹XᵀWy
+        /** @var NumericMatrix $Xᵀ */
         $Xᵀ       = $X->transpose();
         $beta_hat = $Xᵀ->multiply($W)
                        ->multiply($X)

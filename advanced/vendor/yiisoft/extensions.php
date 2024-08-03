@@ -93,24 +93,6 @@ return array (
       '@antkaz/vue' => $vendorDir . '/antkaz/yii2-vue/src',
     ),
   ),
-  'yiisoft/yii2-bootstrap4' => 
-  array (
-    'name' => 'yiisoft/yii2-bootstrap4',
-    'version' => '2.0.10.0',
-    'alias' => 
-    array (
-      '@yii/bootstrap4' => $vendorDir . '/yiisoft/yii2-bootstrap4/src',
-    ),
-  ),
-  'sizeg/yii2-jwt' => 
-  array (
-    'name' => 'sizeg/yii2-jwt',
-    'version' => '2.0.2.0',
-    'alias' => 
-    array (
-      '@sizeg/jwt' => $vendorDir . '/sizeg/yii2-jwt',
-    ),
-  ),
   'yiisoft/yii2-bootstrap' => 
   array (
     'name' => 'yiisoft/yii2-bootstrap',
@@ -118,15 +100,6 @@ return array (
     'alias' => 
     array (
       '@yii/bootstrap' => $vendorDir . '/yiisoft/yii2-bootstrap/src',
-    ),
-  ),
-  'yiisoft/yii2-debug' => 
-  array (
-    'name' => 'yiisoft/yii2-debug',
-    'version' => '2.1.18.0',
-    'alias' => 
-    array (
-      '@yii/debug' => $vendorDir . '/yiisoft/yii2-debug/src',
     ),
   ),
   'yiisoft/yii2-swiftmailer' => 
@@ -145,6 +118,42 @@ return array (
     'alias' => 
     array (
       '@linslin/yii2/curl' => $vendorDir . '/linslin/yii2-curl',
+    ),
+  ),
+  'yidas/yii2-bower-asset' => 
+  array (
+    'name' => 'yidas/yii2-bower-asset',
+    'version' => '2.0.13.1',
+    'alias' => 
+    array (
+      '@yidas/yii2BowerAsset' => $vendorDir . '/yidas/yii2-bower-asset',
+    ),
+  ),
+  'sizeg/yii2-jwt' => 
+  array (
+    'name' => 'sizeg/yii2-jwt',
+    'version' => '3.4.9999999.9999999-dev',
+    'alias' => 
+    array (
+      '@sizeg/jwt' => $vendorDir . '/sizeg/yii2-jwt',
+    ),
+  ),
+  'yiisoft/yii2-bootstrap4' => 
+  array (
+    'name' => 'yiisoft/yii2-bootstrap4',
+    'version' => '2.0.11.0',
+    'alias' => 
+    array (
+      '@yii/bootstrap4' => $vendorDir . '/yiisoft/yii2-bootstrap4/src',
+    ),
+  ),
+  'yiisoft/yii2-debug' => 
+  array (
+    'name' => 'yiisoft/yii2-debug',
+    'version' => '2.1.25.0',
+    'alias' => 
+    array (
+      '@yii/debug' => $vendorDir . '/yiisoft/yii2-debug/src',
     ),
   ),
 );

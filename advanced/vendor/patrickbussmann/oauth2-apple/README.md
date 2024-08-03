@@ -1,9 +1,10 @@
 # Sign in with Apple ID Provider for OAuth 2.0 Client
 [![Latest Version](https://img.shields.io/github/release/patrickbussmann/oauth2-apple.svg?style=flat-square)](https://github.com/patrickbussmann/oauth2-apple/releases)
 [![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](LICENSE.md)
-[![Build Status](https://img.shields.io/travis/patrickbussmann/oauth2-apple/master.svg?style=flat-square)](https://travis-ci.org/patrickbussmann/oauth2-apple)
+[![Build Status](https://img.shields.io/travis/patrickbussmann/oauth2-apple/main.svg?style=flat-square)](https://travis-ci.org/patrickbussmann/oauth2-apple)
 [![Coverage Status](https://img.shields.io/scrutinizer/coverage/g/patrickbussmann/oauth2-apple.svg?style=flat-square)](https://scrutinizer-ci.com/g/patrickbussmann/oauth2-apple/code-structure)
 [![Quality Score](https://img.shields.io/scrutinizer/g/patrickbussmann/oauth2-apple.svg?style=flat-square)](https://scrutinizer-ci.com/g/patrickbussmann/oauth2-apple)
+[![codecov](https://codecov.io/gh/patrickbussmann/oauth2-apple/branch/main/graph/badge.svg?token=TN3ZNVHUXV)](https://codecov.io/gh/patrickbussmann/oauth2-apple)
 [![Total Downloads](https://img.shields.io/packagist/dt/patrickbussmann/oauth2-apple.svg?style=flat-square)](https://packagist.org/packages/patrickbussmann/oauth2-apple)
 
 This package provides Apple ID OAuth 2.0 support for the PHP League's [OAuth 2.0 Client](https://github.com/thephpleague/oauth2-client).
@@ -87,6 +88,34 @@ if (!isset($_POST['code'])) {
 }
 ```
 
+### Revoke Code Flow
+
+```php
+// $leeway is needed for clock skew
+Firebase\JWT\JWT::$leeway = 60;
+
+$provider = new League\OAuth2\Client\Provider\Apple([
+    'clientId'          => '{apple-client-id}',
+    'teamId'            => '{apple-team-id}', // 1A234BFK46 https://developer.apple.com/account/#/membership/ (Team ID)
+    'keyFileId'         => '{apple-key-file-id}', // 1ABC6523AA https://developer.apple.com/account/resources/authkeys/list (Key ID)
+    'keyFilePath'       => '{apple-key-file-path}', // __DIR__ . '/AuthKey_1ABC6523AA.p8' -> Download key above
+    'redirectUri'       => 'https://example.com/callback-url',
+]);
+
+$token = $token->getToken(); // Use the token of "Authorization Code Flow" which you saved somewhere for the user
+
+
+try {
+    $provider->revokeAccessToken($token /*, 'access_token' or 'refresh_token' */);
+    // Successfully revoked the token!
+
+} catch (Exception $e) {
+
+    // Failed to revoke
+    exit(':-(');
+}
+```
+
 ### Managing Scopes
 
 When creating your Apple authorization URL, you can specify the state and scopes your application may authorize.
@@ -129,7 +158,7 @@ $ ./vendor/bin/phpunit
 
 ## Contributing
 
-Please see [CONTRIBUTING](https://github.com/patrickbussmann/oauth2-apple/blob/master/CONTRIBUTING.md) for details.
+Please see [CONTRIBUTING](https://github.com/patrickbussmann/oauth2-apple/blob/main/CONTRIBUTING.md) for details.
 
 
 ## Credits
@@ -140,4 +169,4 @@ Template for this repository was the [LinkedIn](https://github.com/thephpleague/
 
 ## License
 
-The MIT License (MIT). Please see [License File](https://github.com/patrickbussmann/oauth2-apple/blob/master/LICENSE) for more information.
+The MIT License (MIT). Please see [License File](https://github.com/patrickbussmann/oauth2-apple/blob/main/LICENSE) for more information.
