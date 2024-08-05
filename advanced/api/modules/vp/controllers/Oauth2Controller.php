@@ -24,7 +24,7 @@ class Oauth2Controller extends \yii\rest\Controller{
                     'X-Pagination-Per-Page',
                 ],
             ],
-        ];
+        ];  
         return $behaviors;
     }
     public function actionClear(){
