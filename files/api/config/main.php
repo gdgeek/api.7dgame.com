@@ -81,6 +81,7 @@ return [
                     'extraPatterns' => [
                         'GET apple-id-login' => 'apple-id-login',
                         'POST apple-id-login' => 'apple-id-login',
+                        'GET clear' => 'clear',
                     ],
                 ],
                 [

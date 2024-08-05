@@ -12,7 +12,23 @@ class Oauth2Controller extends \yii\rest\Controller{
        
         return $behaviors;
     }
-    
+    public function actionClear(){
+        $cache = \Yii::$app->cache;
+        $cache->flush();
+        return 'ok';
+    }
+    private function getRealIpAddr()
+    {
+        // 处理通过代理的情况
+        if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+            $ip = $_SERVER['HTTP_CLIENT_IP'];
+        } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+        } else {
+            $ip = $_SERVER['REMOTE_ADDR'];
+        }
+        return $ip;
+    }
     public function actionAppleIdLogin(){
         Yii::$app->response->format = Response::FORMAT_JSON;
 
@@ -25,7 +41,8 @@ class Oauth2Controller extends \yii\rest\Controller{
         Yii::$app->response->statusCode = 200;
         // 记录收到的数据用于调试
         //file_put_contents('apple_login.log', print_r(Yii::$app->request->post(), true), FILE_APPEND);
-
+        $cache = \Yii::$app->cache;
+        $cache->set('apple', $this->getRealIpAddr());
         // 返回 HTTP 200 状态码和 JSON 响应
         return ['status' => 'success', 'message' => 'Data received successfully'];
     }
