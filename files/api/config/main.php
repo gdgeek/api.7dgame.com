@@ -18,19 +18,11 @@ return [
         'a1' => [
             'class' => 'api\modules\a1\Module',
         ],
-       /* 'e1' => [
-            'class' => 'api\modules\e1\Module',
-        ],*/
         'vp' => [
             'class' => 'api\modules\vp\Module',
         ],
-        /*
-        'p1' => [
-            'class' => 'api\modules\p1\Module',
-        ],*/
     ],
     'components' => [
-
         'request' => [
             'csrfParam' => '_csrf-api',
             'parsers' => [
@@ -79,6 +71,16 @@ return [
                         'GET log' => 'log',
                         'GET test' => 'test',
                         'GET token' => 'token',
+                    ],
+                ],
+                [
+
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'vp/oauth2',
+                    'pluralize' => false,
+                    'extraPatterns' => [
+                        'GET apple-id-login' => 'apple-id-login',
+                        'POST apple-id-login' => 'apple-id-login',
                     ],
                 ],
                 [
@@ -279,15 +281,7 @@ return [
                     'extraPatterns' => [
                         'GET knights' => 'knights',
                     ],
-                ],/*
-                [
-                    'class' => 'yii\rest\UrlRule',
-                    'controller' => [
-                        'p1/verse-open',
-                        'p1/verse-publish',
-                        'p1/verse-share',
-                    ],
-                ],*/
+                ],
                 
                 [
                     'class' => 'yii\rest\UrlRule',
@@ -299,16 +293,6 @@ return [
                         'a1/vp-key-value'
                     ],
                 ],
-                /*
-                [
-                    'class' => 'yii\rest\UrlRule',
-                    'controller' => 'p1/site',
-                    'extraPatterns' => [
-                        'POST login' => 'login',
-                        'GET logout' => 'logout',
-                        'GET user' => 'user',
-                    ],
-                ],*/
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/cyber-script',
