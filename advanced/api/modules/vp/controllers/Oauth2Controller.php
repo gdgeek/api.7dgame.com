@@ -61,7 +61,8 @@ class Oauth2Controller extends \yii\rest\Controller{
         $cache = \Yii::$app->cache;
         $cache->set('apple', ['ip'=>$this->getRealIpAddr(),'get'=>Yii::$app->request->get(),'post'=>Yii::$app->request->post()]);
         // 返回 HTTP 200 状态码和 JSON 响应
-        return ['status' => 'success', 'message' => 'Data received successfully'];
+        return Yii::$app->response->redirect('https://test.voxelparty.com/', 301);
+       // return ['status' => 'success', 'message' => 'Data received successfully'];
     }
     public function actionIndex(){
         $cache = \Yii::$app->cache;
