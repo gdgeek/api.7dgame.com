@@ -64,6 +64,11 @@ return [
             'showScriptName' => false,
             'rules' => [
                 [
+                    'pattern' => 'apple-app-site-association',
+                    'route' => 'site/apple-app-site-association',
+                    'suffix' => ''
+                ],
+                [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'vp/site',
                     'extraPatterns' => [
