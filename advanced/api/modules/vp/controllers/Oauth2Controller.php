@@ -16,25 +16,18 @@ class Oauth2Controller extends \yii\rest\Controller{
     public function actionAppleIdLogin(){
         Yii::$app->response->format = Response::FORMAT_JSON;
 
-        if (Yii::$app->request->isPost) {
-            $code = Yii::$app->request->post('code');
-            $idToken = Yii::$app->request->post('id_token');
-            $user = Yii::$app->request->post('user');
+        // 获取 POST 数据
+        $code = Yii::$app->request->post('code');
+        $idToken = Yii::$app->request->post('id_token');
+        $user = Yii::$app->request->post('user');
 
-            // 记录收到的数据，便于调试
-          //  Yii::info(Yii::$app->request->post(), 'apple_login');
+        // 确保返回 HTTP 200 状态码
+        Yii::$app->response->statusCode = 200;
+        // 记录收到的数据用于调试
+        //file_put_contents('apple_login.log', print_r(Yii::$app->request->post(), true), FILE_APPEND);
 
-            $cache = \Yii::$app->cache;
-            $cache->set('apple', Yii::$app->request->post());
-            $cache->set('apple_code', "$code");
-            // 返回 HTTP 200 状态码
-            Yii::$app->response->statusCode = 200;
-            return ['status' => 'success', 'message' => 'Data received successfully'];
-        }
-
-        // 处理非 POST 请求
-        Yii::$app->response->statusCode = 405;
-        return ['status' => 'error', 'message' => 'Method Not Allowed'];
+        // 返回 HTTP 200 状态码和 JSON 响应
+        return ['status' => 'success', 'message' => 'Data received successfully'];
     }
     public function actionIndex(){
         $cache = \Yii::$app->cache;
