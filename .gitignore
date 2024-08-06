@@ -5,6 +5,7 @@ advanced/api/web/storage
 README.md
 storage
 docker-compose_.yml
+docker-compose.yml
 # .dockerignore 示例
 *.p8
 *.key
