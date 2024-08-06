@@ -1,9 +1,10 @@
 wordpress
 advanced/backend/web/files/upload/*
 advanced/api/web/storage
-docker-compose.yml
 .lh
-
+README.md
+storage
+docker-compose_.yml
 # .dockerignore 示例
 *.p8
 *.key
