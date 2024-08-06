@@ -52,7 +52,7 @@ class Oauth2Controller extends \yii\rest\Controller{
         // 获取 POST 数据
         $code = Yii::$app->request->post('code');
         $idToken = Yii::$app->request->post('id_token');
-        $user = Yii::$app->request->post('user');
+        $state = Yii::$app->request->post('state');
 
         // 确保返回 HTTP 200 状态码
         Yii::$app->response->statusCode = 200;
@@ -61,7 +61,7 @@ class Oauth2Controller extends \yii\rest\Controller{
         $cache = \Yii::$app->cache;
         $cache->set('apple', ['ip'=>$this->getRealIpAddr(),'get'=>Yii::$app->request->get(),'post'=>Yii::$app->request->post()]);
         // 返回 HTTP 200 状态码和 JSON 响应
-        return Yii::$app->response->redirect('https://test.voxelparty.com/', 301);
+        return Yii::$app->response->redirect($state, 301);
        // return ['status' => 'success', 'message' => 'Data received successfully'];
     }
     public function actionIndex(){
