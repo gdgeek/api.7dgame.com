@@ -5,8 +5,6 @@ return [
     'aliases' => [
         '@bower' => '@vendor/yidas/yii2-bower-asset/bower',
         '@npm' => '@vendor/npm-asset',
-       // '@mrpp' => 'https://mrpp.com',
-        //'@wfront'  => 'https://mrpp.com/#'
     ],
     'vendorPath' => dirname(dirname(__DIR__)) . '/vendor',
     'timeZone' => 'Asia/Shanghai',
