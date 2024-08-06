@@ -117,7 +117,7 @@ class Oauth2Controller extends \yii\rest\Controller{
                 // We got an access token, let's now get the user's details
                 $user = $provider->getResourceOwner($token);
 
-                throw new \Exception('Hello %s!', $user->getFirstName());
+               // throw new \Exception('Hello %s!', $user->getFirstName());
                 // Use these details to create a new profile
               // printf('Hello %s!', $user->getFirstName());
 
@@ -126,9 +126,9 @@ class Oauth2Controller extends \yii\rest\Controller{
                 // Failed to get user details
                // exit(':-(');
             }
-            throw new \Exception($token->getToken());
+            
             // Use this to interact with an API on the users behalf
-            //echo $token->getToken();
+            return  $token->getToken();
         }
        
     }
