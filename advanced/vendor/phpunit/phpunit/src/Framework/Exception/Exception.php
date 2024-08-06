@@ -11,7 +11,6 @@ namespace PHPUnit\Framework;
 
 use function array_keys;
 use function get_object_vars;
-use PHPUnit\Util\Filter;
 use RuntimeException;
 use Throwable;
 
@@ -35,16 +34,18 @@ use Throwable;
  *
  * @see http://fabien.potencier.org/article/9/php-serialization-stack-traces-and-exceptions
  *
+ * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
+ *
  * @internal This class is not covered by the backward compatibility promise for PHPUnit
  */
 class Exception extends RuntimeException implements \PHPUnit\Exception
 {
     /**
-     * @var array
+     * @var list<array{file: string, line: int, function: string}>
      */
-    protected $serializableTrace;
+    protected array $serializableTrace;
 
-    public function __construct($message = '', $code = 0, ?Throwable $previous = null)
+    public function __construct(string $message = '', int $code = 0, ?Throwable $previous = null)
     {
         parent::__construct($message, $code, $previous);
 
@@ -55,17 +56,6 @@ class Exception extends RuntimeException implements \PHPUnit\Exception
         }
     }
 
-    public function __toString(): string
-    {
-        $string = TestFailure::exceptionToString($this);
-
-        if ($trace = Filter::getFilteredStacktrace($this)) {
-            $string .= "\n" . $trace;
-        }
-
-        return $string;
-    }
-
     public function __sleep(): array
     {
         return array_keys(get_object_vars($this));
@@ -73,6 +63,8 @@ class Exception extends RuntimeException implements \PHPUnit\Exception
 
     /**
      * Returns the serializable trace (without 'args').
+     *
+     * @return list<array{file: string, line: int, function: string}>
      */
     public function getSerializableTrace(): array
     {

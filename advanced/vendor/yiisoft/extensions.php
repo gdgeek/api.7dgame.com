@@ -129,13 +129,13 @@ return array (
       '@yii/debug' => $vendorDir . '/yiisoft/yii2-debug/src',
     ),
   ),
-  'sizeg/yii2-jwt' => 
+  'bizley/jwt' => 
   array (
-    'name' => 'sizeg/yii2-jwt',
-    'version' => '4.0.0.0-beta',
+    'name' => 'bizley/jwt',
+    'version' => '4.1.0.0',
     'alias' => 
     array (
-      '@sizeg/jwt' => $vendorDir . '/sizeg/yii2-jwt/src',
+      '@bizley/jwt' => $vendorDir . '/bizley/jwt/src',
     ),
   ),
 );

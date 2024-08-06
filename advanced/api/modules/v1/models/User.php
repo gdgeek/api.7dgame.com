@@ -67,22 +67,24 @@ class User extends ActiveRecord implements IdentityInterface
 
     public function generateAccessToken()
     {
-        $jwt = \Yii::$app->jwt;
-        $signer = $jwt->getSigner('HS256');
-        $key = $jwt->getKey();
-        $time = time();
-
-        $jwt_parameter = \Yii::$app->jwt_parameter;
-        $token = $jwt->getBuilder()
-            ->issuedBy($jwt_parameter->issuer) // Configures the issuer (iss claim)
-            ->permittedFor($jwt_parameter->audience) // Configures the audience (aud claim)
-            ->identifiedBy($jwt_parameter->id, true) // Configures the id (jti claim), replicating as a header item
-            ->issuedAt($time) // Configures the time that the token was issue (iat claim)
-            ->expiresAt($time + 21600) // Configures the expiration time of the token (exp claim)
+       // $jwt = \Yii::$app->jwt;
+        $now = new \DateTimeImmutable('now', new \DateTimeZone(\Yii::$app->timeZone));
+       
+      //  $jwt_parameter = \Yii::$app->jwt_parameter;
+        $token = \Yii::$app->jwt->getBuilder()
+           // ->issuedBy($jwt_parameter->issuer) // Configures the issuer (iss claim)
+          //  ->permittedFor($jwt_parameter->audience) // Configures the audience (aud claim)
+           // ->identifiedBy($jwt_parameter->id, true) // Configures the id (jti claim), replicating as a header item
+            ->issuedAt($now) // Configures the time that the token was issue (iat claim)
+            ->canOnlyBeUsedAfter($now)
+            ->expiresAt($now->modify('+1 hour')) // Configures the expiration time of the token (exp claim)
             ->withClaim('uid', $this->id) // Configures a new claim, called "uid"
-            ->getToken($signer, $key); // Retrieves the generated token
+            ->getToken(
+                \Yii::$app->jwt->getConfiguration()->signer(),
+                \Yii::$app->jwt->getConfiguration()->signingKey()
+            ); // Retrieves the generated token
 
-        return (string) $token;
+        return (string) $token->toString();
     }
     public static function tableName()
     {

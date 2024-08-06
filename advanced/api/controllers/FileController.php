@@ -8,7 +8,7 @@ use yii\data\ActiveDataProvider;
 
 use yii\filters\auth\CompositeAuth;
 
-use sizeg\jwt\JwtHttpBearerAuth;
+use bizley\jwt\JwtHttpBearerAuth;
 
 use common\models\Project;
 use common\models\Programme;

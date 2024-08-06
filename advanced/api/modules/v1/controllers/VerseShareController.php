@@ -6,7 +6,7 @@ use api\modules\v1\models\VerseSearch;
 use api\modules\v1\models\VerseShare;
 use api\modules\v1\models\VerseShareSearch;
 use mdm\admin\components\AccessControl;
-use sizeg\jwt\JwtHttpBearerAuth;
+use bizley\jwt\JwtHttpBearerAuth;
 use Yii;
 use yii\base\Exception;
 use yii\filters\auth\CompositeAuth;

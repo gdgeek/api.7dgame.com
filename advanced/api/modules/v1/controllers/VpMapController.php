@@ -13,7 +13,7 @@ use yii\filters\auth\CompositeAuth;
 use mdm\admin\components\AccessControl;
 
 use api\modules\v1\models\SpaceSearch;
-use sizeg\jwt\JwtHttpBearerAuth;
+use bizley\jwt\JwtHttpBearerAuth;
 class VpMapController extends ActiveController
 {
 

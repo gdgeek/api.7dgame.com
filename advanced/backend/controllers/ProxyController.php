@@ -9,8 +9,8 @@ use yii\helpers\Url;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
-use sizeg\jwt\Jwt;
-use sizeg\jwt\JwtHttpBearerAuth;
+use bizley\jwt\Jwt;
+use bizley\jwt\JwtHttpBearerAuth;
 use yii\filters\auth\CompositeAuth;
 /**
  * ProxyController implements the CRUD actions for Polygen model.

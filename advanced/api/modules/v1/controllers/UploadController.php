@@ -4,7 +4,7 @@ namespace api\modules\v1\controllers;
 
 use api\modules\v1\models\UserCreation;
 use mdm\admin\components\AccessControl;
-use sizeg\jwt\JwtHttpBearerAuth;
+use bizley\jwt\JwtHttpBearerAuth;
 use yii\base\Exception;
 use yii\filters\auth\CompositeAuth;
 use yii\helpers\ArrayHelper;

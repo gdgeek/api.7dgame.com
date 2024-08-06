@@ -3,7 +3,7 @@ namespace api\controllers;
 
 use api\modules\v1\models\ResourceSearch;
 use mdm\admin\components\AccessControl;
-use sizeg\jwt\JwtHttpBearerAuth;
+use bizley\jwt\JwtHttpBearerAuth;
 use Yii;
 use yii\filters\auth\CompositeAuth;
 use yii\helpers\HtmlPurifier;

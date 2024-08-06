@@ -6,7 +6,7 @@ use api\common\models\BindEmailForm;
 use api\common\models\ResetPasswordForm;
 use api\modules\v1\models\User;
 use mdm\admin\components\AccessControl;
-use sizeg\jwt\JwtHttpBearerAuth;
+use bizley\jwt\JwtHttpBearerAuth;
 use Yii;
 use yii\base\Exception;
 use yii\filters\auth\CompositeAuth;

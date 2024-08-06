@@ -82,6 +82,7 @@ class Oauth2Controller extends \yii\rest\Controller{
             'keyFileId'         => getenv('APPLE_AUTH_KEY_ID') , // 1ABC6523AA https://developer.apple.com/account/resources/authkeys/list (Key ID)
             'keyFilePath'       => getenv('APPLE_AUTH_KEY'), // __DIR__ . '/AuthKey_1ABC6523AA.p8' -> Download key above
             'redirectUri'       => getenv('APPLE_REDIRECT_URI'),
+            'scope'             => "email name",
         ]);
         if (!isset($_POST['code'])) {
 

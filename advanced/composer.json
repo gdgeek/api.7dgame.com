@@ -33,14 +33,15 @@
     "2amigos/qrcode-library": "~1.0",
     "antkaz/yii2-vue": "^1.0",
     "yiisoft/yii2-bootstrap4": "^2.0",
-    "sizeg/yii2-jwt": ">=2.0",
     "w7corp/easywechat": "6.0.0",
     "charlesportwoodii/yii2-psr7-bridge": "dev-master",
     "linslin/yii2-curl": "*",
     "markrogoyski/math-php": "2.*",
     "tencentcloud/sts": "^3.0",
     "league/oauth2-client": "^2.7",
-    "patrickbussmann/oauth2-apple": "*"
+    "patrickbussmann/oauth2-apple": "*",
+    "bizley/jwt": "^4.0",
+    "lcobucci/jwt": "^5.0"
   },
   "antkaz/yii2-vue": "^1.0",
   "2amigos/yii2-file-upload-widget": "~1.0",

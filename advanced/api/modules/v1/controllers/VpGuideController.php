@@ -12,7 +12,7 @@ use yii\rest\ActiveController;
 use mdm\admin\components\AccessControl;
 
 use api\modules\v1\models\SpaceSearch;
-use sizeg\jwt\JwtHttpBearerAuth;
+use bizley\jwt\JwtHttpBearerAuth;
 class VpGuideController extends ActiveController
 {
 

@@ -115,7 +115,12 @@ class BaseHtml
      */
     public static function encode($content, $doubleEncode = true)
     {
-        return htmlspecialchars((string)$content, ENT_QUOTES | ENT_SUBSTITUTE, Yii::$app ? Yii::$app->charset : 'UTF-8', $doubleEncode);
+        if (is_array($content)) {
+            $string_version = implode(',', $content);
+        } else {
+            $string_version = (string)$content;
+        }
+        return htmlspecialchars($string_version, ENT_QUOTES | ENT_SUBSTITUTE, Yii::$app ? Yii::$app->charset : 'UTF-8', $doubleEncode);
     }
 
     /**
