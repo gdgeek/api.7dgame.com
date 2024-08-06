@@ -10,55 +10,22 @@
 namespace PHPUnit\Framework;
 
 /**
- * @immutable
- *
- * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
- *
  * @internal This class is not covered by the backward compatibility promise for PHPUnit
  */
-final class PhptAssertionFailedError extends AssertionFailedError
+final class PHPTAssertionFailedError extends SyntheticError
 {
-    private readonly string $syntheticFile;
-    private readonly int $syntheticLine;
-
     /**
-     * @var list<array{file: string, line: int, function: string, type: string}>
+     * @var string
      */
-    private readonly array $syntheticTrace;
-    private readonly string $diff;
+    private $diff;
 
-    /**
-     * @param list<array{file: string, line: int, function: string, type: string}> $trace
-     */
     public function __construct(string $message, int $code, string $file, int $line, array $trace, string $diff)
     {
-        parent::__construct($message, $code);
-
-        $this->syntheticFile  = $file;
-        $this->syntheticLine  = $line;
-        $this->syntheticTrace = $trace;
-        $this->diff           = $diff;
+        parent::__construct($message, $code, $file, $line, $trace);
+        $this->diff = $diff;
     }
 
-    public function syntheticFile(): string
-    {
-        return $this->syntheticFile;
-    }
-
-    public function syntheticLine(): int
-    {
-        return $this->syntheticLine;
-    }
-
-    /**
-     * @return list<array{file: string, line: int, function: string, type: string}>
-     */
-    public function syntheticTrace(): array
-    {
-        return $this->syntheticTrace;
-    }
-
-    public function diff(): string
+    public function getDiff(): string
     {
         return $this->diff;
     }

@@ -111,15 +111,6 @@ return array (
       '@yidas/yii2BowerAsset' => $vendorDir . '/yidas/yii2-bower-asset',
     ),
   ),
-  'sizeg/yii2-jwt' => 
-  array (
-    'name' => 'sizeg/yii2-jwt',
-    'version' => '3.4.9999999.9999999-dev',
-    'alias' => 
-    array (
-      '@sizeg/jwt' => $vendorDir . '/sizeg/yii2-jwt',
-    ),
-  ),
   'yiisoft/yii2-bootstrap4' => 
   array (
     'name' => 'yiisoft/yii2-bootstrap4',
@@ -136,6 +127,15 @@ return array (
     'alias' => 
     array (
       '@yii/debug' => $vendorDir . '/yiisoft/yii2-debug/src',
+    ),
+  ),
+  'sizeg/yii2-jwt' => 
+  array (
+    'name' => 'sizeg/yii2-jwt',
+    'version' => '4.0.0.0-beta',
+    'alias' => 
+    array (
+      '@sizeg/jwt' => $vendorDir . '/sizeg/yii2-jwt/src',
     ),
   ),
 );

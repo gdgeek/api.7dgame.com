@@ -14,7 +14,6 @@ use const PHP_MINOR_VERSION;
 use function array_keys;
 use function array_reverse;
 use function array_shift;
-use function assert;
 use function defined;
 use function get_defined_constants;
 use function get_included_files;
@@ -26,21 +25,19 @@ use function is_scalar;
 use function preg_match;
 use function serialize;
 use function sprintf;
-use function str_ends_with;
-use function str_starts_with;
+use function strpos;
 use function strtr;
+use function substr;
 use function var_export;
 use Closure;
 
 /**
- * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
- *
  * @internal This class is not covered by the backward compatibility promise for PHPUnit
  */
-final readonly class GlobalState
+final class GlobalState
 {
     /**
-     * @var list<string>
+     * @var string[]
      */
     private const SUPER_GLOBAL_ARRAYS = [
         '_ENV',
@@ -53,7 +50,7 @@ final readonly class GlobalState
     ];
 
     /**
-     * @var array<string, array<string, true>>
+     * @psalm-var array<string, array<string, true>>
      */
     private const DEPRECATED_INI_SETTINGS = [
         '7.3' => [
@@ -134,7 +131,7 @@ final readonly class GlobalState
     }
 
     /**
-     * @param list<string> $files
+     * @param string[] $files
      *
      * @throws Exception
      */
@@ -145,19 +142,15 @@ final readonly class GlobalState
         $result      = '';
 
         if (defined('__PHPUNIT_PHAR__')) {
-            // @codeCoverageIgnoreStart
             $prefix = 'phar://' . __PHPUNIT_PHAR__ . '/';
-            // @codeCoverageIgnoreEnd
         }
 
         // Do not process bootstrap script
         array_shift($files);
 
         // If bootstrap script was a Composer bin proxy, skip the second entry as well
-        if (str_ends_with(strtr($files[0], '\\', '/'), '/phpunit/phpunit/phpunit')) {
-            // @codeCoverageIgnoreStart
+        if (substr(strtr($files[0], '\\', '/'), -24) === '/phpunit/phpunit/phpunit') {
             array_shift($files);
-            // @codeCoverageIgnoreEnd
         }
 
         foreach (array_reverse($files) as $file) {
@@ -166,7 +159,7 @@ final readonly class GlobalState
                 continue;
             }
 
-            if ($prefix !== false && str_starts_with($file, $prefix)) {
+            if ($prefix !== false && strpos($file, $prefix) === 0) {
                 continue;
             }
 
@@ -187,11 +180,7 @@ final readonly class GlobalState
     {
         $result = '';
 
-        $iniSettings = ini_get_all(null, false);
-
-        assert($iniSettings !== false);
-
-        foreach ($iniSettings as $key => $value) {
+        foreach (ini_get_all(null, false) as $key => $value) {
             if (self::isIniSettingDeprecated($key)) {
                 continue;
             }
@@ -262,7 +251,7 @@ final readonly class GlobalState
         return $result;
     }
 
-    private static function exportVariable(mixed $variable): string
+    private static function exportVariable($variable): string
     {
         if (is_scalar($variable) || $variable === null ||
             (is_array($variable) && self::arrayOnlyContainsScalars($variable))) {
@@ -272,9 +261,6 @@ final readonly class GlobalState
         return 'unserialize(' . var_export(serialize($variable), true) . ')';
     }
 
-    /**
-     * @param array<mixed> $array
-     */
     private static function arrayOnlyContainsScalars(array $array): bool
     {
         $result = true;
