@@ -117,35 +117,20 @@ class Oauth2Controller extends \yii\rest\Controller{
                 // We got an access token, let's now get the user's details
                 $user = $provider->getResourceOwner($token);
 
+                throw new \Exception('Hello %s!', $user->getFirstName());
                 // Use these details to create a new profile
-                printf('Hello %s!', $user->getFirstName());
+              // printf('Hello %s!', $user->getFirstName());
 
             } catch (Exception $e) {
-
+                throw new \Exception(':-(');
                 // Failed to get user details
-                exit(':-(');
+               // exit(':-(');
             }
-
+            throw new \Exception($token->getToken());
             // Use this to interact with an API on the users behalf
-            echo $token->getToken();
+            //echo $token->getToken();
         }
-        /*
-        Yii::$app->response->format = Response::FORMAT_JSON;
-
-        // 获取 POST 数据
-        $code = Yii::$app->request->post('code');
-        $idToken = Yii::$app->request->post('id_token');
-        $state = Yii::$app->request->post('state');
-
-        // 确保返回 HTTP 200 状态码
-        Yii::$app->response->statusCode = 200;
-        // 记录收到的数据用于调试
-        //file_put_contents('apple_login.log', print_r(Yii::$app->request->post(), true), FILE_APPEND);
-        $cache = \Yii::$app->cache;
-        $cache->set('apple', ['ip'=>$this->getRealIpAddr(),'get'=>Yii::$app->request->get(),'post'=>Yii::$app->request->post()]);
-        // 返回 HTTP 200 状态码和 JSON 响应
-        return Yii::$app->response->redirect($state, 301);*/
-       // return ['status' => 'success', 'message' => 'Data received successfully'];
+       
     }
     public function actionIndex(){
         $cache = \Yii::$app->cache;
