@@ -128,7 +128,11 @@ class Oauth2Controller extends \yii\rest\Controller{
             }
             
             // Use this to interact with an API on the users behalf
-            return  $token->getToken();
+            return  ["token"=>$token->getToken(),
+            "refreshToken"=>$token->getRefreshToken(),
+            "Expired in"=> $token->getExpires(),
+            "expires"=>$token->getExpires? 'expired' : 'not expired',
+            ];
         }
        
     }
