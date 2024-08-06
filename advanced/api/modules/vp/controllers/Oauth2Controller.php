@@ -27,6 +27,19 @@ class Oauth2Controller extends \yii\rest\Controller{
         ];  
         return $behaviors;
     }
+    public function actionTest(){
+
+        \Firebase\JWT\JWT::$leeway = 60;
+        $provider = new \League\OAuth2\Client\Provider\Apple([
+            'clientId'          => 'com.voxelparty.www',
+            'teamId'            => 'PK435YWZ25', // 1A234BFK46 https://developer.apple.com/account/#/membership/ (Team ID)
+            'keyFileId'         => 'Q3R52SBK3X', // 1ABC6523AA https://developer.apple.com/account/resources/authkeys/list (Key ID)
+            'keyFilePath'       => '{apple-key-file-path}', // __DIR__ . '/AuthKey_1ABC6523AA.p8' -> Download key above
+            'redirectUri'       => 'https://example.com/callback-url',
+        ]);
+        
+        return Yii::$app->basePath;
+    }
     public function actionClear(){
         $cache = \Yii::$app->cache;
         $cache->flush();
@@ -44,6 +57,9 @@ class Oauth2Controller extends \yii\rest\Controller{
         }
         return $ip;
     }
+    
+
+
     //https://appleid.apple.com/auth/authorize?client_id=com.voxelparty.www&redirect_uri=https%3A%2F%2Fapi.voxelparty.com%2Fvp%2Foauth2%2Fapple-id-login&response_type=code%20id_token&state=your-state&scope=name%20email&response_mode=web_message&frame_id=4de2e626-da69-4b09-a8fd-54a9a710def1&m=12&v=1.5.5
     //https://appleid.apple.com/auth/authorize?scope=email&state=a9583c14408af68ac05cbfed3a8274ef&response_type=code&approval_prompt=auto&redirect_urihttps%3A%2F%2Fapi.voxelparty.com%2Fvp%2Foauth2%2Fapple-id-login&client_id=com.voxelparty.www&response_mode=form_post
     public function actionAppleIdLogin(){
