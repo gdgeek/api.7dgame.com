@@ -62,7 +62,8 @@ class Oauth2Controller extends \yii\rest\Controller{
     //https://appleid.apple.com/auth/authorize?client_id=com.voxelparty.www&redirect_uri=https%3A%2F%2Fapi.voxelparty.com%2Fvp%2Foauth2%2Fapple-id-login&response_type=code%20id_token&state=your-state&scope=name%20email&response_mode=web_message&frame_id=4de2e626-da69-4b09-a8fd-54a9a710def1&m=12&v=1.5.5
     //https://appleid.apple.com/auth/authorize?scope=email&state=a9583c14408af68ac05cbfed3a8274ef&response_type=code&approval_prompt=auto&redirect_urihttps%3A%2F%2Fapi.voxelparty.com%2Fvp%2Foauth2%2Fapple-id-login&client_id=com.voxelparty.www&response_mode=form_post
     public function actionAppleIdLogin(){
-
+        $cache = \Yii::$app->cache;
+        $cache->set('apple', ['ip'=>$this->getRealIpAddr(),'get'=>Yii::$app->request->get(),'post'=>Yii::$app->request->post()]);
 
         $session = Yii::$app->session;
 
@@ -92,7 +93,8 @@ class Oauth2Controller extends \yii\rest\Controller{
         } elseif (empty($_POST['state']) || ($_POST['state'] !== $session['oauth2state'])) {
 
             unset($session['oauth2state']);
-            exit('Invalid state');
+
+            exit($_POST['state'] . ':' . $session['oauth2state']);
 
         } else {
 
