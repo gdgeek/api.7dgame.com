@@ -30,18 +30,20 @@ class Oauth2Controller extends \yii\rest\Controller{
     }
     public function actionTest(){
       
-        $session = Yii::$app->session;
-
-        // 检查会话是否已经启动
-        if (!$session->isActive) {
-            $session->open();
-        }
-        return 1;
-
+        \Firebase\JWT\JWT::$leeway = 60;
+        
+        $provider = new \League\OAuth2\Client\Provider\Apple([
+            'clientId'          => getenv('APPLE_CLIENT_ID'), // com.voxelparty.www
+            'teamId'            => getenv('APPLE_AUTH_TEAM_ID') , // 1A234BFK46 https://developer.apple.com/account/#/membership/ (Team ID)
+            'keyFileId'         => getenv('APPLE_AUTH_KEY_ID') , // 1ABC6523AA https://developer.apple.com/account/resources/authkeys/list (Key ID)
+            'keyFilePath'       => getenv('APPLE_AUTH_KEY'), // __DIR__ . '/AuthKey_1ABC6523AA.p8' -> Download key above
+            'redirectUri'       => getenv('APPLE_REDIRECT_URI'),
+        ]);
+        $token = $provider->getAccessToken('authorization_code', [
+            'code' => 'c5ee72c7b64ce40c0b71efabb26a20c9c.0.rryvq.92i6mLsmTmulrADiP-FiNg'
+        ]);
     }
     public function actionClear(){
-        $cache = \Yii::$app->cache;
-        $cache->flush();
         return 'ok';
     }
     private function getRealIpAddr()
@@ -103,7 +105,10 @@ class Oauth2Controller extends \yii\rest\Controller{
             $token = $provider->getAccessToken('authorization_code', [
                 'code' => $_POST['code']
             ]);
-
+/*
+<state>d7b9f5a80202edc6db5cfbf41e8362ce</state>
+<code>c5ee72c7b64ce40c0b71efabb26a20c9c.0.rryvq.92i6mLsmTmulrADiP-FiNg</code>
+ */
             // Optional: Now you have a token you can look up a users profile data
             // Important: The most details are only visible in the very first login!
             // In the second and third and ... ones you'll only get the identifier of the user!
