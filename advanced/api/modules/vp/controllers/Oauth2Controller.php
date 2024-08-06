@@ -114,9 +114,9 @@ class Oauth2Controller extends \yii\rest\Controller{
         $provider = new \League\OAuth2\Client\Provider\Apple([
             'clientId'          => getenv('APPLE_CLIENT_ID'), // com.voxelparty.www
             'teamId'            => getenv('APPLE_AUTH_TEAM_ID') , // 1A234BFK46 https://developer.apple.com/account/#/membership/ (Team ID)
-            'keyFileId'         => getenv('APPLE_AUTH_KEY_IDs') , // 1ABC6523AA https://developer.apple.com/account/resources/authkeys/list (Key ID)
+            'keyFileId'         => getenv('APPLE_AUTH_KEY_ID') , // 1ABC6523AA https://developer.apple.com/account/resources/authkeys/list (Key ID)
             'keyFilePath'       => getenv('APPLE_AUTH_KEY'), // __DIR__ . '/AuthKey_1ABC6523AA.p8' -> Download key above
-            'redirectUri'       => $redirectUri,
+            'redirectUri'       => getenv('APPLE_REDIRECT_URI'),
         ]);
         if (!isset($_POST['code'])) {
 
