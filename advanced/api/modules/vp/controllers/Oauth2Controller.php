@@ -108,7 +108,9 @@ class Oauth2Controller extends \yii\rest\Controller{
 /*
 <state>d7b9f5a80202edc6db5cfbf41e8362ce</state>
 <code>c5ee72c7b64ce40c0b71efabb26a20c9c.0.rryvq.92i6mLsmTmulrADiP-FiNg</code>
- */
+ */     
+
+ 
             // Optional: Now you have a token you can look up a users profile data
             // Important: The most details are only visible in the very first login!
             // In the second and third and ... ones you'll only get the identifier of the user!
@@ -116,7 +118,12 @@ class Oauth2Controller extends \yii\rest\Controller{
 
                 // We got an access token, let's now get the user's details
                 $user = $provider->getResourceOwner($token);
-
+                $data = [
+                    'email'=>$user->getEmail(),
+                    'last'=>$user->getLastName(),
+                    'first'=>$user->getFirstName(),
+                    'id'=>$user->getId(),
+                ];
                // throw new \Exception('Hello %s!', $user->getFirstName());
                 // Use these details to create a new profile
               // printf('Hello %s!', $user->getFirstName());
@@ -128,8 +135,9 @@ class Oauth2Controller extends \yii\rest\Controller{
             }
             
             // Use this to interact with an API on the users behalf
-            return  ["token"=>$token->getToken(),
-            "refreshToken"=>$token->getRefreshToken(),
+            return  [
+                "token"=>$token->getToken(),
+                "data"=> $data,
             ];
         }
        
