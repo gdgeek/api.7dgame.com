@@ -3,8 +3,12 @@ namespace api\modules\vp\controllers;
 use api\modules\vp\models\Token;
 use yii\rest\ActiveController;
 use Yii;
-
+use bizley\jwt\JwtTools;
 use yii\helpers\Url;
+use Lcobucci\JWT\Configuration;
+use Lcobucci\JWT\Signer\Key\InMemory;
+use Lcobucci\JWT\Signer;
+use Lcobucci\JWT\Signer\Key;
 use yii\web\Response;
 class Oauth2Controller extends \yii\rest\Controller{
     public function behaviors()
@@ -29,9 +33,30 @@ class Oauth2Controller extends \yii\rest\Controller{
         return $behaviors;
     }
     public function actionTest(){
-      
        
-        echo phpinfo();
+        $tools = new JwtTools();
+            
+            // 你的 JWT 令牌
+        $jwt = 'eyJraWQiOiJUOHRJSjF6U3JPIiwiYWxnIjoiUlMyNTYifQ.eyJpc3MiOiJodHRwczovL2FwcGxlaWQuYXBwbGUuY29tIiwiYXVkIjoiY29tLnZveGVscGFydHkud3d3IiwiZXhwIjoxNzIzMDk1Mjg1LCJpYXQiOjE3MjMwMDg4ODUsInN1YiI6IjAwMTg1MC5hY2I3NWFmMDg0MGU0NGQ2ODc4OWViYjAzMjBkOTc1YS4wODIyIiwiY19oYXNoIjoicEJoU3Q2XzM3ZnhSTHQwOVROWHpFUSIsImVtYWlsIjoiZGlydWkxQHllYWgubmV0IiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImF1dGhfdGltZSI6MTcyMzAwODg4NSwibm9uY2Vfc3VwcG9ydGVkIjp0cnVlfQ.ZjPmVWEbFLdJ3nwGDLroZeGvfLVz_Qxf7bd3eb6brBlm2NRTpdeLzWiDKv4_uhJ2X9KdgbqmN3lHfEyAFRdhe92UIPaAwcDPgsh4abMCn37i7GWqOTF7i4isWyCmi-EyfDXoPu9GdpexwUwDUDfnmr0q3KPll0y2xq7yxu1TYO3ZaNj7rM3kJxKMQFo_hVVwe20292zeY3y6hyPCNxY382T_kMCQsErq6PllvS4ppEaVq4el9ZI9VITLDXdelPlV2EIXm1VhfIXnJzVjeJc-Q3Uhiv7kUYFgcag6P6UU7FMD0pcfRUwKjEGxSvkf4Zop6xIPjvCStBpE9DSN_l5rbA';
+        $token = $tools->parse($jwt);
+        $datas = $token->claims()->all();
+        return $datas;
+        /*$key = Yii::$app->jwt_tools->buildKey( [
+            'key' =>  getenv('APPLE_AUTH_KEY'), // path to your PRIVATE key, you can start the path with @ to indicate this is a Yii alias
+            'passphrase' => '', // omit it if you are not adding any passphrase
+            'method' => \bizley\jwt\Jwt::METHOD_FILE,
+        ]);
+       $conf = Configuration::forSymmetricSigner(
+            new Signer\Ecdsa\Sha256(),
+            $key
+        );
+
+        $constraints = $conf->validationConstraints();
+
+        //$token = $jwt instanceof Token ? $jwt : $this->parse($jwt);
+        return $conf->validator()->validate($token, ...$constraints);
+     */
+        
     }
     public function actionClear(){
         return 'ok';
@@ -78,11 +103,18 @@ class Oauth2Controller extends \yii\rest\Controller{
             'redirectUri'       => getenv('APPLE_REDIRECT_URI'),
             'scope'             => "email name",
         ]);
+        if(isset($post['id_token'])){
+            $jwt = $post['id_token'];
+            $tools = new JwtTools();
+            $token = $tools->parse($jwt);
+            $all = $token->claims()->all();
+        }
         if(isset($post['code'])){
             $token = $provider->getAccessToken('authorization_code', [
                 'code' => $post['code']
             ]);
             $user = $provider->getResourceOwner($token);
+            
             $data = [
                 'email'=>$user->getEmail(),
                 'last'=>$user->getLastName(),
@@ -93,6 +125,7 @@ class Oauth2Controller extends \yii\rest\Controller{
                 "token" => $token->getToken(),
                 "data" => $data,
                 "post" => $post,
+                "all" => $all,
             ];
         }
         /*
