@@ -67,17 +67,19 @@ class User extends ActiveRecord implements IdentityInterface
 
     public function generateAccessToken()
     {
+      
        // $jwt = \Yii::$app->jwt;
         $now = new \DateTimeImmutable('now', new \DateTimeZone(\Yii::$app->timeZone));
        
       //  $jwt_parameter = \Yii::$app->jwt_parameter;
         $token = \Yii::$app->jwt->getBuilder()
+            ->issuedBy(\Yii::$app->request->hostInfo)
            // ->issuedBy($jwt_parameter->issuer) // Configures the issuer (iss claim)
           //  ->permittedFor($jwt_parameter->audience) // Configures the audience (aud claim)
            // ->identifiedBy($jwt_parameter->id, true) // Configures the id (jti claim), replicating as a header item
             ->issuedAt($now) // Configures the time that the token was issue (iat claim)
             ->canOnlyBeUsedAfter($now)
-            ->expiresAt($now->modify('+1 hour')) // Configures the expiration time of the token (exp claim)
+            ->expiresAt($now->modify('+3 hour')) // Configures the expiration time of the token (exp claim)
             ->withClaim('uid', $this->id) // Configures a new claim, called "uid"
             ->getToken(
                 \Yii::$app->jwt->getConfiguration()->signer(),
