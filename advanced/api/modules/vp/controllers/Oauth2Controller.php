@@ -67,7 +67,7 @@ class Oauth2Controller extends \yii\rest\Controller{
 
         $post = Yii::$app->request->post();
 
-       //$redirectUri = Yii::$app->request->getHostInfo() . '/' . Yii::$app->request->getPathInfo();
+       // $redirectUri = Yii::$app->request->getHostInfo() . '/' . Yii::$app->request->getPathInfo();
         \Firebase\JWT\JWT::$leeway = 60;
         
         $provider = new \League\OAuth2\Client\Provider\Apple([
@@ -78,24 +78,6 @@ class Oauth2Controller extends \yii\rest\Controller{
             'redirectUri'       => getenv('APPLE_REDIRECT_URI'),
             'scope'             => "email name",
         ]);
-        if(isset($post['code'])){
-            $token = $provider->getAccessToken('authorization_code', [
-                'code' => $post['code']
-            ]);
-            $user = $provider->getResourceOwner($token);
-            $data = [
-                'email'=>$user->getEmail(),
-                'last'=>$user->getLastName(),
-                'first'=>$user->getFirstName(),
-                'id'=>$user->getId(),
-            ];
-            return  [
-                "token" => $token->getToken(),
-                "data" => $data,
-                "post" => $post,
-            ];
-        }
-        /*
         if (!isset($_POST['code'])) {
 
             // If we don't have an authorization code then get one
@@ -114,11 +96,14 @@ class Oauth2Controller extends \yii\rest\Controller{
         } else {
 
             // Try to get an access token (using the authorization code grant)
-          
+            /** @var AppleAccessToken $token */
             $token = $provider->getAccessToken('authorization_code', [
                 'code' => $_POST['code']
             ]);
-
+/*
+<state>d7b9f5a80202edc6db5cfbf41e8362ce</state>
+<code>c5ee72c7b64ce40c0b71efabb26a20c9c.0.rryvq.92i6mLsmTmulrADiP-FiNg</code>
+ */     
 
  
             // Optional: Now you have a token you can look up a users profile data
@@ -150,7 +135,6 @@ class Oauth2Controller extends \yii\rest\Controller{
                 "data"=> $data,
             ];
         }
-     */
        
     }
     public function actionIndex(){
