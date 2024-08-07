@@ -1,7 +1,7 @@
 # Dockerfile-app
 
 # Use PHP 5.6 with Apache for the base image
-FROM  php:8.3.0-apache
+FROM  php:8.3.10-apache
 
 # Enable the Rewrite Apache mod
 RUN cd /etc/apache2/mods-enabled && \
