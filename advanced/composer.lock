@@ -3572,16 +3572,16 @@
         },
         {
             "name": "tencentcloud/common",
-            "version": "3.0.1198",
+            "version": "3.0.1199",
             "source": {
                 "type": "git",
                 "url": "https://github.com/tencentcloud-sdk-php/common.git",
-                "reference": "483e2dbf5ad38d4cc06af81b7161d247ab1da5f8"
+                "reference": "9bad4b7921a60d2a479a14d731f57e4284238c79"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://mirrors.huaweicloud.com/repository/php/tencentcloud/common/3.0.1198/tencentcloud-common-3.0.1198.zip",
-                "reference": "483e2dbf5ad38d4cc06af81b7161d247ab1da5f8",
+                "url": "https://mirrors.huaweicloud.com/repository/php/tencentcloud/common/3.0.1199/tencentcloud-common-3.0.1199.zip",
+                "reference": "9bad4b7921a60d2a479a14d731f57e4284238c79",
                 "shasum": ""
             },
             "require": {
@@ -3607,24 +3607,24 @@
             ],
             "description": "TencentCloudApi php sdk",
             "homepage": "https://github.com/tencentcloud-sdk-php/common",
-            "time": "2024-08-05T20:37:39+00:00"
+            "time": "2024-08-06T20:39:12+00:00"
         },
         {
             "name": "tencentcloud/sts",
-            "version": "3.0.1198",
+            "version": "3.0.1199",
             "source": {
                 "type": "git",
                 "url": "https://github.com/tencentcloud-sdk-php/sts.git",
-                "reference": "1f28dff90c086c0a0dca5982bce8ef34f89551c3"
+                "reference": "baa50956dc0d46f37ded1895b851e41336bcdf73"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://mirrors.huaweicloud.com/repository/php/tencentcloud/sts/3.0.1198/tencentcloud-sts-3.0.1198.zip",
-                "reference": "1f28dff90c086c0a0dca5982bce8ef34f89551c3",
+                "url": "https://mirrors.huaweicloud.com/repository/php/tencentcloud/sts/3.0.1199/tencentcloud-sts-3.0.1199.zip",
+                "reference": "baa50956dc0d46f37ded1895b851e41336bcdf73",
                 "shasum": ""
             },
             "require": {
-                "tencentcloud/common": "3.0.1198"
+                "tencentcloud/common": "3.0.1199"
             },
             "type": "library",
             "autoload": {
@@ -3645,7 +3645,7 @@
             ],
             "description": "TencentCloudApi php sdk sts",
             "homepage": "https://github.com/tencentcloud-sdk-php/sts",
-            "time": "2024-08-05T21:18:13+00:00"
+            "time": "2024-08-06T21:19:33+00:00"
         },
         {
             "name": "w7corp/easywechat",

@@ -24,7 +24,7 @@ return array(
     'bizley\\jwt\\' => array($vendorDir . '/bizley/jwt/src'),
     'antkaz\\vue\\' => array($vendorDir . '/antkaz/yii2-vue/src'),
     'Zxing\\' => array($vendorDir . '/khanamiryan/qrcode-detector-decoder/lib'),
-    'TencentCloud\\' => array($vendorDir . '/tencentcloud/common/src/TencentCloud', $vendorDir . '/tencentcloud/sts/src/TencentCloud'),
+    'TencentCloud\\' => array($vendorDir . '/tencentcloud/sts/src/TencentCloud', $vendorDir . '/tencentcloud/common/src/TencentCloud'),
     'Symfony\\Polyfill\\Php83\\' => array($vendorDir . '/symfony/polyfill-php83'),
     'Symfony\\Polyfill\\Php80\\' => array($vendorDir . '/symfony/polyfill-php80'),
     'Symfony\\Polyfill\\Php72\\' => array($vendorDir . '/symfony/polyfill-php72'),
