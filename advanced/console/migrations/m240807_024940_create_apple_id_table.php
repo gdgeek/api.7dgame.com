@@ -21,7 +21,7 @@ class m240807_024940_create_apple_id_table extends Migration
         }
         $this->createTable('{{%apple_id}}', [
             'id' => $this->primaryKey(),
-            'apple_id' => $this->string()->notNull(),
+            'apple_id' => $this->string()->notNull()->unique(),
             'email' => $this->string(),
             'first_name' => $this->string(),
             'last_name' => $this->string(),
