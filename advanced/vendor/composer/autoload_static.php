@@ -148,6 +148,7 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         array (
             'League\\OAuth2\\Client\\' => 21,
             'Lcobucci\\JWT\\' => 13,
+            'Lcobucci\\Clock\\' => 15,
             'Laminas\\Diactoros\\' => 18,
         ),
         'I' => 
@@ -399,6 +400,10 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         'Lcobucci\\JWT\\' => 
         array (
             0 => __DIR__ . '/..' . '/lcobucci/jwt/src',
+        ),
+        'Lcobucci\\Clock\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/lcobucci/clock/src',
         ),
         'Laminas\\Diactoros\\' => 
         array (

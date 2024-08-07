@@ -135,7 +135,9 @@ class User extends ActiveRecord implements IdentityInterface
      */
     public static function findIdentityByAccessToken($token, $type = null)
     {
-        $user = static::findIdentity($token->getClaim('uid'));
+        $claims = \Yii::$app->jwt->parse($token)->claims();
+        $uid = $claims->get('uid');
+        $user = static::findIdentity($uid );
         $user->token = $token;
         return $user;
     }

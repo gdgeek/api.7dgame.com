@@ -41,7 +41,8 @@
     "league/oauth2-client": "^2.7",
     "patrickbussmann/oauth2-apple": "*",
     "bizley/jwt": "^4.0",
-    "lcobucci/jwt": "^5.0"
+    "lcobucci/jwt": "^5.0",
+    "lcobucci/clock": "^3.2"
   },
   "antkaz/yii2-vue": "^1.0",
   "2amigos/yii2-file-upload-widget": "~1.0",
