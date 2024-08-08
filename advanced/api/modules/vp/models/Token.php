@@ -2,7 +2,7 @@
 
 namespace api\modules\vp\models;
 
-use api\modules\v1\models\User;
+use api\modules\vp\models\User;
 use yii\db\Expression;
 use yii\behaviors\TimestampBehavior;
 use Yii;

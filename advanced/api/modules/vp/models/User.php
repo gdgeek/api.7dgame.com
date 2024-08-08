@@ -43,7 +43,7 @@ use yii\web\IdentityInterface;
  * @property Verse[] $verses
  * @property VerseOpen[] $verseOpens //开放宇宙
  * @property VerseShare[] $verseShares //共享宇宙
- * @property VpToken[] $vpTokens 游戏 token
+ * @property Token[] $vpTokens 游戏 token
  * @property Wx[] $wxes //微信登录用
  */
 class User extends \yii\db\ActiveRecord implements IdentityInterface
@@ -200,7 +200,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
      */
     public function getVpToken()//获取游戏token
     {
-        return $this->hasOne(VpToken::className(), ['user_id' => 'id']);
+        return $this->hasOne(Token::className(), ['user_id' => 'id']);
     }
 
 }

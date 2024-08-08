@@ -8,7 +8,7 @@ use api\modules\a1\models\Meta;
 use api\modules\a1\models\Resource;
 use api\modules\a1\models\VerseScript;
 
-use api\modules\v1\models\User;
+use api\modules\vp\models\User;
 use api\modules\v1\models\MultilanguageVerse;
 use api\modules\v1\models\VerseQuery;
 use Yii;
