@@ -27,7 +27,7 @@ class m240807_024940_create_apple_id_table extends Migration
             'last_name' => $this->string(),
             'user_id' => $this->integer(),
             'created_at' => $this->timestamp()->defaultExpression('CURRENT_TIMESTAMP')->notNull(),
-            'tooken' => $this->string(),
+            'token' => $this->string(),
         ], $tableOptions);
 
         // creates index for column `user_id`

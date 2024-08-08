@@ -3,13 +3,15 @@ namespace api\modules\vp\controllers;
 use api\modules\vp\models\Token;
 use yii\rest\ActiveController;
 use Yii;
+use yii\base\Exception;
 use bizley\jwt\JwtTools;
 use yii\helpers\Url;
 use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer;
 use Lcobucci\JWT\Signer\Key;
-
+use api\modules\vp\models\AppleId;
+use api\modules\vp\models\User;
 use yii\web\Response;
 class Oauth2Controller extends \yii\rest\Controller{
     public function behaviors()
@@ -32,6 +34,50 @@ class Oauth2Controller extends \yii\rest\Controller{
             ],
         ];  
         return $behaviors;
+    }
+    public function actionRegister(){
+        $post = Yii::$app->request->post();
+        $username = $post['username'];
+        $password = $post['password'];
+        $token = $post['token'];
+        $apple_id = $post['apple_id'];
+
+        $apple = AppleId::find()->where(['apple_id'=>$apple_id, "token"=>$token])->one();
+        if($apple === null){
+            throw new \yii\web\NotFoundHttpException('apple_id Not Found');
+           
+        }
+        if($apple->user_id !== null){
+            throw new \yii\web\Exception('apple_id Already Bind');
+        }
+        $user = User::find()->where(['username'=>$username])->one();
+        if($user !== null){
+            if($user->appleId !== null){
+                throw new Exception('Username Already Bind');
+            }
+            if($password !== null && $user->validatePassword($password)){
+                $apple->user_id = $user->id;
+                $apple->save();
+                return [
+                    'type' => 'binding',
+                    'token' => $user->generateAccessToken()
+                ];
+            }else{
+                throw new \yii\web\Exception('Password Error');
+            }
+        }
+        return 123;
+        //检查apple_id 和 token
+        //如果失败返回，如果已经绑定，返回
+
+        //检查是否有User
+        //如果有，检查密码是否对
+        //如果密码对，绑定apple_id，返回Token
+        //如果密码不对，提示用户名已被占用
+
+        //如果没有，创建User，绑定apple_id
+        //创建Token并返还
+
     }
     public function actionTest(){
        

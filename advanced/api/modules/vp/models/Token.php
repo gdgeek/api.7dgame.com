@@ -21,6 +21,7 @@ use Yii;
  * @property VpLevel[] $vpLevels
  * @property User $user
  */
+
 class Token extends \yii\db\ActiveRecord
 {
 
