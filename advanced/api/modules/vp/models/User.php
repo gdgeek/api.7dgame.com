@@ -2,6 +2,7 @@
 
 namespace api\modules\vp\models;
 
+use yii\db\Expression;
 
 use mdm\admin\components\Configs;
 use Yii;
@@ -48,6 +49,43 @@ use yii\web\IdentityInterface;
  */
 class User extends \yii\db\ActiveRecord implements IdentityInterface
 {
+
+
+    public static function findIdentity($id)
+    {
+        return static::findOne(['id' => $id]);
+    }
+    public static function findIdentityByAccessToken($token, $type = null)
+    {
+        $claims = \Yii::$app->jwt->parse($token)->claims();
+        $uid = $claims->get('uid');
+        $user = static::findIdentity($uid );
+        $user->token = $token;
+        return $user;
+    }
+
+    public function getId()
+    {
+        return $this->id;
+    }
+    public function getAuthKey()
+    {
+        return $this->auth_key;
+    }
+    public function validateAuthKey($authKey)
+    {
+        return $this->authKey === $authKey;
+    }
+
+    /**
+     * Generates "remember me" authentication key
+     */
+    public function generateAuthKey()
+    {
+        $this->auth_key = Yii::$app->security->generateRandomString();
+    }
+
+
     public function fields()//返回的数据？
     {
 
@@ -58,7 +96,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
     }
 
     //生成token
-    public function generateToken()
+    public function generateAccessToken()
     {
         $now = new \DateTimeImmutable('now', new \DateTimeZone(\Yii::$app->timeZone));
        
@@ -78,21 +116,15 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
  
 
     
+   /**
+     * {@inheritdoc}
+     */
     public function behaviors()
     {
         return [
-            [
-                'class' => TimestampBehavior::class,
-                'attributes' => [
-                    \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => ['created_at', 'updated_at'],
-                    \yii\db\ActiveRecord::EVENT_BEFORE_UPDATE => ['updated_at'],
-
-                ],
-                'value' => new Expression('NOW()'),
-            ]
+            TimestampBehavior::class,
         ];
     }
-
 
     
     /**
@@ -138,6 +170,13 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
     }
 
 
+    public static function create($username, $password){
+        $user = new User();
+        $user->username = $username;
+        $user->setPassword($password);
+        $user->generateAuthKey();
+        return $user;
+    }
 
      //表名
      public static function tableName()
@@ -151,12 +190,16 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
     public function rules()
     {
         return [
-            [['status'], 'integer'],
-            [['created_at', 'updated_at'], 'safe'],
+            [['status','created_at', 'updated_at'], 'integer'],
             [['username', 'password_hash', 'password_reset_token', 'email', 'verification_token', 'access_token', 'wx_openid', 'nickname'], 'string', 'max' => 255],
             [['auth_key'], 'string', 'max' => 32],
             [['email'], 'unique'],
-            [['username'], 'unique'],
+            ['email', 'email', 'message' => 'The email format is invalid.'],
+            [['username'], 'unique'],    
+            // 验证用户名的长度在5到30个字符之间
+            ['username', 'string', 'min' => 5, 'max' => 30],
+            // 验证用户名只包含字母和数字
+            ['username', 'match', 'pattern' => '/^[a-zA-Z0-9]+$/', 'message' => 'The username can only contain letters and numbers.'],
             [['password_reset_token'], 'unique'],
         ];
     }
@@ -169,7 +212,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
         return [
             'id' => 'ID',//id 保留
             'username' => 'Username',//用户名 保留
-            'auth_key' => 'Auth Key',//授权 key 不保留
+            'auth_key' => 'Auth Key',//授权 key 必须
             'password_hash' => 'Password Hash',//密码 保留
             'password_reset_token' => 'Password Reset Token',// 修改密码用的 token 考虑
             'email' => 'Email',//邮箱 保留

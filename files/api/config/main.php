@@ -89,6 +89,7 @@ return [
                         'GET clear' => 'clear',
                         'GET test' => 'test',
                         'POST register' => 'register',
+                        'POST login' => 'login',
                     ],
                 ],
                 [
