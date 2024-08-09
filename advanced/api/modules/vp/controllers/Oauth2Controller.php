@@ -163,6 +163,57 @@ class Oauth2Controller extends \yii\rest\Controller{
 
       
         $apple = AppleId::find()->where(['apple_id'=>$apple_id, "token"=>$token])->one();
+        $this->login($apple);
+       
+    }
+    public function actionAppleId(){
+        
+        $post = Yii::$app->request->post();
+        
+        \Firebase\JWT\JWT::$leeway = 60;
+        
+        $provider = new \League\OAuth2\Client\Provider\Apple([
+            'clientId'          => getenv('APPLE_CLIENT_ID'), // com.voxelparty.www
+            'teamId'            => getenv('APPLE_AUTH_TEAM_ID') , // 1A234BFK46 https://developer.apple.com/account/#/membership/ (Team ID)
+            'keyFileId'         => getenv('APPLE_AUTH_KEY_ID') , // 1ABC6523AA https://developer.apple.com/account/resources/authkeys/list (Key ID)
+            'keyFilePath'       => getenv('APPLE_AUTH_KEY'), // __DIR__ . '/AuthKey_1ABC6523AA.p8' -> Download key above
+            'redirectUri'       => getenv('APPLE_REDIRECT_URI'),
+            'scope'             => "email name",
+        ]);
+        if(isset($post['id_token'])){
+            $jwt = $post['id_token'];
+            $tools = new JwtTools();
+            $token = $tools->parse($jwt);
+            $all = $token->claims()->all();
+        }else{
+            throw new Exception('Not Found id_token');
+        }
+        $cache = \Yii::$app->cache;
+        $cache->set('apple', ['ip'=>$this->getRealIpAddr(),'get'=>Yii::$app->request->get(),'post'=>Yii::$app->request->post(),'all'=>$all]);
+
+        if(isset($post['code'])){
+            $token = $provider->getAccessToken('authorization_code', [
+                'code' => $post['code']
+            ]);
+            $user = $provider->getResourceOwner($token);
+            
+            $apple = AppleId::find()->where(['apple_id'=>$user->getId()])->one();
+            if($apple == null){
+                $apple = new AppleId();
+                $apple->apple_id = $user->getId();
+                $apple->email = $user->getEmail();
+                $apple->first_name = $user->getFirstName();
+                $apple->last_name = $user->getLastName();
+                $apple->token = $token->getToken();
+                $apple->save();
+            }
+            return $this->login($apple);
+        }else{
+            throw new \yii\web\NotFoundHttpException('Not Found Code');
+        }
+       
+    }
+    private function login($apple){
         if($apple === null){
             throw new Exception('apple_id Not Found');
         }
@@ -192,7 +243,7 @@ class Oauth2Controller extends \yii\rest\Controller{
                 throw new Exception(json_encode($user->errors));
             }
         }
-       
+
     }
 
 
@@ -200,17 +251,10 @@ class Oauth2Controller extends \yii\rest\Controller{
         $cache = \Yii::$app->cache;
         $cache->set('apple', ['ip'=>$this->getRealIpAddr(),'get'=>Yii::$app->request->get(),'post'=>Yii::$app->request->post()]);
 
-        $session = Yii::$app->session;
-
-        // 检查会话是否已经启动
-        if (!$session->isActive) {
-            $session->open();
-        }
-
+      
 
         $post = Yii::$app->request->post();
 
-       //$redirectUri = Yii::$app->request->getHostInfo() . '/' . Yii::$app->request->getPathInfo();
         \Firebase\JWT\JWT::$leeway = 60;
         
         $provider = new \League\OAuth2\Client\Provider\Apple([
