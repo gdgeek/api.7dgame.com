@@ -197,8 +197,22 @@ class Oauth2Controller extends \yii\rest\Controller{
                 $apple->first_name = $user->getFirstName();
                 $apple->last_name = $user->getLastName();
                 $apple->token = $token->getToken();
-                $apple->save();
+                
             }
+            if(isset($post['state']) && $apple->vp_token_id == null){
+                $state = $post['state'];
+                $pattern = '/^T0(\d+)$/';
+                $matches = [];
+                if (preg_match($pattern, $input, $matches)) {
+                   
+                    $number = $matches[1];
+                    $vpToken = Token::find()->where(['id'=>$number])->one();
+                    if($vpToken !== null){
+                        $apple->vp_token_id = $vpToken->id;
+                    }
+                }
+            }
+            $apple->save();
             return $this->login($apple);
         }else{
             throw new \yii\web\NotFoundHttpException('Not Found Code');
