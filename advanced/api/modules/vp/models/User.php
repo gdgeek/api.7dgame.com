@@ -193,13 +193,14 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
             [['status','created_at', 'updated_at'], 'integer'],
             [['username', 'password_hash', 'password_reset_token', 'email', 'verification_token', 'access_token', 'wx_openid', 'nickname'], 'string', 'max' => 255],
             [['auth_key'], 'string', 'max' => 32],
+            [['username', 'email'], 'required'],
             [['email'], 'unique'],
             ['email', 'email', 'message' => 'The email format is invalid.'],
             [['username'], 'unique'],    
             // 验证用户名的长度在5到30个字符之间
             ['username', 'string', 'min' => 5, 'max' => 30],
-            // 验证用户名只包含字母和数字
-            ['username', 'match', 'pattern' => '/^[a-zA-Z0-9]+$/', 'message' => 'The username can only contain letters and numbers.'],
+            // 验证用户名的规则
+            ['username', 'match', 'pattern' => '/^[a-zA-Z0-9_@.-]+$/', 'message' => 'Username can only contain letters, numbers, underscores, hyphens, @, and .'],
             [['password_reset_token'], 'unique'],
         ];
     }

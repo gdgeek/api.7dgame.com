@@ -120,7 +120,17 @@ class Oauth2Controller extends \yii\rest\Controller{
     }
     public function actionTest(){
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
-        return 1;
+       
+        $user = new User();
+        $user->username = 'test';
+        if($user->validate()){
+            return "good";
+        }else{
+            return $user->errors;
+        }
+        return ["get" => Yii::$app->request->get(), 
+                "post" => Yii::$app->request->post()];
+       // return 1;
     }
     public function actionClear(){
         return 'ok';
@@ -166,16 +176,16 @@ class Oauth2Controller extends \yii\rest\Controller{
             ];
         }else{
             $user = new User();
-            $user->username = $apple->email;
+            $user->username = $apple->apple_id;
             $user->email = $apple->email;
             $user->nickname = $apple->first_name . ' ' . $apple->last_name;
-            $user->setPassword(Yii::$app->security->generateRandomString());
+            //$user->setPassword(Yii::$app->security->generateRandomString());
             if($user->validate()){
                 $user->save();
                 $apple->user_id = $user->id;
                 $apple->save();
                 return [
-                    'type' => 'register',
+                    'type' => 'temp',
                     'token' => $user->generateAccessToken()
                 ];
             }else{
