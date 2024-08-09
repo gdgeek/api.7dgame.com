@@ -34,9 +34,6 @@ class Oauth2Controller extends \yii\rest\Controller{
                 ],
             ],
         ];  
-        while (ob_get_level() > 0) {
-            ob_end_clean();
-        }
         return $behaviors;
     }
     
