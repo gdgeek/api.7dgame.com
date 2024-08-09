@@ -245,7 +245,7 @@ class Oauth2Controller extends \yii\rest\Controller{
             }
             
             
-            $url = Url::to( getenv('APPLE_LOGIN_FRONTEND') .'?'.http_build_query(['token'=>$token->getToken(),'apple_id'=>$user->getId(),'register'=>($aid->user_id == null)?1:0]));
+            $url = Url::to( getenv('APPLE_LOGIN_FRONTEND') .'?'.http_build_query(['token'=>$token->getToken(),'apple_id'=>$user->getId()]));
             return $this->redirect( $url, 302);
         }
        
