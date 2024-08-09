@@ -15,8 +15,10 @@ use Yii;
  * @property int|null $user_id
  * @property string $created_at
  * @property string|null $token
+ * @property int|null $vp_token_id 
  *
  * @property User $user
+ * @property VpToken $vpToken 
  */
 class AppleId extends \yii\db\ActiveRecord
 {
@@ -35,11 +37,12 @@ class AppleId extends \yii\db\ActiveRecord
     {
         return [
             [['apple_id'], 'required'],
-            [['user_id'], 'integer'],
+            [['user_id', 'vp_token_id'], 'integer'],
             [['created_at'], 'safe'],
             [['apple_id', 'email', 'first_name', 'last_name', 'token'], 'string', 'max' => 255],
             [['apple_id'], 'unique'],
             [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['user_id' => 'id']],
+            [['vp_token_id'], 'exist', 'skipOnError' => true, 'targetClass' => VpToken::className(), 'targetAttribute' => ['vp_token_id' => 'id']], 
         ];
     }
 
@@ -57,6 +60,7 @@ class AppleId extends \yii\db\ActiveRecord
             'user_id' => 'User ID',
             'created_at' => 'Created At',
             'token' => 'Token',
+            'vp_token_id' => 'Vp Token ID', 
         ];
     }
 
@@ -69,4 +73,14 @@ class AppleId extends \yii\db\ActiveRecord
     {
         return $this->hasOne(User::className(), ['id' => 'user_id']);
     }
+    		 
+   /** 
+    * Gets query for [[VpToken]]. 
+    * 
+    * @return \yii\db\ActiveQuery 
+    */ 
+   public function getVpToken() 
+   { 
+       return $this->hasOne(VpToken::className(), ['id' => 'vp_token_id']); 
+   } 
 }
