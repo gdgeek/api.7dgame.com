@@ -119,18 +119,10 @@ class Oauth2Controller extends \yii\rest\Controller{
 
     }
     public function actionTest(){
-        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
-       
-        $user = new User();
-        $user->username = 'test';
-        if($user->validate()){
-            return "good";
-        }else{
-            return $user->errors;
-        }
-        return ["get" => Yii::$app->request->get(), 
-                "post" => Yii::$app->request->post()];
-       // return 1;
+        $cache = \Yii::$app->cache;
+   //     $cache->set('apple', ['ip'=>$this->getRealIpAddr(),'get'=>Yii::$app->request->get(),'post'=>Yii::$app->request->post(),'all'=>$all]);
+ return $cache->get('apple');
+         
     }
     public function actionClear(){
         return 'ok';
@@ -177,7 +169,7 @@ class Oauth2Controller extends \yii\rest\Controller{
             'teamId'            => getenv('APPLE_AUTH_TEAM_ID') , // 1A234BFK46 https://developer.apple.com/account/#/membership/ (Team ID)
             'keyFileId'         => getenv('APPLE_AUTH_KEY_ID') , // 1ABC6523AA https://developer.apple.com/account/resources/authkeys/list (Key ID)
             'keyFilePath'       => getenv('APPLE_AUTH_KEY'), // __DIR__ . '/AuthKey_1ABC6523AA.p8' -> Download key above
-            'redirectUri'       => getenv('APPLE_REDIRECT_URI'),
+            'redirectUri'       =>  getenv('APPLE_REDIRECT_URI'),
             'scope'             => "email name",
         ]);
         if(isset($post['id_token'])){
@@ -226,6 +218,17 @@ class Oauth2Controller extends \yii\rest\Controller{
                 'token' => $apple->user->generateAccessToken()
             ];
         }else{
+            if($apple->email !== null){
+                $user = User::find()->where(['email'=>$apple->email])->one();
+                if($user !== null){
+                    $apple->user_id = $user->id;
+                    $apple->save();
+                    return [
+                        'type' => 'email',
+                        'token' => $user->generateAccessToken()
+                    ];
+                }
+            }
             $user = new User();
             $user->username = $apple->apple_id;
             $user->email = $apple->email;

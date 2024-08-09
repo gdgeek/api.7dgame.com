@@ -198,7 +198,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
             ['email', 'email', 'message' => 'The email format is invalid.'],
             [['username'], 'unique'],    
             // 验证用户名的长度在5到30个字符之间
-            ['username', 'string', 'min' => 5, 'max' => 30],
+            ['username', 'string', 'min' => 5, 'max' => 256],
             // 验证用户名的规则
             ['username', 'match', 'pattern' => '/^[a-zA-Z0-9_@.-]+$/', 'message' => 'Username can only contain letters, numbers, underscores, hyphens, @, and .'],
             [['password_reset_token'], 'unique'],

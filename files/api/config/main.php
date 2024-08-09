@@ -84,7 +84,7 @@ return [
                     'controller' => 'vp/oauth2',
                     'pluralize' => false,
                     'extraPatterns' => [
-                        'GET apple-id-login' => 'apple-id-login',
+                        'POST apple-id' => 'apple-id',
                         'POST apple-id-login' => 'apple-id-login',
                         'GET clear' => 'clear',
                         'GET test' => 'test',

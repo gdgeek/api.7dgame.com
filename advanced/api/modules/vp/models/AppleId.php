@@ -18,7 +18,7 @@ use Yii;
  * @property int|null $vp_token_id 
  *
  * @property User $user
- * @property VpToken $vpToken 
+ * @property Token $vpToken 
  */
 class AppleId extends \yii\db\ActiveRecord
 {
@@ -42,7 +42,7 @@ class AppleId extends \yii\db\ActiveRecord
             [['apple_id', 'email', 'first_name', 'last_name', 'token'], 'string', 'max' => 255],
             [['apple_id'], 'unique'],
             [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['user_id' => 'id']],
-            [['vp_token_id'], 'exist', 'skipOnError' => true, 'targetClass' => VpToken::className(), 'targetAttribute' => ['vp_token_id' => 'id']], 
+            [['vp_token_id'], 'exist', 'skipOnError' => true, 'targetClass' => Token::className(), 'targetAttribute' => ['vp_token_id' => 'id']], 
         ];
     }
 
@@ -75,12 +75,12 @@ class AppleId extends \yii\db\ActiveRecord
     }
     		 
    /** 
-    * Gets query for [[VpToken]]. 
+    * Gets query for [[Token]]. 
     * 
     * @return \yii\db\ActiveQuery 
     */ 
    public function getVpToken() 
    { 
-       return $this->hasOne(VpToken::className(), ['id' => 'vp_token_id']); 
+       return $this->hasOne(Token::className(), ['id' => 'vp_token_id']); 
    } 
 }
