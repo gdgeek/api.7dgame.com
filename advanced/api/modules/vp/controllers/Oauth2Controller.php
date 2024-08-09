@@ -163,13 +163,16 @@ class Oauth2Controller extends \yii\rest\Controller{
         $post = Yii::$app->request->post();
         
         \Firebase\JWT\JWT::$leeway = 60;
-        
+        $url = getenv('APPLE_REDIRECT_URI');
+        if(isset($post['url'])){
+            $url = $post['url'];
+        }
         $provider = new \League\OAuth2\Client\Provider\Apple([
             'clientId'          => getenv('APPLE_CLIENT_ID'), // com.voxelparty.www
             'teamId'            => getenv('APPLE_AUTH_TEAM_ID') , // 1A234BFK46 https://developer.apple.com/account/#/membership/ (Team ID)
             'keyFileId'         => getenv('APPLE_AUTH_KEY_ID') , // 1ABC6523AA https://developer.apple.com/account/resources/authkeys/list (Key ID)
             'keyFilePath'       => getenv('APPLE_AUTH_KEY'), // __DIR__ . '/AuthKey_1ABC6523AA.p8' -> Download key above
-            'redirectUri'       =>  getenv('APPLE_REDIRECT_URI'),
+            'redirectUri'       => $url,
             'scope'             => "email name",
         ]);
         if(isset($post['id_token'])){
