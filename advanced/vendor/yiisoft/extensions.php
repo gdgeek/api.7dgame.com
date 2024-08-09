@@ -1,3 +1,4 @@
+
 <?php
 
 $vendorDir = dirname(__DIR__);

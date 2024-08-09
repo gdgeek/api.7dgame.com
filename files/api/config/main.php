@@ -88,6 +88,7 @@ return [
                         'POST apple-id-login' => 'apple-id-login',
                         'GET clear' => 'clear',
                         'GET test' => 'test',
+                        'POST test' => 'test',
                         'POST register' => 'register',
                         'POST login' => 'login',
                     ],

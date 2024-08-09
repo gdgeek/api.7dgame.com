@@ -12,7 +12,6 @@ use Lcobucci\JWT\Signer;
 use Lcobucci\JWT\Signer\Key;
 use api\modules\vp\models\AppleId;
 use api\modules\vp\models\User;
-
 use mdm\admin\models\Assignment;
 use yii\web\Response;
 class Oauth2Controller extends \yii\rest\Controller{
@@ -35,6 +34,9 @@ class Oauth2Controller extends \yii\rest\Controller{
                 ],
             ],
         ];  
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
         return $behaviors;
     }
     
@@ -68,7 +70,7 @@ class Oauth2Controller extends \yii\rest\Controller{
             }
             if($password !== null && $user->validatePassword($password)){
                 $apple->user_id = $user->id;
-                $apple->token = null;//清除token
+               // $apple->token = null;//清除token
                 $apple->save();
                 //成功绑定旧的用户
                 return [
@@ -120,12 +122,8 @@ class Oauth2Controller extends \yii\rest\Controller{
 
     }
     public function actionTest(){
-       
-        $token = 123;
-        $user = 123;
-        $url = Url::to( getenv('APPLE_LOGIN_FRONTEND') .'?'.http_build_query(['token'=>$token,'apple_id'=>$user,'register'=>0]));
-        return $this->redirect( $url, 302);
-        
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        return 1;
     }
     public function actionClear(){
         return 'ok';
@@ -145,28 +143,47 @@ class Oauth2Controller extends \yii\rest\Controller{
     
 
     public function actionLogin(){
+       
         $post = Yii::$app->request->post();
         if(!isset($post['apple_id']) || !isset($post['token'])){
             throw new Exception('Params Error');
         }
-
         $apple_id = $post['apple_id'];
         $token = $post['token'];
         if($token == null){
             throw new Exception('Token Error');
         }
+
+      
         $apple = AppleId::find()->where(['apple_id'=>$apple_id, "token"=>$token])->one();
         if($apple === null){
             throw new Exception('apple_id Not Found');
         }
         if($apple->user_id !== null){
-            $apple->token = null;//清除token
+           // $apple->token = null;//清除token
             $apple->save();
             //已经有用户绑定，返回Token
             return [
                 'type' => 'login',
                 'token' => $apple->user->generateAccessToken()
             ];
+        }else{
+            $user = new User();
+            $user->username = $apple->email;
+            $user->email = $apple->email;
+            $user->nickname = $apple->first_name . ' ' . $apple->last_name;
+            $user->setPassword(Yii::$app->security->generateRandomString());
+            if($user->validate()){
+                $user->save();
+                $apple->user_id = $user->id;
+                $apple->save();
+                return [
+                    'type' => 'register',
+                    'token' => $user->generateAccessToken()
+                ];
+            }else{
+                throw new Exception(json_encode($user->errors));
+            }
         }
        
     }
