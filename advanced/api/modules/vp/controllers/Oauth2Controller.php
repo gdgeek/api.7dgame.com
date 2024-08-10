@@ -206,7 +206,7 @@ class Oauth2Controller extends \yii\rest\Controller{
                 $state = $post['state'];
                 $pattern = '/^T0(\d+)$/';
                 $matches = [];
-                if (preg_match($pattern, $input, $matches)) {
+                if (preg_match($pattern, $state, $matches)) {
                    
                     $number = $matches[1];
                     $vpToken = Token::find()->where(['id'=>$number])->one();
