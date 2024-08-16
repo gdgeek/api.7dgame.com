@@ -96,7 +96,6 @@ class Meta extends \yii\db\ActiveRecord
         $fields['resources'] = function () {
             return $this->resources;
         };
-
         $fields['editable'] = function () {return $this->editable();};
         $fields['viewable'] = function () {return $this->viewable();};
         return $fields;

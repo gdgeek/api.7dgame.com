@@ -71,7 +71,12 @@ class Resource extends \yii\db\ActiveRecord
         //$fields = parent::fields();
 
         return [
-            'id', 'info', 'uuid', 'type', 'file' => function ($model) {
+            'id', 'info'=>function($model){
+                if(!is_string($model->info)){
+                    return json_encode($model->info);
+                }
+                return $model->info;
+            }, 'uuid', 'type', 'file' => function ($model) {
                 return $this->file;
             },
 
