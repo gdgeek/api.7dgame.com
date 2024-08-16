@@ -117,7 +117,13 @@ class Verse extends \yii\db\ActiveRecord
               }
               return $this->uuid;
           },
-          'data',
+          'data' => function () {
+              if (!is_string($this->data)) {
+                return json_encode($this->data);
+              }
+              return $this->data;
+              
+          },
           'code' => function () {
               $script = $this->script;
               if ($this->script) {

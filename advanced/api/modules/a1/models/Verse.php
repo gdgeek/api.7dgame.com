@@ -85,12 +85,8 @@ class Verse extends \yii\db\ActiveRecord
     }
     public function extraFields()
     {
-        json_validate($this->data);
-        if(is_string($this->data)){
-            $data = json_decode($this->data);
-        }else{
-            $data = $this->data;
-        }
+      
+        
         $language = Yii::$app->request->get('language');
         if(!isset($language)){
             $language = 'en-us';
@@ -119,7 +115,13 @@ class Verse extends \yii\db\ActiveRecord
                 }
                 return $this->uuid;
             },
-            'data',
+            'data' => function () {
+                if (!is_string($this->data)) {
+                  return json_encode($this->data);
+                }
+                return $this->data;
+                
+            },
             'code' => function () {
                 $script = $this->script;
                 if ($this->script) {
