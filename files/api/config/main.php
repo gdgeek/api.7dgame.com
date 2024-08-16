@@ -79,17 +79,17 @@ return [
                     ],
                 ],
                 [
-
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'vp/oauth2',
                     'pluralize' => false,
                     'extraPatterns' => [
                         'POST apple-id' => 'apple-id',
-                        'POST apple-id-login' => 'apple-id-login',
-                        'GET clear' => 'clear',
+                        'POST binding' => 'binding',
+                       // 'POST apple-id-login' => 'apple-id-login',
+                        //'GET clear' => 'clear',
                         'GET test' => 'test',
-                        'POST test' => 'test',
-                        'POST register' => 'register',
+                        //'POST test' => 'test',
+                       // 'POST register' => 'register',
                         'POST login' => 'login',
                     ],
                 ],

@@ -51,6 +51,12 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
 {
 
 
+
+    const STATUS_DELETED = 0;
+    const STATUS_TEMP = 1;
+    const STATUS_INACTIVE = 9;
+    const STATUS_ACTIVE = 10;
+
     public static function findIdentity($id)
     {
         return static::findOne(['id' => $id]);
@@ -202,6 +208,9 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
             // 验证用户名的规则
             ['username', 'match', 'pattern' => '/^[a-zA-Z0-9_@.-]+$/', 'message' => 'Username can only contain letters, numbers, underscores, hyphens, @, and .'],
             [['password_reset_token'], 'unique'],
+            ['status', 'default', 'value' => self::STATUS_ACTIVE],
+            ['status', 'in', 'range' => [self::STATUS_ACTIVE, self::STATUS_TEMP, self::STATUS_INACTIVE, self::STATUS_DELETED]],
+        
         ];
     }
 

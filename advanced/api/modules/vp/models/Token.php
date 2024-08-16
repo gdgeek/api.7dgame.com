@@ -15,7 +15,6 @@ use Yii;
  * @property string $token
  * @property string $created_at
  * @property string $updated_at
- * @property int|null $user_id
  * @property string|null $name
  *
  * @property VpLevel[] $vpLevels
@@ -41,7 +40,6 @@ class Token extends \yii\db\ActiveRecord
         ];
     }
 
-
     /**
      * {@inheritdoc}
      */
@@ -58,11 +56,9 @@ class Token extends \yii\db\ActiveRecord
         return [
             [['key', 'token'], 'required'],
             [['created_at', 'updated_at'], 'safe'],
-            [['user_id'], 'integer'],
             [['key', 'token', 'name'], 'string', 'max' => 255],
             [['key'], 'unique'],
             [['token'], 'unique'],
-            [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['user_id' => 'id']],
         ];
     }
 
@@ -77,7 +73,6 @@ class Token extends \yii\db\ActiveRecord
             'token' => 'Token',
             'created_at' => 'Created At',
             'updated_at' => 'Updated At',
-            'user_id' => 'User ID',
             'name' => 'Name',
         ];
     }
@@ -91,16 +86,15 @@ class Token extends \yii\db\ActiveRecord
     {
         return $this->hasMany(VpLevel::className(), ['player_id' => 'id']);
     }
-
     /**
-     * Gets query for [[User]].
-     *
-     * @return \yii\db\ActiveQuery|UserQuery
-     */
-    public function getUser()
-    {
-        return $this->hasOne(User::className(), ['id' => 'user_id']);
-    }
+    * Gets query for [[Apples]]. 
+    * 
+    * @return \yii\db\ActiveQuery 
+    */ 
+    public function getApple() 
+    { 
+        return $this->hasOne(AppleId::className(), ['vp_token_id' => 'id']); 
+    } 
 
     /**
      * {@inheritdoc}

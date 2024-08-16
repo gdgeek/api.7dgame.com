@@ -67,7 +67,7 @@ class Oauth2Controller extends \yii\rest\Controller{
             }
             if($password !== null && $user->validatePassword($password)){
                 $apple->user_id = $user->id;
-               // $apple->token = null;//清除token
+                $apple->token = null;//清除token
                 $apple->save();
                 //成功绑定旧的用户
                 return [
@@ -158,14 +158,17 @@ class Oauth2Controller extends \yii\rest\Controller{
         $this->login($apple);
        
     }
-    public function actionAppleId(){
-        
+   
+    private function getApple(){
         $post = Yii::$app->request->post();
         
         \Firebase\JWT\JWT::$leeway = 60;
         $url = getenv('APPLE_REDIRECT_URI');
         if(isset($post['url'])){
             $url = $post['url'];
+        }
+        if(!isset($post['code'])){
+            throw new \yii\web\NotFoundHttpException('Not Found Code');
         }
         $provider = new \League\OAuth2\Client\Provider\Apple([
             'clientId'          => getenv('APPLE_CLIENT_ID'), // com.voxelparty.www
@@ -175,59 +178,69 @@ class Oauth2Controller extends \yii\rest\Controller{
             'redirectUri'       => $url,
             'scope'             => "email name",
         ]);
-        if(isset($post['id_token'])){
-            $jwt = $post['id_token'];
-            $tools = new JwtTools();
-            $token = $tools->parse($jwt);
-            $all = $token->claims()->all();
-        }else{
-            throw new Exception('Not Found id_token');
-        }
-        $cache = \Yii::$app->cache;
-        $cache->set('apple', ['ip'=>$this->getRealIpAddr(),'get'=>Yii::$app->request->get(),'post'=>Yii::$app->request->post(),'all'=>$all]);
 
-        if(isset($post['code'])){
-            $token = $provider->getAccessToken('authorization_code', [
-                'code' => $post['code']
-            ]);
-            $user = $provider->getResourceOwner($token);
-            
-            $apple = AppleId::find()->where(['apple_id'=>$user->getId()])->one();
-            if($apple == null){
-                $apple = new AppleId();
-                $apple->apple_id = $user->getId();
-                $apple->email = $user->getEmail();
-                $apple->first_name = $user->getFirstName();
-                $apple->last_name = $user->getLastName();
-                $apple->token = $token->getToken();
-                
-            }
-            if(isset($post['state']) && $apple->vp_token_id == null){
-                $state = $post['state'];
-                $pattern = '/^T0(\d+)$/';
-                $matches = [];
-                if (preg_match($pattern, $state, $matches)) {
-                   
-                    $number = $matches[1];
-                    $vpToken = Token::find()->where(['id'=>$number])->one();
-                    if($vpToken !== null){
-                        $apple->vp_token_id = $vpToken->id;
-                    }
-                }
-            }
-            $apple->save();
-            return $this->login($apple);
-        }else{
-            throw new \yii\web\NotFoundHttpException('Not Found Code');
-        }
        
+        $cache = \Yii::$app->cache;
+        $cache->set('apple', ['ip'=>$this->getRealIpAddr(),'get'=>Yii::$app->request->get(),'post'=>Yii::$app->request->post()]);
+
+        $token = $provider->getAccessToken('authorization_code', [
+            'code' => $post['code']
+        ]);
+        $user = $provider->getResourceOwner($token);
+        
+        $apple = AppleId::find()->where(['apple_id'=>$user->getId()])->one();
+        if($apple == null){
+            $apple = new AppleId();
+            $apple->apple_id = $user->getId();
+            $apple->email = $user->getEmail();
+            $apple->first_name = $user->getFirstName();
+            $apple->last_name = $user->getLastName();
+            $apple->token = $token->getToken();
+            
+            if($apple->validate()){
+                $apple->save();
+            }else{
+                throw new Exception(json_encode($apple->errors));
+            }
+        }
+
+        return $apple;
+        
+    }
+
+    public function actionBinding(){
+
+        $apple = $this->getApple();
+        if(isset($post['binding'])){
+            $tk = $post['binding'];
+            $token = Token::find()->where(['token'=>$tk])->one();
+            if($token == null){
+                throw new Exception('Token Not Found');
+            }
+            if($token->apple !== null){
+                throw new Exception('Token Already Bind');
+            }
+            $apple->vp_token_id = $token->id;
+            if($apple->validate()){
+                $apple->save();
+            }else{
+                throw new Exception(json_encode($apple->errors));
+            } 
+        }else{
+            throw new Exception('TokenId Not Found');
+        }
+        return $this->login($apple);
+    }
+    public function actionAppleId(){
+        $apple = $this->getApple();
+        return $this->login($apple);
     }
     private function login($apple){
         if($apple === null){
             throw new Exception('apple_id Not Found');
         }
         if($apple->user_id !== null){
-           // $apple->token = null;//清除token
+            $apple->token = null;//清除token
             $apple->save();
             //已经有用户绑定，返回Token
             return [
@@ -249,16 +262,24 @@ class Oauth2Controller extends \yii\rest\Controller{
             $user = new User();
             $user->username = $apple->apple_id;
             $user->email = $apple->email;
+            $user->status = User::STATUS_TEMP;
             $user->nickname = $apple->first_name . ' ' . $apple->last_name;
             //$user->setPassword(Yii::$app->security->generateRandomString());
             if($user->validate()){
                 $user->save();
                 $apple->user_id = $user->id;
-                $apple->save();
-                return [
-                    'type' => 'temp',
-                    'token' => $user->generateAccessToken()
-                ];
+                if($apple->validate()){
+                    $apple->save();
+                    return [
+                        'type' => 'temp',
+                        'token' => $user->generateAccessToken()
+                    ];
+                }else{
+                    $user->delete();
+                    throw new Exception(json_encode($apple->errors));
+                }
+                
+               
             }else{
                 throw new Exception(json_encode($user->errors));
             }
@@ -289,7 +310,7 @@ class Oauth2Controller extends \yii\rest\Controller{
             $jwt = $post['id_token'];
             $tools = new JwtTools();
             $token = $tools->parse($jwt);
-            $all = $token->claims()->all();
+            //$all = $token->claims()->all();
         }
         if(isset($post['code'])){
             $token = $provider->getAccessToken('authorization_code', [
