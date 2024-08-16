@@ -8,6 +8,7 @@ use api\modules\a1\models\Meta;
 use api\modules\a1\models\Resource;
 use api\modules\a1\models\VerseScript;
 
+use ArrayObject;
 use api\modules\vp\models\User;
 use api\modules\v1\models\MultilanguageVerse;
 use api\modules\v1\models\VerseQuery;
@@ -218,14 +219,16 @@ class Verse extends \yii\db\ActiveRecord
     public function getMetas()
     {
         $ret = [];
-        $data = $this->data;
+        $data = json_decode(json_encode($this->data));
+
 
         if (isset($data->children)) {
+
             foreach ($data->children->modules as $item) {
+
                 $ret[] = $item->parameters->meta_id;
             }
         }
-
         return Meta::find()->where(['id' => $ret])->all();
 
     }

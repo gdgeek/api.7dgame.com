@@ -141,7 +141,7 @@ class Verse extends \yii\db\ActiveRecord
         if(is_string($this->data)){
             $data = json_decode($this->data);
         }else{
-            $data = $this->data;
+            $data =json_decode(json_encode($this->data));
         }
         if (isset($data->parameters) && isset($data->parameters->space)) {
             $space = $data->parameters->space;
@@ -211,7 +211,7 @@ class Verse extends \yii\db\ActiveRecord
         if(is_string($this->data)){
             $data = json_decode($this->data);
         }else{
-            $data = $this->data;
+            $data =json_decode(json_encode($this->data));
         }
         if (isset($data->children) && isset($data->children->modules)) {
             foreach ($data->children->modules as $item) {

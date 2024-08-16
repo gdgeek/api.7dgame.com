@@ -224,7 +224,7 @@ class Verse extends \yii\db\ActiveRecord
         if(is_string($this->data)){
             $data = json_decode($this->data);
         }else{
-            $data = $this->data;
+            $data =json_decode(json_encode($this->data));
         }
 
         if (isset($data->children)) {
