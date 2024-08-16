@@ -4,11 +4,11 @@ on: pull_request
 
 jobs:
   test-and-static-analysis:
-    name: Test and Static Analysis
+    name: Test and Lint
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php: ['7.2', '7.3', '7.4', '8.0', '8.1']
+        php: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3']
 
     steps:
       - name: Set up PHP
@@ -19,12 +19,12 @@ jobs:
           tools: composer:v2
 
       - name: Set up Node
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v4
         with:
-          node-version: '14.x'
+          node-version: '20.x'
 
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -50,7 +50,42 @@ jobs:
           ./vendor/bin/phpunit --configuration tests/phpunit.xml --testsuite=LinearAlgebra
 
       - name: PHP Code Sniffer
-        run: ./vendor/bin/phpcs --ignore=vendor --standard=tests/coding_standard.xml -s .
+        run: |
+          ./vendor/bin/phpcs --version
+          ./vendor/bin/phpcs --ignore=vendor --standard=tests/coding_standard.xml -s .
+
+  static-analysis:
+    name: Static Analysis
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ['7.2']
+
+    steps:
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: xdebug
+          tools: composer:v2
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Composer
+        run: composer install --no-interaction
+
+      - name: Static analysis
+        run: |
+          ./vendor/bin/phpstan --version
+          ./vendor/bin/phpstan analyze -c tests/phpstan.neon
 
   code-coverage:
     name: Code coverage
@@ -68,12 +103,12 @@ jobs:
           tools: composer:v2
 
       - name: Set up Node
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v4
         with:
-          node-version: '14.x'
+          node-version: '20.x'
 
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 

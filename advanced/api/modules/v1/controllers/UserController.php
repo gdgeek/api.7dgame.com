@@ -7,7 +7,7 @@ use api\modules\v1\models\User;
 use api\modules\v1\models\UserCreation;
 use mdm\admin\components\AccessControl;
 use mdm\admin\components\Configs;
-use sizeg\jwt\JwtHttpBearerAuth;
+use bizley\jwt\JwtHttpBearerAuth;
 use Yii;
 use yii\base\Exception;
 use yii\filters\auth\CompositeAuth;

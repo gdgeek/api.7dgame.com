@@ -9,6 +9,8 @@ use MathPHP\LinearAlgebra\Reduction;
 
 /**
  * m x n Matrix
+ *
+ * @extends Matrix<int|float>
  */
 class NumericMatrix extends Matrix
 {
@@ -32,7 +34,7 @@ class NumericMatrix extends Matrix
     /**
      * Constructor
      *
-     * @param array[] $A of arrays $A m x n matrix
+     * @param array<array<int|float>> $A of arrays $A m x n matrix
      *
      * @throws Exception\BadDataException if any rows have a different column count
      */
@@ -52,7 +54,7 @@ class NumericMatrix extends Matrix
      *
      * @throws Exception\BadDataException
      */
-    protected function validateMatrixDimensions()
+    protected function validateMatrixDimensions(): void
     {
         foreach ($this->A as $i => $row) {
             if (\count($row) !== $this->n) {
@@ -1281,11 +1283,13 @@ class NumericMatrix extends Matrix
             $R[$i] = \array_fill(0, $B->n, 0);
             foreach ($Bᵀ as $j => $Bᶜᵒˡ⟦j⟧) {
                 foreach ($Aʳᵒʷ⟦i⟧ as $k => $A⟦i⟧⟦k⟧) {
+                    // @phpstan-ignore-next-line (Remove in PHP 8.0, no longer returns false)
                     $R[$i][$j] += $A⟦i⟧⟦k⟧ * $Bᶜᵒˡ⟦j⟧[$k];
                 }
             }
         }
 
+        // @phpstan-ignore-next-line (Due to above false from array_fill)
         return MatrixFactory::createNumeric($R, $this->ε);
     }
 
@@ -1440,6 +1444,7 @@ class NumericMatrix extends Matrix
         // Augment each aᵢ₁ to aᵢn block
         $matrices = [];
         foreach ($arrays as $row) {
+            /** @var NumericMatrix $initial_matrix */
             $initial_matrix = \array_shift($row);
             $matrices[] = \array_reduce(
                 $row,
@@ -1451,6 +1456,7 @@ class NumericMatrix extends Matrix
         }
 
         // Augment below each row block a₁ to am
+        /** @var NumericMatrix $initial_matrix */
         $initial_matrix = \array_shift($matrices);
         $A⊗B            = \array_reduce(
             $matrices,
@@ -1527,6 +1533,7 @@ class NumericMatrix extends Matrix
     public function inverse(): NumericMatrix
     {
         if ($this->catalog->hasInverse()) {
+            /** @var NumericMatrix */
             return $this->catalog->getInverse();
         }
 
@@ -2046,7 +2053,7 @@ class NumericMatrix extends Matrix
      *
      * tr(A) = a₁₁ + a₂₂ + ... ann
      *
-     * @return number
+     * @return int|float
      *
      * @throws Exception\MatrixException if the matrix is not a square matrix
      */
@@ -2070,7 +2077,7 @@ class NumericMatrix extends Matrix
      * 1-norm (‖A‖₁)
      * Maximum absolute column sum of the matrix
      *
-     * @return number
+     * @return int|float
      */
     public function oneNorm()
     {
@@ -2095,7 +2102,7 @@ class NumericMatrix extends Matrix
      * ‖A‖F = √ Σ   Σ  |aᵢⱼ|²
      *         ᵢ₌₁ ᵢ₌₁
      *
-     * @return number
+     * @return int|float
      */
     public function frobeniusNorm()
     {
@@ -2116,7 +2123,7 @@ class NumericMatrix extends Matrix
      * Infinity norm (‖A‖∞)
      * Maximum absolute row sum of the matrix
      *
-     * @return number
+     * @return int|float
      */
     public function infinityNorm()
     {
@@ -2134,7 +2141,7 @@ class NumericMatrix extends Matrix
      * Max norm (‖A‖max)
      * Elementwise max
      *
-     * @return number
+     * @return int|float
      */
     public function maxNorm()
     {
@@ -2180,7 +2187,7 @@ class NumericMatrix extends Matrix
      *   │ref(A)│ = determinant of the row echelon form of A
      *   ⁿ        = number of row swaps when computing REF
      *
-     * @return number
+     * @return int|float
      *
      * @throws Exception\MatrixException if matrix is not square
      * @throws Exception\IncorrectTypeException
@@ -2189,6 +2196,7 @@ class NumericMatrix extends Matrix
     public function det()
     {
         if ($this->catalog->hasDeterminant()) {
+            /** @var int|float */
             return $this->catalog->getDeterminant();
         }
 
@@ -2197,6 +2205,8 @@ class NumericMatrix extends Matrix
         }
 
         $m = $this->m;
+
+        /** @var NumericMatrix $R */
         $R = MatrixFactory::create($this->A);
 
         /*
@@ -2306,7 +2316,7 @@ class NumericMatrix extends Matrix
      * @param int $mᵢ Row to exclude
      * @param int $nⱼ Column to exclude
      *
-     * @return number
+     * @return int|float
      *
      * @throws Exception\MatrixException if matrix is not square
      * @throws Exception\MatrixException if row to exclude for cofactor does not exist
@@ -2366,6 +2376,7 @@ class NumericMatrix extends Matrix
      *  - rowDivide
      *  - rowAdd
      *  - rowAddScalar
+     *  - rowAddVector
      *  - rowSubtract
      *  - rowSubtractScalar
      **************************************************************************/
@@ -2494,6 +2505,37 @@ class NumericMatrix extends Matrix
     }
 
     /**
+     * Add components of vector V to row mᵢ
+     *
+     * @param int    $mᵢ Row to add vector $v to
+     * @param Vector $V  Vector to add to row mᵢ
+     *
+     * @return NumericMatrix
+     *
+     * @throws Exception\MatrixException if row to add does not exist
+     * @throws Exception\BadParameterException if the vector has a different # of components to the # of columns
+     * @throws Exception\IncorrectTypeException
+     */
+    public function rowAddVector(int $mᵢ, Vector $V): NumericMatrix
+    {
+        if ($mᵢ < 0 || $mᵢ >= $this->m) {
+            throw new Exception\MatrixException("Row to add to ($mᵢ) does not exist");
+        }
+        if (count($V) !== $this->n) {
+            throw new Exception\BadParameterException('Vector is not the same length as matrix columns');
+        }
+
+        $n = $this->n;
+        $R = $this->A;
+
+        for ($j = 0; $j < $n; $j++) {
+            $R[$mᵢ][$j] += $V[$j];
+        }
+
+        return MatrixFactory::createNumeric($R, $this->ε);
+    }
+
+    /**
      * Subtract k times row mᵢ to row mⱼ
      *
      * @param int   $mᵢ Row to multiply * k to be subtracted to row mⱼ
@@ -2554,6 +2596,7 @@ class NumericMatrix extends Matrix
      * COLUMN OPERATIONS - Return a Matrix
      *  - columnMultiply
      *  - columnAdd
+     *  - columnAddVector
      **************************************************************************/
 
     /**
@@ -2612,6 +2655,37 @@ class NumericMatrix extends Matrix
 
         for ($i = 0; $i < $m; $i++) {
             $R[$i][$nⱼ] += $R[$i][$nᵢ] * $k;
+        }
+
+        return MatrixFactory::createNumeric($R, $this->ε);
+    }
+
+    /**
+     * Add components of vector V to column nᵢ
+     *
+     * @param int    $nᵢ Column to add vector $v to
+     * @param Vector $V  Vector to add to column nᵢ
+     *
+     * @return NumericMatrix
+     *
+     * @throws Exception\MatrixException if column to add does not exist
+     * @throws Exception\BadParameterException if the vector has a different # of components to the # of rows
+     * @throws Exception\IncorrectTypeException
+     */
+    public function columnAddVector(int $nᵢ, Vector $V): NumericMatrix
+    {
+        if ($nᵢ < 0 || $nᵢ >= $this->n) {
+            throw new Exception\MatrixException("Column to add to ($nᵢ) does not exist");
+        }
+        if (count($V) !== $this->m) {
+            throw new Exception\BadParameterException('Vector is not the same length as matrix rows');
+        }
+
+        $m = $this->m;
+        $R = $this->A;
+
+        for ($i = 0; $i < $m; $i++) {
+            $R[$i][$nᵢ] += $V[$i];
         }
 
         return MatrixFactory::createNumeric($R, $this->ε);
@@ -2819,8 +2893,8 @@ class NumericMatrix extends Matrix
      * Otherwise, it is more efficient to decompose and then solve.
      * Use LU Decomposition and solve Ax = b.
      *
-     * @param Vector|array $b solution to Ax = b
-     * @param string       $method (optional) Force a specific solve method - defaults to DEFAULT where various methods are tried
+     * @param Vector|array<int|float> $b solution to Ax = b
+     * @param string                  $method (optional) Force a specific solve method - defaults to DEFAULT where various methods are tried
      *
      * @return Vector x
      *
@@ -2859,7 +2933,9 @@ class NumericMatrix extends Matrix
             default:
                 // If inverse is already calculated, solve: x = A⁻¹b
                 if ($this->catalog->hasInverse()) {
-                    return new Vector($this->catalog->getInverse()->multiply($b)->getColumn(0));
+                    /** @var NumericMatrix $inverse */
+                    $inverse = $this->catalog->getInverse();
+                    return new Vector($inverse->multiply($b)->getColumn(0));
                 }
 
                 // If 2x2, just compute the inverse and solve: x = A⁻¹b
@@ -2948,7 +3024,7 @@ class NumericMatrix extends Matrix
      *
      * @param string $method Algorithm used to compute the eigenvalues
      *
-     * @return array of eigenvalues
+     * @return array<int|float> of eigenvalues
      *
      * @throws Exception\MatrixException if method is not a valid eigenvalue method
      * @throws Exception\MathException
@@ -3019,6 +3095,7 @@ class NumericMatrix extends Matrix
      */
     public function __toString(): string
     {
+        // @phpstan-ignore-next-line
         return \trim(\array_reduce(\array_map(
             function ($mᵢ) {
                 return '[' . \implode(', ', $mᵢ) . ']';
@@ -3039,7 +3116,7 @@ class NumericMatrix extends Matrix
      *     [3, 4, 5, 6]
      *   [ε] => 1.0E-11
      *
-     * @return array
+     * @return array{matrix: string, data: string, ε: float}
      */
     public function __debugInfo(): array
     {

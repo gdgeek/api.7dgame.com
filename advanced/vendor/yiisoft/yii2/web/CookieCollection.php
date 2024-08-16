@@ -1,8 +1,8 @@
 <?php
 /**
- * @link http://www.yiiframework.com/
+ * @link https://www.yiiframework.com/
  * @copyright Copyright (c) 2008 Yii Software LLC
- * @license http://www.yiiframework.com/license/
+ * @license https://www.yiiframework.com/license/
  */
 
 namespace yii\web;
@@ -52,7 +52,7 @@ class CookieCollection extends BaseObject implements \IteratorAggregate, \ArrayA
      * Returns an iterator for traversing the cookies in the collection.
      * This method is required by the SPL interface [[\IteratorAggregate]].
      * It will be implicitly called when you use `foreach` to traverse the collection.
-     * @return ArrayIterator an iterator for traversing the cookies in the collection.
+     * @return ArrayIterator<string, Cookie> an iterator for traversing the cookies in the collection.
      */
     #[\ReturnTypeWillChange]
     public function getIterator()
@@ -114,7 +114,18 @@ class CookieCollection extends BaseObject implements \IteratorAggregate, \ArrayA
     public function has($name)
     {
         return isset($this->_cookies[$name]) && $this->_cookies[$name]->value !== ''
-            && ($this->_cookies[$name]->expire === null || $this->_cookies[$name]->expire === 0 || $this->_cookies[$name]->expire >= time());
+            && ($this->_cookies[$name]->expire === null
+                || $this->_cookies[$name]->expire === 0
+                || (
+                    (is_string($this->_cookies[$name]->expire) && strtotime($this->_cookies[$name]->expire) >= time())
+                    || (
+                        interface_exists('\\DateTimeInterface')
+                        && $this->_cookies[$name]->expire instanceof \DateTimeInterface
+                        && $this->_cookies[$name]->expire->getTimestamp() >= time()
+                    )
+                    || $this->_cookies[$name]->expire >= time()
+                )
+            );
     }
 
     /**
@@ -175,7 +186,7 @@ class CookieCollection extends BaseObject implements \IteratorAggregate, \ArrayA
 
     /**
      * Returns the collection as a PHP array.
-     * @return array the array representation of the collection.
+     * @return Cookie[] the array representation of the collection.
      * The array keys are cookie names, and the array values are the corresponding cookie objects.
      */
     public function toArray()
@@ -212,7 +223,7 @@ class CookieCollection extends BaseObject implements \IteratorAggregate, \ArrayA
      * It is implicitly called when you use something like `$cookie = $collection[$name];`.
      * This is equivalent to [[get()]].
      * @param string $name the cookie name
-     * @return Cookie the cookie with the specified name, null if the named cookie does not exist.
+     * @return Cookie|null the cookie with the specified name, null if the named cookie does not exist.
      */
     #[\ReturnTypeWillChange]
     public function offsetGet($name)

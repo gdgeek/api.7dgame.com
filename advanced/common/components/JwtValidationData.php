@@ -2,7 +2,7 @@
 
 namespace common\components;
 
-class JwtValidationData extends \sizeg\jwt\JwtValidationData
+class JwtValidationData extends \bizley\jwt\JwtValidationData
 
 {
 

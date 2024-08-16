@@ -41,11 +41,25 @@ return [
             ],
         ],
         'jwt' => [
-            'class' => \sizeg\jwt\Jwt::class,
-            'key' => getenv('JWT_KEY'),
-            'jwtValidationData' => \common\components\JwtValidationData::class,
+            'class' => \bizley\jwt\Jwt::class,
+            'signer' => \bizley\jwt\Jwt::HS256,
+            'signingKey' => [
+                'key' =>  getenv('JWT_KEY'), // path to your PRIVATE key, you can start the path with @ to indicate this is a Yii alias
+                'passphrase' => '', // omit it if you are not adding any passphrase
+                'method' => \bizley\jwt\Jwt::METHOD_FILE,
+            ],
+            'validationConstraints'=> static function (\bizley\jwt\Jwt $jwt) {
+                $config = $jwt->getConfiguration();
+                return [
+                    new \Lcobucci\JWT\Validation\Constraint\SignedWith($config->signer(), $config->verificationKey()),
+                    new \Lcobucci\JWT\Validation\Constraint\LooseValidAt(
+                        new \Lcobucci\Clock\SystemClock(new \DateTimeZone(\Yii::$app->timeZone)),
+                        new \DateInterval('PT10S')
+                    ),
+                ];
+            }
         ],
-
+/*
         'jwt_parameter' => [
             'class' => \common\components\JwtParameter::class,
             'issuer' => getenv('JWT_ISSUER'),
@@ -68,6 +82,6 @@ return [
                 'base_uri' => 'https://api.mch.weixin.qq.com/',
             ],
             'secret_key' => getenv('PAY_SECRET_KEY'),
-        ],
+        ],*/
     ],
 ];

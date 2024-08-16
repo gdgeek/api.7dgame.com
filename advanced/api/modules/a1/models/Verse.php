@@ -2,11 +2,12 @@
 
 namespace api\modules\a1\models;
 
-use api\modules\a1\models\EventLink;
+//use api\modules\a1\models\EventLink;
 use api\modules\a1\models\File;
 use api\modules\a1\models\Meta;
 use api\modules\a1\models\Resource;
 use api\modules\v1\models\User;
+use api\modules\v1\models\MultilanguageVerse;
 use api\modules\v1\models\VerseQuery;
 use Yii;
 use yii\behaviors\BlameableBehavior;
@@ -43,7 +44,8 @@ class Verse extends \yii\db\ActiveRecord
             [
                 'class' => TimestampBehavior::class,
                 'attributes' => [
-                    \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => ['created_at'],
+                    \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => ['created_at', 'updated_at'],
+                    \yii\db\ActiveRecord::EVENT_BEFORE_UPDATE => ['updated_at'],
                 ],
                 'value' => new Expression('NOW()'),
             ],
@@ -84,12 +86,24 @@ class Verse extends \yii\db\ActiveRecord
     public function extraFields()
     {
         $data = json_decode($this->data);
-
+        $language = Yii::$app->request->get('language');
+        if(!isset($language)){
+            $language = 'en-us';
+        }
+        $context = MultilanguageVerse::find()->where(['verse_id' => $this->id, 'language' => $language])->one();
         return [
             'id',
             'metas',
-            'name',
-            'description' => function () {
+            'name' => function() use($context){
+                if(isset($context)){
+                    return $context->name;
+                }    
+                return $this->name;
+            },
+            'description' => function() use($context){
+                if(isset($context)){
+                    return $context->description;
+                }    
                 $info = json_decode($this->info);
                 return $info->description;
             },
@@ -149,10 +163,12 @@ class Verse extends \yii\db\ActiveRecord
      *
      * @return \yii\db\ActiveQuery|EventLinkQuery
      */
+    /*
     public function getEventLinks()
     {
         return $this->hasMany(EventLink::className(), ['verse_id' => 'id']);
     }
+    */
     public function getResources()
     {
         $metas = $this->metas;
@@ -166,6 +182,8 @@ class Verse extends \yii\db\ActiveRecord
         $items = Resource::find()->where(['id' => $ids])->all();
         return $items;
     }
+
+
     public function getNodes($inputs, $quest)
     {
         $m = [];
@@ -187,20 +205,7 @@ class Verse extends \yii\db\ActiveRecord
 
         return $datas;
     }
-/*
-public function getSpace()
-{
-$data = json_decode($this->data);
-if (isset($data->parameters) && isset($data->parameters->space)) {
-$space = $data->parameters->space;
-$model = Space::findOne($space->id);
-if ($model) {
-return $model;
-}
 
-}
-}
- */
     /**
      * Gets query for [[Metas]].
      *

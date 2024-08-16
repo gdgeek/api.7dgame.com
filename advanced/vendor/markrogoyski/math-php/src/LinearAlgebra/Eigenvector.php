@@ -2,7 +2,9 @@
 
 namespace MathPHP\LinearAlgebra;
 
+use MathPHP\Arithmetic;
 use MathPHP\Exception;
+use MathPHP\Exception\MatrixException;
 use MathPHP\Functions\Map\Single;
 use MathPHP\Functions\Special;
 
@@ -65,8 +67,14 @@ class Eigenvector
         foreach ($eigenvalues as $eigenvalue) {
             // If this is a duplicate eigenvalue, and this is the second instance, the first
             // pass already found all the vectors.
-            $key = \array_search($eigenvalue, \array_column($solution_array, 'eigenvalue'));
-            if (!$key) {
+            $key = false;
+            foreach (\array_column($solution_array, 'eigenvalue') as $i => $v) {
+                if (Arithmetic::almostEqual($v, $eigenvalue, $A->getError())) {
+                    $key = $i;
+                    break;
+                }
+            }
+            if ($key === false) {
                 $Iλ = MatrixFactory::identity($number)->scalarMultiply($eigenvalue);
                 $T = $A->subtract($Iλ);
 
@@ -94,7 +102,7 @@ class Eigenvector
                     $solution          = \array_fill(0, $number, 0);
                     $solution[$column] = 1;
                     $solution_array[]  = ['eigenvalue' => $eigenvalue, 'vector' => $solution];
-                    // Add the solution to rref.
+                    // Add the solution to rref. @phpstan-ignore-next-line
                     $rref = $rref->augmentBelow(MatrixFactory::create([$solution]))->rref();
                     $number_of_solutions--;
                 }
@@ -108,7 +116,9 @@ class Eigenvector
                     $forced_variables = [];
                     $n                = $rref->getN();
                     // The solution vector is a column vector.
-                    $solution = new Vector(\array_fill(0, $n - $number_to_force, 0));
+                    /** @var array<int> $fill */
+                    $fill = \array_fill(0, $n - $number_to_force, 0);
+                    $solution = new Vector($fill);
                     $matrix   = $rref;
                     for ($i = 0; $i < $n && \count($forced_variables) < $number_to_force; $i++) {
                         // Make sure that removing column $i does not leave behind a row of zeros
@@ -146,6 +156,7 @@ class Eigenvector
                     // of $rref. Doing this will set the constraint that the dot product between the next
                     // solution and this solution be zero, or that they are orthoganol.
                     if ($vectors_found < $number_of_solutions) {
+                        // @phpstan-ignore-next-line
                         $rref = $rref->augmentBelow(MatrixFactory::create([$eigenvector]))->rref();
                     }
                 }
@@ -156,6 +167,7 @@ class Eigenvector
             // Reset the array keys.
             $solution_array = \array_values($solution_array);
         }
+        /** @var NumericMatrix $matrix */
         $matrix = MatrixFactory::create($M);
         return $matrix->transpose();
     }
@@ -190,9 +202,11 @@ class Eigenvector
     /**
      * Find the zero columns
      *
-     * @param  NumericMatrix $M
+     * @param NumericMatrix $M
      *
-     * @return array
+     * @return array<int>
+     *
+     * @throws MatrixException
      */
     private static function findZeroColumns(NumericMatrix $M): array
     {

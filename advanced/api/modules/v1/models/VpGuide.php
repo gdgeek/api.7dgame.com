@@ -25,19 +25,18 @@ class VpGuide extends \yii\db\ActiveRecord
     public function fields()
     {
         $fields = parent::fields();
-        
         $fields['level'] = function () {return $this->level;};
         return $fields;
     }
-    /**
+    /**utf8mb4_bin
      * {@inheritdoc}
      */
     public function rules()
     {
         return [
             
-            [['order', 'level_id'], 'integer'],
-            [['level_id'], 'required'],
+            [['order', 'level_id', 'map_id'], 'integer'],
+            [['level_id', 'map_id'], 'required'],
             [['level_id'], 'unique'],
             [['level_id'], 'exist', 'skipOnError' => true, 'targetClass' => Verse::className(), 'targetAttribute' => ['level_id' => 'id']],
         ];

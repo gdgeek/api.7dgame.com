@@ -17,7 +17,7 @@ class MetaSearch extends Meta
     public function rules()
     {
         return [
-            [['id', 'author_id', 'custom', 'updater_id', 'image_id'], 'integer'],
+            [['id', 'author_id', 'prefab', 'updater_id', 'image_id'], 'integer'],
             [['created_at', 'updated_at', 'title', 'info', 'data'], 'safe'],
         ];
     }
@@ -63,7 +63,7 @@ class MetaSearch extends Meta
             'updater_id' => $this->updater_id,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
-            'custom' => $this->custom,
+            'prefab' => $this->prefab,
             'image_id' => $this->image_id,
         ]);
 

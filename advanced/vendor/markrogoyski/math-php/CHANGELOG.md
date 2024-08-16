@@ -1,5 +1,45 @@
 # MathPHP Change Log
 
+## v2.10.0 - 2024-04-16
+
+### New Features
+* NumberTheory\Integer `isPrime`
+
+## v2.9.0 - 2024-03-02
+
+### New Features
+* Distance `chebyshev`
+
+### Improvements
+* Internal build CI/CD improvements
+
+## v2.8.1 - 2023-05-18
+
+### Improvements
+* Internal improvements to improve conformance with static analysis tools
+
+## v2.8.0 - 2023-05-07
+
+### New Features
+* Matrix `rowAddVector`
+* Matrix `columnAddVector`
+
+### Improvements
+* Better error handling and exception message in `Sequence\NonIntenger::hyperharmonic`
+* Internal code improvements to conform to static analysis checks
+
+### Backwards Incompatible Changes
+* Helper method names changed (public abstract methods but not part of published interface)
+  * `NumericalDifferentiation::isTargetInPoints` changed to `assertTargetInPoints`
+  * `NumericalDifferentiation::isSpacingConstant` changed to `assertSpacingConstant`
+
+## v2.7.0 - 2022-12-31
+
+### Improvements
+* Improved algorithm for `regularizedIncompleteBeta`: Addresses issue 458
+* Issue 456: Improved PHPDoc blocks: Changed "number" to "int|float"
+* Added PHP 8.2 for CI test target
+
 ## v2.6.0 - 2022-04-10
 
 ### Improvements

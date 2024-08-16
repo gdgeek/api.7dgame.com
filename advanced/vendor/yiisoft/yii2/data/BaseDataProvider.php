@@ -1,8 +1,8 @@
 <?php
 /**
- * @link http://www.yiiframework.com/
+ * @link https://www.yiiframework.com/
  * @copyright Copyright (c) 2008 Yii Software LLC
- * @license http://www.yiiframework.com/license/
+ * @license https://www.yiiframework.com/license/
  */
 
 namespace yii\data;
@@ -29,6 +29,7 @@ use yii\base\InvalidArgumentException;
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @since 2.0
+ * @phpcs:disable Squiz.NamingConventions.ValidVariableName.PrivateNoUnderscore
  */
 abstract class BaseDataProvider extends Component implements DataProviderInterface
 {
@@ -37,7 +38,7 @@ abstract class BaseDataProvider extends Component implements DataProviderInterfa
      */
     private static $counter = 0;
     /**
-     * @var string an ID that uniquely identifies the data provider among all data providers.
+     * @var string|null an ID that uniquely identifies the data provider among all data providers.
      * Generated automatically the following way in case it is not set:
      *
      * - First data provider ID is empty.
@@ -168,7 +169,6 @@ abstract class BaseDataProvider extends Component implements DataProviderInterfa
         } elseif ($this->_totalCount === null) {
             $this->_totalCount = $this->prepareTotalCount();
         }
-
         return $this->_totalCount;
     }
 

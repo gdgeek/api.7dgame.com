@@ -3,7 +3,7 @@ namespace api\modules\v1\controllers;
 
 use api\modules\v1\models\MetaSearch;
 use mdm\admin\components\AccessControl;
-use sizeg\jwt\JwtHttpBearerAuth;
+use bizley\jwt\JwtHttpBearerAuth;
 use Yii;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
@@ -64,13 +64,13 @@ class PrefabController extends ActiveController
     {
         $searchModel = new MetaSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-        $dataProvider->query->andWhere(['id' => $id, 'custom' => 0]);
+        $dataProvider->query->andWhere(['id' => $id, 'prefab' => 1]);
         return $dataProvider->query->one();
     }
     public function actionDelete($id)
     {
         $model = \api\modules\v1\models\Meta::findOne($id);
-        if ($model->custom != 0) {
+        if ($model->prefab == 0) {
           throw new \yii\web\ForbiddenHttpException('You can not delete this item');
         }
         $model->delete();
@@ -80,7 +80,7 @@ class PrefabController extends ActiveController
     {
         $model = \api\modules\v1\models\Meta::findOne($id);
         $model->load(Yii::$app->getRequest()->getBodyParams(), '');
-        $model->custom = 0;
+        $model->prefab = 1;
         if ($model->save()) {
             return $model;
         } else {
@@ -91,7 +91,7 @@ class PrefabController extends ActiveController
     {
         $model = new \api\modules\v1\models\Meta();
         $model->load(Yii::$app->getRequest()->getBodyParams(), '');
-        $model->custom = 0;
+        $model->prefab = 1;
         if ($model->save()) {
             return $model;
         } else {
@@ -102,7 +102,7 @@ class PrefabController extends ActiveController
     {
         $searchModel = new MetaSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-        $dataProvider->query->andWhere(['custom' => 0]);
+        $dataProvider->query->andWhere(['prefab' => 1]);
         return $dataProvider;
     }
 }

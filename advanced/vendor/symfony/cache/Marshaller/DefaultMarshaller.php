@@ -23,7 +23,7 @@ class DefaultMarshaller implements MarshallerInterface
     private bool $useIgbinarySerialize = true;
     private bool $throwOnSerializationFailure = false;
 
-    public function __construct(bool $useIgbinarySerialize = null, bool $throwOnSerializationFailure = false)
+    public function __construct(?bool $useIgbinarySerialize = null, bool $throwOnSerializationFailure = false)
     {
         if (null === $useIgbinarySerialize) {
             $useIgbinarySerialize = \extension_loaded('igbinary') && version_compare('3.1.6', phpversion('igbinary'), '<=');
@@ -34,9 +34,6 @@ class DefaultMarshaller implements MarshallerInterface
         $this->throwOnSerializationFailure = $throwOnSerializationFailure;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function marshall(array $values, ?array &$failed): array
     {
         $serialized = $failed = [];
@@ -59,9 +56,6 @@ class DefaultMarshaller implements MarshallerInterface
         return $serialized;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function unmarshall(string $value): mixed
     {
         if ('b:0;' === $value) {
@@ -71,7 +65,7 @@ class DefaultMarshaller implements MarshallerInterface
             return null;
         }
         static $igbinaryNull;
-        if ($value === ($igbinaryNull ?? $igbinaryNull = \extension_loaded('igbinary') ? igbinary_serialize(null) : false)) {
+        if ($value === $igbinaryNull ??= \extension_loaded('igbinary') ? igbinary_serialize(null) : false) {
             return null;
         }
         $unserializeCallbackHandler = ini_set('unserialize_callback_func', __CLASS__.'::handleUnserializeCallback');
@@ -97,7 +91,7 @@ class DefaultMarshaller implements MarshallerInterface
     /**
      * @internal
      */
-    public static function handleUnserializeCallback(string $class)
+    public static function handleUnserializeCallback(string $class): never
     {
         throw new \DomainException('Class not found: '.$class);
     }

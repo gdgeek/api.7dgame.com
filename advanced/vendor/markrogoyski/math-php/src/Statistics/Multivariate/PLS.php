@@ -3,8 +3,10 @@
 namespace MathPHP\Statistics\Multivariate;
 
 use MathPHP\Exception;
+use MathPHP\Exception\BadDataException;
 use MathPHP\LinearAlgebra\Matrix;
 use MathPHP\LinearAlgebra\MatrixFactory;
+use MathPHP\LinearAlgebra\NumericMatrix;
 use MathPHP\LinearAlgebra\Vector;
 use MathPHP\Statistics\Descriptive;
 
@@ -29,33 +31,33 @@ class PLS
     /** @var Vector Y Scale */
     private $Yscale;
 
-    /** @var Matrix $B Regression Coefficients*/
+    /** @var NumericMatrix $B Regression Coefficients */
     private $B;
 
-    /** @var Matrix $C  Y Loadings*/
+    /** @var NumericMatrix $C  Y Loadings */
     private $C;
 
-    /** @var Matrix $P Projection of X to X scores*/
+    /** @var NumericMatrix $P Projection of X to X scores */
     private $P;
 
-    /** @var Matrix $T X Scores*/
+    /** @var NumericMatrix $T X Scores */
     private $T;
 
-    /** @var Matrix $U Y Scores*/
+    /** @var NumericMatrix $U Y Scores */
     private $U;
 
-    /** @var Matrix $W X Weights*/
+    /** @var NumericMatrix $W X Weights */
     private $W;
 
     /**
-     * @param Matrix $X each row is a sample, each column is a variable
-     * @param Matrix $Y each row is a sample, each column is a variable
-     * @param int    $ncomp number of components to use in the model
-     * @param bool   $scale standardize each column?
+     * @param NumericMatrix $X each row is a sample, each column is a variable
+     * @param NumericMatrix $Y each row is a sample, each column is a variable
+     * @param int           $ncomp number of components to use in the model
+     * @param bool          $scale standardize each column?
      *
      * @throws Exception\BadDataException if any rows have a different column count
      */
-    public function __construct(Matrix $X, Matrix $Y, int $ncomp, bool $scale = false)
+    public function __construct(NumericMatrix $X, NumericMatrix $Y, int $ncomp, bool $scale = false)
     {
         // Check that X and Y have the same amount of data.
         if ($X->getM() !== $Y->getM()) {
@@ -69,12 +71,22 @@ class PLS
             $this->Xscale = self::columnStdevs($X);
             $this->Yscale = self::columnStdevs($Y);
         } else {
-            $this->Xscale = new Vector(array_fill(0, $X->getN(), 1));
-            $this->Yscale = new Vector(array_fill(0, $Y->getN(), 1));
+            /** @var array<int> $xFill */
+            $xFill = array_fill(0, $X->getN(), 1);
+            $this->Xscale = new Vector($xFill);
+            /** @var array<int> $yFill */
+            $yFill = array_fill(0, $Y->getN(), 1);
+            $this->Yscale = new Vector($yFill);
         }
 
         $E = $this->standardizeData($X, $this->Xcenter, $this->Xscale);
         $F = $this->standardizeData($Y, $this->Ycenter, $this->Yscale);
+
+        $C = null;
+        $P = null;
+        $T = null;
+        $U = null;
+        $W = null;
 
         $tol = 1E-8;
         for ($i = 0; $i < $ncomp; $i++) {
@@ -87,7 +99,7 @@ class PLS
             while (!$end) {
                 ++$iterations;
 
-                // $w is a unit vector
+                /** @var NumericMatrix $w is a unit vector */
                 $w = $E->transpose()->multiply($u);
                 $w = $w->scalarDivide($w->frobeniusNorm());
 
@@ -112,15 +124,27 @@ class PLS
             $F = $F->subtract($t->multiply($c->transpose())->scalarMultiply($d));
 
             // Add each of these columns to the overall matrices
-            $this->C = is_null($this->C) ? $c : $this->C->augment($c);
-            $this->P = is_null($this->P) ? $p : $this->P->augment($p);
-            $this->T = is_null($this->T) ? $t : $this->T->augment($t);
-            $this->U = is_null($this->U) ? $u : $this->U->augment($u);
-            $this->W = is_null($this->W) ? $w : $this->W->augment($w);
+            $C = \is_null($C) ? $c : $C->augment($c);
+            $P = \is_null($P) ? $p : $P->augment($p);
+            $T = \is_null($T) ? $t : $T->augment($t);
+            $U = \is_null($U) ? $u : $U->augment($u);
+            $W = \is_null($W) ? $w : $W->augment($w);
         }
 
-        // Calculate R (or W*)
+        // @phpstan-ignore-next-line
+        $this->C = $C;
+        // @phpstan-ignore-next-line
+        $this->P = $P;
+        // @phpstan-ignore-next-line
+        $this->T = $T;
+        // @phpstan-ignore-next-line
+        $this->U = $U;
+        // @phpstan-ignore-next-line
+        $this->W = $W;
+
+        // Calculate R (or W*) @phpstan-ignore-next-line
         $R = $this->W->multiply($this->P->transpose()->multiply($this->W)->inverse());
+        // @phpstan-ignore-next-line
         $this->B = $R->multiply($this->C->transpose());
     }
 
@@ -138,6 +162,8 @@ class PLS
      * Get the regression coefficients
      *
      * The matrix that best transforms E into F
+     *
+     * @return NumericMatrix
      */
     public function getCoefficients(): Matrix
     {
@@ -148,6 +174,8 @@ class PLS
      * Get the loadings for Y
      *
      * Each loading column transforms F to U
+     *
+     * @return NumericMatrix
      */
     public function getYLoadings(): Matrix
     {
@@ -158,6 +186,8 @@ class PLS
      * Get the projection matrix
      *
      * Each projection column transforms T into Ê
+     *
+     * @return NumericMatrix
      */
     public function getProjection(): Matrix
     {
@@ -168,6 +198,8 @@ class PLS
      * Get the scores for the X values
      *
      * The latent variables of X
+     *
+     * @return NumericMatrix
      */
     public function getXScores(): Matrix
     {
@@ -178,6 +210,8 @@ class PLS
      * Get the scores for the Y values
      *
      * The latent variables of Y
+     *
+     * @return NumericMatrix
      */
     public function getYScores(): Matrix
     {
@@ -188,6 +222,8 @@ class PLS
      * Get the loadings for the X values
      *
      * Each loading column transforms E into T
+     *
+     * @return NumericMatrix
      */
     public function getXLoadings(): Matrix
     {
@@ -200,9 +236,11 @@ class PLS
      * Use the regression model to predict new values of Y given values for X.
      * Y = (X - μₓ) ∗ σₓ⁻¹ ∗ B ∗ σ + μ
      *
-     * @param Matrix $X
+     * @param NumericMatrix $X
      *
-     * @return Matrix
+     * @return NumericMatrix
+     *
+     * @throws BadDataException
      */
     public function predict(Matrix $X): Matrix
     {
@@ -227,19 +265,19 @@ class PLS
      * Standardize the data
      * Use provided $center and $scale Vectors to transform the provided data
      *
-     * @param Matrix $new_data - A Matrix of new data which is standardized against the original data
-     * @param Vector $center   - A list of values to center the data against
-     * @param Vector $scale    - A list of standard deviations to scale the data with.
+     * @param NumericMatrix $new_data - A Matrix of new data which is standardized against the original data
+     * @param Vector        $center   - A list of values to center the data against
+     * @param Vector        $scale    - A list of standard deviations to scale the data with.
      *
-     * @return Matrix
+     * @return NumericMatrix
      *
      * @throws Exception\MathException
      */
-    private function standardizeData(Matrix $new_data, Vector $center, Vector $scale): Matrix
+    private function standardizeData(NumericMatrix $new_data, Vector $center, Vector $scale): NumericMatrix
     {
         // Create a matrix the same dimensions as $new_data, each element is the average of that column in the original data.
         $ones_column = MatrixFactory::one($new_data->getM(), 1);
-        $center_matrix = $center_matrix ?? $ones_column->multiply(MatrixFactory::createNumeric([$center->getVector()]));
+        $center_matrix = $ones_column->multiply(MatrixFactory::createNumeric([$center->getVector()]));
 
         // Create a diagonal matrix of the inverse of each column standard deviation.
         $scale_matrix = MatrixFactory::diagonal($scale->getVector())->inverse();
@@ -252,7 +290,7 @@ class PLS
      * Column Standard Deviations
      * Create a Vector with the standard deviations of each column of the supplied matrix
      *
-     * @param Matrix $M - A Matrix of which to calculate the standard deviations.
+     * @param NumericMatrix $M - A Matrix of which to calculate the standard deviations.
      *
      * @return Vector
      */

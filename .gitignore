@@ -1,4 +1,10 @@
-wordpress
-advanced/backend/web/files/upload/*
-advanced/api/web/storage
 .lh
+.ssh
+README.md
+storage
+docker-compose.yml
+# .dockerignore 示例
+*.p8
+*.key
+*.pem
+found

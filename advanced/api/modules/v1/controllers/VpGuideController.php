@@ -5,12 +5,14 @@ use yii\helpers\HtmlPurifier;
 use yii\web\BadRequestHttpException;
 use yii\filters\auth\CompositeAuth;
 
+use api\modules\v1\models\VerseSearch;
+use yii\data\ActiveDataProvider;
 use yii\rest\ActiveController;
 
 use mdm\admin\components\AccessControl;
 
 use api\modules\v1\models\SpaceSearch;
-use sizeg\jwt\JwtHttpBearerAuth;
+use bizley\jwt\JwtHttpBearerAuth;
 class VpGuideController extends ActiveController
 {
 
@@ -47,6 +49,37 @@ class VpGuideController extends ActiveController
             'class' => AccessControl::class,
         ];
         return $behaviors;
+    }
+    public function actions()
+    {
+        $actions = parent::actions();
+        unset($actions['index']);
+       
+        return $actions;
+    }
+    public function actionIndex()
+    {
+     
+        $papeSize = \Yii::$app->request->get('pageSize', 15);
+        $activeData = new ActiveDataProvider([
+            'query' =>$this->modelClass::find(),
+            'pagination' => [
+                'pageSize' => $papeSize,
+            ]
+        ]);
+        return $activeData;
+       
+    }
+
+    public function actionVerses()
+    {
+       
+        $searchModel = new VerseSearch();
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+        $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id])
+            ->leftJoin('vp_guide', 'verse.id = vp_guide.level_id')
+            ->andWhere(['vp_guide.level_id' => null])->all();
+        return $dataProvider;
     }
 
 }

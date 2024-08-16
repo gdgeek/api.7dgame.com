@@ -12,6 +12,10 @@ return [
     'basePath' => dirname(__DIR__),
     'controllerNamespace' => 'backend\controllers',
     'bootstrap' => ['log'],
+    'aliases' => [
+        '@bower' => '@vendor/yidas/yii2-bower-asset/bower',
+        '@npm'   => '@vendor/npm-asset',
+    ],
     'modules' => [
 		'admin' => [
 				'class' => 'mdm\admin\Module',

@@ -18,15 +18,11 @@ return [
         'a1' => [
             'class' => 'api\modules\a1\Module',
         ],
-        'e1' => [
-            'class' => 'api\modules\e1\Module',
-        ],
-        'p1' => [
-            'class' => 'api\modules\p1\Module',
+        'vp' => [
+            'class' => 'api\modules\vp\Module',
         ],
     ],
     'components' => [
-
         'request' => [
             'csrfParam' => '_csrf-api',
             'parsers' => [
@@ -38,6 +34,9 @@ return [
             'enableAutoLogin' => true,
             'enableSession' => false,
             'loginUrl' => null,
+        ],
+        'player' => [
+            'class' => 'api\modules\vp\helper\Player',
         ],
         'log' => [
             'traceLevel' => 3, //YII_DEBUG ? 3 : 0,
@@ -64,6 +63,61 @@ return [
             'enableStrictParsing' => true,
             'showScriptName' => false,
             'rules' => [
+                [
+                    'pattern' => 'apple-app-site-association',
+                    'route' => 'site/apple-app-site-association',
+                    'suffix' => ''
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'vp/site',
+                    'extraPatterns' => [
+                        'GET check' => 'check',
+                        'GET log' => 'log',
+                        'GET test' => 'test',
+                        'GET token' => 'token',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'vp/oauth2',
+                    'pluralize' => false,
+                    'extraPatterns' => [
+                        'POST apple-id' => 'apple-id',
+                        'POST binding' => 'binding',
+                       // 'POST apple-id-login' => 'apple-id-login',
+                        //'GET clear' => 'clear',
+                        'GET test' => 'test',
+                        //'POST test' => 'test',
+                       // 'POST register' => 'register',
+                        'POST login' => 'login',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'vp/guide',
+                    'extraPatterns' => [
+                        'GET verse' => 'verse',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'vp/map',
+                    'extraPatterns' => [
+                        'GET page' => 'page',
+                        'GET setup' => 'setup',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'vp/level',
+                    'extraPatterns' => [
+                        'GET record' => 'record',
+                        'POST record' => 'record',
+                        'GET log' => 'log',
+                        'GET stars' => 'stars',
+                    ],
+                ],
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/tencent-cloud',
@@ -157,6 +211,7 @@ return [
                         'v1/message',
                         'v1/reply',
                         'v1/message-tags',
+                        'v1/multilanguage-verse',
                         'v1/tags',
                         'v1/knight',
                         'v1/meta-knight',
@@ -169,10 +224,17 @@ return [
                         'v1/token',
                         'v1/space',
                         'v1/cyber',
-                        'v1/vp-guide',
+                        'v1/vp-map',
                     ],
                 ],
 
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/vp-guide',
+                    'extraPatterns' => [
+                        'GET verses' => 'verses',
+                    ],
+                ],
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/person',
@@ -230,29 +292,15 @@ return [
                         'GET knights' => 'knights',
                     ],
                 ],
+                
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => [
-                        'p1/verse-open',
-                        'p1/verse-publish',
-                        'p1/verse-share',
-                        /*
-                        'e1/verse',
-                        'e1/meta',
-                        'e1/knight',*/
-                    ],
-                ],
-                [
-                    'class' => 'yii\rest\UrlRule',
-                    'controller' => ['a1/verse','a1/vp-guide'],
-                ],
-                [
-                    'class' => 'yii\rest\UrlRule',
-                    'controller' => 'p1/site',
-                    'extraPatterns' => [
-                        'POST login' => 'login',
-                        'GET logout' => 'logout',
-                        'GET user' => 'user',
+                        'a1/verse',
+                        'a1/vp-guide',
+                        'a1/verse-cache',
+                        'a1/vp-guide-cache', 
+                        'a1/vp-key-value'
                     ],
                 ],
                 [
@@ -285,6 +333,7 @@ return [
         ],
 
     ],
+  
     /*,
     'as access' => [
     'class' => 'mdm\admin\components\AccessControl',

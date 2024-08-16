@@ -4,7 +4,7 @@ namespace api\modules\v1\controllers;
 use api\modules\v1\models\MessageTags;
 use api\modules\v1\models\MessageTagsSearch;
 use mdm\admin\components\AccessControl;
-use sizeg\jwt\JwtHttpBearerAuth;
+use bizley\jwt\JwtHttpBearerAuth;
 use Yii;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;

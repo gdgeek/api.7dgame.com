@@ -3,7 +3,7 @@ namespace api\modules\v1\controllers;
 
 use api\modules\v1\models\VerseSearch;
 use mdm\admin\components\AccessControl;
-use sizeg\jwt\JwtHttpBearerAuth;
+use bizley\jwt\JwtHttpBearerAuth;
 use Yii;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
@@ -54,32 +54,23 @@ class VerseController extends ActiveController
         unset($actions['index']);
         return $actions;
     }
-    public function actionIndex()
+    public function actionIndex($guide = false)
     {
+        if($guide){
+            $searchModel = new VerseSearch();
+            $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+            $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id])
+            ->leftJoin('vp_guide', 'verse.id = vp_guide.level_id')
+            ->andWhere(['vp_guide.level_id' => null])->all();
+            return $dataProvider;
+        }
         $searchModel = new VerseSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
         $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id]);
         return $dataProvider;
+
     }
 
-    /*
-public function actionOpen()
-{
-$searchModel = new VerseSearch();
-$dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-$query = $dataProvider->query;
-$query->select('verse.*')->leftJoin('verse_open', '`verse_open`.`verse_id` = `verse`.`id`')->andWhere(['NOT', ['verse_open.id' => null]]);
-return $dataProvider;
-}
-
-public function actionShare()
-{
-$searchModel = new VerseSearch();
-$dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-$query = $dataProvider->query;
-$query->select('verse.*')->leftJoin('verse_share', '`verse_share`.`verse_id` = `verse`.`id`')->andWhere(['verse_share.user_id' => Yii::$app->user->id]);
-return $dataProvider;
-}
- */
+    
 
 }

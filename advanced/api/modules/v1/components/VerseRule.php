@@ -38,7 +38,6 @@ class VerseRule extends Rule
                     return null;
                 }
             }
-
         }
         if ($controller == 'verse-space') {
 

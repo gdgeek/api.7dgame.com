@@ -11,10 +11,10 @@ use MathPHP\Exception;
  */
 class Piecewise
 {
-    /** @var array */
+    /** @var array<array{0: float, 1: float, 2?: bool, 3?: bool}> */
     private $intervals;
 
-    /** @var array */
+    /** @var array<callable> */
     private $functions;
 
     /**
@@ -41,9 +41,10 @@ class Piecewise
      *       a start and end-point, the point must be closed on both sides. Also,
      *       we cannot start or end an interval in the middle of another interval.
      *
-     * @param  array $intervals Array of intervals
-     *                          Example: [[-10, 0, false, true], [0, 2], [3, 10]]
-     * @param  array $functions Array of callback functions
+     * @param array<array{0: float, 1: float, 2?: bool, 3?: bool}> $intervals
+     *      Array of intervals
+     *      Example: [[-10, 0, false, true], [0, 2], [3, 10]]
+     * @param array<callable> $functions Array of callback functions
      *
      * @throws Exception\BadDataException if the number of intervals and functions are not the same
      * @throws Exception\BadDataException if any function in $functions is not callable
@@ -198,8 +199,8 @@ class Piecewise
      *  - Same number of intervals as functions
      *  - All functions are callable
      *
-     * @param  array  $intervals
-     * @param  array  $functions
+     * @param  array<array{0: float, 1: float, 2?: bool, 3?: bool}>  $intervals
+     * @param  array<callable>  $functions
      *
      * @return void
      *
@@ -212,6 +213,7 @@ class Piecewise
             throw new Exception\BadDataException('For a piecewise function you must provide the same number of intervals as functions.');
         }
 
+        // @phpstan-ignore-next-line (Parameter #2 $callback of function array_filter expects callable(callable(): mixed): mixed, '\\is_callable' given.)
         if (\count(\array_filter($functions, '\is_callable')) !== \count($intervals)) {
             throw new Exception\BadDataException('Not every function provided is valid. Ensure that each function is callable.');
         }
@@ -221,13 +223,13 @@ class Piecewise
      * Check the as and bs in the intervals
      * Helper method of constructor.
      *
-     * @param  number $a
-     * @param  number $b
-     * @param  number $lastA
-     * @param  number $lastB
-     * @param  bool   $lastBOpen
-     * @param  bool   $aOpen
-     * @param  bool   $bOpen
+     * @param  int|float $a
+     * @param  int|float $b
+     * @param  int|float $lastA
+     * @param  int|float $lastB
+     * @param  bool      $lastBOpen
+     * @param  bool      $aOpen
+     * @param  bool      $bOpen
      *
      * @return void
      *

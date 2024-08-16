@@ -12,6 +12,7 @@ class User extends ActiveRecord implements IdentityInterface
 {
 
     const STATUS_DELETED = 0;
+    const STATUS_TEMP = 1;
     const STATUS_INACTIVE = 9;
     const STATUS_ACTIVE = 10;
 
@@ -67,22 +68,26 @@ class User extends ActiveRecord implements IdentityInterface
 
     public function generateAccessToken()
     {
-        $jwt = \Yii::$app->jwt;
-        $signer = $jwt->getSigner('HS256');
-        $key = $jwt->getKey();
-        $time = time();
-
-        $jwt_parameter = \Yii::$app->jwt_parameter;
-        $token = $jwt->getBuilder()
-            ->issuedBy($jwt_parameter->issuer) // Configures the issuer (iss claim)
-            ->permittedFor($jwt_parameter->audience) // Configures the audience (aud claim)
-            ->identifiedBy($jwt_parameter->id, true) // Configures the id (jti claim), replicating as a header item
-            ->issuedAt($time) // Configures the time that the token was issue (iat claim)
-            ->expiresAt($time + 21600) // Configures the expiration time of the token (exp claim)
+      
+       // $jwt = \Yii::$app->jwt;
+        $now = new \DateTimeImmutable('now', new \DateTimeZone(\Yii::$app->timeZone));
+       
+      //  $jwt_parameter = \Yii::$app->jwt_parameter;
+        $token = \Yii::$app->jwt->getBuilder()
+            ->issuedBy(\Yii::$app->request->hostInfo)
+           // ->issuedBy($jwt_parameter->issuer) // Configures the issuer (iss claim)
+          //  ->permittedFor($jwt_parameter->audience) // Configures the audience (aud claim)
+           // ->identifiedBy($jwt_parameter->id, true) // Configures the id (jti claim), replicating as a header item
+            ->issuedAt($now) // Configures the time that the token was issue (iat claim)
+            ->canOnlyBeUsedAfter($now)
+            ->expiresAt($now->modify('+3 hour')) // Configures the expiration time of the token (exp claim)
             ->withClaim('uid', $this->id) // Configures a new claim, called "uid"
-            ->getToken($signer, $key); // Retrieves the generated token
+            ->getToken(
+                \Yii::$app->jwt->getConfiguration()->signer(),
+                \Yii::$app->jwt->getConfiguration()->signingKey()
+            ); // Retrieves the generated token
 
-        return (string) $token;
+        return (string) $token->toString();
     }
     public static function tableName()
     {
@@ -105,8 +110,8 @@ class User extends ActiveRecord implements IdentityInterface
     public function rules()
     {
         return [
-            ['status', 'default', 'value' => self::STATUS_INACTIVE],
-            ['status', 'in', 'range' => [self::STATUS_ACTIVE, self::STATUS_INACTIVE, self::STATUS_DELETED]],
+            ['status', 'default', 'value' => self::STATUS_ACTIVE],
+            ['status', 'in', 'range' => [self::STATUS_ACTIVE, self::STATUS_TEMP, self::STATUS_INACTIVE, self::STATUS_DELETED]],
         ];
     }
 
@@ -133,7 +138,9 @@ class User extends ActiveRecord implements IdentityInterface
      */
     public static function findIdentityByAccessToken($token, $type = null)
     {
-        $user = static::findIdentity($token->getClaim('uid'));
+        $claims = \Yii::$app->jwt->parse($token)->claims();
+        $uid = $claims->get('uid');
+        $user = static::findIdentity($uid );
         $user->token = $token;
         return $user;
     }
