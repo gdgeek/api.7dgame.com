@@ -44,10 +44,16 @@ class User extends ActiveRecord implements IdentityInterface
         $data->username = $this->username;
         $data->id = $this->id;
         $data->nickname = $this->nickname;
+       
         $info = $this->userInfo;
 
         if ($info) {
-            $data->info = $info->info;
+            if(is_string($info->info)){
+
+                $data->info = $info->info;
+            }else{
+                $data->info = json_encode($info->info);
+            }
             $data->avatar_id = $info->avatar_id;
             if ($info->avatar) {
                 $data->avatar = $info->avatar;

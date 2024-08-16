@@ -89,6 +89,21 @@ class Verse extends \yii\db\ActiveRecord
 
         $fields['editable'] = function () {return $this->editable();};
         $fields['viewable'] = function () {return $this->viewable();};
+
+        $fields['info'] =  function () {
+            if (!is_string($this->info)) {
+              return json_encode($this->info);
+            }
+            return $this->info;
+            
+        };
+        $fields['data'] =  function () {
+            if (!is_string($this->data)) {
+              return json_encode($this->data);
+            }
+            return $this->data;
+            
+        };
       //  $fields['links'] = function () {return $this->eventLinks;};
 
         return $fields;

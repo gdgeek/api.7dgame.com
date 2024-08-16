@@ -23,7 +23,20 @@ class Tags extends \yii\db\ActiveRecord
     {
         return 'tags';
     }
-
+    public function fields()
+    {
+        return [
+            'id',
+            'name',
+            'info' => function ($model) {
+                if(is_string($model->info)){
+                    return $model->info;
+                }
+                return json_encode($model->info);
+            },
+            'managed',
+        ];
+    }
     /**
      * {@inheritdoc}
      */
