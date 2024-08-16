@@ -64,7 +64,13 @@ class AppPost extends BaseObject
             $ret->error = "user no!";
             $ret->succeed = false;
         }
-        return [$ret, json_decode($this->data)];
+        
+        if(is_string($this->data)){
+            $data = json_decode($this->data);
+        }else{
+            $data = $this->data;
+        }
+        return [$ret,$data];
     }
 
 

@@ -88,8 +88,7 @@ class Verse extends \yii\db\ActiveRecord
     
     public function fields()
     {
-
-      $data = json_decode($this->data);
+    
       $language = Yii::$app->request->get('language');
       if(!isset($language)){
           $language = 'en-us';
@@ -213,7 +212,7 @@ class Verse extends \yii\db\ActiveRecord
     public function getMetas()
     {
         $ret = [];
-        $data = json_decode($this->data);
+        $data = $this->data;
 
         if (isset($data->children)) {
             foreach ($data->children->modules as $item) {

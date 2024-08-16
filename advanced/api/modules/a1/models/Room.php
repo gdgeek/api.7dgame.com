@@ -91,7 +91,11 @@ class Room extends \yii\db\ActiveRecord
         unset($fields['data']);
         unset($fields['version']);
         unset($fields['name']);
-        $data = json_decode($this->data);
+        if(is_string($this->data)){
+            $data = json_decode($this->data);
+        }else{
+            $data = $this->data;
+        }
         $space = $data->parameters->space;
         $fields['occlusion'] = function ($model) use ($space) {
             return $space->occlusion;

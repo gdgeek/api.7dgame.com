@@ -172,7 +172,13 @@ class Meta extends \yii\db\ActiveRecord
 
     public function getResourceIds()
     {
-        $resourceIds = \api\modules\v1\helper\Meta2Resources::Handle(json_decode($this->data));
+
+        if(is_string($this->data)){
+            $data = json_decode($this->data);
+        }else{
+            $data = $this->data;
+        }
+        $resourceIds = \api\modules\v1\helper\Meta2Resources::Handle($data);
         return $resourceIds;
     }
     public function extraResources()
@@ -234,7 +240,11 @@ class Meta extends \yii\db\ActiveRecord
     {
 
         parent::afterFind();
-        $data = json_decode($this->data);
+        if(is_string($this->data)){
+            $data = json_decode($this->data);
+        }else{
+            $data = $this->data;
+        }
         $change = $this->upgrade($data);
         if ($change) {
             $this->data = json_encode($data);

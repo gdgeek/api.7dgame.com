@@ -138,7 +138,11 @@ class Verse extends \yii\db\ActiveRecord
 
     public function getSpace()
     {
-        $data = json_decode($this->data);
+        if(is_string($this->data)){
+            $data = json_decode($this->data);
+        }else{
+            $data = $this->data;
+        }
         if (isset($data->parameters) && isset($data->parameters->space)) {
             $space = $data->parameters->space;
             $model = Space::findOne($space->id);
@@ -204,7 +208,11 @@ class Verse extends \yii\db\ActiveRecord
     public function getMetas()
     {
         $ret = [];
-        $data = json_decode($this->data);
+        if(is_string($this->data)){
+            $data = json_decode($this->data);
+        }else{
+            $data = $this->data;
+        }
         if (isset($data->children) && isset($data->children->modules)) {
             foreach ($data->children->modules as $item) {
                 $ret[] = $item->parameters->meta_id;

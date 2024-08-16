@@ -163,7 +163,12 @@ class Meta extends \yii\db\ActiveRecord
     }
     public function getResourceIds()
     {
-        $resourceIds = \api\modules\v1\helper\Meta2Resources::Handle(json_decode($this->data));
+        if(is_string($this->data)){
+            $data = json_decode($this->data);
+        }else{
+            $data = $this->data;
+        }
+        $resourceIds = \api\modules\v1\helper\Meta2Resources::Handle($data );
         return $resourceIds;
     }
     public function getResources()
