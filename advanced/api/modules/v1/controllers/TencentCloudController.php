@@ -107,7 +107,7 @@ class TencentCloudController extends ActiveController
 
         // 通过client对象调用想要访问的接口，需要传入请求对象
         $resp = $client->GetFederationToken($req);
-        $resp->StartTime = time();
+        //!!$resp->StartTime = time();
         return $resp;
     }
 
