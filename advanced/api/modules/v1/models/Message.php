@@ -101,10 +101,11 @@ class Message extends \yii\db\ActiveRecord
             'author_id',
             'updater_id',
             'info' => function ($model) {
-                if (is_string($model->info)) {
-                    return $model->info;
+                if (!is_string($model->info)&& !is_null($model->info)) {
+                    return json_encode($model->info);
                 }
-                return json_encode($model->info);
+
+                return $model->info;
             },
         ];
     }

@@ -178,12 +178,12 @@ class Resource extends \yii\db\ActiveRecord
     }*/
     public function fields()
     {
-        //$fields = parent::fields();
+      
 
         return [
             'id',
             'info'=>function($model){
-                if(!is_string($model->info)){
+                if(!is_string($model->info) && !is_null($model->info)){
                     return json_encode($model->info);
                 }
                 return $model->info;

@@ -94,13 +94,13 @@ class Meta extends \yii\db\ActiveRecord
         //unset($fields['id']);
         $fields['data'] = function () {
             
-            if(!is_string($this->data)){
+            if(!is_string($this->data) && !is_null($this->data)){
                 return json_encode($this->data);
             }
             return $this->data;
         };
         $fields['events'] = function () {
-            if(!is_string($this->events)){
+            if(!is_string($this->events)&& !is_null($this->events)){
                 return json_encode($this->events);
             }
             return $this->events;

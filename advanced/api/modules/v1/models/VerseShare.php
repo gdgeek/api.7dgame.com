@@ -63,10 +63,10 @@ class VerseShare extends \yii\db\ActiveRecord
             return $this->user;
         };
         $fields['info'] = function(){
-            if(is_string($this->info)){
-                return $this->info;
+            if(!is_string($this->info) && !is_null($this->info)){
+                return json_encode($this->info);
             }
-            return json_encode($this->info);
+            return $this->info;
         };
         return $fields;
     }

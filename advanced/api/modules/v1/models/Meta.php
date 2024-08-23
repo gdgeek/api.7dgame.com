@@ -97,20 +97,20 @@ class Meta extends \yii\db\ActiveRecord
             return $this->resources;
         };
         $fields['info'] = function () { 
-            if(is_string($this->info)){
-                return $this->info;
+            if(!is_string($this->info) && !is_null($this->info)){
+                return json_encode($this->info);
             }   
-            return json_encode($this->info);
+            return $this->info;
         };
         $fields['data'] = function () {
             
-            if(!is_string($this->data)){
+            if(!is_string($this->data) && !is_null($this->data)){
                 return json_encode($this->data);
             }
             return $this->data;
         };
         $fields['events'] = function () {
-            if(!is_string($this->events)){
+            if(!is_string($this->events) && !is_null($this->events)){
                 return json_encode($this->events);
             }
             return $this->events;

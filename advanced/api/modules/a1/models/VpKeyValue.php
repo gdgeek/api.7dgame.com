@@ -25,7 +25,7 @@ class VpKeyValue extends \yii\db\ActiveRecord
         $fields = parent::fields();
         unset($fields['id']);
         $fields['value'] = function ($model) {
-            if(!is_string($model->value)){
+            if(!is_string($model->value) && !is_null($model->value)){
                 return json_encode($model->value);
             }
             return $model->value;
