@@ -89,6 +89,21 @@ class Verse extends \yii\db\ActiveRecord
 
         $fields['editable'] = function () {return $this->editable();};
         $fields['viewable'] = function () {return $this->viewable();};
+
+        $fields['info'] =  function () {
+            if (!is_string($this->info)) {
+              return json_encode($this->info);
+            }
+            return $this->info;
+            
+        };
+        $fields['data'] =  function () {
+            if (!is_string($this->data)) {
+              return json_encode($this->data);
+            }
+            return $this->data;
+            
+        };
       //  $fields['links'] = function () {return $this->eventLinks;};
 
         return $fields;
@@ -138,7 +153,11 @@ class Verse extends \yii\db\ActiveRecord
 
     public function getSpace()
     {
-        $data = json_decode($this->data);
+        if(is_string($this->data)){
+            $data = json_decode($this->data);
+        }else{
+            $data =json_decode(json_encode($this->data));
+        }
         if (isset($data->parameters) && isset($data->parameters->space)) {
             $space = $data->parameters->space;
             $model = Space::findOne($space->id);
@@ -204,7 +223,11 @@ class Verse extends \yii\db\ActiveRecord
     public function getMetas()
     {
         $ret = [];
-        $data = json_decode($this->data);
+        if(is_string($this->data)){
+            $data = json_decode($this->data);
+        }else{
+            $data =json_decode(json_encode($this->data));
+        }
         if (isset($data->children) && isset($data->children->modules)) {
             foreach ($data->children->modules as $item) {
                 $ret[] = $item->parameters->meta_id;

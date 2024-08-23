@@ -120,7 +120,13 @@ class Knight extends \yii\db\ActiveRecord
     }
     public function getResourceIds()
     {
-        $resourceIds = \api\modules\v1\helper\Meta2Resources::Handle(json_decode($this->data));
+
+        if(is_string($this->data)){
+            $data = json_decode($this->data);
+        }else{
+            $data =json_decode(json_encode($this->data));
+        }
+        $resourceIds = \api\modules\v1\helper\Meta2Resources::Handle($data);
         return $resourceIds;
     }
     /**

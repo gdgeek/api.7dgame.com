@@ -90,7 +90,24 @@ class Message extends \yii\db\ActiveRecord
             'info' => 'Info',
         ];
     }
-
+    public function fields()
+    {
+        return [
+            'id',
+            'title',
+            'body',
+            'created_at',
+            'updated_at',
+            'author_id',
+            'updater_id',
+            'info' => function ($model) {
+                if (is_string($model->info)) {
+                    return $model->info;
+                }
+                return json_encode($model->info);
+            },
+        ];
+    }
     /**
      * Gets query for [[Author]].
      *

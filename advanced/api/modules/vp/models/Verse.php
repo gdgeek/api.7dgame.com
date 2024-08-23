@@ -8,6 +8,7 @@ use api\modules\a1\models\Meta;
 use api\modules\a1\models\Resource;
 use api\modules\a1\models\VerseScript;
 
+use ArrayObject;
 use api\modules\vp\models\User;
 use api\modules\v1\models\MultilanguageVerse;
 use api\modules\v1\models\VerseQuery;
@@ -88,8 +89,7 @@ class Verse extends \yii\db\ActiveRecord
     
     public function fields()
     {
-
-      $data = json_decode($this->data);
+    
       $language = Yii::$app->request->get('language');
       if(!isset($language)){
           $language = 'en-us';
@@ -118,7 +118,13 @@ class Verse extends \yii\db\ActiveRecord
               }
               return $this->uuid;
           },
-          'data',
+          'data' => function () {
+              if (!is_string($this->data)) {
+                return json_encode($this->data);
+              }
+              return $this->data;
+              
+          },
           'code' => function () {
               $script = $this->script;
               if ($this->script) {
@@ -213,14 +219,16 @@ class Verse extends \yii\db\ActiveRecord
     public function getMetas()
     {
         $ret = [];
-        $data = json_decode($this->data);
+        $data = json_decode(json_encode($this->data));
+
 
         if (isset($data->children)) {
+
             foreach ($data->children->modules as $item) {
+
                 $ret[] = $item->parameters->meta_id;
             }
         }
-
         return Meta::find()->where(['id' => $ret])->all();
 
     }

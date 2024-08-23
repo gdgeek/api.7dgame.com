@@ -182,7 +182,12 @@ class Resource extends \yii\db\ActiveRecord
 
         return [
             'id',
-            'info',
+            'info'=>function($model){
+                if(!is_string($model->info)){
+                    return json_encode($model->info);
+                }
+                return $model->info;
+            },
             'name',
             'uuid',
             'type',

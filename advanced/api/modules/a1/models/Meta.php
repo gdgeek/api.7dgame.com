@@ -92,7 +92,19 @@ class Meta extends \yii\db\ActiveRecord
             return $model->prefab == 0 ? 'sample' : 'module';
         };
         //unset($fields['id']);
-
+        $fields['data'] = function () {
+            
+            if(!is_string($this->data)){
+                return json_encode($this->data);
+            }
+            return $this->data;
+        };
+        $fields['events'] = function () {
+            if(!is_string($this->events)){
+                return json_encode($this->events);
+            }
+            return $this->events;
+        };
         $fields['script'] = function () {
             if ($this->cyber && $this->cyber->script) {
                 return $this->cyber->script;
@@ -172,7 +184,13 @@ class Meta extends \yii\db\ActiveRecord
 
     public function getResourceIds()
     {
-        $resourceIds = \api\modules\v1\helper\Meta2Resources::Handle(json_decode($this->data));
+
+        if(is_string($this->data)){
+            $data = json_decode($this->data);
+        }else{
+            $data =json_decode(json_encode($this->data));
+        }
+        $resourceIds = \api\modules\v1\helper\Meta2Resources::Handle($data);
         return $resourceIds;
     }
     public function extraResources()
@@ -234,7 +252,11 @@ class Meta extends \yii\db\ActiveRecord
     {
 
         parent::afterFind();
-        $data = json_decode($this->data);
+        if(is_string($this->data)){
+            $data = json_decode($this->data);
+        }else{
+            $data =json_decode(json_encode($this->data));
+        }
         $change = $this->upgrade($data);
         if ($change) {
             $this->data = json_encode($data);
