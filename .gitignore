@@ -1,10 +1,9 @@
 .lh
 .ssh
-README.md
-storage
-docker-compose.yml
+
 # .dockerignore 示例
 *.p8
 *.key
 *.pem
-found
+docker-compose.yml
+storage

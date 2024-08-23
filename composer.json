@@ -1,5 +1,0 @@
-{
-    "require": {
-        "lcobucci/clock": "^3.0"
-    }
-}
