@@ -132,7 +132,7 @@ return array (
   'bizley/jwt' => 
   array (
     'name' => 'bizley/jwt',
-    'version' => '4.1.0.0',
+    'version' => '4.1.1.0',
     'alias' => 
     array (
       '@bizley/jwt' => $vendorDir . '/bizley/jwt/src',

@@ -1,5 +1,10 @@
 --TEST--
 The right events are emitted in the right order for a test that runs code which triggers E_USER_ERROR
+--SKIPIF--
+<?php declare(strict_types=1);
+if (!version_compare('8.4.0-dev', PHP_VERSION)) {
+    print 'skip: PHP < 8.4 is required.';
+}
 --FILE--
 <?php declare(strict_types=1);
 $traceFile = tempnam(sys_get_temp_dir(), __FILE__);
