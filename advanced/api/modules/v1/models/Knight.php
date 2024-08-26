@@ -10,6 +10,7 @@ use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
 use yii\db\Expression;
 
+use api\modules\v1\components\Validator\JsonValidator;
 /**
  * This is the model class for table "knight".
  *
@@ -71,7 +72,7 @@ class Knight extends \yii\db\ActiveRecord
         return [
             [['author_id', 'updater_id', 'image_id', 'mesh_id'], 'integer'],
             [['create_at', 'updated_at'], 'safe'],
-            [['info', 'data', 'events'], 'string'],
+            [['info', 'data', 'events'], JsonValidator::class],
             [['title', 'type'], 'string', 'max' => 255],
             [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['author_id' => 'id']],
             [['image_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['image_id' => 'id']],

@@ -8,6 +8,7 @@ use api\modules\a1\models\Meta;
 use api\modules\a1\models\Resource;
 use api\modules\a1\models\VerseScript;
 
+use api\modules\v1\components\Validator\JsonValidator;
 use ArrayObject;
 use api\modules\vp\models\User;
 use api\modules\v1\models\MultilanguageVerse;
@@ -77,7 +78,7 @@ class Verse extends \yii\db\ActiveRecord
             [['name'], 'required'],
             [['author_id', 'updater_id', 'image_id', 'version'], 'integer'],
             [['created_at', 'updated_at'], 'safe'],
-            [['info', 'data'], 'string'],
+            [['info', 'data'], JsonValidator::class],
             [['name'], 'string', 'max' => 255],
             [['uuid'], 'string', 'max' => 255],
             [['uuid'], 'unique'],
@@ -119,11 +120,7 @@ class Verse extends \yii\db\ActiveRecord
               return $this->uuid;
           },
           'data' => function () {
-              if (!is_string($this->data) && !is_null($this->data)) {
-                return json_encode($this->data);
-              }
-              return $this->data;
-              
+             return JsonValidator::to_string($this->data);
           },
           'code' => function () {
               $script = $this->script;

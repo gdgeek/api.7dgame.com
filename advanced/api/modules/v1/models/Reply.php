@@ -63,6 +63,7 @@ class Reply extends \yii\db\ActiveRecord
         return [
             [['message_id', 'body'], 'required'],
             [['message_id', 'author_id', 'updater_id'], 'integer'],
+           
             [['body', 'info'], 'string'],
             [['created_at', 'updated_at'], 'safe'],
             [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['author_id' => 'id']],

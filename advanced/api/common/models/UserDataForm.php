@@ -5,6 +5,7 @@ namespace api\common\models;
 use api\modules\v1\models\File;
 use yii\base\Model;
 
+use api\modules\v1\components\Validator\JsonValidator;
 /**
  * This is the model class for table "verse".
  *
@@ -62,7 +63,8 @@ class UserDataForm extends Model
     public function rules()
     {
         return [
-            [['nickname', 'info'], 'string'],
+            [['nickname'], 'string'],
+            [['info'], JsonValidator::class],
             [['avatar_id'], 'integer'],
             [['avatar_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['avatar_id' => 'id']],
         ];

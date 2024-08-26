@@ -5,6 +5,7 @@ namespace api\modules\a1\models;
 use api\modules\v1\models\EventNode;
 use api\modules\v1\models\Knight;
 use api\modules\v1\models\User;
+use api\modules\v1\components\Validator\JsonValidator;
 use Yii;
 
 /**
@@ -41,7 +42,7 @@ class MetaKnight extends \yii\db\ActiveRecord
         return [
             [['verse_id', 'user_id'], 'required'],
             [['verse_id', 'knight_id', 'user_id', 'event_node_id'], 'integer'],
-            [['info'], 'string'],
+            [['info'], JsonValidator::class],
             [['create_at'], 'safe'],
             [['uuid'], 'string', 'max' => 255],
             [['uuid'], 'unique'],

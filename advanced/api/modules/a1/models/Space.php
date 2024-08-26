@@ -8,6 +8,7 @@ use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
 use yii\db\Expression;
 
+use api\modules\v1\components\Validator\JsonValidator;
 /**
  * This is the model class for table "space".
  *
@@ -67,7 +68,7 @@ class Space extends \yii\db\ActiveRecord
             [['title', 'sample_id', 'mesh_id', 'dat_id'], 'required'],
             [['author_id', 'sample_id', 'mesh_id', 'dat_id', 'image_id'], 'integer'],
             [['created_at'], 'safe'],
-            [['info'], 'string'],
+            [['info'], JsonValidator::class],
             [['title', 'name'], 'string', 'max' => 255],
             [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['author_id' => 'id']],
             [['dat_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['dat_id' => 'id']],

@@ -2,6 +2,7 @@
 
 namespace api\modules\vp\models;
 
+use api\modules\v1\components\Validator\JsonValidator;
 use Yii;
 
 /**
@@ -29,7 +30,7 @@ class Map extends \yii\db\ActiveRecord
         return [
             [['page'], 'required'],
             [['page'], 'integer'],
-            [['info'], 'string'],
+            [['info'], JsonValidator::class],
             [['page'], 'unique'],
         ];
     }
@@ -38,6 +39,9 @@ class Map extends \yii\db\ActiveRecord
         $fields = parent::fields();
        
         unset($fields['id']);
+        $fields['info'] = function () {
+            return JsonValidator::to_string($this->info);
+        };
        // unset($fields['info']);
         $fields['count'] = function () {
             $count = Map::find()->count('*');

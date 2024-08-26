@@ -3,12 +3,11 @@
 namespace api\modules\v1\models;
 
 use api\modules\v1\models\File;
-//use api\modules\v1\models\Knight;
 use api\modules\v1\models\Space;
 use api\modules\v1\models\User;
 use api\modules\v1\models\VerseShare;
 use api\modules\v1\models\MultilanguageVerse;
-
+use api\modules\v1\components\Validator\JsonValidator;
 use Yii;
 use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
@@ -73,7 +72,7 @@ class Verse extends \yii\db\ActiveRecord
             [['name'], 'required'],
             [['author_id', 'updater_id', 'image_id', 'version'], 'integer'],
             [['created_at', 'updated_at'], 'safe'],
-            [['info', 'data'], 'string'],
+            [['info','data'], JsonValidator::class],
             [['name'], 'string', 'max' => 255],
             [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['author_id' => 'id']],
             [['image_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['image_id' => 'id']],
@@ -91,11 +90,7 @@ class Verse extends \yii\db\ActiveRecord
         $fields['viewable'] = function () {return $this->viewable();};
 
         $fields['info'] =  function () {
-            if (!is_string($this->info) && !is_null($this->info)) {
-              return json_encode($this->info);
-            }
-            return $this->info;
-            
+            return JsonValidator::to_string($this->info);
         };
         $fields['data'] =  function () {
             if (!is_string($this->data) && !is_null($this->data)) {

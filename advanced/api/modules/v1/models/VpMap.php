@@ -2,6 +2,7 @@
 
 namespace api\modules\v1\models;
 
+use api\modules\v1\components\Validator\JsonValidator;
 use Yii;
 
 /**
@@ -29,15 +30,19 @@ class VpMap extends \yii\db\ActiveRecord
         return [
             [['page'], 'required'],
             [['page'], 'integer'],
-            [['info'], 'string'],
+            [['info'], JsonValidator::class],
             [['page'], 'unique'],
         ];
     }
+    
     public function fields()
     {
         $fields = parent::fields();
         $fields['guides'] = function () {
             return $this->guides;
+        };
+        $fields['info'] = function () {
+            return JsonValidator::to_string($this->info);
         };
         return $fields;
     }

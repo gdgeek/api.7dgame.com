@@ -11,6 +11,7 @@ use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
 use yii\db\Expression;
 
+use api\modules\v1\components\Validator\JsonValidator;
 /**
  * This is the model class for table "meta".
  *
@@ -69,7 +70,7 @@ class Meta extends \yii\db\ActiveRecord
         return [
             [['author_id', 'updater_id', 'image_id'], 'integer'],
             [['created_at', 'updated_at'], 'safe'],
-            [['info', 'data'], 'string'],
+            [['info', 'data', 'events'], JsonValidator::class],
             [['uuid'], 'string', 'max' => 255],
             [['uuid'], 'unique'],
             [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['author_id' => 'id']],

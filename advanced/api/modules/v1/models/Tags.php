@@ -2,6 +2,7 @@
 
 namespace api\modules\v1\models;
 
+use api\modules\v1\components\Validator\JsonValidator;
 use Yii;
 
 /**
@@ -43,7 +44,7 @@ class Tags extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['info'], 'string'],
+            [['info'], JsonValidator::class],
             [['managed'], 'integer'],
             [['name'], 'string', 'max' => 255],
         ];
