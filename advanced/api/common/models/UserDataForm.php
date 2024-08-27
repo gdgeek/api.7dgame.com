@@ -5,7 +5,6 @@ namespace api\common\models;
 use api\modules\v1\models\File;
 use yii\base\Model;
 
-use api\modules\v1\components\Validator\JsonValidator;
 /**
  * This is the model class for table "verse".
  *

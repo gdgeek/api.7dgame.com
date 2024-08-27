@@ -42,7 +42,6 @@ class Map extends \yii\db\ActiveRecord
         $fields['info'] = function () {
             return JsonValidator::to_string($this->info);
         };
-       // unset($fields['info']);
         $fields['count'] = function () {
             $count = Map::find()->count('*');
             return $count;

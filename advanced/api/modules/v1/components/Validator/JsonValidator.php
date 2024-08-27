@@ -13,8 +13,9 @@ class JsonValidator extends Validator
     public function validateAttribute($model, $attribute)
     {
       if(is_string($model->$attribute)){
-        if(json_validate($model->$attribute)){
-            $model->$attribute = json_decode($model->$attribute, true);
+        $json = str_replace("'", '"', $model->$attribute);
+        if(json_validate($json)){
+            $model->$attribute = json_decode($json, true);
         }else{
             $model->addError($attribute, 'This is not JSON object!');
         }

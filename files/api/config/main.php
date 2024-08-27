@@ -85,11 +85,11 @@ return [
                     'extraPatterns' => [
                         'POST apple-id' => 'apple-id',
                         'POST binding' => 'binding',
-                       // 'POST apple-id-login' => 'apple-id-login',
+                        // 'POST apple-id-login' => 'apple-id-login',
                         //'GET clear' => 'clear',
                         'GET test' => 'test',
                         //'POST test' => 'test',
-                       // 'POST register' => 'register',
+                        // 'POST register' => 'register',
                         'POST login' => 'login',
                     ],
                 ],
@@ -215,7 +215,6 @@ return [
                         'v1/tags',
                         'v1/knight',
                         'v1/meta-knight',
-                        'v1/verse',
                         'v1/verse-open',
                         'v1/verse-script',
                         'v1/event-input',
@@ -227,7 +226,21 @@ return [
                         'v1/vp-map',
                     ],
                 ],
-
+                
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/verse',
+                    'extraPatterns' => [
+                        'PUT code' => 'update-code',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/meta',
+                    'extraPatterns' => [
+                        'PUT code' => 'update-code',
+                    ],
+                ],
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/vp-guide',
@@ -324,16 +337,16 @@ return [
                         'POST signup' => 'signup',
                     ],
                 ],
-
+                
             ],
-
+            
         ],
         'authManager' => [
             'class' => 'yii\rbac\DbManager',
         ],
-
+        
     ],
-  
+    
     /*,
     'as access' => [
     'class' => 'mdm\admin\components\AccessControl',
@@ -342,7 +355,7 @@ return [
     'resource/*',
     'resource/*',
     //    'v1/user/get-data'
-
+    
     ],
     ],*/
     'params' => $params,

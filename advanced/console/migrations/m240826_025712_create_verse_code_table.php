@@ -16,11 +16,16 @@ class m240826_025712_create_verse_code_table extends Migration
      */
     public function safeUp()
     {
+        if ($this->db->driverName === 'mysql') {
+            // http://stackoverflow.com/questions/766809/whats-the-difference-between-utf8-general-ci-and-utf8-unicode-ci
+            $tableOptions = 'CHARACTER SET utf8 COLLATE utf8_unicode_ci ENGINE=InnoDB';
+        }
         $this->createTable('{{%verse_code}}', [
             'id' => $this->primaryKey(),
+            'blockly' => $this->json(),
             'verse_id' => $this->integer()->notNull()->unique(),
             'code_id' => $this->integer()->unique(),
-        ]);
+        ], $tableOptions);
 
         // creates index for column `verse_id`
         $this->createIndex(

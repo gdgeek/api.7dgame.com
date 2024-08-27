@@ -16,11 +16,17 @@ class m240826_060729_create_meta_code_table extends Migration
      */
     public function safeUp()
     {
+
+        if ($this->db->driverName === 'mysql') {
+            // http://stackoverflow.com/questions/766809/whats-the-difference-between-utf8-general-ci-and-utf8-unicode-ci
+            $tableOptions = 'CHARACTER SET utf8 COLLATE utf8_unicode_ci ENGINE=InnoDB';
+        }
         $this->createTable('{{%meta_code}}', [
             'id' => $this->primaryKey(),
+            'blockly' => $this->json(),
             'meta_id' => $this->integer()->notNull()->unique(),
             'code_id' => $this->integer()->unique(),
-        ]);
+        ], $tableOptions);
 
         // creates index for column `meta_id`
         $this->createIndex(

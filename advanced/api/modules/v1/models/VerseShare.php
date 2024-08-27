@@ -64,7 +64,8 @@ class VerseShare extends \yii\db\ActiveRecord
             return $this->user;
         };
         $fields['info'] = function(){
-            return json_decode($this->info);
+            
+            return JsonValidator::to_string($this->info);
             
         };
         return $fields;
