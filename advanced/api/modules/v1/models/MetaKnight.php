@@ -7,6 +7,7 @@ use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
 use yii\db\Expression;
 
+use api\modules\v1\components\Validator\JsonValidator;
 /**
  * This is the model class for table "meta_knight".
  *
@@ -62,7 +63,7 @@ class MetaKnight extends \yii\db\ActiveRecord
         return [
             [['verse_id'], 'required'],
             [['verse_id', 'meta_id', 'user_id', 'event_node_id'], 'integer'],
-            [['info'], 'string'],
+            [['info'], JsonValidator::class],
             [['create_at'], 'safe'],
             [['uuid'], 'string', 'max' => 255],
             [['uuid'], 'unique'],

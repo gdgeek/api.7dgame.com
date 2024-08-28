@@ -62,7 +62,8 @@ class UserDataForm extends Model
     public function rules()
     {
         return [
-            [['nickname', 'info'], 'string'],
+            [['nickname'], 'string'],
+            [['info'], JsonValidator::class],
             [['avatar_id'], 'integer'],
             [['avatar_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['avatar_id' => 'id']],
         ];

@@ -6,6 +6,7 @@ use api\modules\v1\models\User;
 use Yii;
 use yii\behaviors\BlameableBehavior;
 
+use api\modules\v1\components\Validator\JsonValidator;
 /**
  * This is the model class for table "resource".
  *
@@ -55,7 +56,7 @@ class Resource extends \yii\db\ActiveRecord
             [['name', 'type', 'file_id'], 'required'],
             [['author_id', 'updater_id', 'file_id', 'image_id'], 'integer'],
             [['created_at'], 'safe'],
-            [['info'], 'string'],
+            [['info'], JsonValidator::class],
             [['name', 'type', 'uuid'], 'string', 'max' => 255],
             [['uuid'], 'unique'],
             [['updater_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::class, 'targetAttribute' => ['updater_id' => 'id']],
@@ -178,12 +179,12 @@ class Resource extends \yii\db\ActiveRecord
     }*/
     public function fields()
     {
-        //$fields = parent::fields();
+      
 
         return [
             'id',
             'info'=>function($model){
-                if(!is_string($model->info)){
+                if(!is_string($model->info) && !is_null($model->info)){
                     return json_encode($model->info);
                 }
                 return $model->info;

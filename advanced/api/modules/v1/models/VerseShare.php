@@ -2,6 +2,7 @@
 
 namespace api\modules\v1\models;
 
+use api\modules\v1\components\Validator\JsonValidator;
 use Yii;
 
 /**
@@ -34,7 +35,7 @@ class VerseShare extends \yii\db\ActiveRecord
         return [
             [['verse_id', 'user_id'], 'required'],
             [['verse_id', 'user_id', 'editable'], 'integer'],
-            [['info'], 'string'],
+            [['info'], JsonValidator::class],
             [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['user_id' => 'id']],
             [['verse_id'], 'exist', 'skipOnError' => true, 'targetClass' => Verse::className(), 'targetAttribute' => ['verse_id' => 'id']],
             [['verse_id', 'user_id'], 'unique', 'targetAttribute' => ['verse_id', 'user_id']],
@@ -63,10 +64,9 @@ class VerseShare extends \yii\db\ActiveRecord
             return $this->user;
         };
         $fields['info'] = function(){
-            if(is_string($this->info)){
-                return $this->info;
-            }
-            return json_encode($this->info);
+            
+            return JsonValidator::to_string($this->info);
+            
         };
         return $fields;
     }

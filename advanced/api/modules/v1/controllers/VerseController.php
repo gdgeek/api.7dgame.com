@@ -7,15 +7,17 @@ use bizley\jwt\JwtHttpBearerAuth;
 use Yii;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
+use api\modules\v1\models\data\VerseCodeTool;
 
+use yii\base\Exception;
 class VerseController extends ActiveController
 {
-
+    
     public $modelClass = 'api\modules\v1\models\Verse';
     public function behaviors()
     {
         $behaviors = parent::behaviors();
-
+        
         // add CORS filter
         $behaviors['corsFilter'] = [
             'class' => \yii\filters\Cors::class,
@@ -33,7 +35,7 @@ class VerseController extends ActiveController
                 ],
             ],
         ];
-
+        
         $behaviors['authenticator'] = [
             'class' => CompositeAuth::class,
             'authMethods' => [
@@ -41,11 +43,11 @@ class VerseController extends ActiveController
             ],
             'except' => ['options'],
         ];
-
+        
         $behaviors['access'] = [
             'class' => AccessControl::class,
         ];
-
+        
         return $behaviors;
     }
     public function actions()
@@ -54,23 +56,28 @@ class VerseController extends ActiveController
         unset($actions['index']);
         return $actions;
     }
-    public function actionIndex($guide = false)
+    public function actionIndex()
     {
-        if($guide){
-            $searchModel = new VerseSearch();
-            $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-            $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id])
-            ->leftJoin('vp_guide', 'verse.id = vp_guide.level_id')
-            ->andWhere(['vp_guide.level_id' => null])->all();
-            return $dataProvider;
-        }
         $searchModel = new VerseSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
         $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id]);
         return $dataProvider;
-
     }
-
     
-
+    public function actionUpdateCode($id){
+        
+        $post = Yii::$app->request->post();
+        $model = new VerseCodeTool($id);
+        $post = Yii::$app->request->post();
+        $model->load($post, '');
+        if ($model->validate()) {
+            $model->save();
+        }else{
+            throw new Exception(json_encode($model->errors), 400);
+        }
+        return $model;
+    }
+    
+    /* */
+    
 }
