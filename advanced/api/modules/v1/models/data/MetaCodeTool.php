@@ -29,22 +29,24 @@ class MetaCodeTool extends Model
     public function save()
     {
         $metaCode = $this->meta->metaCode;
-        
-        // $metaCode->blockly = "";
+        $metaCode->blockly = $this->blockly;
         if($this->lua || $this->js){
             $code = $metaCode->code;
             if(!$code){
                 $code = new Code();
             }
             if($this->lua){
+                
                 $code->lua = $this->lua;
             }
             if($this->js){
                 $code->js = $this->js;
             }
+            
             if($code->validate()){
                 $code->save();
                 $metaCode->code_id = $code->id;
+                $metaCode->save();
             }else{
                 throw new \yii\web\ServerErrorHttpException(json_encode($code->errors));
             }
