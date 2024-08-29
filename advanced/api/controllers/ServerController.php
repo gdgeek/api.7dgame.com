@@ -14,12 +14,12 @@ use yii\filters\auth\CompositeAuth;
 class ServerController extends \yii\rest\Controller
 
 {
-
+    
     public function behaviors()
     {
-
+        
         $behaviors = parent::behaviors();
-
+        
         $behaviors['corsFilter'] = [
             'class' => \yii\filters\Cors::className(),
             'cors' => [
@@ -36,7 +36,7 @@ class ServerController extends \yii\rest\Controller
                 ],
             ],
         ];
-
+        
         $behaviors['authenticator'] = [
             'class' => CompositeAuth::className(),
             'authMethods' => [
@@ -44,14 +44,14 @@ class ServerController extends \yii\rest\Controller
             ],
             'except' => ['options'],
         ];
-
+        
         $behaviors['access'] = [
             'class' => AccessControl::class,
         ];
-
+        
         return $behaviors;
     }
-
+    
     public function actionUser()
     {
         $user = new \stdClass();
@@ -72,7 +72,7 @@ class ServerController extends \yii\rest\Controller
         $model = new BindEmailForm(Yii::$app->user->identity);
         $post = Yii::$app->request->post();
         if ($model->load($post, '')) {
-
+            
             if ($model->email == Yii::$app->user->identity->email) {
                 throw new Exception("重复绑定", 400);
             }
@@ -81,7 +81,7 @@ class ServerController extends \yii\rest\Controller
         }
         $user = Yii::$app->user->identity;
         $user->generateEmailVerificationTokenWithEmail($model->email);
-
+        
         if ($model->validate()) {
             $model->sendEmail();
             return [
@@ -95,7 +95,7 @@ class ServerController extends \yii\rest\Controller
                 throw new Exception(json_encode($model->errors), 400);
             }
         }
-
+        
     }
     public function actionResetPassword()
     {
@@ -121,7 +121,7 @@ class ServerController extends \yii\rest\Controller
         $ret->token = Yii::$app->user->identity->generateAccessToken();
         return $ret;
     }
-
+    
     public function actionMenu()
     {
         $callback = function ($menu) {
@@ -141,16 +141,16 @@ class ServerController extends \yii\rest\Controller
             }
             (!isset($return['icon']) || !$return['icon']) && $return['icon'] = 'circle-o';
             $items && $return['items'] = $items;
-
+            
             return $return;
         };
-
+        
         // $items = MenuHelper::getAssignedMenu(Yii::$app->user->id, null, $callback);
-
+        
         $ret = new \stdClass();
         //
         $ret->menu = MenuHelper::getAssignedMenu(Yii::$app->user->id, null, $callback);
         return $ret;
     }
-
+    
 }

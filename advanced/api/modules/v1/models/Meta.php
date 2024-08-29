@@ -255,15 +255,16 @@ public function getMetaCode()
     $quest = $this->hasOne(MetaCode::className(), ['meta_id' => 'id']);
     $code = $quest->one();
     if($code == null){
-        
         $code = new MetaCode();
+        
         $code->meta_id = $this->id;
         $cyber = $this->cyber;
         if($cyber){
             $code->blockly = $cyber->data;
-            $code->save();
         }
+        $code->save();
     }
+    $code = $quest->one();
     return $quest;
 }
 

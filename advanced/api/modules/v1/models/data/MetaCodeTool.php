@@ -4,6 +4,7 @@ namespace api\modules\v1\models\data;
 use api\modules\v1\models\Meta;
 use api\modules\v1\models\Code;
 
+use yii\base\Exception;
 use api\modules\v1\components\Validator\JsonValidator;
 use yii\base\Model;
 
@@ -28,7 +29,8 @@ class MetaCodeTool extends Model
     public function save()
     {
         $metaCode = $this->meta->metaCode;
-        $metaCode->blockly = $this->blockly;
+        
+        // $metaCode->blockly = "";
         if($this->lua || $this->js){
             $code = $metaCode->code;
             if(!$code){
