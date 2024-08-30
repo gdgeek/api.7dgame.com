@@ -108,11 +108,12 @@ class Meta extends \yii\db\ActiveRecord
             return $this->events;
         };
         $fields['script'] = function () {
+            
             $metaCode = $this->metaCode;
             if($metaCode){
                 return $metaCode->code->lua;
             }
-            $script = $this->script;
+            
             if ($this->cyber && $this->cyber->script) {
                 return $this->cyber->script;
             }
