@@ -6,12 +6,12 @@ use yii\rest\ActiveController;
 
 class VpGuideCacheController extends ActiveController
 {
-
+    
     public $modelClass = 'api\modules\a1\models\VpGuide';
     public function behaviors()
     {
         $behaviors = parent::behaviors();
-
+        
         $behaviors['corsFilter'] = [
             'class' => \yii\filters\Cors::class,
             'cors' => [
@@ -28,7 +28,7 @@ class VpGuideCacheController extends ActiveController
                 ],
             ],
         ];
-
+        
         return $behaviors;
     }
     public function actions()
@@ -42,7 +42,7 @@ class VpGuideCacheController extends ActiveController
         //  unset($actions['view']);
         return $actions;
     }
-   
+    
     public function actionIndex()
     {
         
@@ -56,31 +56,32 @@ class VpGuideCacheController extends ActiveController
             }
             $key = json_encode($get);
             $data = $cache->get($key);
-          
+            
             if ($data === false) {
-               
+                
                 $papeSize = \Yii::$app->request->get('pageSize', 15);
                 $data = new ActiveDataProvider([
                     'query' => \api\modules\a1\models\VpGuide::find(),
                     'pagination' => [
                         'pageSize' => $papeSize,
+                        ]
+                    ]);
+                    $cache->set($key, $data);
+                }
+                return $data;
+            }
+            
+            $papeSize = \Yii::$app->request->get('pageSize', 15);
+            $data = new ActiveDataProvider([
+                'query' => \api\modules\a1\models\VpGuide::find(),
+                'pagination' => [
+                    'pageSize' => $papeSize,
                     ]
                 ]);
-                $cache->set($key, $data);
+                return $data;
+                
+                
             }
-            return $data;
+            
         }
-
-        $papeSize = \Yii::$app->request->get('pageSize', 15);
-        $data = new ActiveDataProvider([
-            'query' => \api\modules\a1\models\VpGuide::find(),
-            'pagination' => [
-                'pageSize' => $papeSize,
-            ]
-        ]);
-        return $data;
-       
-       
-    }
-
-}
+        

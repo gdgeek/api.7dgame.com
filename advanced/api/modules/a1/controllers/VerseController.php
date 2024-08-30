@@ -45,7 +45,9 @@ class VerseController extends ActiveController
     public function actionOpen()
     {
         $searchModel = new VerseSearch();
-        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+        
+        $papeSize = \Yii::$app->request->get('pageSize', 15);
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams,  $papeSize);
         $query = $dataProvider->query;
         $query->select('verse.*')->leftJoin('verse_open', '`verse_open`.`verse_id` = `verse`.`id`')->andWhere(['NOT', ['verse_open.id' => null]]);
         return $dataProvider;
