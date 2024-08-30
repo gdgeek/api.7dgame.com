@@ -14,10 +14,8 @@ class VerseOpenController extends ActiveController
     public function behaviors()
     {
         $behaviors = parent::behaviors();
-
-        // unset($behaviors['authenticator']);
-
-        // add CORS filter
+        
+        
         $behaviors['corsFilter'] = [
             'class' => \yii\filters\Cors::class,
             'cors' => [
@@ -34,28 +32,28 @@ class VerseOpenController extends ActiveController
                 ],
             ],
         ];
-
+        
         $behaviors['authenticator'] = [
             'class' => CompositeAuth::class,
             'authMethods' => [
                 JwtHttpBearerAuth::class,
             ],
             'except' => ['options'],
-
+            
         ];
         $behaviors['access'] = [
             'class' => AccessControl::class,
         ];
         return $behaviors;
     }
-
+    
     public function actions()
     {
         $actions = parent::actions();
         // unset($actions['index']);
         return $actions;
     }
-
+    
     public function actionVerses()
     {
         $searchModel = new VerseSearch();

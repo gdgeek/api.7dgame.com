@@ -146,6 +146,7 @@ class Verse extends \yii\db\ActiveRecord
                 }
             },
             'resources',
+            'image'
         ];
     }
     public function getVerseCode()

@@ -300,16 +300,15 @@ return [
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',
-                    'controller' => 'v1/verse-knight',
+                    'controller' => 'a1/verse',
                     'extraPatterns' => [
-                        'GET knights' => 'knights',
+                        'GET open' => 'open',
                     ],
                 ],
                 
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => [
-                        'a1/verse',
                         'a1/vp-guide',
                         'a1/verse-cache',
                         'a1/vp-guide-cache', 

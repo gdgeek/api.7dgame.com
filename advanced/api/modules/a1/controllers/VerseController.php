@@ -1,16 +1,16 @@
 <?php
 namespace api\modules\a1\controllers;
-
+use api\modules\a1\models\VerseSearch;
 use yii\rest\ActiveController;
-
+use Yii;
 class VerseController extends ActiveController
 {
-
+    
     public $modelClass = 'api\modules\a1\models\Verse';
     public function behaviors()
     {
         $behaviors = parent::behaviors();
-
+        
         $behaviors['corsFilter'] = [
             'class' => \yii\filters\Cors::class,
             'cors' => [
@@ -27,7 +27,7 @@ class VerseController extends ActiveController
                 ],
             ],
         ];
-
+        
         return $behaviors;
     }
     public function actions()
@@ -41,5 +41,14 @@ class VerseController extends ActiveController
         //  unset($actions['view']);
         return $actions;
     }
-
+    
+    public function actionOpen()
+    {
+        $searchModel = new VerseSearch();
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+        $query = $dataProvider->query;
+        $query->select('verse.*')->leftJoin('verse_open', '`verse_open`.`verse_id` = `verse`.`id`')->andWhere(['NOT', ['verse_open.id' => null]]);
+        return $dataProvider;
+    }
+    
 }
