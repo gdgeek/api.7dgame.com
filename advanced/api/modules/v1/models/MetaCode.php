@@ -33,7 +33,7 @@ class MetaCode extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['blockly'], JsonValidator::class],
+            [['blockly'], 'string'],
             [['meta_id'], 'required'],
             [['meta_id', 'code_id'], 'integer'],
             [['meta_id'], 'unique'],

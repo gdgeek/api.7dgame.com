@@ -32,7 +32,7 @@ class VerseCode extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['blockly'], JsonValidator::class],
+            [['blockly'], 'string'],
             [['verse_id'], 'required'],
             [['verse_id', 'code_id'], 'integer'],
             [['verse_id'], 'unique'],
