@@ -17,13 +17,16 @@ class MetaRule extends Rule
         if (!$id) {
             return false;
         }
-
         $meta = Meta::findOne($id);
+        
         if (!$meta) {
             return false;
         }
+        
         $userid = Yii::$app->user->identity->id;
+        // throw new BadRequestHttpException($meta->editable());
+        
         return $meta->editable();
-
+        
     }
 }

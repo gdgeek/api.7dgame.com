@@ -152,12 +152,14 @@ class Meta extends \yii\db\ActiveRecord
     public function editable()
     {
         if (!isset(Yii::$app->user->identity)) {
+            
             return false;
         }
         $userid = Yii::$app->user->identity->id;
         if ($userid == $this->author_id) {
             return true;
         }
+        
         return false;
     }
     /**
