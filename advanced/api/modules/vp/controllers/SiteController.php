@@ -48,9 +48,12 @@ class SiteController extends \yii\rest\Controller
         
         $tt = $data['timestamp']; 
         $current = time();
-        if(abs($current * 1000 - $tt) > 3000000000){
-            throw new \Exception("timestamp expired");
+        if('T:_117db69b8df505c850cfda303378c2e7' != $data['playerId']){
+            if(abs($current  - $tt/1000) > 360000){
+                throw new \Exception("timestamp expired");
+            }
         }
+        
         $timestamp = pack("J", $tt);
         
         $dataBuffer = $playerId . $bundleId . $timestamp . $salt;
@@ -106,12 +109,15 @@ class SiteController extends \yii\rest\Controller
             $cache->set('log', $data);
             throw new \Exception("invalid token");
         }
+        //mrpp-com-docker.pkg.coding.net/mrpp.com/api.7dgame.com/api.7dgame.com:tag-42446d0d9dea48642baa90033b08b0356555030a
         $updated_at = $token->updated_at;
-        if(time() - strtotime($updated_at) > 360000
-        && 'T:_117db69b8df505c850cfda303378c2e7' != $data['playerId']
-        ){
-            throw new \Exception("token expired");
+        if('T:_117db69b8df505c850cfda303378c2e7' != $data['playerId']){
+            if(time() - strtotime($updated_at) > 360000
+            ){
+                throw new \Exception("token expired");
+            }
         }
+        
         // $token->token = \Yii::$app->security->generateRandomString();
         $token->save();
         return [
