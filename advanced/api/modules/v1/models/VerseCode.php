@@ -32,7 +32,7 @@ class VerseCode extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['blockly'], 'string'],
+            [['blockly'], 'stringv'],
             [['verse_id'], 'required'],
             [['verse_id', 'code_id'], 'integer'],
             [['verse_id'], 'unique'],
@@ -48,9 +48,9 @@ class VerseCode extends \yii\db\ActiveRecord
         unset($fields['id']);
         unset($fields['verse_id']);
         unset($fields['code_id']);
-        $fields['blockly'] = function () { 
-            return JsonValidator::to_string($this->blockly);
-        };
+        /*  $fields['blockly'] = function () { 
+        return JsonValidator::to_string($this->blockly);
+        };*/
         
         return $fields;
     }

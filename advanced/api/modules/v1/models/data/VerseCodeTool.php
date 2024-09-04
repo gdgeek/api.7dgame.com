@@ -84,7 +84,7 @@ class VerseCodeTool extends Model
     public function rules()
     {
         return [
-            [['blockly'], JsonValidator::class],
+            [['blockly'], 'string'],
             // [['blockly'], 'required'],
             [['js','lua'], 'string'],
         ];
