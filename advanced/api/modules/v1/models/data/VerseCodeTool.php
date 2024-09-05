@@ -4,7 +4,6 @@ namespace api\modules\v1\models\data;
 use api\modules\v1\models\Verse;
 use api\modules\v1\models\Code;
 
-use api\modules\v1\components\Validator\JsonValidator;
 use yii\base\Model;
 
 

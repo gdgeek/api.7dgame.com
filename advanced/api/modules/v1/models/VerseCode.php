@@ -2,7 +2,7 @@
 
 namespace api\modules\v1\models;
 
-use api\modules\v1\components\Validator\JsonValidator;
+
 use Yii;
 
 /**
@@ -32,7 +32,7 @@ class VerseCode extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['blockly'], 'stringv'],
+            [['blockly'], 'string'],
             [['verse_id'], 'required'],
             [['verse_id', 'code_id'], 'integer'],
             [['verse_id'], 'unique'],
@@ -48,9 +48,7 @@ class VerseCode extends \yii\db\ActiveRecord
         unset($fields['id']);
         unset($fields['verse_id']);
         unset($fields['code_id']);
-        /*  $fields['blockly'] = function () { 
-        return JsonValidator::to_string($this->blockly);
-        };*/
+        
         
         return $fields;
     }
