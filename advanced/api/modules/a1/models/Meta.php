@@ -110,7 +110,7 @@ class Meta extends \yii\db\ActiveRecord
         $fields['script'] = function () {
             
             $metaCode = $this->metaCode;
-            if($metaCode){
+            if($metaCode && $metaCode->code){
                 return $metaCode->code->lua;
             }
             
