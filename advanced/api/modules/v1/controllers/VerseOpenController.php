@@ -50,7 +50,10 @@ class VerseOpenController extends ActiveController
     public function actions()
     {
         $actions = parent::actions();
-        // unset($actions['index']);
+        unset($actions['update']);
+        unset($actions['view']);
+        unset($actions['options']);
+        unset($actions['index']);
         return $actions;
     }
     
