@@ -141,10 +141,11 @@ class Verse extends \yii\db\ActiveRecord
             $script = $this->script;
             if($script){
                 $code->blockly = $script->workspace;
-                $code->save();
             }
+            $code->save();
             
         }
+        
         return $quest;
     }
     

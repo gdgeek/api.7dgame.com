@@ -27,6 +27,7 @@ class VerseCodeTool extends Model
     public function save()
     {
         $verseCode = $this->verse->verseCode;
+        
         $verseCode->blockly = $this->blockly;
         if($this->lua || $this->js){
             $code = $verseCode->code;
