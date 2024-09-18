@@ -118,11 +118,16 @@ class Meta extends \yii\db\ActiveRecord
                 $script = $this->cyber->script;
             }
             $substring = "local meta = {}";
-            if (strpos($script, $substring) !== false) {
-                return $script;
-            } else {
-                return $substring."\n".$script;
-            }
+            if(isset($script)){
+                if (strpos($script, $substring) !== false) {
+                    return $script;
+                } else {
+                    return $substring."\n".$script;
+                }
+            }else{
+                return $substring;
+            } 
+            
             
         };
         return $fields;

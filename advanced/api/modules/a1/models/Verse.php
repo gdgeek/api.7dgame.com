@@ -146,10 +146,14 @@ class Verse extends \yii\db\ActiveRecord
                 }
                 
                 $substring = "local verse = {}";
-                if (strpos($script, $substring) !== false) {
-                    return $script;
-                } else {
-                    return $substring."\n".$script;
+                if(isset($script)){
+                    if (strpos($script, $substring) !== false) {
+                        return $script;
+                    } else {
+                        return $substring."\n".$script;
+                    }
+                }else{
+                    return $substring;
                 }
             },
             'resources',
@@ -202,7 +206,7 @@ class Verse extends \yii\db\ActiveRecord
     /*
     public function getEventLinks()
     {
-    return $this->hasMany(EventLink::className(), ['verse_id' => 'id']);
+        return $this->hasMany(EventLink::className(), ['verse_id' => 'id']);
     }
     */
     public function getResources()
