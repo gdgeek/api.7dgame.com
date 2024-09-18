@@ -21,7 +21,6 @@ class SiteController extends \yii\rest\Controller
         $cache = \Yii::$app->cache;
         $log = $cache->get('log');
         return $log;
-        
     }
     private function testDecode($str){
         if(preg_match('/%[0-9A-Fa-f]{2}/', $str) === 1){

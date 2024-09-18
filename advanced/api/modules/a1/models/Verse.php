@@ -138,11 +138,18 @@ class Verse extends \yii\db\ActiveRecord
             'code' => function () {
                 $verseCode = $this->verseCode;
                 if($verseCode){
-                    return $verseCode->code->lua;
+                    $script = $verseCode->code->lua;
                 }
-                $script = $this->script;
+                
                 if ($this->script) {
-                    return $this->script->script;
+                    $script = $this->script->script;
+                }
+                
+                $substring = "local verse = {}";
+                if (strpos($script, $substring) !== false) {
+                    echo $script;
+                } else {
+                    echo $substring.'\n'.$script;
                 }
             },
             'resources',

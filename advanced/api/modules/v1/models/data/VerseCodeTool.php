@@ -15,10 +15,7 @@ class VerseCodeTool extends Model
     public $lua;
     public function __construct($id, array $config = [])
     {
-        
-        
         $this->verse = Verse::find()->where(['id' => $id])->one();
-        
         if(!$this->verse){
             throw new \yii\web\NotFoundHttpException("Verse not found");
         }
@@ -29,24 +26,21 @@ class VerseCodeTool extends Model
         $verseCode = $this->verse->verseCode;
         
         $verseCode->blockly = $this->blockly;
-        if($this->lua || $this->js){
-            $code = $verseCode->code;
-            if(!$code){
-                $code = new Code();
-            }
-            if($this->lua){
-                $code->lua = $this->lua;
-            }
-            if($this->js){
-                $code->js = $this->js;
-            }
-            if($code->validate()){
-                $code->save();
-                $verseCode->code_id = $code->id;
-            }else{
-                throw new \yii\web\ServerErrorHttpException(json_encode($code->errors));
-            }
+        
+        $code = $verseCode->code;
+        if(!$code){
+            $code = new Code();
         }
+        $code->lua = $this->lua;
+        $code->js = $this->js;
+        
+        if($code->validate()){
+            $code->save();
+            $verseCode->code_id = $code->id;
+        }else{
+            throw new \yii\web\ServerErrorHttpException(json_encode($code->errors));
+        }
+        
         
         if($verseCode->validate()){
             $verseCode->save();
@@ -57,26 +51,6 @@ class VerseCodeTool extends Model
             }
             throw new \yii\web\ServerErrorHttpException(json_encode($verseCode->errors));
         }
-        
-        // echo json_encode($verseCode);
-        /*
-        if ($this->validate()) {
-        $this->_user->nickname = $this->nickname;
-        
-        $info = $this->_user->userInfo;
-        
-        $info->info = $this->info;
-        $info->avatar_id = $this->avatar_id;
-        
-        
-        if ($this->_user->validate()) {
-        $this->_user->save();
-        return true;
-        }
-        return false;
-        } else {
-        return false;
-        }*/
     }
     /**
     * {@inheritdoc}

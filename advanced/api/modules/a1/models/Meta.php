@@ -111,13 +111,18 @@ class Meta extends \yii\db\ActiveRecord
             
             $metaCode = $this->metaCode;
             if($metaCode && $metaCode->code){
-                return $metaCode->code->lua;
+                $script = $metaCode->code->lua;
             }
             
             if ($this->cyber && $this->cyber->script) {
-                return $this->cyber->script;
+                $script = $this->cyber->script;
             }
-            return 'local meta = {}';
+            $substring = "local meta = {}";
+            if (strpos($script, $substring) !== false) {
+                echo $script;
+            } else {
+                echo $substring.'\n'.$script;
+            }
             
         };
         return $fields;
