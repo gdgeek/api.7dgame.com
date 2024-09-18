@@ -147,9 +147,9 @@ class Verse extends \yii\db\ActiveRecord
                 
                 $substring = "local verse = {}";
                 if (strpos($script, $substring) !== false) {
-                    echo $script;
+                    return $script;
                 } else {
-                    echo $substring.'\n'.$script;
+                    return $substring.'\n'.$script;
                 }
             },
             'resources',
