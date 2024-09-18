@@ -149,7 +149,7 @@ class Verse extends \yii\db\ActiveRecord
                 if (strpos($script, $substring) !== false) {
                     return $script;
                 } else {
-                    return $substring.'\n'.$script;
+                    return $substring."\n".$script;
                 }
             },
             'resources',
