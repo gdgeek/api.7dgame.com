@@ -67,7 +67,7 @@ class Oauth2Controller extends \yii\rest\Controller{
             }
             if($password !== null && $user->validatePassword($password)){
                 $apple->user_id = $user->id;
-                $apple->token = null;//清除token
+                //  $apple->token = null;//清除token
                 $apple->save();
                 //成功绑定旧的用户
                 return [
@@ -99,7 +99,7 @@ class Oauth2Controller extends \yii\rest\Controller{
         
         //绑定apple_id
         $apple->user_id = $user->id;
-        $apple->token = null;//清除token
+        // $apple->token = null;//清除token
         $apple->save();
         return [
             'type' => 'created',
@@ -195,7 +195,7 @@ class Oauth2Controller extends \yii\rest\Controller{
             $apple->email = $user->getEmail();
             $apple->first_name = $user->getFirstName();
             $apple->last_name = $user->getLastName();
-            $apple->token = $token->getToken();
+            //$apple->token = $token->getToken();
             
             if($apple->validate()){
                 $apple->save();
@@ -240,7 +240,7 @@ class Oauth2Controller extends \yii\rest\Controller{
             throw new Exception('apple_id Not Found');
         }
         if($apple->user_id !== null){
-            $apple->token = null;//清除token
+            //    $apple->token = null;//清除token
             $apple->save();
             //已经有用户绑定，返回Token
             return [
@@ -325,7 +325,7 @@ class Oauth2Controller extends \yii\rest\Controller{
                 $aid->email = $user->getEmail();
                 $aid->first_name = $user->getFirstName();
                 $aid->last_name = $user->getLastName();
-                $aid->token = $token->getToken();
+                // $aid->token = $token->getToken();
                 $aid->save();
             }
             

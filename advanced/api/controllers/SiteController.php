@@ -19,40 +19,40 @@ use yii\web\BadRequestHttpException;
 class SiteController extends \yii\rest\Controller
 
 {
-
+    
     public function behaviors()
     {
         $behaviors = parent::behaviors();
-
+        
         // remove authentication filter
         $auth = $behaviors['authenticator'];
         unset($behaviors['authenticator']);
-
+        
         // add CORS filter
         $behaviors['corsFilter'] = [
             'class' => \yii\filters\Cors::class,
         ];
-
+        
         // re-add authentication filter
         $behaviors['authenticator'] = $auth;
         // avoid authentication on CORS-pre-flight requests (HTTP OPTIONS method)
         $behaviors['authenticator']['except'] = ['options'];
-
+        
         return $behaviors;
     }
-
+    
     /**
-     * @return array
-     * @throws \yii\base\Exception
-     * @throws \yii\base\InvalidConfigException
-     */
+    * @return array
+    * @throws \yii\base\Exception
+    * @throws \yii\base\InvalidConfigException
+    */
     public function actionLogin()
     {
         $model = new Login();
         if ($model->load(Yii::$app->getRequest()->getBodyParams(), '')) {
             $token = $model->login();
-           
-
+            
+            
             if ($token) {
                 $user = $model->user->getUser();
                 return [
@@ -67,7 +67,7 @@ class SiteController extends \yii\rest\Controller
             throw new Exception(json_encode($model->getFirstErrors()), 400);
         }
     }
-
+    
     public function actionWechatOpenid($token)
     {
         $wx = Wx::find()->where(['token' => $token])->one();
@@ -80,27 +80,27 @@ class SiteController extends \yii\rest\Controller
             return $ret;
         }
         return ['code' => 20000];
-
+        
     }
     public function actionWechatQrcode()
     {
-
+        
         $wechat = \Yii::$app->wechat;
         $app = $wechat->officialAccount();
         $token = Yii::$app->security->generateRandomString();
         $result = $app->qrcode->temporary($token, 6 * 24 * 3600);
         $url = $app->qrcode->url($result['ticket']);
-
+        
         return ['qrcode' => $url, 'token' => $token];
     }
-
+    
     /**
-     * Verify email address
-     *
-     * @param string $token
-     * @throws BadRequestHttpException
-     * @return yii\web\Response
-     */
+    * Verify email address
+    *
+    * @param string $token
+    * @throws BadRequestHttpException
+    * @return yii\web\Response
+    */
     public function actionVerifyEmail($token)
     {
         try {
@@ -123,21 +123,21 @@ class SiteController extends \yii\rest\Controller
                 } else {
                     $assignment->assign(['guest']);
                 }
-
+                
                 return ['data' => '您的email已经确认！', 'code' => 20000];
             }
         }
         throw new Exception(json_encode('抱歉，我们无法使用提供的令牌验证您的帐户。'), 400);
     }
-
+    
     /**
-     * Requests password reset.
-     *
-     * @return mixed
-     */
+    * Requests password reset.
+    *
+    * @return mixed
+    */
     public function actionRequestPasswordReset()
     {
-
+        
         $model = new PasswordResetRequestForm();
         if ($model->load(Yii::$app->request->post()) && $model->validate()) {
             if ($model->sendEmail()) {
@@ -146,21 +146,21 @@ class SiteController extends \yii\rest\Controller
                 throw new Exception(json_encode('对不起，我们无法通过过您提供的email来重置密码。'), 400);
             }
         }
-
+        
         if ($model->errors == null) {
-
+            
             throw new Exception(json_encode('无法读取数据。'), 400);
         } else {
             throw new Exception(json_encode($model->errors), 400);
         }
     }
     /**
-     * Resets password.
-     *
-     * @param string $token
-     * @return mixed
-     * @throws BadRequestHttpException
-     */
+    * Resets password.
+    *
+    * @param string $token
+    * @return mixed
+    * @throws BadRequestHttpException
+    */
     public function actionResetPassword($token)
     {
         try {
@@ -168,25 +168,25 @@ class SiteController extends \yii\rest\Controller
         } catch (InvalidArgumentException $e) {
             throw new BadRequestHttpException($e->getMessage());
         }
-
+        
         if ($model->load(Yii::$app->request->post()) && $model->validate() && $model->resetPassword()) {
-
+            
             return ['data' => '更新密码成功。', 'code' => 20000];
         }
-
+        
         if ($model->errors == null) {
-
+            
             throw new Exception(json_encode('无法读取数据。'), 400);
         } else {
             throw new Exception(json_encode($model->errors), 400);
         }
     }
-
+    
     /**
-     * Resend verification email
-     *
-     * @return mixed
-     */
+    * Resend verification email
+    *
+    * @return mixed
+    */
     public function actionResendVerificationEmail()
     {
         $model = new ResendVerificationEmailForm();
@@ -195,7 +195,7 @@ class SiteController extends \yii\rest\Controller
                 return ['data' => '检查您的email来进行进一步操作。', 'code' => 20000];
             }
             throw new Exception(json_encode('抱歉，我们无法为提供的电子邮件地址重新发送验证电子邮件。'), 400);
-
+            
         }
         if ($model->errors == null) {
             throw new Exception(json_encode('无法读取数据。'), 400);
@@ -209,21 +209,21 @@ class SiteController extends \yii\rest\Controller
         if (!isset($get['token'])) {
             throw new Exception(json_encode('无法读取token。'), 400);
         }
-
+        
         $token = $get['token'];
         try {
             $model = new ResetPasswordForm($token);
         } catch (InvalidArgumentException $e) {
             throw new BadRequestHttpException($e->getMessage());
         }
-
+        
         return ['data' => '验证token成功。', 'code' => 20000];
     }
     public function actionError()
     {
         return Yii::$app->errorHandler->exception;
     }
-
+    
     public function actionMenu()
     {
         $callback = function ($menu) {
@@ -243,14 +243,14 @@ class SiteController extends \yii\rest\Controller
             }
             (!isset($return['icon']) || !$return['icon']) && $return['icon'] = 'circle-o';
             $items && $return['items'] = $items;
-
+            
             return $return;
         };
-
+        
         $items = MenuHelper::getAssignedMenu(Yii::$app->user->id, null, $callback);
         return $items;
     }
-
+    
     public function actionBindedEmail($token)
     {
         $data = User::splitEmailVerificationTokenWithEmail($token);
@@ -259,7 +259,7 @@ class SiteController extends \yii\rest\Controller
         }
         $model = new BindedEmailForm($token);
         $model->email = $data->email;
-
+        
         if ($model->validate()) {
             $token = $model->binding();
             return [
@@ -274,6 +274,6 @@ class SiteController extends \yii\rest\Controller
                 throw new Exception(json_encode($model->errors), 400);
             }
         }
-
+        
     }
 }

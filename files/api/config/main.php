@@ -272,6 +272,16 @@ return [
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',
+                    'pluralize' => false,
+                    'controller' => 'v1/site',
+                    'extraPatterns' => [
+                        'POST login' => 'login',
+                        'POST apple-id' => 'apple-id',
+                        'GET apple-id' => 'apple-id',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/meta-resource',
                     'extraPatterns' => [
                         'GET resources' => 'resources',

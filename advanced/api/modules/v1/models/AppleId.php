@@ -1,6 +1,6 @@
 <?php
 
-namespace api\modules\vp\models;
+namespace api\modules\v1\models;
 
 use Yii;
 
@@ -47,8 +47,8 @@ class AppleId extends \yii\db\ActiveRecord
         return [
             'apple_id',
             'email',
-            //  'first_name',
-            //  'last_name',
+            //    'first_name',
+            //   'last_name',
             'user' => function(){
                 return $this->user;
             },

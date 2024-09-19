@@ -1,22 +1,22 @@
 <?php
-namespace api\modules\v1\models;
-
+namespace api\modules\v1\models\data;
+use api\modules\v1\models\User;
 use yii\base\Model;
 
 /**
- * Login form
- */
+* Login form
+*/
 
 class Login extends Model
 {
     public $username;
     public $password;
-
+    
     private $_user;
-
+    
     /**
-     * {@inheritdoc}
-     */
+    * {@inheritdoc}
+    */
     public function rules()
     {
         return [
@@ -24,10 +24,10 @@ class Login extends Model
             ['password', 'validatePassword'],
         ];
     }
-
+    
     /**
-     * {@inheritdoc}
-     */
+    * {@inheritdoc}
+    */
     public function attributeLabels()
     {
         return [
@@ -35,14 +35,14 @@ class Login extends Model
             'password' => 'Password',
         ];
     }
-
+    
     /**
-     * Validates the password.
-     * This method serves as the inline validation for password.
-     *
-     * @param string $attribute the attribute currently being validated
-     * @param array $params the additional name-value pairs given in the rule
-     */
+    * Validates the password.
+    * This method serves as the inline validation for password.
+    *
+    * @param string $attribute the attribute currently being validated
+    * @param array $params the additional name-value pairs given in the rule
+    */
     public function validatePassword($attribute, $params)
     {
         if (!$this->hasErrors()) {
@@ -51,14 +51,14 @@ class Login extends Model
                 $this->addError($attribute, 'Incorrect username or password.');
             }
         }
-
+        
     }
-
+    
     /**
-     * Logs in a user using the provided username and password.
-     *
-     * @return bool whether the user is logged in successfully
-     */
+    * Logs in a user using the provided username and password.
+    *
+    * @return bool whether the user is logged in successfully
+    */
     public function login()
     {
         if ($this->validate()) {
@@ -67,21 +67,21 @@ class Login extends Model
         } else {
             return false;
         }
-
+        
     }
-
+    
     /**
-     * Finds user by [[username]]
-     *
-     * @return User|null
-     */
+    * Finds user by [[username]]
+    *
+    * @return User|null
+    */
     public function getUser()
     {
         if ($this->_user === null) {
             $this->_user = User::findByUsername($this->username);
         }
-
+        
         return $this->_user;
     }
-
+    
 }

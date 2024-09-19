@@ -4,7 +4,9 @@ namespace api\modules\v1\controllers;
 //namespace api\controllers;
 
 use api\modules\v1\models\Login;
+use api\modules\v1\models\Register;
 use api\modules\v1\models\User;
+use api\modules\v1\models\AppleId;
 use Yii;
 use yii\base\Exception;
 use yii\base\InvalidArgumentException;
@@ -34,11 +36,132 @@ class SiteController extends \yii\rest\Controller
         
         return $behaviors;
     }
-    private function der2pem($der_data)
+    
+    
+    
+    
+    private function getAppleUser($code, $appleParameter){
+        
+        
+        \Firebase\JWT\JWT::$leeway = 60;
+        
+        $provider = new \League\OAuth2\Client\Provider\Apple($appleParameter);
+        
+        $token = $provider->getAccessToken('authorization_code', [
+            'code' => $code
+        ]);
+        
+        $data = $provider->getResourceOwner($token);
+        return [
+            "id"=>$data->getId(), 
+            "email"=>$data->getEmail(), 
+            "first_name"=>$data->getFirstName(),
+            "last_name"=>$data->getLastName(), 
+            "token"=>$token->getToken(),
+            "privateEmail" => $data->isPrivateEmail(),
+            // "array" => $data->toArray() 
+        ];
+        
+    }
+    
+    public function actionAppleId(){
+        
+        
+        
+        $post = Yii::$app->request->post();
+        
+        if(!isset($post['data'])){
+            throw new \yii\web\NotFoundHttpException('data');
+        }
+        if(!isset($post['url'])){
+            throw new \yii\web\NotFoundHttpException('url');
+        }
+        if(!isset($post['key'])){
+            throw new \yii\web\NotFoundHttpException('key');
+        }
+        $key = $post['key'];
+        $data = $post['data'];
+        $url = $post['url'];
+        
+        if(!isset($data['userData']) || !isset($data['userData']['aud'])){
+            throw new \yii\web\NotFoundHttpException('userData.aud');
+        }
+        $aud = $data['userData']['aud'];
+        
+        if(!isset($data['authorization'])){
+            throw new \yii\web\NotFoundHttpException('authorization');
+        }
+        if(!isset($data['authorization']['code'])){
+            throw new \yii\web\NotFoundHttpException('code');
+        }
+        $appleParameter = [
+            'clientId'          =>  $aud, // com.mrpp.www //客户端提供
+            'teamId'            =>  getenv('APPLE_TEAM_ID') , // PK435YWZ25 https://developer.apple.com/account/#/membership/ (Team ID)
+            'keyFileId'         =>  getenv($key) , // UZJ8VJVX7K https://developer.apple.com/account/resources/authkeys/list (Key ID)
+            'keyFilePath'       =>  str_replace('{KEY_ID}', getenv($key), getenv('APPLE_AUTH_KEY')), // __DIR__ . '/AuthKey_UZJ8VJVX7K.p8' -> Download key above
+            'redirectUri'       =>  $url,
+            'scope'             => "email name",
+        ];
+        
+        
+        
+        
+        $code = $data['authorization']['code'];
+        $user = $this->getAppleUser($code, $appleParameter);
+        $aid = AppleId::find()->where(['apple_id'=>$user['id']])->one();
+        if(!$aid){
+            $aid = new AppleId();
+            $aid->apple_id = $user['id'];
+            $aid->email = $user['email'];
+            $aid->first_name = $user['first_name'];
+            $aid->last_name = $user['last_name'];
+        }
+        
+        $aid->token = $user['token'];
+        if($aid->validate()){
+            $aid->save();
+        }else{
+            throw new Exception(json_encode($aid->errors));
+        }
+        
+        return $aid;
+        /*return $this->login($apple);*/
+    }
+    
+    public function actionRegister()
     {
-        $pem = chunk_split(base64_encode($der_data), 64, "\n");
-        $pem = "-----BEGIN CERTIFICATE-----\n" . $pem . "-----END CERTIFICATE-----\n";
-        return $pem;
+        $model = new Register();
+        
+        $token = Yii::$app->request->post('token');
+        if (!$token) {
+            throw new Exception(("No Token"), 400);
+        }
+        
+        $aid = AppleId::find()->where(['token'=> $token])->one();
+        if(!$aid){
+            throw new Exception("No AppleId", 400);
+        }
+        if($aid->user !== null)
+        {
+            throw new Exception("Already Registered", 400);
+        }
+        
+        if ($model->load(Yii::$app->getRequest()->getBodyParams(), '')) {
+            if ($model->validate()) {
+                $model->user->save();
+                $aid->user_id = $model->user->id;
+                $aid->save();
+                return [
+                    'data' => 'Successfully Registered',
+                    'code' => 2000,
+                ];
+            } else {
+                throw new Exception('Error', 400);
+            }
+        } else {
+            throw new Exception(json_encode($model->getFirstErrors()), 400);
+        }
+        
     }
     /**
     * @return array
@@ -50,17 +173,14 @@ class SiteController extends \yii\rest\Controller
         $model = new Login();
         if ($model->load(Yii::$app->getRequest()->getBodyParams(), '')) {
             $token = $model->login();
-            
-            
             if ($token) {
                 $user = $model->user->getUser();
                 return [
                     'access_token' => $token,
                     'user' => $user,
-                    //'code' => 20000,
                 ];
             } else {
-                throw new Exception(json_encode("用户名或密码错误"), 400);
+                throw new Exception(json_encode("Error"), 400);
             }
         } else {
             throw new Exception(json_encode($model->getFirstErrors()), 400);
