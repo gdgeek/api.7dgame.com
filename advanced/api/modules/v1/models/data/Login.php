@@ -14,6 +14,7 @@ class Login extends Model
     
     private $_user;
     
+    
     /**
     * {@inheritdoc}
     */

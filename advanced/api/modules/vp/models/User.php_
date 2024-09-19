@@ -1,6 +1,6 @@
 <?php
 
-namespace api\modules\v1\models;
+namespace api\modules\vp\models;
 
 use yii\db\Expression;
 

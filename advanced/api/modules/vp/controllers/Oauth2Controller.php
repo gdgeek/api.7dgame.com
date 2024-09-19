@@ -11,7 +11,7 @@ use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer;
 use Lcobucci\JWT\Signer\Key;
 use api\modules\vp\models\AppleId;
-use api\modules\vp\models\User;
+use api\modules\v1\models\User;
 use mdm\admin\models\Assignment;
 use yii\web\Response;
 class Oauth2Controller extends \yii\rest\Controller{

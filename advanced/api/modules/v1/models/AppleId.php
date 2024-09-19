@@ -50,10 +50,13 @@ class AppleId extends \yii\db\ActiveRecord
             //    'first_name',
             //   'last_name',
             'user' => function(){
-                return $this->user;
+                if($this->user){
+                    return $this->user->toArray([],['auth']);
+                }
+                return null;
             },
             'token',
-            'created_at',
+            //'created_at',
         ];
     }
     /**

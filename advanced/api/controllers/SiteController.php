@@ -48,23 +48,15 @@ class SiteController extends \yii\rest\Controller
     */
     public function actionLogin()
     {
-        $model = new Login();
-        if ($model->load(Yii::$app->getRequest()->getBodyParams(), '')) {
-            $token = $model->login();
-            
-            
-            if ($token) {
-                $user = $model->user->getUser();
-                return [
-                    'access_token' => $token,
-                    'user' => $user,
-                    //'code' => 20000,
-                ];
+        $login = new Login();
+        if ($login->load(Yii::$app->getRequest()->getBodyParams(), '')) {
+            if ($login->login()) {
+                return $login->user->toArray([],['auth']);
             } else {
-                throw new Exception(json_encode("用户名或密码错误"), 400);
+                throw new Exception("Login Error", 400);
             }
         } else {
-            throw new Exception(json_encode($model->getFirstErrors()), 400);
+            throw new Exception(json_encode($login->getFirstErrors()), 400);
         }
     }
     

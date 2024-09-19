@@ -53,7 +53,7 @@ class AppleId extends \yii\db\ActiveRecord
                 return $this->user;
             },
             'token',
-            'created_at',
+            // 'created_at',
         ];
     }
     /**
