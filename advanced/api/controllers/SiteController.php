@@ -2,7 +2,7 @@
 namespace api\controllers;
 
 use api\common\models\BindedEmailForm;
-use api\modules\v1\models\Login;
+use api\modules\v1\models\data\Login;
 use api\modules\v1\models\User;
 use common\models\Invitation;
 use common\models\PasswordResetRequestForm;
