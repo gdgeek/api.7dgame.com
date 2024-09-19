@@ -3,8 +3,8 @@
 namespace api\modules\v1\controllers;
 //namespace api\controllers;
 
-use api\modules\v1\models\Login;
-use api\modules\v1\models\Register;
+use api\modules\v1\models\data\Login;
+use api\modules\v1\models\data\Register;
 use api\modules\v1\models\User;
 use api\modules\v1\models\AppleId;
 use Yii;
