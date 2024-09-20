@@ -235,11 +235,11 @@ class Meta extends \yii\db\ActiveRecord
         'author' => function () {
             return $this->author;
         },
-        /* 'script' => function () {
-            if ($this->cyber) {
-                return $this->cyber->script;
-            }
-            return null;
+        /*'script' => function () {
+        if ($this->cyber) {
+        return $this->cyber->script;
+        }
+        return null;
         },*/
         'cyber',
         'metaCode'
