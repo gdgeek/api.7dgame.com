@@ -104,8 +104,6 @@ class SiteController extends \yii\rest\Controller
         ];
         
         
-        
-        
         $code = $data['authorization']['code'];
         $user = $this->getAppleUser($code, $appleParameter);
         $aid = AppleId::find()->where(['apple_id'=>$user['id']])->one();
@@ -125,13 +123,11 @@ class SiteController extends \yii\rest\Controller
         }
         
         return $aid;
-        /*return $this->login($apple);*/
     }
     
-    public function actionRegister()
+    public function actionAppleIdCreate()
     {
-        $model = new Register();
-        
+        $register = new Register();
         $token = Yii::$app->request->post('token');
         if (!$token) {
             throw new Exception(("No Token"), 400);
@@ -146,15 +142,18 @@ class SiteController extends \yii\rest\Controller
             throw new Exception("Already Registered", 400);
         }
         
-        if ($model->load(Yii::$app->getRequest()->getBodyParams(), '')) {
-            if ($model->validate()) {
-                $model->user->save();
-                $aid->user_id = $model->user->id;
-                $aid->save();
-                return [
-                    'data' => 'Successfully Registered',
-                    'code' => 2000,
-                ];
+        if ($register->load(Yii::$app->getRequest()->getBodyParams(), '')) {
+            
+            if ($register->validate()) {
+                $register->user->save();
+                $aid->user_id = $register->user->id;
+                $aid->token = null;
+                if($aid->validate()){
+                    $aid->save();
+                }else{
+                    throw new Exception(json_encode($aid->errors), 400);
+                }
+                return $aid;
             } else {
                 throw new Exception('Error', 400);
             }
@@ -162,6 +161,39 @@ class SiteController extends \yii\rest\Controller
             throw new Exception(json_encode($model->getFirstErrors()), 400);
         }
         
+    }
+    public function actionAppleIdLink(){
+        $link = new Link();
+        $token = Yii::$app->request->post('token');
+        if (!$token) {
+            throw new Exception(("No Token"), 400);
+        }
+        
+        $aid = AppleId::find()->where(['token'=> $token])->one();
+        if(!$aid){
+            throw new Exception("No AppleId", 400);
+        }
+        if($aid->user !== null)
+        {
+            throw new Exception("Already Registered", 400);
+        }
+        if ($link->load(Yii::$app->getRequest()->getBodyParams(), '')) {
+            
+            if ($link->validate()) {
+                $aid->user_id = $link->user->id;
+                $aid->token = null;
+                if($aid->validate()){
+                    $aid->save();
+                }else{
+                    throw new Exception(json_encode($aid->errors), 400);
+                }
+                return $aid;
+            } else {
+                throw new Exception('Error', 400);
+            }
+        } else {
+            throw new Exception(json_encode($model->getFirstErrors()), 400);
+        }
     }
     /**
     * @return array
