@@ -1,7 +1,7 @@
 <?php
 
 namespace api\modules\vp\models;
-use api\modules\v1\models\Verse;
+use api\modules\a1\models\Verse;
 use Yii;
 
 /**
