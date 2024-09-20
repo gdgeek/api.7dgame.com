@@ -77,7 +77,7 @@ class Guide extends \yii\db\ActiveRecord
     public function getVerse()
     {
         $quest = $this->hasOne(Verse::className(), ['id' => 'level_id']);
-        return $$quest->one()->toArray([],['id','metas','name','description','uuid','data','code','resources']);
+        return $quest->one()->toArray([],['id','metas','name','description','uuid','data','code','resources']);
     }
     
     /**
