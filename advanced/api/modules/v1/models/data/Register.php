@@ -1,7 +1,7 @@
 <?php
 namespace api\modules\v1\models\data;
 use api\modules\v1\models\User;
-
+use Yii;
 use yii\base\Model;
 
 /**
@@ -13,7 +13,7 @@ class Register extends Model
   public $username;
   public $password;
   
-  
+  public $_user;
   
   /**
   * {@inheritdoc}
@@ -21,8 +21,12 @@ class Register extends Model
   public function rules()
   {
     return [
+      ['username', 'match', 'pattern' => '/^[a-zA-Z0-9_@.-]+$/', 'message' => 'Username can only contain letters, numbers, underscores, hyphens, @, and .'],
       [['username', 'password'], 'required'],
-      ['password', 'validatePassword'],
+      ['password', 'string', 'min' => 8, 'max' => 20, 'message' => 'Password must be between 8 and 20 characters long.'],
+      // 自定义密码强度验证
+      ['password', 'match', 'pattern' => '/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/', 'message' => 'Password must contain at least one lowercase letter, one uppercase letter, one digit, and one special character, and be at least 8 characters long.'],
+      
     ];
   }
   
@@ -37,34 +41,33 @@ class Register extends Model
     ];
   }
   
-  /**
-  * Validates the password.
-  * This method serves as the inline validation for password.
-  *
-  * @param string $attribute the attribute currently being validated
-  * @param array $params the additional name-value pairs given in the rule
-  */
-  public function validatePassword($attribute, $params)
-  {
-    if (!$this->hasErrors()) {
-      $user = $this->getUser();
-      if (!$user || !$user->validatePassword($this->password)) {
-        $this->addError($attribute, 'Incorrect username or password.');
-      }
-    }
-    
-  }
   
+  public function remove()
+  {
+    $this->_user->delete();
+    $this->_user = null;
+  }
   /**
   * Logs in a user using the provided username and password.
   *
   * @return bool whether the user is logged in successfully
   */
-  public function login()
+  public function create($email, $nickname)
   {
     if ($this->validate()) {
-      $token = $this->_user->generateAccessToken();
-      return $token;
+      $this->_user = new User();
+      $this->_user->username = $this->username;
+      $this->_user->setPassword($this->password);
+      $this->_user->email = $email;
+      $this->_user->nickname = $nickname;
+      if($this->_user->validate()){
+        $this->_user->save();
+        return true;
+      }else{
+        throw new \yii\base\Exception(json_encode($this->_user->errors));
+      }
+      
+      // $this->_user->save();
     } else {
       return false;
     }

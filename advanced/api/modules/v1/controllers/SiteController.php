@@ -4,6 +4,7 @@ namespace api\modules\v1\controllers;
 //namespace api\controllers;
 
 use api\modules\v1\models\data\Login;
+use api\modules\v1\models\data\Link;
 use api\modules\v1\models\data\Register;
 use api\modules\v1\models\User;
 use api\modules\v1\models\AppleId;
@@ -107,15 +108,23 @@ class SiteController extends \yii\rest\Controller
         $code = $data['authorization']['code'];
         $user = $this->getAppleUser($code, $appleParameter);
         $aid = AppleId::find()->where(['apple_id'=>$user['id']])->one();
+        if($aid && $aid->user){
+            return $aid;
+        }
+        
         if(!$aid){
             $aid = new AppleId();
             $aid->apple_id = $user['id'];
             $aid->email = $user['email'];
             $aid->first_name = $user['first_name'];
             $aid->last_name = $user['last_name'];
+            $user = User::find()->where(['email'=>$user['email']])->one();
+            if($user){
+                $aid->user_id = $user->id;
+            }
         }
-        
         $aid->token = $user['token'];
+        
         if($aid->validate()){
             $aid->save();
         }else{
@@ -128,58 +137,81 @@ class SiteController extends \yii\rest\Controller
     public function actionAppleIdCreate()
     {
         $register = new Register();
+        $appleId = Yii::$app->request->post('apple_id');
+        if (!$appleId) {
+            throw new Exception(("No AppleId"), 400);
+        }
+        
         $token = Yii::$app->request->post('token');
         if (!$token) {
             throw new Exception(("No Token"), 400);
         }
-        
-        $aid = AppleId::find()->where(['token'=> $token])->one();
+        $aid = AppleId::find()->where([ 'apple_id'=>$appleId, 'token'=> $token])->one();
         if(!$aid){
             throw new Exception("No AppleId", 400);
         }
         if($aid->user !== null)
         {
-            throw new Exception("Already Registered", 400);
+            $aid->token = null;
+            $aid->save();
+            return $aid;
         }
         
         if ($register->load(Yii::$app->getRequest()->getBodyParams(), '')) {
             
-            if ($register->validate()) {
-                $register->user->save();
+            $nickname = null;
+            if($aid->first_name){
+                $nickname = $aid->first_name;
+            }
+            if($nickname && $aid->last_name){
+                $nickname += ' ';
+            } 
+            if($aid->last_name){
+                $nickname += $aid->last_name;
+            }
+            if ($register->create($aid->email, $nickname)) {
+                
                 $aid->user_id = $register->user->id;
                 $aid->token = null;
                 if($aid->validate()){
                     $aid->save();
                 }else{
+                    $register->remove();
                     throw new Exception(json_encode($aid->errors), 400);
                 }
                 return $aid;
             } else {
-                throw new Exception('Error', 400);
+                throw new Exception("error!", 400);
             }
         } else {
-            throw new Exception(json_encode($model->getFirstErrors()), 400);
+            throw new Exception(json_encode($register->getFirstErrors()), 400);
         }
         
     }
     public function actionAppleIdLink(){
         $link = new Link();
+        $appleId = Yii::$app->request->post('apple_id');
+        if (!$appleId) {
+            throw new Exception(("No AppleId"), 400);
+        }
         $token = Yii::$app->request->post('token');
         if (!$token) {
             throw new Exception(("No Token"), 400);
         }
         
-        $aid = AppleId::find()->where(['token'=> $token])->one();
+        $aid = AppleId::find()->where(['apple_id'=>$appleId, 'token'=> $token])->one();
         if(!$aid){
             throw new Exception("No AppleId", 400);
         }
         if($aid->user !== null)
         {
-            throw new Exception("Already Registered", 400);
+            $aid->token = null;
+            $aid->save();
+            return $aid;
         }
         if ($link->load(Yii::$app->getRequest()->getBodyParams(), '')) {
             
-            if ($link->validate()) {
+            if ($link->bind()) {
                 $aid->user_id = $link->user->id;
                 $aid->token = null;
                 if($aid->validate()){
