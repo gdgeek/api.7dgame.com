@@ -131,13 +131,34 @@ class Verse extends \yii\db\ActiveRecord
                 return JsonValidator::to_string($this->data);
             },
             'code' => function () {
-                $script = $this->script;
+                $verseCode = $this->verseCode;
+                if($verseCode){
+                    $script = $verseCode->code->lua;
+                }
+                
                 if ($this->script) {
-                    return $this->script->script;
+                    $script = $this->script->script;
+                }
+                
+                $substring = "local verse = {}\nlocal is_playing = false\n";
+                if(isset($script)){
+                    if (strpos($script, $substring) !== false) {
+                        return $script;
+                    } else {
+                        return $substring.$script;
+                    }
+                }else{
+                    return $substring;
                 }
             },
             'resources',
+            'image'
         ];
+    }
+    
+    public function getVerseCode()
+    {
+        return $this->hasOne(VerseCode::className(), ['verse_id' => 'id']);
     }
     /**
     * {@inheritdoc}
