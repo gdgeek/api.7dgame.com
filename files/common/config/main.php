@@ -12,13 +12,7 @@ return [
     
     'components' => [
         'cache' => [
-            'class' => 'yii\redis\Cache',
-            'redis' => [
-                'class' => 'yii\redis\Connection',
-                'hostname' => 'redis',
-                'port' => 6379,
-                'database' => 0,
-            ],
+            'class' => 'yii\caching\FileCache',
         ],
         'urlManager' => [
             'enablePrettyUrl' => true,
