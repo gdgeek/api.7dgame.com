@@ -1,7 +1,7 @@
 # Dockerfile-app
 
 # Use PHP 5.6 with Apache for the base image
-FROM  php:8.3.10-apache
+FROM  php:8.3-apache
 
 # Enable the Rewrite Apache mod
 RUN cd /etc/apache2/mods-enabled && \
@@ -17,8 +17,6 @@ RUN apt-get update && apt-get install -y \
         git \
         libzip-dev \
         zip \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) gd \
     && docker-php-ext-install zip
 
 # 安装 Redis 扩展
