@@ -49,6 +49,7 @@ class Link extends Model
       if (!$this->_user || !$this->_user->validatePassword($this->password)) {
         throw new \yii\web\UnauthorizedHttpException('Incorrect username or password.');
       }
+      
       return true;
     } else {
       return false;

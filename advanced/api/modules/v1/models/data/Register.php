@@ -22,6 +22,7 @@ class Register extends Model
   {
     return [
       ['username', 'match', 'pattern' => '/^[a-zA-Z0-9_@.-]+$/', 'message' => 'Username can only contain letters, numbers, underscores, hyphens, @, and .'],
+      ['password', 'string', 'min' => 4, 'max' => 20, 'message' => 'User Name must be between 4 and 20 characters long.'],
       [['username', 'password'], 'required'],
       ['password', 'string', 'min' => 8, 'max' => 20, 'message' => 'Password must be between 8 and 20 characters long.'],
       // 自定义密码强度验证

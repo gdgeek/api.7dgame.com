@@ -23,6 +23,12 @@ return [
         ],
     ],
     'components' => [
+        'redis' => [
+            'class' => 'yii\redis\Connection',
+            'hostname' => 'redis',
+            'port' => 6379,
+            'database' => 0,  // Redis 的数据库索引（默认为0）
+        ],
         'request' => [
             'csrfParam' => '_csrf-api',
             'parsers' => [
@@ -276,6 +282,7 @@ return [
                     'controller' => 'v1/site',
                     'extraPatterns' => [
                         'POST login' => 'login',
+                        'GET test' => 'test',
                         'POST apple-id' => 'apple-id',
                         'POST apple-id-link' => 'apple-id-link',
                         'POST apple-id-create' => 'apple-id-create',

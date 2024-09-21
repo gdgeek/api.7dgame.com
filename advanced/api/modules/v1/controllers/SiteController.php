@@ -143,6 +143,11 @@ class SiteController extends \yii\rest\Controller
         }
         
     }
+    public function actionTest(){
+        Yii::$app->redis->set('key', 'value');
+        $value = Yii::$app->redis->get('key');
+        return $value;
+    }
     
     public function actionAppleIdCreate()
     {

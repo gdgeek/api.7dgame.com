@@ -9,10 +9,16 @@ return [
     'vendorPath' => dirname(dirname(__DIR__)) . '/vendor',
     'timeZone' => 'Asia/Shanghai',
     'name' => '元宇宙实景编程平台（MrPP.com）',
-
+    
     'components' => [
         'cache' => [
-            'class' => 'yii\caching\FileCache',
+            'class' => 'yii\redis\Cache',
+            'redis' => [
+                'class' => 'yii\redis\Connection',
+                'hostname' => 'redis',
+                'port' => 6379,
+                'database' => 0,
+            ],
         ],
         'urlManager' => [
             'enablePrettyUrl' => true,
@@ -71,8 +77,8 @@ return [
                 ];
             }
         ],
-
+        
     ],
     
-
+    
 ];

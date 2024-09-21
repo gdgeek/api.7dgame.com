@@ -17,7 +17,6 @@ use yii\base\InvalidArgumentException;
 use yii\web\BadRequestHttpException;
 
 class SiteController extends \yii\rest\Controller
-
 {
     
     public function behaviors()
@@ -40,6 +39,7 @@ class SiteController extends \yii\rest\Controller
         
         return $behaviors;
     }
+    
     
     /**
     * @return array
