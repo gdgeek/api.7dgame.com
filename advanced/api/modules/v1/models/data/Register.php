@@ -25,7 +25,7 @@ class Register extends Model
       ['password', 'string', 'min' => 4, 'max' => 20, 'message' => 'User Name must be between 4 and 20 characters long.'],
       [['username', 'password'], 'required'],
       ['password', 'string', 'min' => 8, 'max' => 20, 'message' => 'Password must be between 8 and 20 characters long.'],
-      // 自定义密码强度验证
+      
       ['password', 'match', 'pattern' => '/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/', 'message' => 'Password must contain at least one lowercase letter, one uppercase letter, one digit, and one special character, and be at least 8 characters long.'],
       
     ];
@@ -69,10 +69,8 @@ class Register extends Model
       }else{
         throw new \yii\base\Exception(json_encode($this->_user->errors));
       }
-      
-      // $this->_user->save();
     } else {
-      return false;
+      throw new \yii\base\Exception(json_encode($this->errors));
     }
     
   }
