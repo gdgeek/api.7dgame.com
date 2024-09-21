@@ -23,12 +23,6 @@ return [
         ],
     ],
     'components' => [
-        'redis' => [
-            'class' => 'yii\redis\Connection',
-            'hostname' => 'redis',
-            'port' => 6379,
-            'database' => 0,  // Redis 的数据库索引（默认为0）
-        ],
         'request' => [
             'csrfParam' => '_csrf-api',
             'parsers' => [
