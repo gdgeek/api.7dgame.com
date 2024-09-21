@@ -4,6 +4,7 @@ namespace api\modules\v1\models;
 
 use yii\db\Expression;
 
+use mdm\admin\models\Assignment;
 use mdm\admin\components\Configs;
 use Yii;
 use yii\behaviors\TimestampBehavior;
@@ -99,6 +100,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
             'nickname', 
             'email',
             'username',
+            'roles' 
         ];
     }
     public function extraFields()
@@ -233,6 +235,14 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
         
     }
     
+    public function addRoles($roles){
+        $assignment = new Assignment($this->id);
+        $assignment->assign($roles);
+    }
+    public function removeRoles($roles){
+        $assignment = new Assignment($this->id);
+        $assignment->revoke($roles);
+    }
     public function getRoles()
     {
         $manager = Configs::authManager();

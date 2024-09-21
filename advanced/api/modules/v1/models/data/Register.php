@@ -54,6 +54,7 @@ class Register extends Model
   */
   public function create($email, $nickname)
   {
+    
     if ($this->validate()) {
       $this->_user = new User();
       $this->_user->username = $this->username;
@@ -62,6 +63,7 @@ class Register extends Model
       $this->_user->nickname = $nickname;
       if($this->_user->validate()){
         $this->_user->save();
+        $this->_user->addRoles(['user']);
         return true;
       }else{
         throw new \yii\base\Exception(json_encode($this->_user->errors));

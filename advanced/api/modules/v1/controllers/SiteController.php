@@ -20,8 +20,6 @@ class SiteController extends \yii\rest\Controller
     public function behaviors()
     {
         $behaviors = parent::behaviors();
-        
-        // remove authentication filter
         $auth = $behaviors['authenticator'];
         unset($behaviors['authenticator']);
         
@@ -106,32 +104,44 @@ class SiteController extends \yii\rest\Controller
         
         
         $code = $data['authorization']['code'];
-        $user = $this->getAppleUser($code, $appleParameter);
-        $aid = AppleId::find()->where(['apple_id'=>$user['id']])->one();
+        $result = $this->getAppleUser($code, $appleParameter);
+        $aid = AppleId::find()->where(['apple_id'=>$result['id']])->one();
         if($aid && $aid->user){
             return $aid;
         }
         
         if(!$aid){
             $aid = new AppleId();
-            $aid->apple_id = $user['id'];
-            $aid->email = $user['email'];
-            $aid->first_name = $user['first_name'];
-            $aid->last_name = $user['last_name'];
-            $user = User::find()->where(['email'=>$user['email']])->one();
+            $aid->apple_id = $result['id'];
+            $aid->email = $result['email'];
+            $aid->first_name = $result['first_name'];
+            $aid->last_name = $result['last_name'];
+            $user = User::find()->where(['email'=>$result['email']])->one();
             if($user){
                 $aid->user_id = $user->id;
+                if($aid->validate()){
+                    $user->addRoles(['mrpp.com']);
+                    $aid->save();
+                }
+            }else{
+                $aid->token = $result['token'];
+                if($aid->validate()){
+                    $aid->save();
+                }else{
+                    throw new Exception(json_encode($aid->errors));
+                }
             }
-        }
-        $aid->token = $user['token'];
-        
-        if($aid->validate()){
-            $aid->save();
+            return $aid;
         }else{
-            throw new Exception(json_encode($aid->errors));
+            $aid->token = $result['token'];
+            if($aid->validate()){
+                $aid->save();
+            }else{
+                throw new Exception(json_encode($aid->errors));
+            }
+            return $aid;
         }
         
-        return $aid;
     }
     
     public function actionAppleIdCreate()
@@ -139,21 +149,24 @@ class SiteController extends \yii\rest\Controller
         $register = new Register();
         $appleId = Yii::$app->request->post('apple_id');
         if (!$appleId) {
-            throw new Exception(("No AppleId"), 400);
+            throw new Exception(json_encode(Yii::$app->request->post()), 400);
         }
         
         $token = Yii::$app->request->post('token');
         if (!$token) {
             throw new Exception(("No Token"), 400);
         }
-        $aid = AppleId::find()->where([ 'apple_id'=>$appleId, 'token'=> $token])->one();
+        $aid = AppleId::find()->where([ 'apple_id'=>$appleId])->one();
         if(!$aid){
-            throw new Exception("No AppleId", 400);
+            throw new Exception("No Apple Id", 400);
         }
         if($aid->user !== null)
         {
+            
             $aid->token = null;
-            $aid->save();
+            if($aid->validate()){
+                $aid->save();
+            }
             return $aid;
         }
         
@@ -172,8 +185,10 @@ class SiteController extends \yii\rest\Controller
             if ($register->create($aid->email, $nickname)) {
                 
                 $aid->user_id = $register->user->id;
+                
                 $aid->token = null;
                 if($aid->validate()){
+                    $register->user->addRoles(['mrpp.com']);
                     $aid->save();
                 }else{
                     $register->remove();
@@ -213,8 +228,10 @@ class SiteController extends \yii\rest\Controller
             
             if ($link->bind()) {
                 $aid->user_id = $link->user->id;
+                
                 $aid->token = null;
                 if($aid->validate()){
+                    $link->user->addRoles(['mrpp.com']);
                     $aid->save();
                 }else{
                     throw new Exception(json_encode($aid->errors), 400);
