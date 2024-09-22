@@ -6,7 +6,7 @@ use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
 use yii\db\Expression;
 use Yii;
-
+use Random\Randomizer;
 /**
 * This is the model class for table "verse_release".
 *
@@ -59,6 +59,29 @@ class VerseRelease extends \yii\db\ActiveRecord
                 [['verse_id'], 'unique'],
                 [['verse_id'], 'exist', 'skipOnError' => true, 'targetClass' => Verse::className(), 'targetAttribute' => ['verse_id' => 'id']],
             ];
+        }
+        
+        
+        public function beforeValidate()
+        {
+            
+            
+            
+            if(!$this->code){
+                $randomizer = new Randomizer();
+                $characters = 'abcdefghijklmnopqrstuvwxyz0123456789';
+                do {
+                    $this->code = $randomizer->getBytesFromString($characters, 6);
+                    $model = VerseRelease::findOne(['code' => $this->code]);
+                } while ($model !== null);    
+            }
+            
+            
+            // 调用父类的 beforeValidate 方法
+            if (!parent::beforeValidate()) {
+                return false;
+            }
+            return true;
         }
         
         /**

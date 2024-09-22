@@ -18,7 +18,9 @@ class VerseReleaseRule extends Rule
             
             $post = \Yii::$app->request->post();
             $verse = Verse::findOne($post['verse_id']);
-            
+            if(!$verse){
+                throw new \yii\web\ForbiddenHttpException('Verse not found');
+            }
             if($verse->author_id == $userid){
                 return true;
             }
