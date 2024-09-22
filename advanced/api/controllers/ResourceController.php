@@ -12,11 +12,11 @@ use yii\rest\ActiveController;
 class ResourceController extends ActiveController
 {
     public $modelClass = 'api\modules\v1\models\Resource';
-
+    
     public function behaviors()
     {
         $behaviors = parent::behaviors();
-
+        
         $behaviors['authenticator'] = [
             'class' => CompositeAuth::className(),
             'authMethods' => [
@@ -41,40 +41,40 @@ class ResourceController extends ActiveController
                 ],
             ],
         ];
-
+        
         // re-add authentication filter
         $behaviors['authenticator'] = $auth;
         // avoid authentication on CORS-pre-flight requests (HTTP OPTIONS method)
         $behaviors['authenticator']['except'] = ['options'];
-
+        
         $behaviors['access'] = [
             'class' => AccessControl::class,
         ];
-
+        
         return $behaviors;
     }
-
+    
     public function actions()
     {
         $actions = parent::actions();
         unset($actions['index']);
         return $actions;
     }
-
+    
     public function actionIndex()
     {
-
+        
         $searchModel = new ResourceSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-
+        
         if (isset(Yii::$app->request->queryParams['type'])) {
             $type = HtmlPurifier::process(Yii::$app->request->queryParams['type']);
             $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id, 'type' => $type]);
         } else {
             $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id]);
         }
-
+        
         return $dataProvider;
     }
-
+    
 }

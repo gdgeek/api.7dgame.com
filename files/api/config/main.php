@@ -226,7 +226,13 @@ return [
                         'v1/vp-map',
                     ],
                 ],
-                
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/verse-release',
+                    'extraPatterns' => [
+                        'PUT verse' => 'verse',
+                    ],
+                ],
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/verse',
@@ -315,6 +321,7 @@ return [
                     'controller' => 'a1/verse',
                     'extraPatterns' => [
                         'GET open' => 'open',
+                        'GET release' => 'release',
                     ],
                 ],
                 

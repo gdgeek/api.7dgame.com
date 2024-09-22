@@ -11,12 +11,12 @@ use yii\rest\ActiveController;
 
 class VerseScriptController extends ActiveController
 {
-
+    
     public $modelClass = 'api\modules\v1\models\VerseScript';
     public function behaviors()
     {
         $behaviors = parent::behaviors();
-
+        
         // add CORS filter
         $behaviors['corsFilter'] = [
             'class' => \yii\filters\Cors::class,
@@ -34,7 +34,7 @@ class VerseScriptController extends ActiveController
                 ],
             ],
         ];
-
+        
         // unset($behaviors['authenticator']);
         $behaviors['authenticator'] = [
             'class' => CompositeAuth::class,
@@ -43,23 +43,23 @@ class VerseScriptController extends ActiveController
             ],
             'except' => ['options'],
         ];
-
+        
         $behaviors['access'] = [
             'class' => AccessControl::class,
         ];
         return $behaviors;
     }
-
+    
     public function actions()
     {
         $actions = parent::actions();
         unset($actions['index']);
         return $actions;
     }
-
+    
     public function actionIndex()
     {
-
+        
         if (!isset(Yii::$app->request->queryParams['verse_id'])) {
             throw new BadRequestHttpException('缺乏 verse_id 数据');
         }
@@ -69,5 +69,5 @@ class VerseScriptController extends ActiveController
         $dataProvider->query->andWhere(['verse_id' => $verse_id]);
         return $dataProvider;
     }
-
+    
 }

@@ -38,7 +38,6 @@ use yii\db\Expression;
 class Verse extends \yii\db\ActiveRecord
 
 {
-    
     public function behaviors()
     {
         return [
@@ -216,7 +215,7 @@ class Verse extends \yii\db\ActiveRecord
     /*
     public function getEventLinks()
     {
-        return $this->hasMany(EventLink::className(), ['verse_id' => 'id']);
+    return $this->hasMany(EventLink::className(), ['verse_id' => 'id']);
     }
     */
     
@@ -237,7 +236,7 @@ class Verse extends \yii\db\ActiveRecord
     /*
     public function getMetaKnights()
     {
-        return $this->hasMany(MetaKnight::className(), ['verse_id' => 'id']);
+    return $this->hasMany(MetaKnight::className(), ['verse_id' => 'id']);
     }*/
     /**
     * Gets query for [[Metas]].

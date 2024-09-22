@@ -1,6 +1,9 @@
 <?php
 namespace api\modules\a1\controllers;
 use api\modules\a1\models\VerseSearch;
+use yii\web\BadRequestHttpException;
+use api\modules\v1\models\VerseReleaseSearch;
+use yii\helpers\HtmlPurifier;
 use yii\rest\ActiveController;
 use Yii;
 class VerseController extends ActiveController
@@ -51,6 +54,18 @@ class VerseController extends ActiveController
         $query = $dataProvider->query;
         $query->select('verse.*')->leftJoin('verse_open', '`verse_open`.`verse_id` = `verse`.`id`')->andWhere(['NOT', ['verse_open.id' => null]]);
         return $dataProvider;
+    }
+    public function actionRelease(){
+        if (!isset(Yii::$app->request->queryParams['code'])) {
+            throw new BadRequestHttpException('缺乏 code 数据');
+        }
+        $searchModel = new VerseSearch();
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+        $query = $dataProvider->query;
+        $code = HtmlPurifier::process(Yii::$app->request->queryParams['code']);
+        // throw new BadRequestHttpException($code);
+        $query->select('verse.*')->leftJoin('verse_release', '`verse_release`.`verse_id` = `verse`.`id`')->andWhere(['verse_release.code' => $code]);
+        return $query->one();
     }
     
 }
