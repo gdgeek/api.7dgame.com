@@ -107,6 +107,7 @@ class SiteController extends \yii\rest\Controller
         $result = $this->getAppleUser($code, $appleParameter);
         $aid = AppleId::find()->where(['apple_id'=>$result['id']])->one();
         if($aid && $aid->user){
+            $aid->user->addRoles(['mrpp.com']);
             return $aid;
         }
         
@@ -120,7 +121,7 @@ class SiteController extends \yii\rest\Controller
             if($user){
                 $aid->user_id = $user->id;
                 if($aid->validate()){
-                    $user->addRoles(['mrpp.com']);
+                    //  $user->addRoles(['mrpp.com']);
                     $aid->save();
                 }
             }else{
@@ -131,6 +132,7 @@ class SiteController extends \yii\rest\Controller
                     throw new Exception(json_encode($aid->errors));
                 }
             }
+            $aid->user->addRoles(['mrpp.com']);
             return $aid;
         }else{
             $aid->token = $result['token'];
@@ -139,6 +141,7 @@ class SiteController extends \yii\rest\Controller
             }else{
                 throw new Exception(json_encode($aid->errors));
             }
+            $aid->user->addRoles(['mrpp.com']);
             return $aid;
         }
         
@@ -172,6 +175,7 @@ class SiteController extends \yii\rest\Controller
             if($aid->validate()){
                 $aid->save();
             }
+            $aid->user->addRoles(['mrpp.com']);
             return $aid;
         }
         
@@ -193,12 +197,14 @@ class SiteController extends \yii\rest\Controller
                 
                 $aid->token = null;
                 if($aid->validate()){
-                    $register->user->addRoles(['mrpp.com']);
+                    
+                    
                     $aid->save();
                 }else{
                     $register->remove();
                     throw new Exception(json_encode($aid->errors), 400);
                 }
+                $aid->user->addRoles(['mrpp.com']);
                 return $aid;
             } else {
                 throw new Exception("error!", 400);
@@ -208,6 +214,8 @@ class SiteController extends \yii\rest\Controller
         }
         
     }
+    
+    
     public function actionAppleIdLink(){
         $link = new Link();
         $appleId = Yii::$app->request->post('apple_id');
@@ -227,6 +235,7 @@ class SiteController extends \yii\rest\Controller
         {
             $aid->token = null;
             $aid->save();
+            $aid->user->addRoles(['mrpp.com']);
             return $aid;
         }
         if ($link->load(Yii::$app->getRequest()->getBodyParams(), '')) {
@@ -241,6 +250,7 @@ class SiteController extends \yii\rest\Controller
                 }else{
                     throw new Exception(json_encode($aid->errors), 400);
                 }
+                $aid->user->addRoles(['mrpp.com']);
                 return $aid;
             } else {
                 throw new Exception('Error', 400);
@@ -259,6 +269,7 @@ class SiteController extends \yii\rest\Controller
         $login = new Login();
         if ($login->load(Yii::$app->getRequest()->getBodyParams(), '')) {
             if ($login->login()) {
+                $login->user->addRoles(['mrpp.com']);
                 return $login->user->toArray([],['auth']);
             } else {
                 throw new Exception("Login Error", 400);
