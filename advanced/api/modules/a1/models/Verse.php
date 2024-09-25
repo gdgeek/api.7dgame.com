@@ -137,7 +137,7 @@ class Verse extends \yii\db\ActiveRecord
             },
             'code' => function () {
                 $verseCode = $this->verseCode;
-                if($verseCode){
+                if($verseCode && $verseCode->code){
                     $script = $verseCode->code->lua;
                 }
                 
