@@ -93,6 +93,7 @@ class Verse extends \yii\db\ActiveRecord
         $fields['viewable'] = function () {return $this->viewable();};
         
         $fields['info'] =  function () {
+            
             return JsonValidator::to_string($this->info);
         };
         $fields['data'] =  function () {
@@ -101,7 +102,6 @@ class Verse extends \yii\db\ActiveRecord
             }
             return $this->data;
         };
-        //  $fields['links'] = function () {return $this->eventLinks;};
         
         return $fields;
     }

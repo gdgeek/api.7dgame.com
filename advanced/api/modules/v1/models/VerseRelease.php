@@ -69,7 +69,7 @@ class VerseRelease extends \yii\db\ActiveRecord
             
             if(!$this->code){
                 $randomizer = new Randomizer();
-                $characters = 'abcdefghijklmnopqrstuvwxyz0123456789';
+                $characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
                 do {
                     $this->code = $randomizer->getBytesFromString($characters, 6);
                     $model = VerseRelease::findOne(['code' => $this->code]);
