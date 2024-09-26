@@ -48,7 +48,6 @@ class VerseController extends ActiveController
     public function actionOpen()
     {
         $searchModel = new VerseSearch();
-        
         $papeSize = \Yii::$app->request->get('pageSize', 15);
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams,  $papeSize);
         $query = $dataProvider->query;
@@ -59,11 +58,11 @@ class VerseController extends ActiveController
         if (!isset(Yii::$app->request->queryParams['code'])) {
             throw new BadRequestHttpException('缺乏 code 数据');
         }
+        $code = Yii::$app->request->queryParams['code'];
         $searchModel = new VerseSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
         $query = $dataProvider->query;
-        $code = HtmlPurifier::process(Yii::$app->request->queryParams['code']);
-        // throw new BadRequestHttpException($code);
+        
         $query->select('verse.*')->leftJoin('verse_release', '`verse_release`.`verse_id` = `verse`.`id`')->andWhere(['verse_release.code' => $code]);
         return $query->one();
     }

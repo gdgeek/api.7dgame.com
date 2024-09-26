@@ -132,7 +132,9 @@ class SiteController extends \yii\rest\Controller
                     throw new Exception(json_encode($aid->errors));
                 }
             }
-            $aid->user->addRoles(['mrpp.com']);
+            if($aid->user){
+                $aid->user->addRoles(['mrpp.com']);
+            }
             return $aid;
         }else{
             $aid->token = $result['token'];
@@ -141,7 +143,9 @@ class SiteController extends \yii\rest\Controller
             }else{
                 throw new Exception(json_encode($aid->errors));
             }
-            $aid->user->addRoles(['mrpp.com']);
+            if($aid->user){
+                $aid->user->addRoles(['mrpp.com']);
+            }
             return $aid;
         }
         
@@ -175,7 +179,9 @@ class SiteController extends \yii\rest\Controller
             if($aid->validate()){
                 $aid->save();
             }
-            $aid->user->addRoles(['mrpp.com']);
+            if($aid->user){
+                $aid->user->addRoles(['mrpp.com']);
+            }
             return $aid;
         }
         
@@ -204,7 +210,9 @@ class SiteController extends \yii\rest\Controller
                     $register->remove();
                     throw new Exception(json_encode($aid->errors), 400);
                 }
-                $aid->user->addRoles(['mrpp.com']);
+                if($aid->user){
+                    $aid->user->addRoles(['mrpp.com']);
+                }
                 return $aid;
             } else {
                 throw new Exception("error!", 400);
