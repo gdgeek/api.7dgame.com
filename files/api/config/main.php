@@ -279,6 +279,11 @@ return [
                 [
                     'class' => 'yii\rest\UrlRule',
                     'pluralize' => false,
+                    'controller' => 'v1/ai-rodin',
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'pluralize' => false,
                     'controller' => 'v1/site',
                     'extraPatterns' => [
                         'POST login' => 'login',

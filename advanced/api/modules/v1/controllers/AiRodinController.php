@@ -6,10 +6,10 @@ use bizley\jwt\JwtHttpBearerAuth;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
 
-class CyberController extends ActiveController
+class AiRodinController extends ActiveController
 {
     
-    public $modelClass = 'api\modules\v1\models\Cyber';
+    public $modelClass = 'api\modules\v1\models\AiRodin';
     public function behaviors()
     {
         $behaviors = parent::behaviors();
