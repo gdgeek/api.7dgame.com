@@ -15,6 +15,10 @@ use yii\db\Migration;
         */
         public function safeUp()
         {
+            if ($this->db->driverName === 'mysql') {
+                // http://stackoverflow.com/questions/766809/whats-the-difference-between-utf8-general-ci-and-utf8-unicode-ci
+                $tableOptions = 'CHARACTER SET utf8 COLLATE utf8_unicode_ci ENGINE=InnoDB';
+            }
             $this->createTable('{{%verse_release}}', [
                 'id' => $this->primaryKey(),
                 'code' => $this->string()->notNull()->unique(),
@@ -22,7 +26,7 @@ use yii\db\Migration;
                 'updated_at' => $this->timestamp(),
                 'lifetime' => $this->integer()->notNull()->defaultValue(86400),
                 'verse_id' => $this->integer()->notNull()->unique(),
-            ]);
+            ], $tableOptions);
             
             // creates index for column `verse_id`
             $this->createIndex(
