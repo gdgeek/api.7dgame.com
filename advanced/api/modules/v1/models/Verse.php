@@ -256,6 +256,7 @@ class Verse extends \yii\db\ActiveRecord
         }
         if (isset($data->children) && isset($data->children->modules)) {
             foreach ($data->children->modules as $item) {
+                
                 if(isset($item->parameters->meta_id))
                 {
                     $ret[] = $item->parameters->meta_id;
