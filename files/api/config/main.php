@@ -280,6 +280,9 @@ return [
                     'class' => 'yii\rest\UrlRule',
                     'pluralize' => false,
                     'controller' => 'v1/ai-rodin',
+                    'extraPatterns' => [
+                        'POST status' => 'status',
+                    ],
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',

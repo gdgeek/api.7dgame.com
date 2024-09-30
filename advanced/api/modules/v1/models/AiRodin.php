@@ -72,13 +72,20 @@ class AiRodin extends \yii\db\ActiveRecord
         return [
             [['image_id', 'user_id'], 'integer'],
             [['status', 'created_at'], 'safe'],
-            [['token', 'prompt'], 'string', 'max' => 255],
+            [['token'], 'string', 'max' => 255],
+            [['prompt'], 'string', 'min' => 4, 'max' => 255, 'message' => 'User Name must be between 4 and 255 characters long.'],
             [['token'], 'unique'],
             [['image_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['image_id' => 'id']],
             [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['user_id' => 'id']],
         ];
     }
     
+    public function validateEmailFormat($attribute, $params)
+    {
+        if (!preg_match('/\A[\w+\-.]+@[a-z\d\-]+(\.[a-z]+)*\.[a-z]+\z/i', $this->$attribute)) {
+            $this->addError($attribute, '电子邮件格式不正确');
+        }
+    }
     /**
     * {@inheritdoc}
     */
