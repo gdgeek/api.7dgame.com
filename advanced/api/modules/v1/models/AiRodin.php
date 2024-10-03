@@ -2,29 +2,28 @@
 
 namespace api\modules\v1\models;
 
+use Yii;
 use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
 use yii\db\Expression;
-
-use Yii;
-
 /**
 * This is the model class for table "ai_rodin".
 *
 * @property int $id
-* @property string $token
 * @property string|null $prompt
-* @property int|null $image_id
-* @property string|null $status
 * @property string $created_at
 * @property int $user_id
+* @property string|null $generation
+* @property string|null $check
+* @property string|null $download
+* @property int|null $resource_id
 *
-* @property File $image
+* @property Resource $resource
 * @property User $user
 */
+
 class AiRodin extends \yii\db\ActiveRecord
 {
-    
     
     public function behaviors()
     {
@@ -44,18 +43,6 @@ class AiRodin extends \yii\db\ActiveRecord
             ],
         ];
     }
-    public function beforeSave($insert)
-    {
-        if (parent::beforeSave($insert)) {
-            
-            if ($insert) {
-                $this->token = Yii::$app->security->generateRandomString();
-            }
-            return true; // 返回 true 以继续保存
-        }
-        return false; // 返回 false 以阻止保存
-    }
-    
     /**
     * {@inheritdoc}
     */
@@ -70,22 +57,15 @@ class AiRodin extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['image_id', 'user_id'], 'integer'],
-            [['status', 'created_at'], 'safe'],
-            [['token'], 'string', 'max' => 255],
-            [['prompt'], 'string', 'min' => 4, 'max' => 255, 'message' => 'User Name must be between 4 and 255 characters long.'],
-            [['token'], 'unique'],
-            [['image_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['image_id' => 'id']],
+            [['created_at', 'generation', 'check', 'download'], 'safe'],
+            // [['user_id'], 'required'],
+            [['user_id', 'resource_id'], 'integer'],
+            [['prompt'], 'string', 'max' => 255],
+            [['resource_id'], 'exist', 'skipOnError' => true, 'targetClass' => Resource::className(), 'targetAttribute' => ['resource_id' => 'id']],
             [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['user_id' => 'id']],
         ];
     }
     
-    public function validateEmailFormat($attribute, $params)
-    {
-        if (!preg_match('/\A[\w+\-.]+@[a-z\d\-]+(\.[a-z]+)*\.[a-z]+\z/i', $this->$attribute)) {
-            $this->addError($attribute, '电子邮件格式不正确');
-        }
-    }
     /**
     * {@inheritdoc}
     */
@@ -93,23 +73,25 @@ class AiRodin extends \yii\db\ActiveRecord
     {
         return [
             'id' => 'ID',
-            'token' => 'Token',
             'prompt' => 'Prompt',
-            'image_id' => 'Image ID',
-            'status' => 'Status',
             'created_at' => 'Created At',
             'user_id' => 'User ID',
+            'generation' => 'Generation',
+            'check' => 'Check',
+            'download' => 'Download',
+            
+            'resource_id' => 'Resource ID',
         ];
     }
     
     /**
-    * Gets query for [[Image]].
+    * Gets query for [[Resource]].
     *
     * @return \yii\db\ActiveQuery
     */
-    public function getImage()
+    public function getResource()
     {
-        return $this->hasOne(File::className(), ['id' => 'image_id']);
+        return $this->hasOne(Resource::className(), ['id' => 'resource_id']);
     }
     
     /**

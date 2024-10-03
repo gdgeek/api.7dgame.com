@@ -281,7 +281,7 @@ return [
                     'pluralize' => false,
                     'controller' => 'v1/ai-rodin',
                     'extraPatterns' => [
-                        'POST status' => 'status',
+                        'POST file' => 'file',
                     ],
                 ],
                 [

@@ -7,6 +7,9 @@ use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
 use api\modules\v1\models\AiRodinSearch;
 use api\modules\v1\models\AiRodin;
+use api\modules\v1\models\File;
+use api\modules\v1\models\Resource;
+use yii\base\Exception;
 
 class AiRodinController extends ActiveController
 {
@@ -53,15 +56,39 @@ class AiRodinController extends ActiveController
     {
         $actions = parent::actions();
         unset($actions['index']);
-        //unset($actions['create']);
         return $actions;
     }
-    public function actionStatus($id)
-    {
-        $searchModel = new AiRodinSearch();
-        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-        $dataProvider->query->andWhere(['id' => $id]);
-        return $dataProvider->query->one();
+    public function actionFile($id){
+        
+        $aiRodin = AiRodin::findOne($id);
+        if(!$aiRodin){
+            throw new \yii\web\NotFoundHttpException("AiRodin not found");
+        }
+        $file = new File();
+        $file->load(Yii::$app->request->post(),'');
+        if($file->validate()){
+            $file->save();
+            $resource = new Resource();
+            $resource->file_id = $file->id;
+            $resource->type = 'polygen';
+            $resource->name = $file->filename;
+            if($resource->validate()){
+                $resource->save();
+            }else{
+                $file->delete();
+                throw new Exception(json_encode($resource->errors), 400);
+            }
+            $aiRodin->resource_id = $resource->id;
+            if($aiRodin->validate()){
+                $aiRodin->save();
+                return $aiRodin;
+            }else{
+                $resource->delete();
+                throw new Exception("AiRodin not found");
+            }
+        }else{
+            throw new Exception(json_encode($file->errors), 400);
+        }
     }
     public function actionIndex()
     {
