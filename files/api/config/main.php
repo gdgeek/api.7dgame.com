@@ -210,6 +210,7 @@ return [
                         'v1/verse-cyber',
                         'v1/message',
                         'v1/reply',
+                        'v1/resource',
                         'v1/message-tags',
                         'v1/multilanguage-verse',
                         'v1/tags',
