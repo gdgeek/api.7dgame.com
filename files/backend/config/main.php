@@ -7,7 +7,6 @@ $params = array_merge(
 );
 
 return [
-    'debug' => YII_ENV_DEV, 
     'id' => 'manager',
     'name'=>'MrPP.com',
     'basePath' => dirname(__DIR__),
