@@ -11,7 +11,6 @@ use yii\web\BadRequestHttpException;
 class AiRodinRule extends UserDeriveRule
 {
     public $name = 'ai_rodin_rule';
-    
     public $modelType = AiRodin::class;
     public $columnName = "user_id";
     
