@@ -31,7 +31,7 @@ class AiRodin extends \yii\db\ActiveRecord
         return [
             'id', 
             'created_at', 
-            // 'user_id', 
+            'user_id', 
             'resource_id', 
             'generation', 
             'check', 
