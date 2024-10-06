@@ -7,8 +7,9 @@ $params = array_merge(
 );
 
 return [
+    'debug' => YII_ENV_DEV, 
     'id' => 'manager',
-	'name'=>'MrPP.com',
+    'name'=>'MrPP.com',
     'basePath' => dirname(__DIR__),
     'controllerNamespace' => 'backend\controllers',
     'bootstrap' => ['log'],
@@ -17,20 +18,20 @@ return [
         '@npm'   => '@vendor/npm-asset',
     ],
     'modules' => [
-		'admin' => [
-				'class' => 'mdm\admin\Module',
-				'layout' => '@app/views/layouts/main.php', 
-			],
+        'admin' => [
+            'class' => 'mdm\admin\Module',
+            'layout' => '@app/views/layouts/main.php', 
+        ],
         'reporter' => [
             'class' => 'backend\modules\Reporter', 
         ], 
-		'lua' => [ 
+        'lua' => [ 
             'class' => 'backend\modules\Lua', 
         ],
-
-	],
+        
+    ],
     'components' => [
-
+        
         'urlManager' => [
             'enablePrettyUrl' => true,
             'showScriptName' => false,
@@ -66,25 +67,26 @@ return [
                 ],
             ],
         ],
-		'authManager' => [
+        'authManager' => [
             'class' => 'yii\rbac\DbManager', 
         ],
-		
+        
         'errorHandler' => [
             'errorAction' => 'site/error',
         ],
-		
-      
+        
+        
     ],
-
-	
-	'as access' => [
+    
+    
+    'as access' => [
         'class' => 'mdm\admin\components\AccessControl',
         'allowActions' => [   
-			'site/*', // add or remove allowed actions to this list
+            'site/*', // add or remove allowed actions to this list
             'wechat/*',
             'file/file',
-        ]
-    ],
-    'params' => $params,
-];
+            ]
+        ],
+        'params' => $params,
+    ];
+    
