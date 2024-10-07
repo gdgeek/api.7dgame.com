@@ -282,7 +282,7 @@ return [
                     'pluralize' => false,
                     'controller' => 'v1/ai-rodin',
                     'extraPatterns' => [
-                        'POST file' => 'file',
+                        'PUT file' => 'file',
                     ],
                 ],
                 [
