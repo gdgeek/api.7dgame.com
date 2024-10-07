@@ -13,6 +13,9 @@ class ResourceRule extends Rule
         $request = Yii::$app->request;
         $post = \Yii::$app->request->post();
         
+        if($request->isGet && !isset($params['id'])) {
+            return true;
+        }
         if(($request->isGet || $request->isPut ||$request->isDelete) && isset($params['id'])) {
             $model = Resource::findOne($params['id']);
             if($model && $model->author_id === $user){
