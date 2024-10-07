@@ -8,21 +8,22 @@ class ResourceRule extends Rule
     public $name = 'resource_rule';
     public function execute($user, $item, $params)
     {
-        $id = isset($params['id']) ? $params['id'] : null;
-        if (!$id) {
+        
+        
+        $request = Yii::$app->request;
+        $post = \Yii::$app->request->post();
+        
+        if(($request->isGet || $request->isPut ||$request->isDelete) && isset($params['id'])) {
+            $model = Resource::findOne($params['id']);
+            if($model && $model->author_id === $user){
+                return true;
+            }
             return false;
-        }
-
-        $resource = Resource::findOne($id);
-        if (!$resource) {
-            return false;
-        }
-
-        $userid = Yii::$app->user->identity->id;
-        if ($userid == $resource->author_id) {
+        }else if($request->isPost) {
             return true;
         }
         return false;
-
+        
+        
     }
 }

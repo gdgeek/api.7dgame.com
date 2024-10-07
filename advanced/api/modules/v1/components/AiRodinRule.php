@@ -21,7 +21,7 @@ class AiRodinRule extends Rule
         
         if(($request->isGet || $request->isPut ||$request->isDelete) && isset($params['id'])) {
             $model = AiRodin::findOne($params['id']);
-            if($model->user_id === $user){
+            if($model && $model->user_id === $user){
                 return true;
             }
             return false;
