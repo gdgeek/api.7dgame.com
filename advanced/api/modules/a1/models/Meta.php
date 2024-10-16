@@ -89,13 +89,10 @@ class Meta extends \yii\db\ActiveRecord
         unset($fields['created_at']);
         unset($fields['image_id']);
         unset($fields['info']);
-        //unset($fields['custom']);
         $fields['type'] = function ($model) {
             return $model->prefab == 0 ? 'sample' : 'module';
         };
-        //unset($fields['id']);
         $fields['data'] = function () {
-            
             if(!is_string($this->data) && !is_null($this->data)){
                 return json_encode($this->data);
             }
@@ -107,30 +104,33 @@ class Meta extends \yii\db\ActiveRecord
             }
             return $this->events;
         };
-        $fields['script'] = function () {
-            
-            $metaCode = $this->metaCode;
-            if($metaCode && $metaCode->code){
-                $script = $metaCode->code->lua;
-            }
-            
-            if ($this->cyber && $this->cyber->script) {
-                $script = $this->cyber->script;
-            }
-            $substring = "local meta = {}\nlocal index = ''\n";
-            if(isset($script)){
-                if (strpos($script, $substring) !== false) {
-                    return $script;
-                } else {
-                    return $substring.$script;
-                }
-            }else{
-                return $substring;
-            } 
-            
-            
-        };
+        $fields['script'] = function () { return $this->code; };
+        //$fields['code'] = function () { return $this->code; };
         return $fields;
+    }
+    public function extraFields()
+    {
+        return [
+            'code'
+        ];
+    }
+    public function getCode(){
+        $metaCode = $this->metaCode;
+        if($metaCode && $metaCode->code){
+            $script = $metaCode->code->lua;
+        }else if ($this->cyber && $this->cyber->script) {
+            $script = $this->cyber->script;
+        }
+        $substring = "local meta = {}\nlocal index = ''\n";
+        if(isset($script)){
+            if (strpos($script, $substring) !== false) {
+                return $script;
+            } else {
+                return $substring.$script;
+            }
+        }else{
+            return $substring;
+        } 
     }
     /**
     * {@inheritdoc}

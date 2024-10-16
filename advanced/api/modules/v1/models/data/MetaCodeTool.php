@@ -4,6 +4,7 @@ namespace api\modules\v1\models\data;
 use api\modules\v1\models\Meta;
 use api\modules\v1\models\Code;
 
+use yii\web\BadRequestHttpException;
 use yii\base\Exception;
 
 use yii\base\Model;
@@ -38,22 +39,18 @@ class MetaCodeTool extends Model
         $code->js = $this->js;
         if($code->validate()){
             $code->save();
-            $metaCode->code_id = $code->id;
-            $metaCode->save();
+            if(!$metaCode->code){
+                $metaCode->code_id = $code->id;
+                if($metaCode->validate()){
+                    $metaCode->save();
+                }else{
+                    $code->delete();
+                    throw new \yii\web\ServerErrorHttpException(json_encode($metaCode->errors));
+                }
+            }
         }else{
             throw new \yii\web\ServerErrorHttpException(json_encode($code->errors));
         }
-        
-        if($metaCode->validate()){
-            $metaCode->save();
-        }else{
-            if($code)
-            {
-                $code->delete();
-            }
-            throw new \yii\web\ServerErrorHttpException(json_encode($metaCode->errors));
-        }
-        
     }
     /**
     * {@inheritdoc}

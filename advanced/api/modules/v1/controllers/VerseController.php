@@ -66,6 +66,7 @@ class VerseController extends ActiveController
     
     public function actionUpdateCode($id){
         
+        throw new Exception("111");
         $post = Yii::$app->request->post();
         $model = new VerseCodeTool($id);
         $post = Yii::$app->request->post();

@@ -139,9 +139,7 @@ class Verse extends \yii\db\ActiveRecord
                 $verseCode = $this->verseCode;
                 if($verseCode && $verseCode->code){
                     $script = $verseCode->code->lua;
-                }
-                
-                if ($this->script) {
+                }else if ($this->script) {
                     $script = $this->script->script;
                 }
                 
