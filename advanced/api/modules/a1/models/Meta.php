@@ -130,8 +130,8 @@ class Meta extends \yii\db\ActiveRecord
             }
         }else{
             return $substring;
-        } 
-    }
+        }  
+    }  
     /**
     * {@inheritdoc}
     */
