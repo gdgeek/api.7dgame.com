@@ -36,16 +36,17 @@ class VerseCodeTool extends Model
             $code->save();
             if(!$verseCode->code){
                 $verseCode->code_id = $code->id;
-                if($verseCode->validate()){
-                    $verseCode->save();
-                }else{
-                    $code->delete();
-                    throw new \yii\web\ServerErrorHttpException(json_encode($metaCode->errors));
-                }
+                
             }
             
         }else{
             throw new \yii\web\ServerErrorHttpException(json_encode($code->errors));
+        }
+        if($verseCode->validate()){
+            $verseCode->save();
+        }else{
+            $code->delete();
+            throw new \yii\web\ServerErrorHttpException(json_encode($metaCode->errors));
         }
     }
     /**
