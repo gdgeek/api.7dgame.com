@@ -3,6 +3,7 @@
 namespace api\modules\v1\models;
 use Yii;
 
+use api\modules\v1\components\Validator\JsonValidator;
 /**
  * This is the model class for table "trade".
  *
@@ -58,7 +59,7 @@ class Trade extends \yii\db\ActiveRecord
     {
         return [
             [['out_trade_no', 'description', 'amount'], 'required'],
-            [['amount','info'], 'string'],
+            [['amount','info'], JsonValidator::class],
             [['out_trade_no', 'description', 'notify_url'], 'string', 'max' => 255],
             [['out_trade_no'], 'unique'],
         ];

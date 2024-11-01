@@ -1,13 +1,16 @@
 <?php
 
 namespace backend\controllers;
+
 use Yii;
 use yii\filters\AccessControl;
-class DocumentController extends \yii\web\Controller
-{
-	public $layout = '@backend/views/layouts/main.php';
 
-     /**
+class DocumentController extends \yii\web\Controller
+
+{
+    public $layout = '@backend/views/layouts/main.php';
+
+    /**
      * {@inheritdoc}
      */
     public function behaviors()
@@ -15,7 +18,7 @@ class DocumentController extends \yii\web\Controller
         return [
             'access' => [
                 'class' => AccessControl::className(),
-                'only' => [ 'privacy'],
+                'only' => ['privacy'],
                 'rules' => [
                     [
                         'actions' => ['privacy'],
@@ -29,7 +32,7 @@ class DocumentController extends \yii\web\Controller
                     ],
                 ],
             ],
-          
+
         ];
     }
     public function actionIndex()
@@ -37,20 +40,23 @@ class DocumentController extends \yii\web\Controller
         return $this->render('index');
     }
 
-    public function actionPrivacy(){
+    public function actionPrivacy()
+    {
         $this->layout = '@backend/views/layouts/black.php';
         return $this->render('privacy');
     }
-    public function actionSchool(){
+    public function actionSchool()
+    {
         return $this->render('school');
     }
-    public function actionInfo(){
+    public function actionInfo()
+    {
 
         $info = new \stdClass();
         $info->title = Yii::$app->params['information']['title'];
         $info->description = Yii::$app->params['information']['sub-title'];
-        $info->api = Yii::$app->params['information']['api'];
-        $info->pub = Yii::$app->params['information']['pub'];
+        //$info->api = Yii::$app->params['information']['api'];
+        //$info->pub = Yii::$app->params['information']['pub'];
 
         return json_encode($info);
     }

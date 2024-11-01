@@ -96,7 +96,7 @@ class ToothGrowth
      * Raw data with each observation labeled
      * [['len' => 4.2, 'supp' => 'VC', 'dose' => 0.5], ... ]
      *
-     * @return number[]
+     * @return array<array<string, float|string>>
      */
     public function getLabeledData(): array
     {
@@ -111,7 +111,7 @@ class ToothGrowth
     /**
      * Tooth length observations
      *
-     * @return number[]
+     * @return float[]
      */
     public function getLen(): array
     {
@@ -125,16 +125,16 @@ class ToothGrowth
      */
     public function getSupp(): array
     {
-        return \array_column(self::DATA, 0);
+        return \array_column(self::DATA, 1);
     }
 
     /**
      * Dose in milligrams/day observations
      *
-     * @return number[]
+     * @return float[]
      */
     public function getDose(): array
     {
-        return \array_column(self::DATA, 0);
+        return \array_column(self::DATA, 2);
     }
 }

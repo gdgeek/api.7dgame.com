@@ -1,13 +1,12 @@
 <?php
 /**
- * @link http://www.yiiframework.com/
+ * @link https://www.yiiframework.com/
  * @copyright Copyright (c) 2008 Yii Software LLC
- * @license http://www.yiiframework.com/license/
+ * @license https://www.yiiframework.com/license/
  */
 
 namespace yii\base;
 
-use Yii;
 use yii\helpers\StringHelper;
 
 /**
@@ -146,7 +145,7 @@ class Security extends Component
      * to hash input or output data.
      * @param string $data the data to encrypt
      * @param string $inputKey the input to use for encryption and authentication
-     * @param string $info optional context and application specific information, see [[hkdf()]]
+     * @param string|null $info optional context and application specific information, see [[hkdf()]]
      * @return string the encrypted data as byte string
      * @see decryptByKey()
      * @see encryptByPassword()
@@ -172,7 +171,7 @@ class Security extends Component
      * Verifies and decrypts data encrypted with [[encryptByKey()]].
      * @param string $data the encrypted data to decrypt
      * @param string $inputKey the input to use for encryption and authentication
-     * @param string $info optional context and application specific information, see [[hkdf()]]
+     * @param string|null $info optional context and application specific information, see [[hkdf()]]
      * @return bool|string the decrypted data or false on authentication failure
      * @see encryptByKey()
      */
@@ -286,8 +285,8 @@ class Security extends Component
      * Recommend use one of the SHA-2 hash algorithms: sha224, sha256, sha384 or sha512.
      * @param string $algo a hash algorithm supported by `hash_hmac()`, e.g. 'SHA-256'
      * @param string $inputKey the source key
-     * @param string $salt the random salt
-     * @param string $info optional info to bind the derived key material to application-
+     * @param string|null $salt the random salt
+     * @param string|null $info optional info to bind the derived key material to application-
      * and context-specific information, e.g. a user ID or API version, see
      * [RFC 5869](https://tools.ietf.org/html/rfc5869)
      * @param int $length length of the output key in bytes. If 0, the output key is
@@ -340,7 +339,7 @@ class Security extends Component
 
     /**
      * Derives a key from the given password using the standard PBKDF2 algorithm.
-     * Implements HKDF2 specified in [RFC 2898](http://tools.ietf.org/html/rfc2898#section-5.2)
+     * Implements HKDF2 specified in [RFC 2898](https://datatracker.ietf.org/doc/html/rfc2898#section-5.2)
      * Recommend use one of the SHA-2 hash algorithms: sha224, sha256, sha384 or sha512.
      * @param string $algo a hash algorithm supported by `hash_hmac()`, e.g. 'SHA-256'
      * @param string $password the source password
@@ -529,7 +528,7 @@ class Security extends Component
      * ```
      *
      * @param string $password The password to be hashed.
-     * @param int $cost Cost parameter used by the Blowfish hash algorithm.
+     * @param int|null $cost Cost parameter used by the Blowfish hash algorithm.
      * The higher the value of cost,
      * the longer it takes to generate the hash and to verify a password against it. Higher cost
      * therefore slows down a brute-force attack. For best protection against brute-force attacks,
@@ -576,7 +575,8 @@ class Security extends Component
             throw new InvalidArgumentException('Password must be a string and cannot be empty.');
         }
 
-        if (!preg_match('/^\$2[axy]\$(\d\d)\$[\.\/0-9A-Za-z]{22}/', $hash, $matches)
+        if (
+            !preg_match('/^\$2[axy]\$(\d\d)\$[\.\/0-9A-Za-z]{22}/', $hash, $matches)
             || $matches[1] < 4
             || $matches[1] > 30
         ) {
@@ -627,7 +627,7 @@ class Security extends Component
 
     /**
      * Performs string comparison using timing attack resistant approach.
-     * @see http://codereview.stackexchange.com/questions/13512
+     * @see https://codereview.stackexchange.com/q/13512
      * @param string $expected string to compare.
      * @param string $actual user-supplied string.
      * @return bool whether strings are equal.

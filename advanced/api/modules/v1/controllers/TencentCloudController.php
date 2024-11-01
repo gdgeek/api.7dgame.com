@@ -13,12 +13,12 @@ use yii\rest\ActiveController;
 
 class TencentCloudController extends ActiveController
 {
-
+    
     public $modelClass = 'api\modules\v1\models\Meta';
     public function behaviors()
     {
         $behaviors = parent::behaviors();
-
+        
         // add CORS filter
         $behaviors['corsFilter'] = [
             'class' => \yii\filters\Cors::class,
@@ -36,53 +36,23 @@ class TencentCloudController extends ActiveController
                 ],
             ],
         ];
-        /*
-        $behaviors = parent::behaviors();
-        $behaviors['authenticator'] = [
-        'class' => CompositeAuth::class,
-        'authMethods' => [
-        JwtHttpBearerAuth::class,
-        ],
-        ];
-        $auth = $behaviors['authenticator'];
-        // add CORS filter
-        $behaviors['corsFilter'] = [
-        'class' => \yii\filters\Cors::class,
-        'cors' => [
-        'Origin' => ['*'],
-        'Access-Control-Request-Method' => ['GET'],
-        'Access-Control-Request-Headers' => ['*'],
-        'Access-Control-Allow-Credentials' => null,
-        'Access-Control-Max-Age' => 86400,
-        'Access-Control-Expose-Headers' => [
-        'X-Pagination-Total-Count',
-        'X-Pagination-Page-Count',
-        'X-Pagination-Current-Page',
-        'X-Pagination-Per-Page',
-        ],
-        ],
-        ];
-        // re-add authentication filter
-        $behaviors['authenticator'] = $auth;
-        // avoid authentication on CORS-pre-flight requests (HTTP OPTIONS method)
-        $behaviors['authenticator']['except'] = ['options'];
-        $behaviors['access'] = [
-        'class' => AccessControl::class,
-        ];
-        return $behaviors;
-         */
-
+        
         return $behaviors;
     }
     public function actions()
     {
         return [];
     }
+    public function actionCloud()
+    {
+        $cloud = \Yii::$app->secret->cloud;
+        return $cloud;
+    }
     public function actionToken($bucket, $region = 'ap-nanjing')
     {
-
-        $cred = new Credential(Yii::$app->secret->secretId, Yii::$app->secret->secretKey);
-
+        
+        $cred = new Credential(Yii::$app->secret->id, Yii::$app->secret->key);
+        
         // 实例化一个http选项，可选的，没有特殊需求可以跳过
         $httpProfile = new HttpProfile();
         // 配置代理
@@ -90,14 +60,14 @@ class TencentCloudController extends ActiveController
         $httpProfile->setReqMethod("POST"); // post请求(默认为post请求)
         $httpProfile->setReqTimeout(30); // 请求超时时间，单位为秒(默认60秒)
         $httpProfile->setEndpoint("sts.tencentcloudapi.com"); // 指定接入地域域名(默认就近接入)
-
+        
         // 实例化一个client选项，可选的，没有特殊需求可以跳过
         $clientProfile = new ClientProfile();
         $clientProfile->setSignMethod("TC3-HMAC-SHA256"); // 指定签名算法(默认为HmacSHA256)
         $clientProfile->setHttpProfile($httpProfile);
-
+        
         $client = new StsClient($cred, $region, $clientProfile);
-
+        
         // 实例化一个请求对象
         $req = new GetFederationTokenRequest();
         $req->Name = "mrpp";
@@ -128,11 +98,11 @@ class TencentCloudController extends ActiveController
         );
         $policyStr = str_replace('\\/', '/', json_encode($policy));
         $req->Policy = urlencode($policyStr);
-
+        
         // 通过client对象调用想要访问的接口，需要传入请求对象
         $resp = $client->GetFederationToken($req);
-        $resp->StartTime = time();
+        //!!$resp->StartTime = time();
         return $resp;
     }
-
+    
 }

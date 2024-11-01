@@ -177,7 +177,11 @@ class MetaVerse extends \yii\db\ActiveRecord
     public function afterFind()
     {
         parent::afterFind();
-        $data = json_decode($this->data);
+        if(is_string($this->data)){
+            $data = json_decode($this->data);
+        }else{
+            $data =json_decode(json_encode($this->data));
+        }
         $change = $this->upgrade($data);
         if ($change) {
             $this->data = json_encode($data);
@@ -187,7 +191,11 @@ class MetaVerse extends \yii\db\ActiveRecord
 
     public function getLinks()
     {
-        $data = json_decode($this->data);
+        if(is_string($this->data)){
+            $data = json_decode($this->data);
+        }else{
+            $data =json_decode(json_encode($this->data));
+        }
         $metas = $this->metas;
         $map = [];
         foreach ($metas as $meta) {

@@ -4,6 +4,7 @@ namespace api\modules\v1\models;
 
 use api\modules\v1\models\File;
 
+use api\modules\v1\components\Validator\JsonValidator;
 use Yii;
 
 /**
@@ -37,12 +38,13 @@ class UserInfo extends \yii\db\ActiveRecord
         return [
             [['user_id'], 'required'],
             [['user_id', 'avatar_id', 'gold', 'points'], 'integer'],
-            [['info'], 'string'],
+            [['info'], JsonValidator::class],
             [['avatar_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['avatar_id' => 'id']],
             [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['user_id' => 'id']],
         ];
     }
 
+ 
     /**
      * {@inheritdoc}
      */
@@ -67,7 +69,12 @@ class UserInfo extends \yii\db\ActiveRecord
         $fields = parent::fields();
         unset($fields['id']);
         unset($fields['user_id']);
-      
+        $fields["info"] = function ($model) {
+            if (!is_string($model->info) && !is_null($model->info)) {
+                return json_encode($model->info);
+            }
+            return $model->info;
+        };
         return $fields;
     }
 

@@ -13,6 +13,6 @@ return [
         '@web' => '/',
         '@webroot' => $baseDir . '/runtime',
         '@vendor' => realpath($baseDir . '/../../vendor'),
-        '@bower' => realpath($baseDir . '/../../vendor/bower'),
+        '@bower' => realpath($baseDir . '/../../vendor/yidas/yii2-bower-asset/bower'),
     ]
 ];

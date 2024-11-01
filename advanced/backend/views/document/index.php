@@ -2,32 +2,29 @@
 /* @var $this yii\web\View */
 $this->title = "欢迎页面";
 
-
 $this->blocks['subTitle'] = '平台介绍';
 $this->params['breadcrumbs'][] = ['label' => '相关文档', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;
 
 if (!Yii::$app->params['information']['local']) {
 
-
-  $this->registerJs('
+    $this->registerJs('
 
 
 
 	$.get("https://hololens2.cn/wp-json/wp/v2/posts/872", function(result){
-		//alert(result);	
-		
+		//alert(result);
+
 		$("#title").html(result.title.rendered);
 		$("#content").html(result.content.rendered);
 		$("#date").html(result.date);
 		console.log(result);
 	  });
 
-	
+
 ');
 
-
-?>
+    ?>
 
   <!-- Main content -->
   <section class="invoice">
@@ -56,7 +53,7 @@ if (!Yii::$app->params['information']['local']) {
 <?php
 } else {
 
-?>
+    ?>
 
 
   <!-- Main content -->
@@ -66,7 +63,7 @@ if (!Yii::$app->params['information']['local']) {
       <div class="col-xs-12">
         <h2 class="page-header">
           <i class="fa fa-globe"></i>
-          <mrpp id="title">混合现实平台直播版本</mrpp>
+          <mrpp id="title">元宇宙实景编程平台</mrpp>
           <small class="pull-right" id="date">Date: 2/10/2014</small>
         </h2>
       </div>
@@ -75,7 +72,7 @@ if (!Yii::$app->params['information']['local']) {
     <!-- info row -->
     <div class="row invoice-info">
       <p class="text-muted well well-sm no-shadow" id="content" style="margin: 20px;">
-        混合现实平台，直播定制版本
+      元宇宙实景编程平台
       </p>
     </div>
     <!-- /.row -->
@@ -87,6 +84,5 @@ if (!Yii::$app->params['information']['local']) {
 <?php
 
 }
-
 
 ?>

@@ -1,8 +1,8 @@
 <?php
 /**
- * @link http://www.yiiframework.com/
+ * @link https://www.yiiframework.com/
  * @copyright Copyright (c) 2008 Yii Software LLC
- * @license http://www.yiiframework.com/license/
+ * @license https://www.yiiframework.com/license/
  */
 
 namespace yii\widgets;
@@ -23,7 +23,7 @@ use yii\helpers\Url;
  * Menu checks the current route and request parameters to toggle certain menu items
  * with active state.
  *
- * Note that Menu only renders the HTML tags about the menu. It does do any styling.
+ * Note that Menu only renders the HTML tags about the menu. It does not do any styling.
  * You are responsible to provide CSS styles to make it look like a real menu.
  *
  * The following example shows how to use Menu:
@@ -141,24 +141,24 @@ class Menu extends Widget
      */
     public $options = [];
     /**
-     * @var string the CSS class that will be assigned to the first item in the main menu or each submenu.
+     * @var string|null the CSS class that will be assigned to the first item in the main menu or each submenu.
      * Defaults to null, meaning no such CSS class will be assigned.
      */
     public $firstItemCssClass;
     /**
-     * @var string the CSS class that will be assigned to the last item in the main menu or each submenu.
+     * @var string|null the CSS class that will be assigned to the last item in the main menu or each submenu.
      * Defaults to null, meaning no such CSS class will be assigned.
      */
     public $lastItemCssClass;
     /**
-     * @var string the route used to determine if a menu item is active or not.
+     * @var string|null the route used to determine if a menu item is active or not.
      * If not set, it will use the route of the current request.
      * @see params
      * @see isItemActive()
      */
     public $route;
     /**
-     * @var array the parameters used to determine if a menu item is active or not.
+     * @var array|null the parameters used to determine if a menu item is active or not.
      * If not set, it will use `$_GET`.
      * @see route
      * @see isItemActive()
@@ -283,7 +283,11 @@ class Menu extends Widget
                     $items[$i]['active'] = false;
                 }
             } elseif ($item['active'] instanceof Closure) {
-                $active = $items[$i]['active'] = call_user_func($item['active'], $item, $hasActiveChild, $this->isItemActive($item), $this);
+                if (call_user_func($item['active'], $item, $hasActiveChild, $this->isItemActive($item), $this)) {
+                    $active = $items[$i]['active'] = true;
+                } else {
+                    $items[$i]['active'] = false;
+                }
             } elseif ($item['active']) {
                 $active = true;
             }

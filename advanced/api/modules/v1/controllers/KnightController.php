@@ -3,7 +3,7 @@ namespace api\modules\v1\controllers;
 
 use api\modules\v1\models\KnightSearch;
 use mdm\admin\components\AccessControl;
-use sizeg\jwt\JwtHttpBearerAuth;
+use bizley\jwt\JwtHttpBearerAuth;
 use Yii;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
@@ -33,7 +33,6 @@ class KnightController extends ActiveController
                 ],
             ],
         ];
-
         $behaviors['authenticator'] = [
             'class' => CompositeAuth::class,
             'authMethods' => [
@@ -53,11 +52,15 @@ class KnightController extends ActiveController
         unset($actions['index']);
         return $actions;
     }
+
     public function actionIndex()
     {
+
         $searchModel = new KnightSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-        $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id]);
+
+        // $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id]);
+
         return $dataProvider;
     }
 

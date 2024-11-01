@@ -122,6 +122,8 @@ class Search
      * @param float[]|int[] $values
      *
      * @return int Index of the first occurrence of the maximum value
+     *
+     * @throws \LogicException if the array of values is empty - should never happen
      */
     private static function baseArgMax(array $values): int
     {
@@ -131,6 +133,8 @@ class Search
                 return $i;
             }
         }
+
+        throw new \LogicException('argMax values is empty--should not happen');
     }
 
     /**
@@ -216,6 +220,8 @@ class Search
      * @param float[]|int[] $values
      *
      * @return int Index of the first occurrence of the minimum value
+     *
+     * @throws \LogicException if the array of values is empty - should never happen
      */
     private static function baseArgMin(array $values): int
     {
@@ -225,6 +231,8 @@ class Search
                 return $i;
             }
         }
+
+        throw new \LogicException('argMin values is empty--should not happen');
     }
 
     /**

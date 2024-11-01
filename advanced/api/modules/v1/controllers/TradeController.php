@@ -5,7 +5,7 @@ use api\modules\v1\models\Order;
 use api\modules\v1\models\Trade;
 use api\modules\v1\models\TradeSearch;
 use mdm\admin\components\AccessControl;
-use sizeg\jwt\JwtHttpBearerAuth;
+use bizley\jwt\JwtHttpBearerAuth;
 use Yii;
 use yii\filters\auth\CompositeAuth;
 use yii\helpers\Url;
@@ -18,15 +18,6 @@ class TradeController extends ActiveController
     {
         $behaviors = parent::behaviors();
 
-// unset($behaviors['authenticator']);
-        $behaviors['authenticator'] = [
-            'class' => CompositeAuth::class,
-            'authMethods' => [
-                JwtHttpBearerAuth::class,
-            ],
-        ];
-        $auth = $behaviors['authenticator'];
-// add CORS filter
         $behaviors['corsFilter'] = [
             'class' => \yii\filters\Cors::class,
             'cors' => [
@@ -44,13 +35,16 @@ class TradeController extends ActiveController
             ],
         ];
 
-        $behaviors['authenticator'] = $auth;
-        $behaviors['authenticator']['except'] = ['options'];
-
+        $behaviors['authenticator'] = [
+            'class' => CompositeAuth::class,
+            'authMethods' => [
+                JwtHttpBearerAuth::class,
+            ],
+            'except' => ['options'],
+        ];
         $behaviors['access'] = [
             'class' => AccessControl::class,
         ];
-
         return $behaviors;
 
     }

@@ -3,28 +3,21 @@ namespace api\modules\v1\controllers;
 
 use api\modules\v1\models\VerseSearch;
 use mdm\admin\components\AccessControl;
-use sizeg\jwt\JwtHttpBearerAuth;
+use bizley\jwt\JwtHttpBearerAuth;
 use Yii;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
+use api\modules\v1\models\data\VerseCodeTool;
 
+use yii\base\Exception;
 class VerseController extends ActiveController
 {
-
+    
     public $modelClass = 'api\modules\v1\models\Verse';
     public function behaviors()
     {
         $behaviors = parent::behaviors();
-        // echo $this->action->id;
-        if ($this->action->id != 'open' && $this->action->id != 'view') {
-            $behaviors['authenticator'] = [
-                'class' => CompositeAuth::class,
-                'authMethods' => [
-                    JwtHttpBearerAuth::class,
-                ],
-            ];
-        }
-        $auth = $behaviors['authenticator'];
+        
         // add CORS filter
         $behaviors['corsFilter'] = [
             'class' => \yii\filters\Cors::class,
@@ -42,46 +35,49 @@ class VerseController extends ActiveController
                 ],
             ],
         ];
-
-        // re-add authentication filter
-        $behaviors['authenticator'] = $auth;
-        // avoid authentication on CORS-pre-flight requests (HTTP OPTIONS method)
-        $behaviors['authenticator']['except'] = ['options'];
-
-        if ($this->action->id != 'open' && $this->action->id != 'view') {
-            $behaviors['access'] = [
-                'class' => AccessControl::class,
-            ];
-        }
-
+        
+        $behaviors['authenticator'] = [
+            'class' => CompositeAuth::class,
+            'authMethods' => [
+                JwtHttpBearerAuth::class,
+            ],
+            'except' => ['options'],
+        ];
+        
+        $behaviors['access'] = [
+            'class' => AccessControl::class,
+        ];
+        
         return $behaviors;
     }
-
-    public function actionPublish()
+    public function actions()
     {
-
+        $actions = parent::actions();
+        unset($actions['index']);
+        return $actions;
+    }
+    public function actionIndex()
+    {
         $searchModel = new VerseSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
         $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id]);
         return $dataProvider;
     }
-
-    public function actionOpen()
-    {
-        $searchModel = new VerseSearch();
-        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-        $query = $dataProvider->query;
-        $query->select('verse.*')->leftJoin('verse_open', '`verse_open`.`verse_id` = `verse`.`id`')->andWhere(['NOT', ['verse_open.id' => null]]);
-        return $dataProvider;
+    
+    public function actionUpdateCode($id){
+        
+        $post = Yii::$app->request->post();
+        $model = new VerseCodeTool($id);
+        $post = Yii::$app->request->post();
+        $model->load($post, '');
+        if ($model->validate()) {
+            $model->save();
+        }else{
+            throw new Exception(json_encode($model->errors), 400);
+        }
+        return $model;
     }
-
-    public function actionShare()
-    {
-        $searchModel = new VerseSearch();
-        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-        $query = $dataProvider->query;
-        $query->select('verse.*')->leftJoin('verse_share', '`verse_share`.`verse_id` = `verse`.`id`')->andWhere(['verse_share.user_id' => Yii::$app->user->id]);
-        return $dataProvider;
-    }
-
+    
+    /* */
+    
 }

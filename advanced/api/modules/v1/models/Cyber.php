@@ -18,11 +18,11 @@ use yii\db\Expression;
  * @property string $create_at
  * @property string|null $updated_at
  * @property string|null $data
+ * @property string|null $script
  *
  * @property User $author
  * @property Meta $meta
  * @property User $updater
- * @property CyberScript[] $cyberScripts
  */
 class Cyber extends \yii\db\ActiveRecord
 
@@ -63,7 +63,7 @@ class Cyber extends \yii\db\ActiveRecord
 
             [['author_id', 'updater_id', 'meta_id'], 'integer'],
             [['create_at', 'updated_at'], 'safe'],
-            [['data'], 'string'],
+            [['data', 'script'], 'string'],
             [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['author_id' => 'id']],
             [['meta_id'], 'exist', 'skipOnError' => true, 'targetClass' => Meta::className(), 'targetAttribute' => ['meta_id' => 'id']],
             [['updater_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updater_id' => 'id']],
@@ -83,6 +83,7 @@ class Cyber extends \yii\db\ActiveRecord
             'create_at' => 'Create At',
             'updated_at' => 'Updated At',
             'data' => 'Data',
+            'script' => 'Script',
         ];
     }
 
@@ -101,9 +102,9 @@ class Cyber extends \yii\db\ActiveRecord
 
     public function extraFields()
     {
-        return ['meta',
+        return [
+            'meta',
             'author',
-            'scripts' => $this->cyberScripts,
         ];
     }
     /**
@@ -134,16 +135,6 @@ class Cyber extends \yii\db\ActiveRecord
     public function getUpdater()
     {
         return $this->hasOne(User::className(), ['id' => 'updater_id']);
-    }
-
-    /**
-     * Gets query for [[CyberScripts]].
-     *
-     * @return \yii\db\ActiveQuery|CyberScriptQuery
-     */
-    public function getCyberScripts()
-    {
-        return $this->hasMany(CyberScript::className(), ['cyber_id' => 'id']);
     }
 
     /**

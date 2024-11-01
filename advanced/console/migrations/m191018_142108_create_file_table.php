@@ -12,18 +12,18 @@ class m191018_142108_create_file_table extends Migration
      */
     public function safeUp()
     {
-		$tableOptions = null;
-		if ($this->db->driverName === 'mysql') {
+        $tableOptions = null;
+        if ($this->db->driverName === 'mysql') {
             // http://stackoverflow.com/questions/766809/whats-the-difference-between-utf8-general-ci-and-utf8-unicode-ci
             $tableOptions = 'CHARACTER SET utf8 COLLATE utf8_unicode_ci ENGINE=InnoDB';
         }
-
+        //php yii migrate/create create_script_table --fields="script:text,workspace:json,notNull:unique"
         $this->createTable('{{%file}}', [
             'id' => $this->primaryKey(),
             'md5' => $this->string()->notNull()->unique(),
             'type' => $this->string(),
             'url' => $this->string(),
-        ],$tableOptions);
+        ], $tableOptions);
     }
 
     /**

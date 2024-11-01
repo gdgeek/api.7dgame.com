@@ -2,42 +2,40 @@
 
 namespace api\modules\a1\models;
 
-use api\modules\a1\models\MetaEvent;
 use api\modules\v1\models\Cyber;
 use api\modules\v1\models\File;
 use api\modules\v1\models\MetaQuery;
 use api\modules\v1\models\User;
-use api\modules\v1\models\VerseShare;
+use api\modules\v1\models\MetaCode;
 use Yii;
 use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
 use yii\db\Expression;
 
+use api\modules\v1\components\Validator\JsonValidator;
 /**
- * This is the model class for table "meta".
- *
- * @property int $id
- * @property int $author_id
- * @property int|null $updater_id
- * @property string $created_at
- * @property string $updated_at
- * @property int|null $verse_id
- * @property string|null $info
- * @property int|null $image_id
- * @property string|null $data
- * @property string|null $uuid
- *
- * @property Cyber[] $cybers
- * @property User $author
- * @property File $image
- * @property User $updater
- * @property Verse $verse
- * @property MetaEvent $metaEvent
- * @property MetaRete[] $metaRetes
- */
+* This is the model class for table "meta".
+*
+* @property int $id
+* @property int $author_id
+* @property int|null $updater_id
+* @property string $created_at
+* @property string $updated_at
+* @property string|null $info
+* @property int|null $image_id
+* @property string|null $data
+* @property string|null $uuid
+*
+* @property Cyber[] $cybers
+* @property User $author
+* @property File $image
+* @property User $updater
+* @property MetaRete[] $metaRetes
+*/
 class Meta extends \yii\db\ActiveRecord
-{
 
+{
+    
     public function behaviors()
     {
         return [
@@ -46,7 +44,7 @@ class Meta extends \yii\db\ActiveRecord
                 'attributes' => [
                     \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => ['created_at', 'updated_at'],
                     \yii\db\ActiveRecord::EVENT_BEFORE_UPDATE => ['updated_at'],
-
+                    
                 ],
                 'value' => new Expression('NOW()'),
             ],
@@ -58,30 +56,30 @@ class Meta extends \yii\db\ActiveRecord
         ];
     }
     /**
-     * {@inheritdoc}
-     */
+    * {@inheritdoc}
+    */
     public static function tableName()
     {
         return 'meta';
     }
-
+    
     /**
-     * {@inheritdoc}
-     */
+    * {@inheritdoc}
+    */
     public function rules()
     {
         return [
-            [['author_id', 'updater_id', 'verse_id', 'image_id'], 'integer'],
+            [['author_id', 'updater_id', 'image_id'], 'integer'],
             [['created_at', 'updated_at'], 'safe'],
-            [['info', 'data'], 'string'],
+            [['info', 'data', 'events'], JsonValidator::class],
             [['uuid'], 'string', 'max' => 255],
             [['uuid'], 'unique'],
             [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['author_id' => 'id']],
             [['image_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['image_id' => 'id']],
             [['updater_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updater_id' => 'id']],
-            [['verse_id'], 'exist', 'skipOnError' => true, 'targetClass' => Verse::className(), 'targetAttribute' => ['verse_id' => 'id']],
         ];
     }
+    
     public function fields()
     {
         $fields = parent::fields();
@@ -89,26 +87,54 @@ class Meta extends \yii\db\ActiveRecord
         unset($fields['updater_id']);
         unset($fields['updated_at']);
         unset($fields['created_at']);
-        unset($fields['verse_id']);
         unset($fields['image_id']);
         unset($fields['info']);
-
-        // $fields['id'] = function ($model) {return 'meta_' . $this->id;};
-        $fields['type'] = function () {return 'Mate';};
-        $fields['script'] = function () {
-
-            if ($this->cyber) {
-                $script = $this->cyber->GetCyberScripts()->andWhere(['language' => 'lua'])->one();
-                if ($script) {
-                    return $script->script;
-                }
-            }
+        $fields['type'] = function ($model) {
+            return $model->prefab == 0 ? 'sample' : 'module';
         };
+        $fields['data'] = function () {
+            if(!is_string($this->data) && !is_null($this->data)){
+                return json_encode($this->data);
+            }
+            return $this->data;
+        };
+        $fields['events'] = function () {
+            if(!is_string($this->events)&& !is_null($this->events)){
+                return json_encode($this->events);
+            }
+            return $this->events;
+        };
+        $fields['script'] = function () { return $this->code; };
+        //$fields['code'] = function () { return $this->code; };
         return $fields;
     }
+    public function extraFields()
+    {
+        return [
+            'code'
+        ];
+    }
+    public function getCode(){
+        $metaCode = $this->metaCode;
+        if($metaCode && $metaCode->code){
+            $script = $metaCode->code->lua;
+        }else if ($this->cyber && $this->cyber->script) {
+            $script = $this->cyber->script;
+        }
+        $substring = "local meta = {}\nlocal index = ''\n";
+        if(isset($script)){
+            if (strpos($script, $substring) !== false) {
+                return $script;
+            } else {
+                return $substring.$script;
+            }
+        }else{
+            return $substring;
+        }  
+    }  
     /**
-     * {@inheritdoc}
-     */
+    * {@inheritdoc}
+    */
     public function attributeLabels()
     {
         return [
@@ -117,91 +143,76 @@ class Meta extends \yii\db\ActiveRecord
             'updater_id' => 'Updater ID',
             'created_at' => 'Created At',
             'updated_at' => 'Updated At',
-            'verse_id' => 'Verse ID',
             'info' => 'Info',
             'image_id' => 'Image ID',
             'data' => 'Data',
             'uuid' => 'Uuid',
         ];
     }
-
+    
     /**
-     * Gets query for [[Author]].
-     *
-     * @return \yii\db\ActiveQuery|UserQuery
-     */
+    * Gets query for [[Author]].
+    *
+    * @return \yii\db\ActiveQuery|UserQuery
+    */
     public function getAuthor()
     {
         return $this->hasOne(User::className(), ['id' => 'author_id']);
     }
-
+    
     /**
-     * Gets query for [[Updater]].
-     *
-     * @return \yii\db\ActiveQuery|UserQuery
-     */
+    * Gets query for [[Updater]].
+    *
+    * @return \yii\db\ActiveQuery|UserQuery
+    */
     public function getUpdater()
     {
         return $this->hasOne(User::className(), ['id' => 'updater_id']);
     }
-
+    
+    public function getMetaCode()
+    {
+        return $this->hasOne(MetaCode::className(), ['meta_id' => 'id']);
+    }
     /**
-     * Gets query for [[Cybers]].
-     *
-     * @return \yii\db\ActiveQuery|CyberQuery
-     */
+    * Gets query for [[Cybers]].
+    *
+    * @return \yii\db\ActiveQuery|CyberQuery
+    */
     public function getCyber()
     {
         return $this->hasOne(Cyber::className(), ['meta_id' => 'id']);
     }
-
+    
     /**
-     * Gets query for [[Verse]].
-     *
-     * @return \yii\db\ActiveQuery|VerseQuery
-     */
-    public function getVerse()
-    {
-        return $this->hasOne(Verse::className(), ['id' => 'verse_id']);
-    }
-    /**
-     * Gets query for [[MetaEvents]].
-     *
-     * @return \yii\db\ActiveQuery|MetaEventQuery
-     */
-    public function getMetaEvent()
-    {
-        return $this->hasOne(MetaEvent::className(), ['meta_id' => 'id']);
-    }
-    /**
-     * Gets query for [[MetaRetes]].
-     *
-     * @return \yii\db\ActiveQuery|MetaReteQuery
-     */
+    * Gets query for [[MetaRetes]].
+    *
+    * @return \yii\db\ActiveQuery|MetaReteQuery
+    */
     public function getMetaRetes()
     {
         return $this->hasMany(MetaRete::className(), ['meta_id' => 'id']);
     }
-
+    
     /**
-     * Gets query for [[Image]].
-     *
-     * @return \yii\db\ActiveQuery|yii\db\ActiveQuery
-     */
+    * Gets query for [[Image]].
+    *
+    * @return \yii\db\ActiveQuery|yii\db\ActiveQuery
+    */
     public function getImage()
     {
         return $this->hasOne(File::className(), ['id' => 'image_id']);
     }
-    public function getShare()
-    {
-
-        $share = VerseShare::findOne(['verse_id' => $this->verse_id, 'user_id' => Yii::$app->user->id]);
-
-        return $share;
-    }
+    
     public function getResourceIds()
     {
-        $resourceIds = \api\modules\v1\helper\Meta2Resources::Handle(json_decode($this->data));
+        
+        if(is_string($this->data)){
+            $data = json_decode($this->data);
+        }else{
+            $data =json_decode(json_encode($this->data));
+        }
+        $resourceIds = \api\modules\v1\helper\Meta2Resources::Handle($data);
         return $resourceIds;
     }
     public function extraResources()
@@ -210,25 +221,25 @@ class Meta extends \yii\db\ActiveRecord
         $items = Resource::find()->where(['id' => $resourceIds])->all();
         return $items;
     }
-
+    
     public function extraEditor()
     {
         $editor = \api\modules\v1\helper\Meta2Editor::Handle($this);
         return $editor;
     }
-
+    
     public function upgrade($data)
     {
         $ret = false;
         if (isset($data->parameters) && isset($data->parameters->transfrom)) {
-
+            
             $ret = true;
             $data->parameters->transform = $data->parameters->transfrom;
             unset($data->parameters->transfrom);
         }
-
+        
         if (isset($data->chieldren)) {
-
+            
             $ret = true;
             $data->children = $data->chieldren;
             unset($data->chieldren);
@@ -237,7 +248,7 @@ class Meta extends \yii\db\ActiveRecord
             foreach ($data->children->entities as $entity) {
                 if ($this->upgrade($entity)) {
                     $ret = true;
-
+                    
                 }
             }
         }
@@ -256,25 +267,29 @@ class Meta extends \yii\db\ActiveRecord
                 }
             }
         }
-
+        
         return $ret;
     }
     public function afterFind()
     {
-
+        
         parent::afterFind();
-        $data = json_decode($this->data);
+        if(is_string($this->data)){
+            $data = json_decode($this->data);
+        }else{
+            $data =json_decode(json_encode($this->data));
+        }
         $change = $this->upgrade($data);
         if ($change) {
             $this->data = json_encode($data);
             $this->save();
         }
-
+        
     }
     /**
-     * {@inheritdoc}
-     * @return MetaQuery the active query used by this AR class.
-     */
+    * {@inheritdoc}
+    * @return MetaQuery the active query used by this AR class.
+    */
     public static function find()
     {
         return new MetaQuery(get_called_class());

@@ -2,65 +2,67 @@
 
 namespace api\modules\v1\models;
 
-use yii\behaviors\TimestampBehavior;
+use Yii;
 use yii\behaviors\BlameableBehavior;
-
+use yii\behaviors\TimestampBehavior;
 use yii\db\Expression;
 
-use Yii;
-
 /**
- * This is the model class for table "like".
- *
- * @property int $id
- * @property int $user_id
- * @property int $message_id
- *
- * @property Message $message
- * @property User $user
- */
+* This is the model class for table "like".
+*
+* @property int $id
+* @property int $user_id
+* @property int $message_id
+*
+* @property Message $message
+* @property User $user
+*/
 class Like extends \yii\db\ActiveRecord
 {
-
+    
     public function behaviors()
     {
         return [
             [
                 'class' => TimestampBehavior::class,
                 'attributes' => [
-                    \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => ['created_at']
+                    \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => ['created_at'],
                 ],
                 'value' => new Expression('NOW()'),
-            ]
+            ],
+            [
+                'class' => BlameableBehavior::class,
+                'createdByAttribute' => 'user_id',
+                'updatedByAttribute' => null,
+            ],
         ];
     }
-
-
+    
     /**
-     * {@inheritdoc}
-     */
+    * {@inheritdoc}
+    */
     public static function tableName()
     {
         return 'like';
     }
-
+    
     /**
-     * {@inheritdoc}
-     */
+    * {@inheritdoc}
+    */
     public function rules()
     {
         return [
-            [['user_id','message_id'], 'required'],
+            [['message_id'], 'required'],
             [['user_id', 'message_id'], 'integer'],
             [['message_id'], 'exist', 'skipOnError' => true, 'targetClass' => Message::className(), 'targetAttribute' => ['message_id' => 'id']],
             [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['user_id' => 'id']],
             [['message_id', 'user_id'], 'unique', 'targetAttribute' => ['message_id', 'user_id']],
         ];
     }
-
+    
     /**
-     * {@inheritdoc}
-     */
+    * {@inheritdoc}
+    */
     public function attributeLabels()
     {
         return [
@@ -69,36 +71,36 @@ class Like extends \yii\db\ActiveRecord
             'message_id' => 'Message ID',
         ];
     }
-
+    
     public function extraFields()
     {
         return ['message'];
     }
-
+    
     /**
-     * Gets query for [[Message]].
-     *
-     * @return \yii\db\ActiveQuery|MessageQuery
-     */
+    * Gets query for [[Message]].
+    *
+    * @return \yii\db\ActiveQuery|MessageQuery
+    */
     public function getMessage()
     {
         return $this->hasOne(Message::className(), ['id' => 'message_id']);
     }
-
+    
     /**
-     * Gets query for [[User]].
-     *
-     * @return \yii\db\ActiveQuery|yii\db\ActiveQuery
-     */
+    * Gets query for [[User]].
+    *
+    * @return \yii\db\ActiveQuery|yii\db\ActiveQuery
+    */
     public function getUser()
     {
         return $this->hasOne(User::className(), ['id' => 'user_id']);
     }
-
+    
     /**
-     * {@inheritdoc}
-     * @return LikeQuery the active query used by this AR class.
-     */
+    * {@inheritdoc}
+    * @return LikeQuery the active query used by this AR class.
+    */
     public static function find()
     {
         return new LikeQuery(get_called_class());

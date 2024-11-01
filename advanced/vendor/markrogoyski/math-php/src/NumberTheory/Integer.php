@@ -106,7 +106,7 @@ class Integer
      */
     public static function radical(int $n): int
     {
-        return \array_product(\array_unique(self::primeFactorization($n)));
+        return (int)\array_product(\array_unique(self::primeFactorization($n)));
     }
 
     /**
@@ -324,7 +324,7 @@ class Integer
      *
      * @param  int $n
      *
-     * @return array [m, k]
+     * @return array{0?: int|float, 1?: int|float} [m, k]
      */
     public static function perfectPower(int $n): array
     {
@@ -347,6 +347,39 @@ class Integer
         }
 
         return [];
+    }
+
+    /**
+     * Primality test (prime number test)
+     * https://en.wikipedia.org/wiki/Primality_test
+     *
+     * Determines whether a number is a prime number.
+     *
+     * @param int $n
+     *
+     * @return bool
+     */
+    public static function isPrime(int $n): bool
+    {
+        if ($n <= 1) {
+            return false;
+        }
+
+        if ($n === 2 || $n === 3) {
+            return true;
+        }
+
+        if ($n % 2 === 0 || $n % 3 === 0) {
+            return false;
+        }
+
+        for ($i = 5; $i <= \sqrt($n); $i += 6) {
+            if ($n % $i === 0 || $n % ($i + 2) === 0) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -479,7 +512,7 @@ class Integer
             $product *= $sum;
         }
 
-        return $product;
+        return (int)$product;
     }
 
     /**

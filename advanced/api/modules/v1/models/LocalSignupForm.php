@@ -29,6 +29,7 @@ class LocalSignupForm extends Model
 
         ];
     }
+
     public function clearAll()
     {
         User::deleteAll([]);
