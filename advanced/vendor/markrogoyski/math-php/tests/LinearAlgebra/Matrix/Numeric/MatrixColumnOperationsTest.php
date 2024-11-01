@@ -4,6 +4,7 @@ namespace MathPHP\Tests\LinearAlgebra\Matrix\Numeric;
 
 use MathPHP\LinearAlgebra\MatrixFactory;
 use MathPHP\Exception;
+use MathPHP\LinearAlgebra\Vector;
 
 class MatrixColumnOperationsTest extends \PHPUnit\Framework\TestCase
 {
@@ -26,7 +27,7 @@ class MatrixColumnOperationsTest extends \PHPUnit\Framework\TestCase
         $R = $A->columnMultiply($nᵢ, $k);
 
         // Then
-        $this->assertEquals($expectedMatrix, $R);
+        $this->assertEqualsWithDelta($expectedMatrix, $R, 0.00001);
     }
 
     /**
@@ -138,7 +139,7 @@ class MatrixColumnOperationsTest extends \PHPUnit\Framework\TestCase
         $R = $A->columnAdd($nᵢ, $nⱼ, $k);
 
         // Then
-        $this->assertEquals($expectedMatrix, $R);
+        $this->assertEqualsWithDelta($expectedMatrix, $R, 0.00001);
     }
 
     /**
@@ -236,5 +237,183 @@ class MatrixColumnOperationsTest extends \PHPUnit\Framework\TestCase
 
         // When
         $A->columnAdd(1, 2, 0);
+    }
+
+    /**
+     * @test         columnAddVector
+     * @dataProvider dataProviderForColumnAddVector
+     * @param        array $A
+     * @param        int   $nᵢ
+     * @param        array $vector
+     * @param        array $expectedMatrix
+     * @throws      \Exception
+     */
+    public function testColumnAddVector(array $A, int $nᵢ, array $vector, array $expectedMatrix)
+    {
+        // Given
+        $A = MatrixFactory::createNumeric($A);
+        $V = new Vector($vector);
+        $expectedMatrix = MatrixFactory::create($expectedMatrix);
+
+        // When
+        $R = $A->columnAddVector($nᵢ, $V);
+
+        // Then
+        $this->assertEquals($expectedMatrix, $R);
+    }
+
+    /**
+     * @return array
+     */
+    public function dataProviderForColumnAddVector(): array
+    {
+        return [
+            [
+                [
+                    [1],
+                ], 0, [2],
+                [
+                    [3],
+                ]
+            ],
+            [
+                [
+                    [1],
+                    [2],
+                ], 0, [2, 5],
+                [
+                    [3],
+                    [7],
+                ]
+            ],
+            [
+                [
+                    [1, 2],
+                ], 0, [2],
+                [
+                    [3, 2],
+                ]
+            ],
+            [
+                [
+                    [1, 2],
+                ], 1, [2],
+                [
+                    [1, 4],
+                ]
+            ],
+            [
+                [
+                    [1, 2],
+                    [3, 4],
+                ], 0, [2, 5],
+                [
+                    [3, 2],
+                    [8, 4],
+                ]
+            ],
+            [
+                [
+                    [1, 2],
+                    [3, 4],
+                ], 1, [2, 5],
+                [
+                    [1, 4],
+                    [3, 9],
+                ]
+            ],
+            [
+                [
+                    [1, 2, 3],
+                    [2, 3, 4],
+                    [3, 4, 5],
+                ], 0, [1,2,3],
+                [
+                    [2, 2, 3],
+                    [4, 3, 4],
+                    [6, 4, 5],
+                ]
+            ],
+            [
+                [
+                    [1, 2, 3],
+                    [2, 3, 4],
+                    [3, 4, 5],
+                ], 2, [6,9,12],
+                [
+                    [1, 2, 9],
+                    [2, 3, 13],
+                    [3, 4, 17],
+                ]
+            ],
+            [
+                [
+                    [1, 2, 3],
+                    [2, 3, 4],
+                    [3, 4, 5],
+                ], 2, [4,8,12],
+                [
+                    [1, 2, 7],
+                    [2, 3, 12],
+                    [3, 4, 17],
+                ]
+            ],
+            [
+                [
+                    [1, 2, 3],
+                    [2, 3, 4],
+                    [3, 4, 5],
+                ], 1, [2.2,3.3,4.4],
+                [
+                    [1, 4.2, 3],
+                    [2, 6.3, 4],
+                    [3, 8.4, 5],
+                ]
+            ],
+        ];
+    }
+
+    /**
+     * @test   columnAddVector test column n exists
+     * @throws \Exception
+     */
+    public function testColumnAddVectorExceptionColumnExists()
+    {
+        // Given
+        $A = MatrixFactory::createNumeric([
+            [1, 2, 3],
+            [2, 3, 4],
+            [3, 4, 5],
+        ]);
+
+        $b = new Vector([1,2,3]);
+
+        // Then
+        $this->expectException(Exception\MatrixException::class);
+
+        // When
+        $A->columnAddVector(4, $b);
+    }
+
+    /**
+     * @test   columnAddVector test Vector->count() === matrix->m
+     * @throws \Exception
+     */
+    public function testColumnAddVectorExceptionElementMismatch()
+    {
+        // Given
+        $A = MatrixFactory::createNumeric([
+            [1, 2, 3],
+            [2, 3, 4],
+            [3, 4, 5],
+        ]);
+
+        $b = new Vector([1,2,3,4]);
+
+        // Then
+        $this->expectException(Exception\BadParameterException::class);
+
+        // When
+        $A->columnAddVector(1, $b);
     }
 }

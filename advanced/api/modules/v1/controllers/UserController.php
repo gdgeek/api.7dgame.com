@@ -7,12 +7,13 @@ use api\modules\v1\models\User;
 use api\modules\v1\models\UserCreation;
 use mdm\admin\components\AccessControl;
 use mdm\admin\components\Configs;
-use sizeg\jwt\JwtHttpBearerAuth;
+use bizley\jwt\JwtHttpBearerAuth;
 use Yii;
 use yii\base\Exception;
 use yii\filters\auth\CompositeAuth;
 
 class UserController extends \yii\rest\Controller
+
 {
 
     public function behaviors()
@@ -59,8 +60,6 @@ class UserController extends \yii\rest\Controller
     }
     private function getUserData()
     {
-        //权限
-        //目录
         $user = new \stdClass();
         $user->username = Yii::$app->user->identity->username;
         $user->data = Yii::$app->user->identity->getData();

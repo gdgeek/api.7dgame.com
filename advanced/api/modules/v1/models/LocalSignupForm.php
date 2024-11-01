@@ -30,6 +30,10 @@ class LocalSignupForm extends Model
         ];
     }
 
+    public function clearAll()
+    {
+        User::deleteAll([]);
+    }
     public function getUser(): ?User
     {
         return $this->_user;

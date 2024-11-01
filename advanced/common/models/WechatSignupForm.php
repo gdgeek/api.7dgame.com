@@ -59,7 +59,6 @@ class WechatSignupForm extends Model
         $this->_user = new User();
         $this->_user->username = $this->username;
         $this->_user->nickname = $this->nickname;
-        //  $this->_user->avatar = $this->avatar;
         $this->_user->wx_openid = $this->wx_openid;
         $this->_user->status = User::STATUS_ACTIVE;
         $this->_user->setPassword($this->password);

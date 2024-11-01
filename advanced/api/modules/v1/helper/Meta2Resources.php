@@ -25,21 +25,38 @@ class Meta2Resources
         if (!isset($node->type)) {
             return;
         }
-        switch (strtolower($node->type)) {
+        if (isset($node->parameters->resource)) {
+            $resource = $node->parameters->resource;
+        } else {
+            switch (strtolower($node->type)) {
+                case 'polygen':
+                    if (isset($node->parameters->polygen)) {
+                        $resource = $node->parameters->polygen;
+                    }
 
-            case 'polygen':
-                $resource = $node->parameters->polygen;
-                break;
-            case 'picture':
-                $resource = $node->parameters->picture;
-                break;
-            case 'video':
-                $resource = $node->parameters->video;
-                break;
-            case 'sound':
-                $resource = $node->parameters->sound;
-                break;
+                    break;
+                case 'voxel':
+                    if (isset($node->parameters->voxel)) {
+                        $resource = $node->parameters->voxel;
+                    }
 
+                    break;
+                case 'picture':
+                    if (isset($node->parameters->picture)) {
+                        $resource = $node->parameters->picture;
+                    }
+                    break;
+                case 'video':
+                    if (isset($node->parameters->video)) {
+                        $resource = $node->parameters->video;
+                    }
+                    break;
+                case 'sound':
+                    if (isset($node->parameters->sound)) {
+                        $resource = $node->parameters->sound;
+                    }
+                    break;
+            }
         }
 
         if ($resource != null && !in_array($resource, $resources)) {
@@ -48,19 +65,15 @@ class Meta2Resources
 
         if (isset($node->children) && isset($node->children->entities)) {
             foreach ($node->children->entities as $entity) {
-                //echo json_encode($entity);
                 Meta2Resources::HandleNode($entity, $resources);
             }
         }
-
         return $resources;
     }
     public static function Handle($data)
     {
         //echo 'aaa';
         $resources = [];
-
-        //$data = json_decode($meta->data);
 
         Meta2Resources::HandleNode($data, $resources);
 

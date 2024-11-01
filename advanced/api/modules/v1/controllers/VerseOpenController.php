@@ -3,7 +3,7 @@ namespace api\modules\v1\controllers;
 
 use api\modules\v1\models\VerseSearch;
 use mdm\admin\components\AccessControl;
-use sizeg\jwt\JwtHttpBearerAuth;
+use bizley\jwt\JwtHttpBearerAuth;
 use Yii;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
@@ -14,10 +14,8 @@ class VerseOpenController extends ActiveController
     public function behaviors()
     {
         $behaviors = parent::behaviors();
-
-        // unset($behaviors['authenticator']);
-
-        // add CORS filter
+        
+        
         $behaviors['corsFilter'] = [
             'class' => \yii\filters\Cors::class,
             'cors' => [
@@ -34,36 +32,32 @@ class VerseOpenController extends ActiveController
                 ],
             ],
         ];
-
+        
         $behaviors['authenticator'] = [
             'class' => CompositeAuth::class,
             'authMethods' => [
                 JwtHttpBearerAuth::class,
             ],
             'except' => ['options'],
-
+            
         ];
         $behaviors['access'] = [
             'class' => AccessControl::class,
         ];
         return $behaviors;
     }
-
+    
     public function actions()
     {
         $actions = parent::actions();
+        unset($actions['update']);
+        unset($actions['view']);
+        unset($actions['options']);
         unset($actions['index']);
         return $actions;
     }
-/*
-public function actionIndex()
-{
-$searchModel = new VerseOpenSearch();
-$dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-return $dataProvider;
-}
- */
-    public function actionIndex()
+    
+    public function actionVerses()
     {
         $searchModel = new VerseSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);

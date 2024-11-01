@@ -7,6 +7,7 @@ use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
 use yii\db\Expression;
 
+use api\modules\v1\components\Validator\JsonValidator;
 /**
  * This is the model class for table "space".
  *
@@ -27,6 +28,7 @@ use yii\db\Expression;
  * @property File $sample
  */
 class Space extends \yii\db\ActiveRecord
+
 {
 
     public function behaviors()
@@ -65,7 +67,7 @@ class Space extends \yii\db\ActiveRecord
             [['title', 'sample_id', 'mesh_id', 'dat_id'], 'required'],
             [['author_id', 'sample_id', 'mesh_id', 'dat_id', 'image_id'], 'integer'],
             [['created_at'], 'safe'],
-            [['info'], 'string'],
+            [['info'], JsonValidator::class],
             [['title', 'name'], 'string', 'max' => 255],
             [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['author_id' => 'id']],
             [['dat_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['dat_id' => 'id']],
@@ -81,9 +83,8 @@ class Space extends \yii\db\ActiveRecord
             'mesh',
             'sample',
             'dat',
-            'author' => function () {
-                return $this->author;
-            },
+            'author',
+            'verseSpaces',
         ];
     }
     public function afterDelete()
@@ -186,5 +187,15 @@ class Space extends \yii\db\ActiveRecord
     public static function find()
     {
         return new SpaceQuery(get_called_class());
+    }
+
+    /**
+     * Gets query for [[VerseSpaces]].
+     *
+     * @return \yii\db\ActiveQuery|VerseSpaceQuery
+     */
+    public function getVerseSpaces()
+    {
+        return $this->hasMany(VerseSpace::className(), ['space_id' => 'id']);
     }
 }

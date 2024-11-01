@@ -20,12 +20,12 @@ final class Report extends File
 {
     public function __construct(string $name)
     {
-        $dom = new DOMDocument();
+        $dom = new DOMDocument;
         $dom->loadXML('<?xml version="1.0" ?><phpunit xmlns="https://schema.phpunit.de/coverage/1.0"><file /></phpunit>');
 
         $contextNode = $dom->getElementsByTagNameNS(
             'https://schema.phpunit.de/coverage/1.0',
-            'file'
+            'file',
         )->item(0);
 
         parent::__construct($contextNode);
@@ -43,8 +43,8 @@ final class Report extends File
         $node = $this->contextNode()->appendChild(
             $this->dom()->createElementNS(
                 'https://schema.phpunit.de/coverage/1.0',
-                'function'
-            )
+                'function',
+            ),
         );
 
         return new Method($node, $name);
@@ -64,15 +64,15 @@ final class Report extends File
     {
         $source = $this->contextNode()->getElementsByTagNameNS(
             'https://schema.phpunit.de/coverage/1.0',
-            'source'
+            'source',
         )->item(0);
 
         if (!$source) {
             $source = $this->contextNode()->appendChild(
                 $this->dom()->createElementNS(
                     'https://schema.phpunit.de/coverage/1.0',
-                    'source'
-                )
+                    'source',
+                ),
             );
         }
 
@@ -90,8 +90,8 @@ final class Report extends File
         $node = $this->contextNode()->appendChild(
             $this->dom()->createElementNS(
                 'https://schema.phpunit.de/coverage/1.0',
-                $tagName
-            )
+                $tagName,
+            ),
         );
 
         return new Unit($node, $name);

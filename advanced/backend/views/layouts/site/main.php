@@ -1,9 +1,7 @@
 <?php
-use backend\assets\AppAsset;
-use yii\helpers\Html;
-
 use common\widgets\Alert;
 use rmrevin\yii\fontawesome\FA;
+use yii\helpers\Html;
 /* @var $this \yii\web\View */
 /* @var $content string */
 
@@ -14,9 +12,9 @@ $this->registerMetaTag(['name' => 'description', 'content' => '最棒的混合�
 $this->registerMetaTag(['name' => 'author', 'content' => Yii::$app->params['information']['company']]);
 
 ?>
-<?php $this->beginPage() ?>
+<?php $this->beginPage()?>
 <!DOCTYPE html>
-<html lang="<?= Yii::$app->language ?>">
+<html lang="<?=Yii::$app->language?>">
 <head>
     <script>
         var _hmt = _hmt || [];
@@ -35,12 +33,12 @@ $this->registerMetaTag(['name' => 'author', 'content' => Yii::$app->params['info
             'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
         })(window,document,'script','dataLayer','GTM-P3D4HX8');</script>
     <!-- End Google Tag Manager -->
-    <meta charset="<?= Yii::$app->charset ?>"/>
+    <meta charset="<?=Yii::$app->charset?>"/>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <?= Html::csrfMetaTags() ?>
-	<title><?= Yii::$app->params['information']['aka']."-".Yii::$app->params['information']['title']?></title>
-      
-    <?php $this->head() ?>
+    <?=Html::csrfMetaTags()?>
+	<title><?=Yii::$app->params['information']['aka'] . "-" . Yii::$app->params['information']['title']?></title>
+
+    <?php $this->head()?>
 </head>
 <body class="login-page">
 <!-- Google Tag Manager (noscript) -->
@@ -48,65 +46,47 @@ $this->registerMetaTag(['name' => 'author', 'content' => Yii::$app->params['info
                   height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
 
-<?php $this->beginBody() ?>
+<?php $this->beginBody()?>
 <div class="login-box">
     <div class="login-logo">
         <a href="#"><b>
 	<?php
-	echo $this->blocks['content-header'];
-	?>
+echo $this->blocks['content-header'];
+?>
 		</b></a>
     </div>
     <!-- /.login-logo -->
     <div class="login-box-body">
         <div class="login-box-msg"><?=Yii::$app->params['information']['sub-title']?></div>
-		<div class="login-box-msg"><?= Alert::widget() ?></div>	<?php
-	echo $this->blocks['content-main'];
-	?>
+		<div class="login-box-msg"><?=Alert::widget()?></div>	<?php
+echo $this->blocks['content-main'];
+?>
 	</div>
 	<?php
-	if(isset($this->blocks['content-footer'])){
-	?>
-	
+if (isset($this->blocks['content-footer'])) {
+    ?>
+
 		<br/>
-		
+
 		 	<div class="login-box-body">
-			<?=$this->blocks['content-footer'] ?>
-			
+			<?=$this->blocks['content-footer']?>
+
 			</div>
-	
+
 	<?php
-	}
-	?>
+}
+?>
 	<br/>
-	 
+
 
 <?php
 
-if(!Yii::$app->params['information']['local']){
+if (!Yii::$app->params['information']['local']) {
 
-?>
+    ?>
 	<div class="login-box-body">
-		<div class="site-index">
-			<?php
-				echo Html::a(FA::icon('flag').' 当前进行工作', ['#collapseThree'], ['data-toggle' => 'collapse','data-parent' => '#accordion'] );
-			?>
-		</div>
 
-		<div id="collapseThree" class="panel-collapse collapse">
-			<div class="panel-body">	
-			<blockquote class="trello-board-compact">
-				<a href="https://trello.com/b/oxFuPkQy/">Trello Board</a>
-			</blockquote>
-			<script src="https://p.trellocdn.com/embed.min.js"></script>
-			</div>
-		</div>
-		<hr>
-		<div class="site-index">
-			<?php
-			echo Html::a(FA::icon('money').' 平台商业计划书', ['/files/BP@MrPP.pdf'], ['target' => '_blank'] );
-			?>
-		</div>
+
 	</div>
 <br/>
 
@@ -115,30 +95,30 @@ if(!Yii::$app->params['information']['local']){
 
 <div class="site-index">
 	<?php
-		echo Html::a(FA::icon('home').' '.Yii::$app->params['information']['company'], Yii::$app->params['information']['company-url'], ['target' => '_blank'] );
-		?>
+echo Html::a(FA::icon('home') . ' ' . Yii::$app->params['information']['company'], Yii::$app->params['information']['company-url'], ['target' => '_blank']);
+    ?>
 	</div>
 	<div class="site-index">
 		<?php
-        if(!Yii::$app->params['information']['local']){
-            echo Html::a(FA::icon('book').' 沪ICP备15039333号', 'https://beian.miit.gov.cn/', ['target' => '_blank'] );
-        }
-		?>
+if (!Yii::$app->params['information']['local']) {
+        echo Html::a(FA::icon('book') . ' 沪ICP备15039333号', 'https://beian.miit.gov.cn/', ['target' => '_blank']);
+    }
+    ?>
 	</div>
 <?php
 }
 ?>
-	
+
  </div>
 
 
 
 
 
-<?= $content ?>
+<?=$content?>
 
-	
-<?php $this->endBody() ?>
+
+<?php $this->endBody()?>
 </body>
 </html>
-<?php $this->endPage() ?>
+<?php $this->endPage()?>

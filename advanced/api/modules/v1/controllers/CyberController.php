@@ -2,18 +2,18 @@
 namespace api\modules\v1\controllers;
 
 use mdm\admin\components\AccessControl;
-use sizeg\jwt\JwtHttpBearerAuth;
+use bizley\jwt\JwtHttpBearerAuth;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
 
 class CyberController extends ActiveController
 {
-
+    
     public $modelClass = 'api\modules\v1\models\Cyber';
     public function behaviors()
     {
         $behaviors = parent::behaviors();
-
+        
         // add CORS filter
         $behaviors['corsFilter'] = [
             'class' => \yii\filters\Cors::class,
@@ -31,7 +31,7 @@ class CyberController extends ActiveController
                 ],
             ],
         ];
-
+        
         // unset($behaviors['authenticator']);
         $behaviors['authenticator'] = [
             'class' => CompositeAuth::class,
@@ -40,12 +40,12 @@ class CyberController extends ActiveController
             ],
             'except' => ['options'],
         ];
-
+        
         $behaviors['access'] = [
             'class' => AccessControl::class,
         ];
-
+        
         return $behaviors;
     }
-
+    
 }

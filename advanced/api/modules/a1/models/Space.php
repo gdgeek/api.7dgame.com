@@ -8,28 +8,30 @@ use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
 use yii\db\Expression;
 
+use api\modules\v1\components\Validator\JsonValidator;
 /**
- * This is the model class for table "space".
- *
- * @property int $id
- * @property int $author_id
- * @property int $sample_id
- * @property int $mesh_id
- * @property int $dat_id
- * @property string $created_at
- * @property int|null $image_id
- * @property string|null $info
- * @property string|null $name
- *
- * @property User $author
- * @property File $dat
- * @property File $image
- * @property File $mesh
- * @property File $sample
- */
+* This is the model class for table "space".
+*
+* @property int $id
+* @property int $author_id
+* @property int $sample_id
+* @property int $mesh_id
+* @property int $dat_id
+* @property string $created_at
+* @property int|null $image_id
+* @property string|null $info
+* @property string|null $name
+*
+* @property User $author
+* @property File $dat
+* @property File $image
+* @property File $mesh
+* @property File $sample
+*/
 class Space extends \yii\db\ActiveRecord
-{
 
+{
+    
     public function behaviors()
     {
         return [
@@ -37,7 +39,7 @@ class Space extends \yii\db\ActiveRecord
                 'class' => TimestampBehavior::class,
                 'attributes' => [
                     \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => ['created_at'],
-
+                    
                 ],
                 'value' => new Expression('NOW()'),
             ],
@@ -48,25 +50,25 @@ class Space extends \yii\db\ActiveRecord
             ],
         ];
     }
-
+    
     /**
-     * {@inheritdoc}
-     */
+    * {@inheritdoc}
+    */
     public static function tableName()
     {
         return 'space';
     }
-
+    
     /**
-     * {@inheritdoc}
-     */
+    * {@inheritdoc}
+    */
     public function rules()
     {
         return [
             [['title', 'sample_id', 'mesh_id', 'dat_id'], 'required'],
             [['author_id', 'sample_id', 'mesh_id', 'dat_id', 'image_id'], 'integer'],
             [['created_at'], 'safe'],
-            [['info'], 'string'],
+            [['info'], JsonValidator::class],
             [['title', 'name'], 'string', 'max' => 255],
             [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['author_id' => 'id']],
             [['dat_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['dat_id' => 'id']],
@@ -75,7 +77,7 @@ class Space extends \yii\db\ActiveRecord
             [['sample_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['sample_id' => 'id']],
         ];
     }
-
+    
     public function afterDelete()
     {
         parent::afterDelete();
@@ -96,10 +98,10 @@ class Space extends \yii\db\ActiveRecord
             $image->delete();
         }
     }
-
+    
     /**
-     * {@inheritdoc}
-     */
+    * {@inheritdoc}
+    */
     public function attributeLabels()
     {
         return [
@@ -115,21 +117,21 @@ class Space extends \yii\db\ActiveRecord
             'name' => 'Name',
         ];
     }
-
+    
     /**
-     * Gets query for [[Author]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
+    * Gets query for [[Author]].
+    *
+    * @return \yii\db\ActiveQuery
+    */
     public function getAuthor()
     {
         return $this->hasOne(User::className(), ['id' => 'author_id']);
     }
-
+    
     public function fields()
     {
         $fields = parent::fields();
-
+        
         unset($fields['id']);
         unset($fields['author_id']);
         unset($fields['sample_id']);
@@ -141,56 +143,56 @@ class Space extends \yii\db\ActiveRecord
         unset($fields['title']);
         $fields['image'] = function () {return $this->image;};
         $fields['mesh'] = function () {return $this->mesh;};
-        $fields['sample'] = function () {return $this->sample;};
+        //$fields['sample'] = function () {return $this->sample;};
         $fields['dat'] = function () {return $this->dat;};
         return $fields;
         // return ['name' => $this->name, 'image' => $this->image, 'mesh' => $this->mesh, 'sample' => $this->sample, 'dat' => $this->dat];
     }
-
+    
     /**
-     * Gets query for [[Dat]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
+    * Gets query for [[Dat]].
+    *
+    * @return \yii\db\ActiveQuery
+    */
     public function getDat()
     {
         return $this->hasOne(File::className(), ['id' => 'dat_id']);
     }
-
+    
     /**
-     * Gets query for [[Image]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
+    * Gets query for [[Image]].
+    *
+    * @return \yii\db\ActiveQuery
+    */
     public function getImage()
     {
         return $this->hasOne(File::className(), ['id' => 'image_id']);
     }
-
+    
     /**
-     * Gets query for [[Mesh]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
+    * Gets query for [[Mesh]].
+    *
+    * @return \yii\db\ActiveQuery
+    */
     public function getMesh()
     {
         return $this->hasOne(File::className(), ['id' => 'mesh_id']);
     }
-
+    
     /**
-     * Gets query for [[Sample]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
+    * Gets query for [[Sample]].
+    *
+    * @return \yii\db\ActiveQuery
+    */
     public function getSample()
     {
         return $this->hasOne(File::className(), ['id' => 'sample_id']);
     }
-
+    
     /**
-     * {@inheritdoc}
-     * @return SpaceQuery the active query used by this AR class.
-     */
+    * {@inheritdoc}
+    * @return SpaceQuery the active query used by this AR class.
+    */
     public static function find()
     {
         return new SpaceQuery(get_called_class());

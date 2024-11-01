@@ -444,16 +444,22 @@ $Aᵢⱼ = $A[2][2];
 // Row operations
 [$mᵢ, $mⱼ, $k] = [1, 2, 5];
 $R = $A->rowInterchange($mᵢ, $mⱼ);
-$R = $A->rowMultiply($mᵢ, $k);     // Multiply row mᵢ by k
-$R = $A->rowAdd($mᵢ, $mⱼ, $k);     // Add k * row mᵢ to row mⱼ
-$R = $A->rowExclude($mᵢ);          // Exclude row $mᵢ
+$R = $A->rowExclude($mᵢ);             // Exclude row $mᵢ
+$R = $A->rowMultiply($mᵢ, $k);        // Multiply row mᵢ by k
+$R = $A->rowDivide($mᵢ, $k);          // Divide row mᵢ by k
+$R = $A->rowAdd($mᵢ, $mⱼ, $k);        // Add k * row mᵢ to row mⱼ
+$R = $A->rowAddScalar($mᵢ, $k);       // Add k to each item of row mᵢ
+$R = $A->rowAddVector($mᵢ, $V);       // Add Vector V to row mᵢ
+$R = $A->rowSubtract($mᵢ, $mⱼ, $k);   // Subtract k * row mᵢ from row mⱼ
+$R = $A->rowSubtractScalar($mᵢ, $k);  // Subtract k from each item of row mᵢ
 
 // Column operations
 [$nᵢ, $nⱼ, $k] = [1, 2, 5];
 $R = $A->columnInterchange($nᵢ, $nⱼ);
+$R = $A->columnExclude($nᵢ);          // Exclude column $nᵢ
 $R = $A->columnMultiply($nᵢ, $k);     // Multiply column nᵢ by k
 $R = $A->columnAdd($nᵢ, $nⱼ, $k);     // Add k * column nᵢ to column nⱼ
-$R = $A->columnExclude($nᵢ);          // Exclude column $nᵢ
+$R = $A->columnAddVector($nᵢ, $V);    // Add Vector V to column nᵢ
 
 // Matrix augmentations - return a new Matrix
 $⟮A∣B⟯ = $A->augment($B);        // Augment on the right - standard augmentation
@@ -859,7 +865,8 @@ use MathPHP\NumberTheory\Integer;
 
 $n = 225;
 
-// Prime factorization
+// Prime numbers
+$bool    = Integer::isPrime($n);
 $factors = Integer::primeFactorization($n);
 
 // Divisor function
@@ -971,7 +978,7 @@ $f’⟮x⟯ = function ($x) {
 };
 [$start, $end, $n] = [0, 3, 4];
 
-$p = Interpolation\ClampedCubicSpline::interpolate($points);                // input as a set of points
+$p = Interpolation\ClampedCubicSpline::interpolate($points);                       // input as a set of points
 $p = Interpolation\ClampedCubicSpline::interpolate($f⟮x⟯, $f’⟮x⟯, $start, $end, $n); // input as a callback function
 
 $p(0); // 1
@@ -1773,7 +1780,7 @@ $hexagons = Advanced::hexagonalNumber($n);
 // [1, 6, 15, 28, 45, 66] - Indexed from 1
 
 // Heptagonal numbers (figurate number)
-$hexagons = Advanced::heptagonalNumber($n);
+$heptagons = Advanced::heptagonalNumber($n);
 // [1, 4, 7, 13, 18, 27] - Indexed from 1
 
 // Look-and-say sequence (describe the previous term!)
@@ -2260,6 +2267,7 @@ $d⟮X、Y⟯    = Distance::canberra($X, Y);
 brayCurtis = Distance::brayCurtis($X, $Y);
 $cosine    = Distance::cosine($X, $Y);
 $cos⟮α⟯     = Distance::cosineSimilarity($X, $Y);
+$D⟮X、Y⟯    = Distance::chebyshev($X, $Y);
 
 // Mahalanobis distance
 $x    = new Matrix([[6], [5]]);

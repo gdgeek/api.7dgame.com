@@ -21,6 +21,7 @@ use function is_object;
 use function is_scalar;
 use function is_string;
 use function sprintf;
+use PHPUnit\Framework\UnknownTypeException;
 
 /**
  * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
@@ -116,23 +117,20 @@ final class IsType extends Constraint
     ];
 
     /**
-     * @var string
+     * @var 'array'|'bool'|'boolean'|'callable'|'double'|'float'|'int'|'integer'|'iterable'|'null'|'numeric'|'object'|'real'|'resource (closed)'|'resource'|'scalar'|'string'
      */
-    private $type;
+    private readonly string $type;
 
     /**
-     * @throws \PHPUnit\Framework\Exception
+     * @param 'array'|'bool'|'boolean'|'callable'|'double'|'float'|'int'|'integer'|'iterable'|'null'|'numeric'|'object'|'real'|'resource (closed)'|'resource'|'scalar'|'string' $type
+     *
+     * @throws UnknownTypeException
      */
     public function __construct(string $type)
     {
+        /** @phpstan-ignore isset.offset */
         if (!isset(self::KNOWN_TYPES[$type])) {
-            throw new \PHPUnit\Framework\Exception(
-                sprintf(
-                    'Type specified for PHPUnit\Framework\Constraint\IsType <%s> ' .
-                    'is not a valid type.',
-                    $type
-                )
-            );
+            throw new UnknownTypeException($type);
         }
 
         $this->type = $type;
@@ -144,18 +142,16 @@ final class IsType extends Constraint
     public function toString(): string
     {
         return sprintf(
-            'is of type "%s"',
-            $this->type
+            'is of type %s',
+            $this->type,
         );
     }
 
     /**
      * Evaluates the constraint for parameter $other. Returns true if the
      * constraint is met, false otherwise.
-     *
-     * @param mixed $other value or object to evaluate
      */
-    protected function matches($other): bool
+    protected function matches(mixed $other): bool
     {
         switch ($this->type) {
             case 'numeric':

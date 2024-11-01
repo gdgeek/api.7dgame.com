@@ -184,7 +184,7 @@ class ApplicationTest extends AbstractTestCase
         $this->assertInstanceOf('\Psr\Http\Message\ResponseInterface', $response);
         $this->assertEquals(200, $response->getStatusCode());
         $body = $response->getBody()->getContents();
-        $testbody = '{"test":{"name":"test","value":"test","domain":"","expire":null,"path":"/","secure":false,"httpOnly":true,"sameSite":null}}';
+        $testbody = '{"test":{"name":"test","value":"test","domain":"","expire":null,"path":"/","secure":false,"httpOnly":true,"sameSite":"Lax"}}';
         $this->assertEquals($testbody, $body);
     }
 
@@ -246,5 +246,22 @@ class ApplicationTest extends AbstractTestCase
         $response = $this->app->handle($request);
         $this->assertInstanceOf('\Psr\Http\Message\ResponseInterface', $response);
         $this->assertEquals(500, $response->getStatusCode());
+    }
+
+    public function testQueryParametersAlignWithYiiWebRequestInstance()
+    {
+        $request = ServerRequestFactory::fromGlobals([
+            'REQUEST_URI' => 'site/query/foo?q=1',
+            'REQUEST_METHOD' => 'GET'
+        ], [
+            'q' => 1
+        ]);
+
+        $response = $this->app->handle($request);
+        $this->assertInstanceOf('\Psr\Http\Message\ResponseInterface', $response);
+        $this->assertEquals(200, $response->getStatusCode());
+
+        $body = $response->getBody()->getContents();
+        $this->assertEquals('{"test":"foo","q":1,"queryParams":{"test":"foo","q":1}}', $body);
     }
 }

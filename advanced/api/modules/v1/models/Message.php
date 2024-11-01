@@ -9,6 +9,8 @@ use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
 use yii\db\Expression;
 
+use api\modules\v1\components\Validator\JsonValidator;
+
 /**
  * This is the model class for table "message".
  *
@@ -65,7 +67,9 @@ class Message extends \yii\db\ActiveRecord
         return [
 
             [['title', 'body'], 'required'],
-            [['body', 'info'], 'string'],
+
+            [['info'], JsonValidator::class],
+            [['body'], 'string'],
             [['author_id', 'updater_id'], 'integer'],
             [['created_at', 'updated_at'], 'safe'],
             [['title'], 'string', 'max' => 255],
@@ -90,7 +94,25 @@ class Message extends \yii\db\ActiveRecord
             'info' => 'Info',
         ];
     }
+    public function fields()
+    {
+        return [
+            'id',
+            'title',
+            'body',
+            'created_at',
+            'updated_at',
+            'author_id',
+            'updater_id',
+            'info' => function ($model) {
+                if (!is_string($model->info)&& !is_null($model->info)) {
+                    return json_encode($model->info);
+                }
 
+                return $model->info;
+            },
+        ];
+    }
     /**
      * Gets query for [[Author]].
      *

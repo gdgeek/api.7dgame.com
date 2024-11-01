@@ -47,6 +47,7 @@ use Yii;
  * @property Wx[] $wxes
  */
 class Person extends \yii\db\ActiveRecord
+
 {
     /**
      * {@inheritdoc}

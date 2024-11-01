@@ -1,7 +1,6 @@
 <?php
 namespace api\modules\v1\controllers;
 
-use api\modules\v1\models\Local;
 use api\modules\v1\models\LocalSignupForm;
 use mdm\admin\models\Assignment;
 use Yii;
@@ -33,46 +32,34 @@ class LocalController extends ActiveController
                 ],
             ],
         ];
-        $behaviors['authenticator'] = [
-            'class' => CompositeAuth::class,
-            'authMethods' => [
-                JwtHttpBearerAuth::class,
-            ],
-            'except' => ['options'],
-        ];
-        $behaviors['access'] = [
-            'class' => AccessControl::class,
-        ];
         return $behaviors;
     }
-
+    private function getAdminCount()
+    {
+        $admin = \common\models\AuthAssignment::findAll(['item_name' => 'admin']);
+        return count($admin);
+    }
     public function actionReady()
     {
-        $local = Local::find()->where(['key' => 'admin'])->one();
-        return ['result' => ($local != null)];
+
+        return [
+            'result' => $this->getAdminCount() >= 1,
+            'code' => 20000,
+        ];
+
     }
-    public function actionSignup()
+    public function actionInit()
     {
-        $local = Local::find()->where(['key' => 'admin'])->one();
-        if ($local == null) {
-
+        $ready = $this->getAdminCount() >= 1;
+        if (!$ready) {
             $model = new LocalSignupForm();
-
-            $model->clearAll();
             $post = Yii::$app->request->post();
             if ($model->load($post, '') && $model->validate()) {
                 $model->signup();
-
                 $user = $model->getUser();
                 $assignment = new Assignment($user->id);
-                $assignment->assign(['root', 'user']);
-
+                $assignment->assign(['admin', 'user']);
                 $access_token = $user->generateAccessToken();
-                $local = new Local();
-                $local->key = 'admin';
-                $local->value = json_encode(['username' => $user->username]);
-                $local->save();
-//更新 local
                 return [
                     'access_token' => $access_token,
                     'code' => 20000,
@@ -85,12 +72,49 @@ class LocalController extends ActiveController
                     throw new Exception(json_encode($model->errors), 400);
                 }
             }
+
+        } else {
+            throw new Exception("重复初始化", 400);
         }
-        throw new Exception("无法设置", 400);
-        //检查是否有admin
-        //如果没有，创建root
-        //创建并设置admin数据
+
     }
+    /*
+    public function actionSignup()
+    {
+    // $local = Local::find()->where(['key' => 'admin'])->one();
+    // if ($local == null) {
+
+    $model = new LocalSignupForm();
+
+    //$model->clearAll();
+    $post = Yii::$app->request->post();
+    if ($model->load($post, '') && $model->validate()) {
+    $model->signup();
+
+    $user = $model->getUser();
+    $assignment = new Assignment($user->id);
+    $assignment->assign(['admin']);
+
+    $access_token = $user->generateAccessToken();
+
+    return [
+    'access_token' => $access_token,
+    'code' => 20000,
+    ];
+    } else {
+
+    if (count($model->errors) == 0) {
+    throw new Exception("缺少数据", 400);
+    } else {
+    throw new Exception(json_encode($model->errors), 400);
+    }
+    }
+    throw new Exception("无法设置", 400);
+    //检查是否有admin
+    //如果没有，创建root
+    //创建并设置admin数据
+    }
+     */
 
     public function actionParam()
     {

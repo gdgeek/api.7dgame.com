@@ -9,6 +9,10 @@
  */
 namespace SebastianBergmann\CodeUnit;
 
+use function count;
+use function file;
+use function file_exists;
+use function is_readable;
 use function range;
 use function sprintf;
 use ReflectionClass;
@@ -16,28 +20,27 @@ use ReflectionFunction;
 use ReflectionMethod;
 
 /**
- * @psalm-immutable
+ * @immutable
  */
-abstract class CodeUnit
+abstract readonly class CodeUnit
 {
     /**
-     * @var string
+     * @var non-empty-string
      */
-    private $name;
+    private string $name;
 
     /**
-     * @var string
+     * @var non-empty-string
      */
-    private $sourceFileName;
+    private string $sourceFileName;
 
     /**
-     * @var array
-     * @psalm-var list<int>
+     * @var list<int>
      */
-    private $sourceLines;
+    private array $sourceLines;
 
     /**
-     * @psalm-param class-string $className
+     * @param class-string $className
      *
      * @throws InvalidCodeUnitException
      * @throws ReflectionException
@@ -46,20 +49,23 @@ abstract class CodeUnit
     {
         self::ensureUserDefinedClass($className);
 
-        $reflector = self::reflectorForClass($className);
+        $reflector = new ReflectionClass($className);
 
         return new ClassUnit(
             $className,
+            // @phpstan-ignore argument.type
             $reflector->getFileName(),
             range(
+                // @phpstan-ignore argument.type
                 $reflector->getStartLine(),
-                $reflector->getEndLine()
-            )
+                // @phpstan-ignore argument.type
+                $reflector->getEndLine(),
+            ),
         );
     }
 
     /**
-     * @psalm-param class-string $className
+     * @param class-string $className
      *
      * @throws InvalidCodeUnitException
      * @throws ReflectionException
@@ -72,16 +78,39 @@ abstract class CodeUnit
 
         return new ClassMethodUnit(
             $className . '::' . $methodName,
+            // @phpstan-ignore argument.type
             $reflector->getFileName(),
             range(
+                // @phpstan-ignore argument.type
                 $reflector->getStartLine(),
-                $reflector->getEndLine()
-            )
+                // @phpstan-ignore argument.type
+                $reflector->getEndLine(),
+            ),
         );
     }
 
     /**
-     * @psalm-param class-string $interfaceName
+     * @param non-empty-string $path
+     *
+     * @throws InvalidCodeUnitException
+     */
+    public static function forFileWithAbsolutePath(string $path): FileUnit
+    {
+        self::ensureFileExistsAndIsReadable($path);
+
+        return new FileUnit(
+            $path,
+            $path,
+            range(
+                1,
+                // @phpstan-ignore argument.type
+                count(file($path)),
+            ),
+        );
+    }
+
+    /**
+     * @param class-string $interfaceName
      *
      * @throws InvalidCodeUnitException
      * @throws ReflectionException
@@ -90,20 +119,23 @@ abstract class CodeUnit
     {
         self::ensureUserDefinedInterface($interfaceName);
 
-        $reflector = self::reflectorForClass($interfaceName);
+        $reflector = new ReflectionClass($interfaceName);
 
         return new InterfaceUnit(
             $interfaceName,
+            // @phpstan-ignore argument.type
             $reflector->getFileName(),
             range(
+                // @phpstan-ignore argument.type
                 $reflector->getStartLine(),
-                $reflector->getEndLine()
-            )
+                // @phpstan-ignore argument.type
+                $reflector->getEndLine(),
+            ),
         );
     }
 
     /**
-     * @psalm-param class-string $interfaceName
+     * @param class-string $interfaceName
      *
      * @throws InvalidCodeUnitException
      * @throws ReflectionException
@@ -116,16 +148,19 @@ abstract class CodeUnit
 
         return new InterfaceMethodUnit(
             $interfaceName . '::' . $methodName,
+            // @phpstan-ignore argument.type
             $reflector->getFileName(),
             range(
+                // @phpstan-ignore argument.type
                 $reflector->getStartLine(),
-                $reflector->getEndLine()
-            )
+                // @phpstan-ignore argument.type
+                $reflector->getEndLine(),
+            ),
         );
     }
 
     /**
-     * @psalm-param class-string $traitName
+     * @param class-string $traitName
      *
      * @throws InvalidCodeUnitException
      * @throws ReflectionException
@@ -134,20 +169,23 @@ abstract class CodeUnit
     {
         self::ensureUserDefinedTrait($traitName);
 
-        $reflector = self::reflectorForClass($traitName);
+        $reflector = new ReflectionClass($traitName);
 
         return new TraitUnit(
             $traitName,
+            // @phpstan-ignore argument.type
             $reflector->getFileName(),
             range(
+                // @phpstan-ignore argument.type
                 $reflector->getStartLine(),
-                $reflector->getEndLine()
-            )
+                // @phpstan-ignore argument.type
+                $reflector->getEndLine(),
+            ),
         );
     }
 
     /**
-     * @psalm-param class-string $traitName
+     * @param class-string $traitName
      *
      * @throws InvalidCodeUnitException
      * @throws ReflectionException
@@ -160,16 +198,19 @@ abstract class CodeUnit
 
         return new TraitMethodUnit(
             $traitName . '::' . $methodName,
+            // @phpstan-ignore argument.type
             $reflector->getFileName(),
             range(
+                // @phpstan-ignore argument.type
                 $reflector->getStartLine(),
-                $reflector->getEndLine()
-            )
+                // @phpstan-ignore argument.type
+                $reflector->getEndLine(),
+            ),
         );
     }
 
     /**
-     * @psalm-param callable-string $functionName
+     * @param callable-string $functionName
      *
      * @throws InvalidCodeUnitException
      * @throws ReflectionException
@@ -182,23 +223,29 @@ abstract class CodeUnit
             throw new InvalidCodeUnitException(
                 sprintf(
                     '"%s" is not a user-defined function',
-                    $functionName
-                )
+                    $functionName,
+                ),
             );
         }
 
         return new FunctionUnit(
+            // @phpstan-ignore argument.type
             $functionName,
+            // @phpstan-ignore argument.type
             $reflector->getFileName(),
             range(
+                // @phpstan-ignore argument.type
                 $reflector->getStartLine(),
-                $reflector->getEndLine()
-            )
+                // @phpstan-ignore argument.type
+                $reflector->getEndLine(),
+            ),
         );
     }
 
     /**
-     * @psalm-param list<int> $sourceLines
+     * @param non-empty-string $name
+     * @param non-empty-string $sourceFileName
+     * @param list<int>        $sourceLines
      */
     private function __construct(string $name, string $sourceFileName, array $sourceLines)
     {
@@ -207,61 +254,113 @@ abstract class CodeUnit
         $this->sourceLines    = $sourceLines;
     }
 
+    /**
+     * @return non-empty-string
+     */
     public function name(): string
     {
         return $this->name;
     }
 
+    /**
+     * @return non-empty-string
+     */
     public function sourceFileName(): string
     {
         return $this->sourceFileName;
     }
 
     /**
-     * @psalm-return list<int>
+     * @return list<int>
      */
     public function sourceLines(): array
     {
         return $this->sourceLines;
     }
 
+    /**
+     * @phpstan-assert-if-true ClassUnit $this
+     */
     public function isClass(): bool
     {
         return false;
     }
 
+    /**
+     * @phpstan-assert-if-true ClassMethodUnit $this
+     */
     public function isClassMethod(): bool
     {
         return false;
     }
 
+    /**
+     * @phpstan-assert-if-true InterfaceUnit $this
+     */
     public function isInterface(): bool
     {
         return false;
     }
 
+    /**
+     * @phpstan-assert-if-true InterfaceMethodUnit $this
+     */
     public function isInterfaceMethod(): bool
     {
         return false;
     }
 
+    /**
+     * @phpstan-assert-if-true TraitUnit $this
+     */
     public function isTrait(): bool
     {
         return false;
     }
 
+    /**
+     * @phpstan-assert-if-true TraitMethodUnit $this
+     */
     public function isTraitMethod(): bool
     {
         return false;
     }
 
+    /**
+     * @phpstan-assert-if-true FunctionUnit $this
+     */
     public function isFunction(): bool
     {
         return false;
     }
 
     /**
-     * @psalm-param class-string $className
+     * @phpstan-assert-if-true FileUnit $this
+     */
+    public function isFile(): bool
+    {
+        return false;
+    }
+
+    /**
+     * @param non-empty-string $path
+     *
+     * @throws InvalidCodeUnitException
+     */
+    private static function ensureFileExistsAndIsReadable(string $path): void
+    {
+        if (!(file_exists($path) && is_readable($path))) {
+            throw new InvalidCodeUnitException(
+                sprintf(
+                    'File "%s" does not exist or is not readable',
+                    $path,
+                ),
+            );
+        }
+    }
+
+    /**
+     * @param class-string $className
      *
      * @throws InvalidCodeUnitException
      */
@@ -274,8 +373,8 @@ abstract class CodeUnit
                 throw new InvalidCodeUnitException(
                     sprintf(
                         '"%s" is an interface and not a class',
-                        $className
-                    )
+                        $className,
+                    ),
                 );
             }
 
@@ -283,8 +382,8 @@ abstract class CodeUnit
                 throw new InvalidCodeUnitException(
                     sprintf(
                         '"%s" is a trait and not a class',
-                        $className
-                    )
+                        $className,
+                    ),
                 );
             }
 
@@ -292,23 +391,23 @@ abstract class CodeUnit
                 throw new InvalidCodeUnitException(
                     sprintf(
                         '"%s" is not a user-defined class',
-                        $className
-                    )
+                        $className,
+                    ),
                 );
             }
             // @codeCoverageIgnoreStart
         } catch (\ReflectionException $e) {
             throw new ReflectionException(
                 $e->getMessage(),
-                (int) $e->getCode(),
-                $e
+                $e->getCode(),
+                $e,
             );
         }
         // @codeCoverageIgnoreEnd
     }
 
     /**
-     * @psalm-param class-string $interfaceName
+     * @param class-string $interfaceName
      *
      * @throws InvalidCodeUnitException
      */
@@ -321,8 +420,8 @@ abstract class CodeUnit
                 throw new InvalidCodeUnitException(
                     sprintf(
                         '"%s" is not an interface',
-                        $interfaceName
-                    )
+                        $interfaceName,
+                    ),
                 );
             }
 
@@ -330,23 +429,23 @@ abstract class CodeUnit
                 throw new InvalidCodeUnitException(
                     sprintf(
                         '"%s" is not a user-defined interface',
-                        $interfaceName
-                    )
+                        $interfaceName,
+                    ),
                 );
             }
             // @codeCoverageIgnoreStart
         } catch (\ReflectionException $e) {
             throw new ReflectionException(
                 $e->getMessage(),
-                (int) $e->getCode(),
-                $e
+                $e->getCode(),
+                $e,
             );
         }
         // @codeCoverageIgnoreEnd
     }
 
     /**
-     * @psalm-param class-string $traitName
+     * @param class-string $traitName
      *
      * @throws InvalidCodeUnitException
      */
@@ -359,8 +458,8 @@ abstract class CodeUnit
                 throw new InvalidCodeUnitException(
                     sprintf(
                         '"%s" is not a trait',
-                        $traitName
-                    )
+                        $traitName,
+                    ),
                 );
             }
 
@@ -369,42 +468,22 @@ abstract class CodeUnit
                 throw new InvalidCodeUnitException(
                     sprintf(
                         '"%s" is not a user-defined trait',
-                        $traitName
-                    )
+                        $traitName,
+                    ),
                 );
             }
         } catch (\ReflectionException $e) {
             throw new ReflectionException(
                 $e->getMessage(),
-                (int) $e->getCode(),
-                $e
+                $e->getCode(),
+                $e,
             );
         }
         // @codeCoverageIgnoreEnd
     }
 
     /**
-     * @psalm-param class-string $className
-     *
-     * @throws ReflectionException
-     */
-    private static function reflectorForClass(string $className): ReflectionClass
-    {
-        try {
-            return new ReflectionClass($className);
-            // @codeCoverageIgnoreStart
-        } catch (\ReflectionException $e) {
-            throw new ReflectionException(
-                $e->getMessage(),
-                (int) $e->getCode(),
-                $e
-            );
-        }
-        // @codeCoverageIgnoreEnd
-    }
-
-    /**
-     * @psalm-param class-string $className
+     * @param class-string $className
      *
      * @throws ReflectionException
      */
@@ -416,15 +495,15 @@ abstract class CodeUnit
         } catch (\ReflectionException $e) {
             throw new ReflectionException(
                 $e->getMessage(),
-                (int) $e->getCode(),
-                $e
+                $e->getCode(),
+                $e,
             );
         }
         // @codeCoverageIgnoreEnd
     }
 
     /**
-     * @psalm-param callable-string $functionName
+     * @param callable-string $functionName
      *
      * @throws ReflectionException
      */
@@ -436,8 +515,8 @@ abstract class CodeUnit
         } catch (\ReflectionException $e) {
             throw new ReflectionException(
                 $e->getMessage(),
-                (int) $e->getCode(),
-                $e
+                $e->getCode(),
+                $e,
             );
         }
         // @codeCoverageIgnoreEnd

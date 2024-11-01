@@ -2,20 +2,22 @@
 namespace api\modules\v1\controllers;
 
 use api\modules\v1\models\MetaSearch;
+use api\modules\v1\models\data\MetaCodeTool;
 use mdm\admin\components\AccessControl;
-use sizeg\jwt\JwtHttpBearerAuth;
+use bizley\jwt\JwtHttpBearerAuth;
 use Yii;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
+use yii\web\BadRequestHttpException;
 
 class MetaController extends ActiveController
 {
-
+    
     public $modelClass = 'api\modules\v1\models\Meta';
     public function behaviors()
     {
         $behaviors = parent::behaviors();
-
+        
         // add CORS filter
         $behaviors['corsFilter'] = [
             'class' => \yii\filters\Cors::class,
@@ -33,7 +35,7 @@ class MetaController extends ActiveController
                 ],
             ],
         ];
-
+        
         // unset($behaviors['authenticator']);
         $behaviors['authenticator'] = [
             'class' => CompositeAuth::class,
@@ -42,30 +44,84 @@ class MetaController extends ActiveController
             ],
             'except' => ['options'],
         ];
-
+        
         $behaviors['access'] = [
             'class' => AccessControl::class,
         ];
-
+        
         return $behaviors;
     }
-
+    
     public function actions()
     {
         $actions = parent::actions();
         unset($actions['index']);
+        unset($actions['create']);
+        unset($actions['update']);
+        unset($actions['delete']);
+        unset($actions['view']);
         return $actions;
     }
-
-    public function actionIndex()
+    public function actionView($id)
     {
-
         $searchModel = new MetaSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-
-        $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id]);
-
+        $dataProvider->query->andWhere(['id' => $id, 'prefab' => 0]);
+        return $dataProvider->query->one();
+    }
+    public function actionDelete($id)
+    {
+        $model = \api\modules\v1\models\Meta::findOne($id);
+        if ($model->prefab == 1) {
+            throw new \yii\web\ForbiddenHttpException('You can not delete this item');
+        }
+        $model->delete();
+        return $model;
+    }
+    public function actionUpdate($id)
+    {
+        $model = \api\modules\v1\models\Meta::findOne($id);
+        $model->load(Yii::$app->getRequest()->getBodyParams(), '');
+        $model->prefab = 0;
+        if ($model->save()) {
+            return $model;
+        } else {
+            return $model->errors;
+        }
+    }
+    public function actionCreate()
+    {
+        $model = new \api\modules\v1\models\Meta();
+        $model->load(Yii::$app->getRequest()->getBodyParams(), '');
+        $model->prefab = 0;
+        if ($model->save()) {
+            return $model;
+        } else {
+            return $model->errors;
+        }
+    }
+    public function actionIndex()
+    {
+        $searchModel = new MetaSearch();
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+        $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id, 'prefab' => 0]);
         return $dataProvider;
     }
-
+    public function actionUpdateCode($id){
+        
+        
+        $post = Yii::$app->request->post();
+        $model = new MetaCodeTool($id);
+        $post = Yii::$app->request->post();
+        
+        
+        $model->load($post, '');
+        if ($model->validate()) {
+            $model->save();
+        }else{
+            throw new Exception(json_encode($model->errors), 400);
+        }
+        return $model;
+    }
+    
 }

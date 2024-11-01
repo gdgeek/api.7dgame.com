@@ -5,6 +5,8 @@ namespace api\modules\v1\components;
 use api\modules\v1\models\Meta;
 use Yii;
 use yii\rbac\Rule;
+use yii\web\BadRequestHttpException;
+
 
 class MetaRule extends Rule
 {
@@ -15,18 +17,16 @@ class MetaRule extends Rule
         if (!$id) {
             return false;
         }
-
         $meta = Meta::findOne($id);
+        
         if (!$meta) {
             return false;
         }
-
+        
         $userid = Yii::$app->user->identity->id;
-
-        if ($userid == $meta->author_id || $meta->share) {
-            return true;
-        }
-        return false;
-
+        // throw new BadRequestHttpException($meta->editable());
+        
+        return $meta->editable();
+        
     }
 }

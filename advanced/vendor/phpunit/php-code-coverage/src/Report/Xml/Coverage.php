@@ -18,26 +18,15 @@ use XMLWriter;
  */
 final class Coverage
 {
-    /**
-     * @var XMLWriter
-     */
-    private $writer;
-
-    /**
-     * @var DOMElement
-     */
-    private $contextNode;
-
-    /**
-     * @var bool
-     */
-    private $finalized = false;
+    private readonly XMLWriter $writer;
+    private readonly DOMElement $contextNode;
+    private bool $finalized = false;
 
     public function __construct(DOMElement $context, string $line)
     {
         $this->contextNode = $context;
 
-        $this->writer = new XMLWriter();
+        $this->writer = new XMLWriter;
         $this->writer->openMemory();
         $this->writer->startElementNS(null, $context->nodeName, 'https://schema.phpunit.de/coverage/1.0');
         $this->writer->writeAttribute('nr', $line);
@@ -66,7 +55,7 @@ final class Coverage
 
         $this->contextNode->parentNode->replaceChild(
             $fragment,
-            $this->contextNode
+            $this->contextNode,
         );
 
         $this->finalized = true;

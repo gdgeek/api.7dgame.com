@@ -2,6 +2,7 @@
 
 namespace api\modules\v1\models;
 
+use api\modules\v1\components\Validator\JsonValidator;
 use Yii;
 
 /**
@@ -23,14 +24,27 @@ class Tags extends \yii\db\ActiveRecord
     {
         return 'tags';
     }
-
+    public function fields()
+    {
+        return [
+            'id',
+            'name',
+            'info' => function ($model) {
+                if(!is_string($model->info) && !is_null($model->info)){
+                    return json_encode($model->info);
+                }
+                return $model->info;
+            },
+            'managed',
+        ];
+    }
     /**
      * {@inheritdoc}
      */
     public function rules()
     {
         return [
-            [['info'], 'string'],
+            [['info'], JsonValidator::class],
             [['managed'], 'integer'],
             [['name'], 'string', 'max' => 255],
         ];

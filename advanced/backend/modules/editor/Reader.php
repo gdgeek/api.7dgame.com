@@ -33,7 +33,7 @@ class Toolbar
 {
     public function setup($node, $inputs, $reader, $map)
     {
-        $this->destory = $node->data->destory;
+        $this->destroy = $node->data->destroy;
         $this->enabled = $node->data->enabled;
     }
 }
@@ -137,7 +137,7 @@ class Polygen
 
         $file = new \stdClass();
         $file->name = '/uploads/' . $polygen->file_name . '.' . $polygen->type . ($compress ? '.gz' : '');
-        $file->url = Url:: home(true);
+        $file->url = Url::home(true);
         $file->cache = true;
         $file->md5 = $polygen->md5;
         $file->compress = $compress;
@@ -199,13 +199,13 @@ class Sample
  * reader module definition class
  */
 class Reader extends \yii\base\Module
+
 {
 
     /**
      * {@inheritdoc}
      */
     public $controllerNamespace = 'backend\modules\editor\controllers';
-
 
     /**
      * {@inheritdoc}

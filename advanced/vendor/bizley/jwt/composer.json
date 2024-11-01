@@ -1,0 +1,54 @@
+{
+  "name": "bizley/jwt",
+  "description": "JWT integration for Yii 2",
+  "type": "yii2-extension",
+  "keywords": ["yii2", "jwt", "jws", "token", "authentication"],
+  "license": "Apache-2.0",
+  "authors": [
+    {
+      "name": "Paweł Bizley Brzozowski",
+      "email": "pawel.bizley@gmail.com"
+    },
+    {
+      "name": "Dmitriy Demin",
+      "email": "sizemail@gmail.com"
+    }
+  ],
+  "support": {
+    "source": "https://github.com/bizley/yii2-jwt"
+  },
+  "require": {
+    "php": ">=8.1",
+    "lcobucci/jwt": "^5.0",
+    "yiisoft/yii2": ">=2.0.14 <2.1"
+  },
+  "require-dev": {
+    "infection/infection": "*",
+    "lcobucci/clock": "^3.0",
+    "phpstan/phpstan": "*",
+    "phpunit/phpunit": "^10.5",
+    "roave/security-advisories": "dev-latest"
+  },
+  "autoload": {
+    "psr-4": {
+      "bizley\\jwt\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "bizley\\tests\\": "tests/"
+    }
+  },
+  "repositories": [
+    {
+      "type": "composer",
+      "url": "https://asset-packagist.org"
+    }
+  ],
+  "config": {
+    "allow-plugins": {
+      "infection/extension-installer": true,
+      "yiisoft/yii2-composer": true
+    }
+  }
+}

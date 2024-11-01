@@ -2,6 +2,7 @@
 
 namespace api\modules\v1\models;
 
+use api\modules\v1\components\Validator\JsonValidator;
 use Yii;
 
 /**
@@ -16,6 +17,7 @@ use Yii;
  * @property Verse $verse
  */
 class VerseShare extends \yii\db\ActiveRecord
+
 {
     /**
      * {@inheritdoc}
@@ -32,8 +34,8 @@ class VerseShare extends \yii\db\ActiveRecord
     {
         return [
             [['verse_id', 'user_id'], 'required'],
-            [['verse_id', 'user_id'], 'integer'],
-            [['info'], 'string'],
+            [['verse_id', 'user_id', 'editable'], 'integer'],
+            [['info'], JsonValidator::class],
             [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['user_id' => 'id']],
             [['verse_id'], 'exist', 'skipOnError' => true, 'targetClass' => Verse::className(), 'targetAttribute' => ['verse_id' => 'id']],
             [['verse_id', 'user_id'], 'unique', 'targetAttribute' => ['verse_id', 'user_id']],
@@ -50,17 +52,21 @@ class VerseShare extends \yii\db\ActiveRecord
             'verse_id' => 'Verse ID',
             'user_id' => 'User ID',
             'info' => 'Info',
+            'editable' => 'Editable',
         ];
     }
 
     public function fields()
     {
         $fields = parent::fields();
-        //unset($fields['verse_id']);
         unset($fields['user_id']);
-        //  unset($fields['info']);
         $fields['user'] = function () {
             return $this->user;
+        };
+        $fields['info'] = function(){
+            
+            return JsonValidator::to_string($this->info);
+            
         };
         return $fields;
     }
@@ -83,25 +89,7 @@ class VerseShare extends \yii\db\ActiveRecord
     {
         return $this->hasOne(Verse::className(), ['id' => 'verse_id']);
     }
-    /* public function extraVerse()
-    {
 
-    $verse = $this->verse;
-    $result = $verse->attributes;
-    $result['image'] = $verse->image;
-    return $result;
-    }
-    public function extraFields()
-    {
-    return [
-    'verse' => function () {
-    return $this->extraVerse();
-
-    },
-    'author' => function () {
-    return $this->user;
-    }];
-    }*/
     /**
      * {@inheritdoc}
      * @return VerseShareQuery the active query used by this AR class.
