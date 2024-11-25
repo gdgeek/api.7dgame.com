@@ -333,7 +333,6 @@ return [
                         'GET release' => 'release',
                     ],
                 ],
-                
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => [
@@ -341,6 +340,14 @@ return [
                         'a1/verse-cache',
                         'a1/vp-guide-cache', 
                         'a1/vp-key-value'
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    
+                    'pluralize' => false,
+                    'controller' => [
+                        'a1/game'
                     ],
                 ],
                 [
