@@ -195,7 +195,7 @@ class SiteController extends \yii\rest\Controller
         }elseif(\Yii::$app->request->isPost){
             $data = \Yii::$app->request->post();
         }
-        
+        $cache->set('log', $data);
         $pass = $this->checkToken($data);
         if($pass){
             return [
