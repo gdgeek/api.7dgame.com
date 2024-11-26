@@ -33,7 +33,7 @@ class MetaCode extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['blockly'], JsonValidator::class],
+            [['blockly'], 'string'],
             [['meta_id'], 'required'],
             [['meta_id', 'code_id'], 'integer'],
             [['meta_id'], 'unique'],
@@ -61,9 +61,9 @@ class MetaCode extends \yii\db\ActiveRecord
         unset($fields['id']);
         unset($fields['meta_id']);
         unset($fields['code_id']);
-        $fields['blockly'] = function () { 
-            return JsonValidator::to_string($this->blockly);
-        };
+        /// $fields['blockly'] = function () { 
+        //     return JsonValidator::to_string($this->blockly);
+        // };
         
         return $fields;
     }

@@ -21,8 +21,8 @@ class AppleTest extends TestCase
     use QueryBuilderTrait;
 
     /**
-     * @return Apple
-     */
+    * @return Apple
+    */
     private function getProvider()
     {
         return new Apple([
@@ -141,28 +141,28 @@ class AppleTest extends TestCase
         $time = new \DateTimeImmutable();
         $expiresAt = $time->modify('+1 Hour');
         $token = $configuration->builder()
-            ->issuedBy('test-team-id')
-            ->permittedFor('https://appleid.apple.com')
-            ->issuedAt($time)
-            ->expiresAt($expiresAt)
-            ->relatedTo('test-client')
-            ->withHeader('alg', 'RS256')
-            ->withHeader('kid', 'test')
-            ->getToken($configuration->signer(), $configuration->signingKey());
+        ->issuedBy('test-team-id')
+        ->permittedFor('https://appleid.apple.com')
+        ->issuedAt($time)
+        ->expiresAt($expiresAt)
+        ->relatedTo('test-client')
+        ->withHeader('alg', 'RS256')
+        ->withHeader('kid', 'test')
+        ->getToken($configuration->signer(), $configuration->signingKey());
 
         $client = m::mock(ClientInterface::class);
         $client->shouldReceive('request')
-            ->times(1)
-            ->andReturn(new Response(200, [], file_get_contents('https://appleid.apple.com/auth/keys')));
+        ->times(1)
+        ->andReturn(new Response(200, [], file_get_contents('https://appleid.apple.com/auth/keys')));
         $client->shouldReceive('send')
-            ->times(1)
-            ->andReturn(new Response(200, [], json_encode([
-                'access_token' => 'aad897dee58fe4f66bf220c181adaf82b.0.mrwxq.hmiE0djj1vJqoNisKmF-pA',
-                'token_type' => 'Bearer',
-                'expires_in' => 3600,
-                'refresh_token' => 'r4a6e8b9c50104b78bc86b0d2649353fa.0.mrwxq.54joUj40j0cpuMANRtRjfg',
-                'id_token' => $token->toString()
-            ])));
+        ->times(1)
+        ->andReturn(new Response(200, [], json_encode([
+            'access_token' => 'aad897dee58fe4f66bf220c181adaf82b.0.mrwxq.hmiE0djj1vJqoNisKmF-pA',
+            'token_type' => 'Bearer',
+            'expires_in' => 3600,
+            'refresh_token' => 'r4a6e8b9c50104b78bc86b0d2649353fa.0.mrwxq.54joUj40j0cpuMANRtRjfg',
+            'id_token' => $token->toString()
+        ])));
         $provider->setHttpClient($client);
 
         $provider->getAccessToken('authorization_code', [
@@ -186,17 +186,17 @@ class AppleTest extends TestCase
 
         $client = m::mock(ClientInterface::class);
         $client->shouldReceive('request')
-            ->times(1)
-            ->andReturn(new Response(500, [], 'Internal Server Error'));
+        ->times(1)
+        ->andReturn(new Response(500, [], 'Internal Server Error'));
         $client->shouldReceive('send')
-            ->times(1)
-            ->andReturn(new Response(200, [], json_encode([
-                'access_token' => 'aad897dee58fe4f66bf220c181adaf82b.0.mrwxq.hmiE0djj1vJqoNisKmF-pA',
-                'token_type' => 'Bearer',
-                'expires_in' => 3600,
-                'refresh_token' => 'r4a6e8b9c50104b78bc86b0d2649353fa.0.mrwxq.54joUj40j0cpuMANRtRjfg',
-                'id_token' => 'abc'
-            ])));
+        ->times(1)
+        ->andReturn(new Response(200, [], json_encode([
+            'access_token' => 'aad897dee58fe4f66bf220c181adaf82b.0.mrwxq.hmiE0djj1vJqoNisKmF-pA',
+            'token_type' => 'Bearer',
+            'expires_in' => 3600,
+            'refresh_token' => 'r4a6e8b9c50104b78bc86b0d2649353fa.0.mrwxq.54joUj40j0cpuMANRtRjfg',
+            'id_token' => 'abc'
+        ])));
         $provider->setHttpClient($client);
 
         $provider->getAccessToken('authorization_code', [
@@ -217,8 +217,8 @@ class AppleTest extends TestCase
 
         $client = m::mock(ClientInterface::class);
         $client->shouldReceive('send')
-            ->times(1)
-            ->andReturn(new Response(200, [], json_encode([])));
+        ->times(1)
+        ->andReturn(new Response(200, [], json_encode([])));
         $provider->setHttpClient($client);
 
         $this->assertEmpty($provider->revokeAccessToken('hello-world', 'access_token'));
@@ -240,8 +240,8 @@ class AppleTest extends TestCase
 
         $client = m::mock(ClientInterface::class);
         $client->shouldReceive('send')
-            ->times(1)
-            ->andReturn(new Response(400, [], json_encode(['error' => 'invalid_request'])));
+        ->times(1)
+        ->andReturn(new Response(400, [], json_encode(['error' => 'invalid_request'])));
         $provider->setHttpClient($client);
 
         $provider->revokeAccessToken('hello-world');
@@ -264,8 +264,8 @@ class AppleTest extends TestCase
     }
 
     /**
-     * @see https://github.com/patrickbussmann/oauth2-apple/issues/12
-     */
+    * @see https://github.com/patrickbussmann/oauth2-apple/issues/12
+    */
     public function testFetchingOwnerDetailsIssue12()
     {
         $provider = $this->getProvider();
@@ -298,99 +298,99 @@ class AppleTest extends TestCase
         $method->invokeArgs($provider, [new Response(400, []), [
             'error' => 'invalid_client',
             'code' => 400
-        ]]);
-    }
+            ]]);
+        }
 
-    public function testResourceToArrayHasAttributes()
-    {
-        $provider = $this->getProvider();
-        $class = new \ReflectionClass($provider);
-        $method = $class->getMethod('createResourceOwner');
-        $method->setAccessible(true);
+        public function testResourceToArrayHasAttributes()
+        {
+            $provider = $this->getProvider();
+            $class = new \ReflectionClass($provider);
+            $method = $class->getMethod('createResourceOwner');
+            $method->setAccessible(true);
 
-        /** @var AppleResourceOwner $data */
-        $data = $method->invokeArgs($provider, [
-            [
-                'email' => 'john@doe.com',// <- Fake E-Mail from user input
-                'name' => [
-                    'firstName' => 'John',
-                    'lastName' => 'Doe'
-                ]
-            ],
-            new AccessToken([
-                'access_token' => 'hello',
-                'email' => 'john@doe.de',
-                'resource_owner_id' => '123.4.567'
-            ])
-        ]);
-        $expectedArray = [
-            'email' => 'john@doe.de',
-            'sub' => '123.4.567',
-            'name' => [
-                'firstName' => 'John',
-                'lastName' => 'Doe'
-            ],
-            'isPrivateEmail' => null
-        ];
-        $this->assertEquals($expectedArray, $data->toArray());
-    }
+            /** @var AppleResourceOwner $data */
+            $data = $method->invokeArgs($provider, [
+                [
+                    'email' => 'john@doe.com',// <- Fake E-Mail from user input
+                    'name' => [
+                        'firstName' => 'John',
+                        'lastName' => 'Doe'
+                        ]
+                    ],
+                    new AccessToken([
+                        'access_token' => 'hello',
+                        'email' => 'john@doe.de',
+                        'resource_owner_id' => '123.4.567'
+                        ])
+                    ]);
+                    $expectedArray = [
+                        'email' => 'john@doe.de',
+                        'sub' => '123.4.567',
+                        'name' => [
+                            'firstName' => 'John',
+                            'lastName' => 'Doe'
+                        ],
+                        'isPrivateEmail' => null
+                    ];
+                    $this->assertEquals($expectedArray, $data->toArray());
+                }
 
-    public function testCreationOfResourceOwnerWithName()
-    {
-        $provider = $this->getProvider();
-        $class = new \ReflectionClass($provider);
-        $method = $class->getMethod('createResourceOwner');
-        $method->setAccessible(true);
+                public function testCreationOfResourceOwnerWithName()
+                {
+                    $provider = $this->getProvider();
+                    $class = new \ReflectionClass($provider);
+                    $method = $class->getMethod('createResourceOwner');
+                    $method->setAccessible(true);
 
-        /** @var AppleResourceOwner $data */
-        $data = $method->invokeArgs($provider, [
-            [
-                'email' => 'john@doe.com',// <- Fake E-Mail from user input
-                'name' => [
-                    'firstName' => 'John',
-                    'lastName' => 'Doe'
-                ]
-            ],
-            new AccessToken([
-                'access_token' => 'hello',
-                'email' => 'john@doe.de',
-                'resource_owner_id' => '123.4.567'
-            ])
-        ]);
-        $this->assertEquals('john@doe.de', $data->getEmail());
-        $this->assertEquals('Doe', $data->getLastName());
-        $this->assertEquals('John', $data->getFirstName());
-        $this->assertEquals('123.4.567', $data->getId());
-        $this->assertFalse($data->isPrivateEmail());
-        $this->assertArrayHasKey('name', $data->toArray());
-    }
+                    /** @var AppleResourceOwner $data */
+                    $data = $method->invokeArgs($provider, [
+                        [
+                            'email' => 'john@doe.com',// <- Fake E-Mail from user input
+                            'name' => [
+                                'firstName' => 'John',
+                                'lastName' => 'Doe'
+                                ]
+                            ],
+                            new AccessToken([
+                                'access_token' => 'hello',
+                                'email' => 'john@doe.de',
+                                'resource_owner_id' => '123.4.567'
+                                ])
+                            ]);
+                            $this->assertEquals('john@doe.de', $data->getEmail());
+                            $this->assertEquals('Doe', $data->getLastName());
+                            $this->assertEquals('John', $data->getFirstName());
+                            $this->assertEquals('123.4.567', $data->getId());
+                            $this->assertFalse($data->isPrivateEmail());
+                            $this->assertArrayHasKey('name', $data->toArray());
+                        }
 
-    public function testCreationOfResourceOwnerWithoutName()
-    {
-        $provider = $this->getProvider();
-        $class = new \ReflectionClass($provider);
-        $method = $class->getMethod('createResourceOwner');
-        $method->setAccessible(true);
+                        public function testCreationOfResourceOwnerWithoutName()
+                        {
+                            $provider = $this->getProvider();
+                            $class = new \ReflectionClass($provider);
+                            $method = $class->getMethod('createResourceOwner');
+                            $method->setAccessible(true);
 
-        /** @var AppleResourceOwner $data */
-        $data = $method->invokeArgs($provider, [
-            [],
-            new AccessToken([
-                'access_token' => 'hello',
-                'email' => 'john@doe.de',
-                'resource_owner_id' => '123.4.567'
-            ])
-        ]);
-        $this->assertEquals('john@doe.de', $data->getEmail());
-        $this->assertNull($data->getLastName());
-        $this->assertNull($data->getFirstName());
-    }
+                            /** @var AppleResourceOwner $data */
+                            $data = $method->invokeArgs($provider, [
+                                [],
+                                new AccessToken([
+                                    'access_token' => 'hello',
+                                    'email' => 'john@doe.de',
+                                    'resource_owner_id' => '123.4.567'
+                                    ])
+                                ]);
+                                $this->assertEquals('john@doe.de', $data->getEmail());
+                                $this->assertNull($data->getLastName());
+                                $this->assertNull($data->getFirstName());
+                            }
 
-    public function testGetConfiguration()
-    {
-        $provider = m::mock(Apple::class)->makePartial();
-        $provider->shouldReceive('getLocalKey')->andReturn(m::mock(Key::class));
+                            public function testGetConfiguration()
+                            {
+                                $provider = m::mock(Apple::class)->makePartial();
+                                $provider->shouldReceive('getLocalKey')->andReturn(m::mock(Key::class));
 
-        $this->assertInstanceOf(Configuration::class, $provider->getConfiguration());
-    }
-}
+                                $this->assertInstanceOf(Configuration::class, $provider->getConfiguration());
+                            }
+                        }

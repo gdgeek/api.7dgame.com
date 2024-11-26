@@ -8,6 +8,8 @@ use api\modules\v1\models\User;
 use api\modules\v1\models\Code;
 use api\modules\v1\models\VerseCode;
 use api\modules\v1\models\VerseShare;
+use api\modules\v1\models\VerseRelease;
+
 use api\modules\v1\models\MultilanguageVerse;
 use api\modules\v1\components\Validator\JsonValidator;
 use Yii;
@@ -38,7 +40,6 @@ use yii\db\Expression;
 class Verse extends \yii\db\ActiveRecord
 
 {
-    
     public function behaviors()
     {
         return [
@@ -92,6 +93,7 @@ class Verse extends \yii\db\ActiveRecord
         $fields['viewable'] = function () {return $this->viewable();};
         
         $fields['info'] =  function () {
+            
             return JsonValidator::to_string($this->info);
         };
         $fields['data'] =  function () {
@@ -100,7 +102,6 @@ class Verse extends \yii\db\ActiveRecord
             }
             return $this->data;
         };
-        //  $fields['links'] = function () {return $this->eventLinks;};
         
         return $fields;
     }
@@ -141,10 +142,11 @@ class Verse extends \yii\db\ActiveRecord
             $script = $this->script;
             if($script){
                 $code->blockly = $script->workspace;
-                $code->save();
             }
+            $code->save();
             
         }
+        
         return $quest;
     }
     
@@ -194,15 +196,16 @@ class Verse extends \yii\db\ActiveRecord
         
         return [
             'metas',
-            'verseOpen',
             'message',
             'image',
             'author',
             'script',
             'resources',
-            'verseShare',
             'languages',
             'verseCode',
+            'verseRelease',
+            'verseShare',
+            'verseOpen',
         ];
         
     }
@@ -253,7 +256,12 @@ class Verse extends \yii\db\ActiveRecord
         }
         if (isset($data->children) && isset($data->children->modules)) {
             foreach ($data->children->modules as $item) {
-                $ret[] = $item->parameters->meta_id;
+                
+                if(isset($item->parameters->meta_id))
+                {
+                    $ret[] = $item->parameters->meta_id;
+                }
+                
             }
         }
         return Meta::find()->where(['id' => $ret])->all();
@@ -267,6 +275,10 @@ class Verse extends \yii\db\ActiveRecord
     public function getVerseOpen()
     {
         return $this->hasOne(VerseOpen::className(), ['verse_id' => 'id']);
+    }
+    public function getVerseRelease()
+    {
+        return $this->hasOne(VerseRelease::className(), ['verse_id' => 'id']);
     }
     public function editable()
     {

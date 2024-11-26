@@ -72,7 +72,8 @@ return [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'vp/site',
                     'extraPatterns' => [
-                        'GET check' => 'check',
+                        //'GET check' => 'check',
+                        'POST check' => 'check',
                         'GET log' => 'log',
                         'GET test' => 'test',
                         'GET token' => 'token',
@@ -210,6 +211,7 @@ return [
                         'v1/verse-cyber',
                         'v1/message',
                         'v1/reply',
+                        'v1/resource',
                         'v1/message-tags',
                         'v1/multilanguage-verse',
                         'v1/tags',
@@ -226,7 +228,13 @@ return [
                         'v1/vp-map',
                     ],
                 ],
-                
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/verse-release',
+                    'extraPatterns' => [
+                        'PUT verse' => 'verse',
+                    ],
+                ],
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/verse',
@@ -272,6 +280,26 @@ return [
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',
+                    'pluralize' => false,
+                    'controller' => 'v1/ai-rodin',
+                    'extraPatterns' => [
+                        'PUT file' => 'file',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'pluralize' => false,
+                    'controller' => 'v1/site',
+                    'extraPatterns' => [
+                        'POST login' => 'login',
+                        'GET test' => 'test',
+                        'POST apple-id' => 'apple-id',
+                        'POST apple-id-link' => 'apple-id-link',
+                        'POST apple-id-create' => 'apple-id-create',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/meta-resource',
                     'extraPatterns' => [
                         'GET resources' => 'resources',
@@ -300,20 +328,27 @@ return [
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',
-                    'controller' => 'v1/verse-knight',
+                    'controller' => 'a1/verse',
                     'extraPatterns' => [
-                        'GET knights' => 'knights',
+                        'GET open' => 'open',
+                        'GET release' => 'release',
                     ],
                 ],
-                
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => [
-                        'a1/verse',
                         'a1/vp-guide',
                         'a1/verse-cache',
                         'a1/vp-guide-cache', 
                         'a1/vp-key-value'
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    
+                    'pluralize' => false,
+                    'controller' => [
+                        'a1/game'
                     ],
                 ],
                 [

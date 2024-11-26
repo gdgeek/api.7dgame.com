@@ -5,12 +5,12 @@ use yii\rest\ActiveController;
 
 class GameController extends ActiveController
 {
-
+    
     public $modelClass = 'api\modules\a1\models\Game';
     public function behaviors()
     {
         $behaviors = parent::behaviors();
-
+        
         $behaviors['corsFilter'] = [
             'class' => \yii\filters\Cors::class,
             'cors' => [
@@ -27,7 +27,7 @@ class GameController extends ActiveController
                 ],
             ],
         ];
-
+        
         return $behaviors;
     }
     public function actions()
@@ -38,6 +38,11 @@ class GameController extends ActiveController
         unset($actions['update']);
         unset($actions['delete']);
         unset($actions['options']);
+        unset($actions['view']);
         return $actions;
+    }
+    public function actionIndex()
+    {
+        return ['info' => 'This is the MrPP API'];
     }
 }

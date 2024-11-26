@@ -9,27 +9,27 @@ use yii\db\Expression;
 
 use api\modules\v1\components\Validator\JsonValidator;
 /**
- * This is the model class for table "meta_knight".
- *
- * @property int $id
- * @property int $verse_id
- * @property int $meta_id
- * @property int $user_id
- * @property string|null $info
- * @property string|null $create_at
- * @property string|null $uuid
- * @property int|null $event_node_id
- *
- * @property EventNode $eventNode
- * @property Meta $meta
- * @property User $user
- * @property Verse $verse
- * @property string|null $uuid
- */
+* This is the model class for table "meta_knight".
+*
+* @property int $id
+* @property int $verse_id
+* @property int $meta_id
+* @property int $user_id
+* @property string|null $info
+* @property string|null $create_at
+* @property string|null $uuid
+* @property int|null $event_node_id
+*
+* @property EventNode $eventNode
+* @property Meta $meta
+* @property User $user
+* @property Verse $verse
+* @property string|null $uuid
+*/
 class MetaKnight extends \yii\db\ActiveRecord
 
 {
-
+    
     public function behaviors()
     {
         return [
@@ -48,16 +48,16 @@ class MetaKnight extends \yii\db\ActiveRecord
         ];
     }
     /**
-     * {@inheritdoc}
-     */
+    * {@inheritdoc}
+    */
     public static function tableName()
     {
         return 'meta_knight';
     }
-
+    
     /**
-     * {@inheritdoc}
-     */
+    * {@inheritdoc}
+    */
     public function rules()
     {
         return [
@@ -73,10 +73,10 @@ class MetaKnight extends \yii\db\ActiveRecord
             [['verse_id'], 'exist', 'skipOnError' => true, 'targetClass' => Verse::className(), 'targetAttribute' => ['verse_id' => 'id']],
         ];
     }
-
+    
     /**
-     * {@inheritdoc}
-     */
+    * {@inheritdoc}
+    */
     public function attributeLabels()
     {
         return [
@@ -91,10 +91,10 @@ class MetaKnight extends \yii\db\ActiveRecord
         ];
     }
     /**
-     * Gets query for [[EventNode]].
-     *
-     * @return \yii\db\ActiveQuery|EventNodeQuery
-     */
+    * Gets query for [[EventNode]].
+    *
+    * @return \yii\db\ActiveQuery|EventNodeQuery
+    */
     public function getEventNode()
     {
         return $this->hasOne(EventNode::className(), ['id' => 'event_node_id']);
@@ -120,7 +120,7 @@ class MetaKnight extends \yii\db\ActiveRecord
                 return $this->meta->data;
             },
             'meta_id',
-
+            
             'info',
             'event_node' => function ($model) {
                 return $this->eventNode;
@@ -128,39 +128,39 @@ class MetaKnight extends \yii\db\ActiveRecord
         ];
     }
     /**
-     * Gets query for [[Meta]].
-     *
-     * @return \yii\db\ActiveQuery|yii\db\ActiveQuery
-     */
+    * Gets query for [[Meta]].
+    *
+    * @return \yii\db\ActiveQuery|yii\db\ActiveQuery
+    */
     public function getMeta()
     {
         return $this->hasOne(Meta::className(), ['id' => 'meta_id']);
     }
-
+    
     /**
-     * Gets query for [[User]].
-     *
-     * @return \yii\db\ActiveQuery|yii\db\ActiveQuery
-     */
+    * Gets query for [[User]].
+    *
+    * @return \yii\db\ActiveQuery|yii\db\ActiveQuery
+    */
     public function getUser()
     {
         return $this->hasOne(User::className(), ['id' => 'user_id']);
     }
-
+    
     /**
-     * Gets query for [[Verse]].
-     *
-     * @return \yii\db\ActiveQuery|VerseQuery
-     */
+    * Gets query for [[Verse]].
+    *
+    * @return \yii\db\ActiveQuery|VerseQuery
+    */
     public function getVerse()
     {
         return $this->hasOne(Verse::className(), ['id' => 'verse_id']);
     }
-
+    
     /**
-     * {@inheritdoc}
-     * @return MetaKnightQuery the active query used by this AR class.
-     */
+    * {@inheritdoc}
+    * @return MetaKnightQuery the active query used by this AR class.
+    */
     public static function find()
     {
         return new MetaKnightQuery(get_called_class());

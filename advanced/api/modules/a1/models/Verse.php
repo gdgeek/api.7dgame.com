@@ -137,15 +137,25 @@ class Verse extends \yii\db\ActiveRecord
             },
             'code' => function () {
                 $verseCode = $this->verseCode;
-                if($verseCode){
-                    return $verseCode->code->lua;
+                if($verseCode && $verseCode->code){
+                    $script = $verseCode->code->lua;
+                }else if ($this->script) {
+                    $script = $this->script->script;
                 }
-                $script = $this->script;
-                if ($this->script) {
-                    return $this->script->script;
+                
+                $substring = "local verse = {}\nlocal is_playing = false\n";
+                if(isset($script)){
+                    if (strpos($script, $substring) !== false) {
+                        return $script;
+                    } else {
+                        return $substring.$script;
+                    }
+                }else{
+                    return $substring;
                 }
             },
             'resources',
+            'image'
         ];
     }
     public function getVerseCode()

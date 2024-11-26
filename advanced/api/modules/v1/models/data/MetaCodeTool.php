@@ -4,7 +4,9 @@ namespace api\modules\v1\models\data;
 use api\modules\v1\models\Meta;
 use api\modules\v1\models\Code;
 
-use api\modules\v1\components\Validator\JsonValidator;
+use yii\web\BadRequestHttpException;
+use yii\base\Exception;
+
 use yii\base\Model;
 
 
@@ -29,35 +31,26 @@ class MetaCodeTool extends Model
     {
         $metaCode = $this->meta->metaCode;
         $metaCode->blockly = $this->blockly;
-        if($this->lua || $this->js){
-            $code = $metaCode->code;
-            if(!$code){
-                $code = new Code();
-            }
-            if($this->lua){
-                $code->lua = $this->lua;
-            }
-            if($this->js){
-                $code->js = $this->js;
-            }
-            if($code->validate()){
-                $code->save();
-                $metaCode->code_id = $code->id;
-            }else{
-                throw new \yii\web\ServerErrorHttpException(json_encode($code->errors));
-            }
+        $code = $metaCode->code;
+        if(!$code){
+            $code = new Code();
         }
-        
+        $code->lua = $this->lua;
+        $code->js = $this->js;
+        if($code->validate()){
+            $code->save();
+            if(!$metaCode->code){
+                $metaCode->code_id = $code->id;
+            }
+        }else{
+            throw new \yii\web\ServerErrorHttpException(json_encode($code->errors));
+        }
         if($metaCode->validate()){
             $metaCode->save();
         }else{
-            if($code)
-            {
-                $code->delete();
-            }
+            $code->delete();
             throw new \yii\web\ServerErrorHttpException(json_encode($metaCode->errors));
         }
-        
     }
     /**
     * {@inheritdoc}
@@ -65,7 +58,7 @@ class MetaCodeTool extends Model
     public function rules()
     {
         return [
-            [['blockly'], JsonValidator::class],
+            [['blockly'], 'string'],
             // [['blockly'], 'required'],
             [['js','lua'], 'string'],
         ];

@@ -6,20 +6,20 @@ use Yii;
 use yii\behaviors\BlameableBehavior;
 
 /**
- * This is the model class for table "verse_open".
- *
- * @property int $id
- * @property int $verse_id
- * @property int|null $user_id
- * @property int|null $message_id
- *
- * @property Message $message
- * @property User $user
- * @property Verse $verse
- */
+* This is the model class for table "verse_open".
+*
+* @property int $id
+* @property int $verse_id
+* @property int|null $user_id
+* @property int|null $message_id
+*
+* @property Message $message
+* @property User $user
+* @property Verse $verse
+*/
 class VerseOpen extends \yii\db\ActiveRecord
 {
-
+    
     public function behaviors()
     {
         return [
@@ -31,16 +31,16 @@ class VerseOpen extends \yii\db\ActiveRecord
         ];
     }
     /**
-     * {@inheritdoc}
-     */
+    * {@inheritdoc}
+    */
     public static function tableName()
     {
         return 'verse_open';
     }
-
+    
     /**
-     * {@inheritdoc}
-     */
+    * {@inheritdoc}
+    */
     public function rules()
     {
         return [
@@ -60,13 +60,13 @@ class VerseOpen extends \yii\db\ActiveRecord
         $result->username = $author->username;
         $result->nickname = $author->nickname;
         $result->email = $author->email;
-
+        
         return $result;
     }
-
+    
     public function extraVerse()
     {
-
+        
         $verse = $this->verse;
         $result = $verse->attributes;
         $result['image'] = $verse->image;
@@ -75,17 +75,17 @@ class VerseOpen extends \yii\db\ActiveRecord
     public function extraFields()
     {
         return ['message',
-            'verse' => function () {
-                return $this->extraVerse();
-
-            },
-            'author' => function () {
-                return $this->user;
-            }];
+        'verse' => function () {
+            return $this->extraVerse();
+            
+        },
+        'author' => function () {
+            return $this->user;
+        }];
     }
     /**
-     * {@inheritdoc}
-     */
+    * {@inheritdoc}
+    */
     public function attributeLabels()
     {
         return [
@@ -95,41 +95,41 @@ class VerseOpen extends \yii\db\ActiveRecord
             'message_id' => 'Message ID',
         ];
     }
-
+    
     /**
-     * Gets query for [[Message]].
-     *
-     * @return \yii\db\ActiveQuery|MessageQuery
-     */
+    * Gets query for [[Message]].
+    *
+    * @return \yii\db\ActiveQuery|MessageQuery
+    */
     public function getMessage()
     {
         return $this->hasOne(Message::className(), ['id' => 'message_id']);
     }
-
+    
     /**
-     * Gets query for [[User]].
-     *
-     * @return \yii\db\ActiveQuery|yii\db\ActiveQuery
-     */
+    * Gets query for [[User]].
+    *
+    * @return \yii\db\ActiveQuery|yii\db\ActiveQuery
+    */
     public function getUser()
     {
         return $this->hasOne(User::className(), ['id' => 'user_id']);
     }
-
+    
     /**
-     * Gets query for [[Verse]].
-     *
-     * @return \yii\db\ActiveQuery|VerseQuery
-     */
+    * Gets query for [[Verse]].
+    *
+    * @return \yii\db\ActiveQuery|VerseQuery
+    */
     public function getVerse()
     {
         return $this->hasOne(Verse::className(), ['id' => 'verse_id']);
     }
-
+    
     /**
-     * {@inheritdoc}
-     * @return VerseOpenQuery the active query used by this AR class.
-     */
+    * {@inheritdoc}
+    * @return VerseOpenQuery the active query used by this AR class.
+    */
     public static function find()
     {
         return new VerseOpenQuery(get_called_class());
@@ -142,7 +142,7 @@ class VerseOpen extends \yii\db\ActiveRecord
             $message->delete();
         }
     }
-
+    
     public function beforeSave($insert)
     {
         $ret = parent::beforeSave($insert);
@@ -156,6 +156,6 @@ class VerseOpen extends \yii\db\ActiveRecord
             }
         }
         return $ret;
-
+        
     }
 }

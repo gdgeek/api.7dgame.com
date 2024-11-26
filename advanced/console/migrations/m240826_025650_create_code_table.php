@@ -3,13 +3,13 @@
 use yii\db\Migration;
 
 /**
- * Handles the creation of table `{{%code}}`.
- */
+* Handles the creation of table `{{%code}}`.
+*/
 class m240826_025650_create_code_table extends Migration
 {
     /**
-     * {@inheritdoc}
-     */
+    * {@inheritdoc}
+    */
     public function safeUp()
     {
         if ($this->db->driverName === 'mysql') {
@@ -22,10 +22,10 @@ class m240826_025650_create_code_table extends Migration
             'js' => $this->text(),
         ],$tableOptions);
     }
-
+    
     /**
-     * {@inheritdoc}
-     */
+    * {@inheritdoc}
+    */
     public function safeDown()
     {
         $this->dropTable('{{%code}}');

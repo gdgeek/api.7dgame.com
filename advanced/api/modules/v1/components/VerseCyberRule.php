@@ -15,17 +15,17 @@ class VerseCyberRule extends Rule
         if (!$id) {
             return false;
         }
-
+        
         $verseCyber = VerseCyber::findOne($id);
         if (!$verseCyber) {
             return false;
         }
-
+        
         $userid = Yii::$app->user->identity->id;
         if ($userid == $verseCyber->author_id) {
             return true;
         }
         return false;
-
+        
     }
 }

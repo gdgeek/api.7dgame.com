@@ -152,12 +152,14 @@ class Meta extends \yii\db\ActiveRecord
     public function editable()
     {
         if (!isset(Yii::$app->user->identity)) {
+            
             return false;
         }
         $userid = Yii::$app->user->identity->id;
         if ($userid == $this->author_id) {
             return true;
         }
+        
         return false;
     }
     /**
@@ -233,12 +235,12 @@ class Meta extends \yii\db\ActiveRecord
         'author' => function () {
             return $this->author;
         },
-        'script' => function () {
-            if ($this->cyber) {
-                return $this->cyber->script;
-            }
-            return null;
-        },
+        /*'script' => function () {
+        if ($this->cyber) {
+        return $this->cyber->script;
+        }
+        return null;
+        },*/
         'cyber',
         'metaCode'
         
@@ -255,15 +257,16 @@ public function getMetaCode()
     $quest = $this->hasOne(MetaCode::className(), ['meta_id' => 'id']);
     $code = $quest->one();
     if($code == null){
-        
         $code = new MetaCode();
+        
         $code->meta_id = $this->id;
         $cyber = $this->cyber;
         if($cyber){
             $code->blockly = $cyber->data;
-            $code->save();
         }
+        $code->save();
     }
+    $code = $quest->one();
     return $quest;
 }
 

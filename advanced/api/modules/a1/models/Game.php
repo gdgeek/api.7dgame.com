@@ -11,29 +11,29 @@ use yii\behaviors\TimestampBehavior;
 use yii\db\Expression;
 
 /**
- * This is the model class for table "verse".
- *
- * @property int $id
- * @property int $author_id
- * @property int|null $updater_id
- * @property string $created_at
- * @property string $updated_at
- * @property string $name
- * @property string|null $info
- * @property int|null $image_id
- * @property string|null $data
- * @property int|null $version
- *
- * @property Meta[] $metas
- * @property User $author
- * @property File $image_id0
- * @property User $updater
+* This is the model class for table "verse".
+*
+* @property int $id
+* @property int $author_id
+* @property int|null $updater_id
+* @property string $created_at
+* @property string $updated_at
+* @property string $name
+* @property string|null $info
+* @property int|null $image_id
+* @property string|null $data
+* @property int|null $version
+*
+* @property Meta[] $metas
+* @property User $author
+* @property File $image_id0
+* @property User $updater
 
- */
+*/
 class Game extends \yii\db\ActiveRecord
 
 {
-
+    
     public function behaviors()
     {
         return [
@@ -52,18 +52,18 @@ class Game extends \yii\db\ActiveRecord
             ],
         ];
     }
-
+    
     /**
-     * {@inheritdoc}
-     */
+    * {@inheritdoc}
+    */
     public static function tableName()
     {
         return 'verse';
     }
-
+    
     /**
-     * {@inheritdoc}
-     */
+    * {@inheritdoc}
+    */
     public function rules()
     {
         return [
@@ -95,12 +95,12 @@ class Game extends \yii\db\ActiveRecord
         $fields['description'] = function ($model) use ($info) {
             return $info->description;
         };
-
+        
         return $fields;
     }
     /**
-     * {@inheritdoc}
-     */
+    * {@inheritdoc}
+    */
     public function attributeLabels()
     {
         return [
@@ -116,11 +116,11 @@ class Game extends \yii\db\ActiveRecord
             'version' => 'Version',
         ];
     }
-
+    
     /**
-     * {@inheritdoc}
-     * @return VerseQuery the active query used by this AR class.
-     */
+    * {@inheritdoc}
+    * @return VerseQuery the active query used by this AR class.
+    */
     public static function find()
     {
         return new VerseQuery(get_called_class());

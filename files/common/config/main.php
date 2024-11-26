@@ -9,7 +9,7 @@ return [
     'vendorPath' => dirname(dirname(__DIR__)) . '/vendor',
     'timeZone' => 'Asia/Shanghai',
     'name' => '元宇宙实景编程平台（MrPP.com）',
-
+    
     'components' => [
         'cache' => [
             'class' => 'yii\caching\FileCache',
@@ -71,8 +71,8 @@ return [
                 ];
             }
         ],
-
+        
     ],
     
-
+    
 ];

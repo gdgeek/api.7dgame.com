@@ -11,7 +11,7 @@ use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer;
 use Lcobucci\JWT\Signer\Key;
 use api\modules\vp\models\AppleId;
-use api\modules\vp\models\User;
+use api\modules\v1\models\User;
 use mdm\admin\models\Assignment;
 use yii\web\Response;
 class Oauth2Controller extends \yii\rest\Controller{
@@ -46,9 +46,9 @@ class Oauth2Controller extends \yii\rest\Controller{
         $password = $post['password'];
         $token = $post['token'];
         $apple_id = $post['apple_id'];
-
         
-
+        
+        
         $apple = AppleId::find()->where(['apple_id'=>$apple_id, "token"=>$token])->one();
         if($apple === null){
             throw new Exception('apple_id Not Found');
@@ -67,7 +67,7 @@ class Oauth2Controller extends \yii\rest\Controller{
             }
             if($password !== null && $user->validatePassword($password)){
                 $apple->user_id = $user->id;
-                $apple->token = null;//清除token
+                //  $apple->token = null;//清除token
                 $apple->save();
                 //成功绑定旧的用户
                 return [
@@ -78,7 +78,7 @@ class Oauth2Controller extends \yii\rest\Controller{
                 throw new Exception('Password Error');
             }
         }
-
+        
         //创建User
         if (!preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/', $password)){
             throw new Exception('Password Not Safe');
@@ -96,33 +96,33 @@ class Oauth2Controller extends \yii\rest\Controller{
         $assignment = new Assignment($user->id);
         $assignment->assign(['user']);
         $access_token = $user->generateAccessToken();
-
+        
         //绑定apple_id
         $apple->user_id = $user->id;
-        $apple->token = null;//清除token
+        // $apple->token = null;//清除token
         $apple->save();
         return [
             'type' => 'created',
             'token' => $access_token,
         ];
-
+        
         //检查apple_id 和 token
         //如果失败返回，如果已经绑定，返回
-
+        
         //检查是否有User
         //如果有，检查密码是否对
         //如果密码对，绑定apple_id，返回Token
         //如果密码不对，提示用户名已被占用
-
+        
         //如果没有，创建User，绑定apple_id
         //创建Token并返还
-
+        
     }
     public function actionTest(){
         $cache = \Yii::$app->cache;
-   //     $cache->set('apple', ['ip'=>$this->getRealIpAddr(),'get'=>Yii::$app->request->get(),'post'=>Yii::$app->request->post(),'all'=>$all]);
- return $cache->get('apple');
-         
+        //     $cache->set('apple', ['ip'=>$this->getRealIpAddr(),'get'=>Yii::$app->request->get(),'post'=>Yii::$app->request->post(),'all'=>$all]);
+        return $cache->get('apple');
+        
     }
     public function actionClear(){
         return 'ok';
@@ -140,9 +140,9 @@ class Oauth2Controller extends \yii\rest\Controller{
         return $ip;
     }
     
-
+    
     public function actionLogin(){
-       
+        
         $post = Yii::$app->request->post();
         if(!isset($post['apple_id']) || !isset($post['token'])){
             throw new Exception('Params Error');
@@ -152,13 +152,13 @@ class Oauth2Controller extends \yii\rest\Controller{
         if($token == null){
             throw new Exception('Token Error');
         }
-
-      
+        
+        
         $apple = AppleId::find()->where(['apple_id'=>$apple_id, "token"=>$token])->one();
         $this->login($apple);
-       
+        
     }
-   
+    
     private function getApple(){
         $post = Yii::$app->request->post();
         
@@ -178,11 +178,11 @@ class Oauth2Controller extends \yii\rest\Controller{
             'redirectUri'       => $url,
             'scope'             => "email name",
         ]);
-
-       
+        
+        
         $cache = \Yii::$app->cache;
         $cache->set('apple', ['ip'=>$this->getRealIpAddr(),'get'=>Yii::$app->request->get(),'post'=>Yii::$app->request->post()]);
-
+        
         $token = $provider->getAccessToken('authorization_code', [
             'code' => $post['code']
         ]);
@@ -195,7 +195,7 @@ class Oauth2Controller extends \yii\rest\Controller{
             $apple->email = $user->getEmail();
             $apple->first_name = $user->getFirstName();
             $apple->last_name = $user->getLastName();
-            $apple->token = $token->getToken();
+            //$apple->token = $token->getToken();
             
             if($apple->validate()){
                 $apple->save();
@@ -203,13 +203,13 @@ class Oauth2Controller extends \yii\rest\Controller{
                 throw new Exception(json_encode($apple->errors));
             }
         }
-
+        
         return $apple;
         
     }
-
+    
     public function actionBinding(){
-
+        
         $apple = $this->getApple();
         if(isset($post['binding'])){
             $tk = $post['binding'];
@@ -240,7 +240,7 @@ class Oauth2Controller extends \yii\rest\Controller{
             throw new Exception('apple_id Not Found');
         }
         if($apple->user_id !== null){
-            $apple->token = null;//清除token
+            //    $apple->token = null;//清除token
             $apple->save();
             //已经有用户绑定，返回Token
             return [
@@ -279,23 +279,23 @@ class Oauth2Controller extends \yii\rest\Controller{
                     throw new Exception(json_encode($apple->errors));
                 }
                 
-               
+                
             }else{
                 throw new Exception(json_encode($user->errors));
             }
         }
-
+        
     }
-
-
+    
+    
     public function actionAppleIdLogin(){
         $cache = \Yii::$app->cache;
         $cache->set('apple', ['ip'=>$this->getRealIpAddr(),'get'=>Yii::$app->request->get(),'post'=>Yii::$app->request->post()]);
-
-      
-
+        
+        
+        
         $post = Yii::$app->request->post();
-
+        
         \Firebase\JWT\JWT::$leeway = 60;
         
         $provider = new \League\OAuth2\Client\Provider\Apple([
@@ -325,7 +325,7 @@ class Oauth2Controller extends \yii\rest\Controller{
                 $aid->email = $user->getEmail();
                 $aid->first_name = $user->getFirstName();
                 $aid->last_name = $user->getLastName();
-                $aid->token = $token->getToken();
+                // $aid->token = $token->getToken();
                 $aid->save();
             }
             
@@ -333,9 +333,9 @@ class Oauth2Controller extends \yii\rest\Controller{
             $url = Url::to( getenv('APPLE_LOGIN_FRONTEND') .'?'.http_build_query(['token'=>$token->getToken(),'apple_id'=>$user->getId()]));
             return $this->redirect( $url, 302);
         }
-       
+        
         throw new \yii\web\NotFoundHttpException('Not Found');
-       
+        
     }
     public function actionIndex(){
         $cache = \Yii::$app->cache;

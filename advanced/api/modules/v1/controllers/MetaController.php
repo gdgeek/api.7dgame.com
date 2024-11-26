@@ -8,6 +8,7 @@ use bizley\jwt\JwtHttpBearerAuth;
 use Yii;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
+use yii\web\BadRequestHttpException;
 
 class MetaController extends ActiveController
 {
@@ -108,9 +109,12 @@ class MetaController extends ActiveController
     }
     public function actionUpdateCode($id){
         
+        
         $post = Yii::$app->request->post();
         $model = new MetaCodeTool($id);
         $post = Yii::$app->request->post();
+        
+        
         $model->load($post, '');
         if ($model->validate()) {
             $model->save();
