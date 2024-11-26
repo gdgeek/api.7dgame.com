@@ -72,7 +72,7 @@ return [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'vp/site',
                     'extraPatterns' => [
-                        //'GET check' => 'check',
+                        'GET check' => 'check',
                         'POST check' => 'check',
                         'GET log' => 'log',
                         'GET test' => 'test',
