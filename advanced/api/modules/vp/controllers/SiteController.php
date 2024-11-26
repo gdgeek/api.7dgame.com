@@ -190,7 +190,7 @@ class SiteController extends \yii\rest\Controller
         
         
         $cache = \Yii::$app->cache;
-        $data = \Yii::$app->request->get();
+        $data = \Yii::$app->request->post();
         
         $pass = $this->checkToken($data);
         if($pass){
