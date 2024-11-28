@@ -231,3 +231,14 @@ class SiteController extends \yii\rest\Controller
         }
     }
 }
+/*
+<response>
+<publicKeyUrl>https://static.gc.apple.com/public-key/gc-prod-10.cer</publicKeyUrl>
+<signature>IfUyAEMyBhBp7O7KvwE9DkyCrMa8BXX4A4HcXu+x3LYQIxsKUlZYn7c6WP1wJ0/+itnnlrMD0/dceqoBptYSg1F0skCoUGoFlll/RgBimithiFKjU06xZwU1Y7FhWeoMVcPXBWmQIP7ilzjhHHRbBNmjMYG+fVUT+ExXWLWoAvFHZ/HyQa7Y0mSgHUu9pkXhlvZrEL4jnBGMGtTmI+jVtHxcCie+cBgevum2euDpmODrczO58O6xx/5YajlFyBVCy94n1C0eeivb1bXT3VyB1TNO1Hja5oBHmsTBuQKccxqAp5MTBNRXq1DJWWho94ymt2dm29PGB8YlO9De8UoiADGWz7ILNO4SXJ1kKPRJW3AAm4p6yh8hG29uWq+7L6q7ISxMb4PzMXdvuMx98k9dObmc88W5JYnpm5bsNvQ4RciZoYQSXVL/wu1LKurV8cf8a/j9oPMLoDE0X/OIbYYS+IOsjcN+J2PL/3JfAeZEaxiGumtnm/S+7HnM6YGgJZs6CGEY3Pjy2iRgcU+ZI6AOWz2m1eJ+Tf1nW2Nq5uDSmEkVnG8FkrVaK7tVV18c3w+TxwFzzgTdsHiOSdkFiOIeA4CDNg/za5d2tW2+Ibbr9ym8fme2/1PaPbBvg86SRnpXmRnhjQaJKM3wmEmyqmN/tmU1yEyG2Qa5So2WUL4nv8I=</signature>
+<salt>QdbxQQ==</salt>
+<timestamp>1732620789632</timestamp>
+<playerId>T:_117db69b8df505c850cfda303378c2e7</playerId>
+<bundleId>com.NoOverwork.VoxelParty</bundleId>
+<name>nethz1981</name>
+</response>
+*/

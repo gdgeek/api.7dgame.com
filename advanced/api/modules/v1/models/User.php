@@ -67,8 +67,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
     {
         $claims = \Yii::$app->jwt->parse($token)->claims();
         $uid = $claims->get('uid');
-        $user = static::findIdentity($uid );
-        // $user->token = $token;
+        $user = static::findIdentity($uid);
         return $user;
     }
     public function getId()
@@ -166,6 +165,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
     //生成token
     public function generateAccessToken()
     {
+        
         $now = new \DateTimeImmutable('now', new \DateTimeZone(\Yii::$app->timeZone));
         
         $token = \Yii::$app->jwt->getBuilder()

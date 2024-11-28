@@ -3,6 +3,9 @@ namespace api\modules\v1\models\data;
 use api\modules\v1\models\User;
 use yii\base\Model;
 
+use yii\base\Exception;
+use yii\base\InvalidArgumentException;
+use yii\web\BadRequestHttpException;
 /**
 * Login form
 */
@@ -22,6 +25,7 @@ class Login extends Model
     {
         return [
             [['username', 'password'], 'required'],
+            ['username', 'validateUsername'],
             ['password', 'validatePassword'],
         ];
     }
@@ -37,6 +41,18 @@ class Login extends Model
         ];
     }
     
+    
+    public function validateUsername($attribute, $params)
+    {
+        
+        if (!$this->hasErrors()) {
+            $user = $this->getUser();
+            if (!$user) {
+                $this->addError($attribute, 'There is no user.');
+            }
+        }
+        
+    }
     /**
     * Validates the password.
     * This method serves as the inline validation for password.
@@ -46,10 +62,11 @@ class Login extends Model
     */
     public function validatePassword($attribute, $params)
     {
+        
         if (!$this->hasErrors()) {
             $user = $this->getUser();
-            if (!$user || !$user->validatePassword($this->password)) {
-                $this->addError($attribute, 'Incorrect username or password.');
+            if ($user && !$user->validatePassword($this->password)) {
+                $this->addError($attribute, 'Incorrect password.');
             }
         }
         
@@ -62,6 +79,7 @@ class Login extends Model
     */
     public function login()
     {
+        
         if ($this->validate()) {
             $token = $this->_user->generateAccessToken();
             return $token;

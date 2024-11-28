@@ -203,8 +203,6 @@ class SiteController extends \yii\rest\Controller
                 
                 $aid->token = null;
                 if($aid->validate()){
-                    
-                    
                     $aid->save();
                 }else{
                     $register->remove();
@@ -274,14 +272,10 @@ class SiteController extends \yii\rest\Controller
     */
     public function actionLogin()
     {
+        
         $login = new Login();
-        if ($login->load(Yii::$app->getRequest()->getBodyParams(), '')) {
-            if ($login->login()) {
-                $login->user->addRoles(['mrpp.com']);
-                return $login->user->toArray([],['auth']);
-            } else {
-                throw new Exception("Login Error", 400);
-            }
+        if ($login->load(Yii::$app->getRequest()->getBodyParams(), '') && $login->login()) {
+            return $login->user->toArray([],['auth']);
         } else {
             throw new Exception(json_encode($login->getFirstErrors()), 400);
         }
