@@ -18,7 +18,7 @@ return [
         ],
         'db' => [
             'class' => 'yii\db\Connection',
-            'dsn' => 'mysql:host=' . getenv('MYSQL_HOST') . ';dbname=yii2advanced',
+            'dsn' => 'mysql:host=' . getenv('MYSQL_HOST') . ';dbname=' . getenv('MYSQL_DB'),
             'username' => 'root',
             'password' => getenv('MYSQL_ROOT_PASSWORD'),
             'charset' => 'utf8',
@@ -41,6 +41,6 @@ return [
             ],
         ],
         
-
+        
     ],
 ];
