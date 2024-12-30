@@ -289,6 +289,7 @@ return [
                     'extraPatterns' => [
                         'POST login' => 'login',
                         'GET test' => 'test',
+                        'POST test' => 'test',
                         'POST apple-id' => 'apple-id',
                         'POST apple-id-link' => 'apple-id-link',
                         'POST apple-id-create' => 'apple-id-create',
