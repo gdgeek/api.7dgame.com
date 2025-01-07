@@ -38,7 +38,6 @@ use yii\db\Expression;
 
 */
 class Verse extends \yii\db\ActiveRecord
-
 {
     
     public function behaviors()
@@ -135,10 +134,16 @@ class Verse extends \yii\db\ActiveRecord
                 return $this->data;
                 
             },
+           
             'code' => function () {
                 $verseCode = $this->verseCode;
                 if($verseCode && $verseCode->code){
-                    $script = $verseCode->code->lua;
+                
+                    $cl = Yii::$app->request->get('cl');
+                    if(!$cl){
+                      $cl = 'lua';
+                    }
+                    $script = $verseCode->code->$cl;
                 }else if ($this->script) {
                     $script = $this->script->script;
                 }
