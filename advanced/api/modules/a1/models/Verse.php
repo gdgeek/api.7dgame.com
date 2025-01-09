@@ -137,18 +137,20 @@ class Verse extends \yii\db\ActiveRecord
            
             'code' => function () {
                 $verseCode = $this->verseCode;
+                $cl = Yii::$app->request->get('cl');
+                if(!$cl){
+                  $cl = 'lua';
+                }
                 if($verseCode && $verseCode->code){
-                
-                    $cl = Yii::$app->request->get('cl');
-                    if(!$cl){
-                      $cl = 'lua';
-                    }
                     $script = $verseCode->code->$cl;
                 }else if ($this->script) {
                     $script = $this->script->script;
                 }
-                
-                $substring = "local verse = {}\nlocal is_playing = false\n";
+                if($cl == 'lua'){
+                    $substring = "local verse = {}\nlocal is_playing = false\n";
+                }else if($cl == 'js'){
+                    $substring = "let verse = {}\nlet is_playing = false\n";
+                }
                 if(isset($script)){
                     if (strpos($script, $substring) !== false) {
                         return $script;
