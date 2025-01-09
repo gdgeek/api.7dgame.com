@@ -148,8 +148,6 @@ class Verse extends \yii\db\ActiveRecord
                 }
                 if($cl == 'lua'){
                     $substring = "local verse = {}\nlocal is_playing = false\n";
-                }else if($cl == 'js'){
-                    $substring = "let verse = {};\nlet is_playing = false;\n";
                 }
                 if(isset($script)){
                     if (strpos($script, $substring) !== false) {

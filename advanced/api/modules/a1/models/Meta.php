@@ -128,8 +128,6 @@ class Meta extends \yii\db\ActiveRecord
         
         if($cl == 'lua'){
             $substring = "local meta = {}\nlocal index = ''\n";
-        }else if($cl == 'js'){
-            $substring = "let meta = {};\let index = '';\n";
         }
    
 
