@@ -1,4 +1,8 @@
 <?php
+
+/**
+ * MethodController implements the CRUD actions for Method model.
+ 
 namespace backend\controllers;
 
 use api\modules\v1\models\Order;
@@ -9,9 +13,7 @@ use EasyWeChat\OfficialAccount\Application;
 use yii\web\Controller;
 use \Symfony\Component\HttpClient\Exception\ClientException;
 
-/**
- * MethodController implements the CRUD actions for Method model.
- */
+
 class WechatController extends Controller
 {
 
@@ -278,3 +280,5 @@ class WechatController extends Controller
 
     }
 }
+
+*/
