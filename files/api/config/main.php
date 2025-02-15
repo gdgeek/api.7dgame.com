@@ -159,6 +159,14 @@ return [
                         'POST login' => 'login',
                     ],
                 ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/auth',
+                    'pluralize' => false,
+                    'extraPatterns' => [
+                        'POST login' => 'login',
+                    ],
+                ],
                 /*
                 [
                     'class' => 'yii\rest\UrlRule',
