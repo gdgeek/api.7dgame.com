@@ -31,14 +31,8 @@ use yii\web\IdentityInterface;
 * @property AppleId[] $apples //苹果Id
 * @property Cyber[] $cybers //代码
 * @property File[] $files //文件
-* @property Invitation[] $invitations //邀请 全都要删除
-* @property Knight[] $knights0 //骑士 全都要删除
 * @property Like[] $likes //点赞
-* @property Message[] $messages //消息全都要删除
 * @property Meta[] $metas //元数据
-* @property MetaKnight[] $metaKnights //骑士全都删除
-* @property Order[] $orders //订单全都要删除
-* @property Reply[] $replies //回复全都要删除
 * @property Resource[] $resources //资源
 * @property Space[] $spaces //空间
 * @property UserInfo[] $userInfos //用户信息
@@ -46,7 +40,7 @@ use yii\web\IdentityInterface;
 * @property VerseOpen[] $verseOpens //开放宇宙
 * @property VerseShare[] $verseShares //共享宇宙
 * @property Token[] $vpTokens 游戏 token
-* @property Wx[] $wxes //微信登录用
+* @property Wx[] $wxes //微信登录用 要删除
 */
 class User extends \yii\db\ActiveRecord implements IdentityInterface
 {
@@ -123,6 +117,15 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
         }
         return $has;
     }
+    public function token(){
+        $now = new \DateTimeImmutable('now', new \DateTimeZone(\Yii::$app->timeZone));
+        $this->generateAuthKey();
+        return [
+            'accessToken' => $this->generateAccessToken($now),
+            'expires' => $now->modify('+3 hour')->format('Y-m-d H:i:s'),
+            'refreshToken' => $this->auth_key,
+        ];
+    }
     public function getAuth(){
         return $this->generateAccessToken();
     }
@@ -163,10 +166,12 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
     }
     
     //生成token
-    public function generateAccessToken()
+    public function generateAccessToken($now = null)
     {
         
-        $now = new \DateTimeImmutable('now', new \DateTimeZone(\Yii::$app->timeZone));
+        if($now == null){
+            $now = new \DateTimeImmutable('now', new \DateTimeZone(\Yii::$app->timeZone));
+        }
         
         $token = \Yii::$app->jwt->getBuilder()
         ->issuedBy(\Yii::$app->request->hostInfo)
@@ -305,7 +310,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
             'created_at' => 'Created At',//创建时间 保留
             'updated_at' => 'Updated At',//更新时间 保留
             'verification_token' => 'Verification Token',//不保留
-            'access_token' => 'Access Token',// 不保留
+            'access_token' => 'Access Token',// 保留
             'wx_openid' => 'Wx Openid',//微信openid 下次取消
             'nickname' => 'Nickname',//昵称 保留
         ];
@@ -321,14 +326,5 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
         return $this->hasOne(AppleId::className(), ['user_id' => 'id']);
     }
     
-    /**
-    * Gets query for [[VpToken]].
-    *
-    
-    public function getVpToken()//获取游戏token
-    {
-    return $this->hasOne(Token::className(), ['user_id' => 'id']);
-    }
-    * @return \yii\db\ActiveQuery
-    */
+  
 }

@@ -155,7 +155,8 @@ return [
                     'pluralize' => false,
                     'extraPatterns' => [
                         'POST link' => 'link',
-                        'GET link' => 'link',
+                        'POST register' => 'register',
+                        'POST login' => 'login',
                     ],
                 ],
                 /*
