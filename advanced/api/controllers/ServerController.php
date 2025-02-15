@@ -4,7 +4,6 @@ namespace api\controllers;
 
 use api\common\models\BindEmailForm;
 use api\common\models\ResetPasswordForm;
-use api\modules\v1\models\User;
 use mdm\admin\components\AccessControl;
 use bizley\jwt\JwtHttpBearerAuth;
 use Yii;
