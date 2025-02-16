@@ -145,7 +145,8 @@ return [
                     'controller' => 'v1/user',
                     'extraPatterns' => [
                         'PUT set-data' => 'set-data',
-                        'GET get-data' => 'get-data',
+                        'GET get-data' => 'info',
+                        'GET info' => 'info',
                         'GET creation' => 'creation',
                     ],
                 ],

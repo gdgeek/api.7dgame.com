@@ -47,6 +47,7 @@ class UserController extends \yii\rest\Controller
 
         return $behaviors;
     }
+    /*
     private function getAssignments($userId)
     {
         $manager = Configs::authManager();
@@ -57,14 +58,19 @@ class UserController extends \yii\rest\Controller
 
         }
         return $ret;
-    }
+    }*/
     private function getUserData()
     {
-        $user = new \stdClass();
-        $user->username = Yii::$app->user->identity->username;
-        $user->data = Yii::$app->user->identity->getData();
-        $user->roles = $this->getAssignments(Yii::$app->user->identity->id);
-        return $user;
+    //    $user = new \stdClass();
+        $user =  Yii::$app->user->identity;
+       // $user->username = Yii::$app->user->identity->username;
+       // $user->data = Yii::$app->user->identity->getData();
+       // $user->roles = $this->getAssignments(Yii::$app->user->identity->id);
+        return [
+            'username' => $user->username,
+            'data' => $user->getData(),
+            'roles' => $user->roles,
+        ];
 
     }
     public function actionCreation()
@@ -87,7 +93,8 @@ class UserController extends \yii\rest\Controller
 
         }
     }
-    public function actionGetData()
+    
+    public function actionInfo()
     {
         return $this->getUserData();
     }

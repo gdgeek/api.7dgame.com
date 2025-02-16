@@ -129,6 +129,12 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
     public function getAuth(){
         return $this->generateAccessToken();
     }
+    public function getRoles()
+    {
+        $manager = Configs::authManager();
+        $assignments = $manager->getAssignments($this->id);
+        return array_values(array_map(function ($value) {return $value->roleName;}, $assignments));
+    }
     
     public function getData()
     {
@@ -248,12 +254,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
         $assignment = new Assignment($this->id);
         $assignment->revoke($roles);
     }
-    public function getRoles()
-    {
-        $manager = Configs::authManager();
-        $assignments = $manager->getAssignments($this->id);
-        return array_values(array_map(function ($value) {return $value->roleName;}, $assignments));
-    }
+  
     
     
     public static function create($username, $password){
