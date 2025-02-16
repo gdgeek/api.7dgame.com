@@ -77,7 +77,7 @@ class UserController extends \yii\rest\Controller
         $creation = new UserCreation();
         return $creation;
     }
-    public function actionSetData()
+    public function actionUpdate()
     {
         $model = new UserDataForm(Yii::$app->user->identity);
         $post = Yii::$app->request->post();
@@ -96,7 +96,7 @@ class UserController extends \yii\rest\Controller
     
     public function actionInfo()
     {   
-        $id = User::tokenToId("eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgxIiwiaWF0IjoxNzM5NjkxNzkzLjU1MTg1LCJuYmYiOjE3Mzk2OTE3OTMuNTUxODUsImV4cCI6MTczOTcwMjU5My41NTE4NSwidWlkIjo1Mzl9.bIiR__RaesmVP4YCRE-eNL87TO4JFKDosAJmj-kmOPc");
+        //$id = User::tokenToId("eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgxIiwiaWF0IjoxNzM5NjkxNzkzLjU1MTg1LCJuYmYiOjE3Mzk2OTE3OTMuNTUxODUsImV4cCI6MTczOTcwMjU5My41NTE4NSwidWlkIjo1Mzl9.bIiR__RaesmVP4YCRE-eNL87TO4JFKDosAJmj-kmOPc");
 
       
         //throw new Exception(json_encode($id));

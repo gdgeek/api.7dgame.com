@@ -145,7 +145,7 @@ return [
                     'controller' => 'v1/user',
                     'pluralize' => false,
                     'extraPatterns' => [
-                        'PUT set-data' => 'set-data',
+                        'PUT update' => 'update',
                         'GET get-data' => 'info',
                         'GET info' => 'info',
                         'GET creation' => 'creation',
@@ -221,6 +221,7 @@ return [
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/upload',
+                    'pluralize' => false,
                     'extraPatterns' => [
                         'POST file' => 'file',
                     ],

@@ -41,20 +41,21 @@ class UserDataForm extends Model
     {
         if ($this->validate()) {
             $this->_user->nickname = $this->nickname;
-            
             $info = $this->_user->userInfo;
             
             $info->info = $this->info;
             $info->avatar_id = $this->avatar_id;
-            
+            $info->save();
             
             if ($this->_user->validate()) {
                 $this->_user->save();
                 return true;
+            }else{
+                throw new \Exception($this->_user->getError());
             }
-            return false;
+           
         } else {
-            return false;
+            throw new \Exception($this->_user->getError());
         }
     }
     /**
