@@ -143,6 +143,7 @@ return [
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/user',
+                    'pluralize' => false,
                     'extraPatterns' => [
                         'PUT set-data' => 'set-data',
                         'GET get-data' => 'info',
