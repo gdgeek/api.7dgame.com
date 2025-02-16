@@ -4,6 +4,8 @@ namespace api\modules\v1\controllers;
 
 use api\common\models\UserDataForm;
 use api\modules\v1\models\User;
+use api\modules\v1\models\UserInfo;
+
 use api\modules\v1\models\UserCreation;
 use mdm\admin\components\AccessControl;
 use mdm\admin\components\Configs;
@@ -61,14 +63,12 @@ class UserController extends \yii\rest\Controller
     }*/
     private function getUserData()
     {
-    //    $user = new \stdClass();
         $user =  Yii::$app->user->identity;
-       // $user->username = Yii::$app->user->identity->username;
-       // $user->data = Yii::$app->user->identity->getData();
-       // $user->roles = $this->getAssignments(Yii::$app->user->identity->id);
+      
         return [
-            'username' => $user->username,
-            'data' => $user->getData(),
+            'id' => $user->id,
+            'userData' => $user->data,
+            'userInfo' => $user->userInfo,
             'roles' => $user->roles,
         ];
 
@@ -83,7 +83,8 @@ class UserController extends \yii\rest\Controller
         $model = new UserDataForm(Yii::$app->user->identity);
         $post = Yii::$app->request->post();
         if ($model->load($post, '') && $model->save()) {
-            return $this->getUserData();
+            return ['success' => true, 'message'=>'ok', 'data' => $this->getUserData()];
+            //return $this->getUserData();
         } else {
             if (count($model->errors) == 0) {
                 throw new Exception("缺少数据", 400);
@@ -96,7 +97,7 @@ class UserController extends \yii\rest\Controller
     
     public function actionInfo()
     {
-        return $this->getUserData();
+        return ['success' => true, 'message'=>'ok', 'data' => $this->getUserData()];
     }
 
 }

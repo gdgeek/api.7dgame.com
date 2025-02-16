@@ -10,6 +10,7 @@ use yii\behaviors\TimestampBehavior;
 use yii\db\Expression;
 use yii\helpers\ArrayHelper;
 
+use yii\caching\TagDependency;
 /**
  * This is the model class for table "file".
  *
@@ -31,6 +32,12 @@ class File extends \yii\db\ActiveRecord
 
 {
 
+    public function  afterSave($insert, $changedAttributes)
+    {
+      
+        parent::afterSave($insert, $changedAttributes);
+        TagDependency::invalidate(Yii::$app->cache, 'file_cache');
+    }
     private $header = null;
     private function getFileHeader()
     {
