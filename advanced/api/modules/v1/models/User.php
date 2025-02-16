@@ -166,7 +166,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
     public function getData()
     {
 
-        return $this->toArray(['id', 'username','nickname', 'email'], ['emailBind']);
+        return $this->toArray(['username','nickname', 'email'], ['emailBind']);
        /* $data = new \stdClass();
         $data->username = $this->username;
         $data->id = $this->id;
