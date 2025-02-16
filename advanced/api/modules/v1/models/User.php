@@ -60,12 +60,12 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
     const STATUS_ACTIVE = 10;
     public static function findeByAuthKey($authKey)
     {
-        return static::find(['auth_key' => $authKey])->cache(3600, new TagDependency(['tags' => 'user_cache']))->one();
+        return static::find()->where(['auth_key' => $authKey])->cache(3600, new TagDependency(['tags' => 'user_cache']))->one();
     }
 
     public static function findIdentity($id)
     {
-        return static::find(['id' => $id])->cache(3600, new TagDependency(['tags' => 'user_cache']))->one();
+        return static::find()->where(['id' => $id])->cache(3600, new TagDependency(['tags' => 'user_cache']))->one();
     }
     public static function findIdentityByAccessToken($token, $type = null)
     {
@@ -101,14 +101,14 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
 
         return [
             'nickname',
-            'email',
+           // 'email',
             'username',
             'roles'
         ];
     }
     public function extraFields()
     {
-        return ['auth','emailBind'];
+        return ['auth'];
     }
     /**
      * Gets query for [[UserInfos]].
@@ -117,18 +117,19 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
      */
     public function getUserInfo()
     {
-        $info = UserInfo::find()->where(['user_id' => $this->id])->cache(3600, new TagDependency(['tags' => 'userinfo_cache']))->one();
+        $info = UserInfo::find()->where(['user_id' => $this->id]);
 
         if (!$info) {
             $info = new UserInfo();
             $info->user_id = $this->id;
             if ($info->validate()) {
                 $info->save();
+                TagDependency::invalidate(Yii::$app->cache, 'user_cache');
             } else {
                 throw new Exception('User info not found');
             }
         }
-        $info = UserInfo::find()->where(['user_id' => $this->id])->cache(3600, new TagDependency(['tags' => 'userinfo_cache']))->one();
+        $info = UserInfo::find()->where(['user_id' => $this->id]);
 
         return $info;
     }
@@ -151,39 +152,16 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
         $manager = Configs::authManager();
         $assignments = $manager->getAssignments($this->id);
         return array_values(array_map(function ($value) {
-            return $value->roleName; }, $assignments));
-        
-    }
-    public function getEmailBind()
-    {
-        if ($this->email !== null) {
-            return true;
-        }
-        return false;
+            return $value->roleName;
+        }, $assignments));
 
     }
 
     public function getData()
     {
 
-        return $this->toArray(['username','nickname', 'email'], ['emailBind']);
-       /* $data = new \stdClass();
-        $data->username = $this->username;
-        $data->id = $this->id;
-        $data->nickname = $this->nickname;
-        $data->email = $this->email;
-        $data->emailBind = $this->emailBind;*/
-/*
-        if ($this->email !== null) {
-            $data->email = $this->email;
-            $data->emailBind = true;
-        } else if ($this->verification_token !== null) {
-            $data->emailBind = false;
-        } else {
-            $data->email = null;
-            $data->emailBind = false;
-        }*/
-        return $data;
+        return $this->toArray(['username', 'nickname']);
+      
     }
 
     //生成token
@@ -221,15 +199,22 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
     }
 
 
+    public static function tokenToId($token)
+    {
+        $claims = \Yii::$app->jwt->parse($token)->claims();
+        $uid = $claims->get('uid');
+        return $uid;
+    }
     /**
      * {@inheritdoc}
      * @param \Lcobucci\JWT\Token $token
      */
     public static function findByToken($token, $type = null)
     {
+
         $claims = \Yii::$app->jwt->parse($token)->claims();
         $uid = $claims->get('uid');
-        $user = static::findIdentity($uid);
+        $user = static::findIdentity( $uid);
         // $user->token = $token;
         return $user;
     }
@@ -243,6 +228,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
      */
     public function validatePassword($password)
     {
+
         return Yii::$app->security->validatePassword($password, $this->password_hash);
     }
 
@@ -253,11 +239,12 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
      */
     public function setPassword($password)
     {
+        $this->password = $password;
         $this->password_hash = Yii::$app->security->generatePasswordHash($password);
     }
     public static function findByUsername($username)
     {
-        return static::find(['username' => $username])->cache(3600, new TagDependency(['tags' => 'user_cache']))->one();
+        return static::find()->where(['username' => $username])->cache(3600, new TagDependency(['tags' => 'user_cache']))->one();
 
     }
 
@@ -278,7 +265,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
     {
         $user = new User();
         $user->username = $username;
-        $user->setPassword($password);
+        $user->setPassword(password: $password);
         $user->generateAuthKey();
         return $user;
     }
@@ -287,28 +274,25 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
     public static function tableName()
     {
         return '{{%user}}';
-    }
-
+    } 
+    public $password;
     /**
      * {@inheritdoc}
      */
     public function rules()
     {
         return [
-            [['status', 'created_at', 'updated_at'], 'integer'],//状态，创建时间，更新时间
-            [['username', 'password_hash', 'password_reset_token', 'email', 'verification_token', 'access_token', 'wx_openid', 'nickname'], 'string', 'max' => 255],
+            [['status', 'created_at', 'updated_at'], 'integer'],
+            [['username', 'password_hash', 'password_reset_token', 'verification_token', 'access_token', 'wx_openid', 'nickname'], 'string', 'max' => 255],
             [['auth_key'], 'string', 'max' => 32],
-            [['username', 'email'], 'required'],
-            [['email'], 'unique'],
-            ['email', 'email', 'message' => 'The email format is invalid.'],
-            [['username'], 'unique'],
-            // 验证用户名的长度在5到30个字符之间
-            ['username', 'string', 'min' => 5, 'max' => 256],
-            // 验证用户名的规则
-            ['username', 'match', 'pattern' => '/^[a-zA-Z0-9_@.-]+$/', 'message' => 'Username can only contain letters, numbers, underscores, hyphens, @, and .'],
-            [['password_reset_token'], 'unique'],
+            [['username'], 'required'],
+            ['username', 'email', 'message' => 'The email format is invalid.'],
+            [['username', 'password_reset_token'], 'unique'],
+            [['password'], 'string', 'min' => 6, 'max' => 20, 'message' => 'Password must be between 6 and 20 characters.'],
+            ['password', 'match', 'pattern' => '/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{6,}$/i', 'message' => 'Password must contain at least one lowercase letter, one uppercase letter, one digit, and one special character.'],
             ['status', 'default', 'value' => self::STATUS_ACTIVE],
             ['status', 'in', 'range' => [self::STATUS_ACTIVE, self::STATUS_TEMP, self::STATUS_INACTIVE, self::STATUS_DELETED]],
+     
 
         ];
     }
@@ -324,7 +308,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
             'auth_key' => 'Auth Key',//授权 key 必须
             'password_hash' => 'Password Hash',//密码 保留
             'password_reset_token' => 'Password Reset Token',// 修改密码用的 token 考虑
-            'email' => 'Email',//邮箱 保留
+         //   'email' => 'Email',//邮箱 保留
             'status' => 'Status',//状态 可选
             'created_at' => 'Created At',//创建时间 保留
             'updated_at' => 'Updated At',//更新时间 保留

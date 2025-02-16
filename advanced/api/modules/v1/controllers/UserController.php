@@ -24,7 +24,7 @@ class UserController extends \yii\rest\Controller
 
         // add CORS filter
         $behaviors['corsFilter'] = [
-            'class' => \yii\filters\Cors::className(),
+            'class' => \yii\filters\Cors::class,
             'cors' => [
                 'Origin' => ['*'],
                 'Access-Control-Request-Method' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],
@@ -34,18 +34,18 @@ class UserController extends \yii\rest\Controller
             ],
         ];
         $behaviors['authenticator'] = [
-            'class' => CompositeAuth::className(),
+            'class' => CompositeAuth::class,
             'authMethods' => [
                 JwtHttpBearerAuth::class,
             ],
             'except' => ['options'],
         ];
         // re-add authentication filter
-
+/*
         $behaviors['access'] = [
             'class' => AccessControl::class,
         ];
-
+*/
         return $behaviors;
     }
     /*
@@ -95,7 +95,11 @@ class UserController extends \yii\rest\Controller
     }
     
     public function actionInfo()
-    {
+    {   
+        $id = User::tokenToId("eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgxIiwiaWF0IjoxNzM5NjkxNzkzLjU1MTg1LCJuYmYiOjE3Mzk2OTE3OTMuNTUxODUsImV4cCI6MTczOTcwMjU5My41NTE4NSwidWlkIjo1Mzl9.bIiR__RaesmVP4YCRE-eNL87TO4JFKDosAJmj-kmOPc");
+
+      
+        //throw new Exception(json_encode($id));
         return ['success' => true, 'message'=>'ok', 'data' => $this->getUserData()];
     }
 

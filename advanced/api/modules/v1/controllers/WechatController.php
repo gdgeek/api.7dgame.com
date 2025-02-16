@@ -52,22 +52,31 @@ class WechatController extends \yii\rest\Controller
         $wechat = Wechat::findOne(['token'=>$token]);
         if (!$wechat) {
             throw new BadRequestHttpException("no wechat");
-
         }
         if($wechat->user){
-            return ['success' => true, 'message' => "login", 'token'=> $wechat->user->token()];
+
+            throw new BadRequestHttpException("already registered,". $wechat->user->id);
         }else{
             $user = User::create($username, $password);
-        
-            $wechat->user_id = $user->id;
-            if(!$wechat->validate()){
-                throw new BadRequestHttpException(json_decode($wechat->errors, true));
+            $user->addRoles(["user"]);
+
+            if(!$user->validate()){
+                throw new BadRequestHttpException(json_encode($user->errors));
             }
+            $user->save();
+
+            $wechat->user_id = $user->id;
+           
+           if(!$wechat->validate() ){
+                throw new BadRequestHttpException(json_encode($wechat->errors, true));
+            }
+           
             $wechat->save();
-            return ['success' => true, 'message' => "register", 'token'=> $wechat->user->token()];
+            return ['success' => true, 'message' => "register", 'uid'=>$user->id, 'token'=> $user->token()];
            
         }
     }
+    /*
     public function actionLink()
     {
         $token = Yii::$app->request->post("token");
@@ -89,6 +98,7 @@ class WechatController extends \yii\rest\Controller
 
         }
         if($wechat->user){
+            
             return ['success' => true, 'message' => "login", 'token'=> $wechat->user->token()];
         }else{
             $user = User::findByUsername($username);
@@ -101,14 +111,15 @@ class WechatController extends \yii\rest\Controller
 
             $wechat->user_id = $user->id;
             if(!$wechat->validate()){
-                throw new BadRequestHttpException(json_decode($wechat->errors, true));
+                throw new BadRequestHttpException(json_encode($wechat->errors, true));
             }
             $wechat->save();
+          
             return ['success' => true, 'message' => "link", 'token'=> $wechat->user->token()];
            
         }
 
-    }
+    }*/
 
 
 

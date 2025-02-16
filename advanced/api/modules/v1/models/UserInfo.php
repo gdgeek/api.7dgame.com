@@ -92,7 +92,7 @@ class UserInfo extends \yii\db\ActiveRecord
      */
     public function getAvatar()
     {
-        return $this->hasOne(File::class, ['id' => 'avatar_id'])->cache(3600, new TagDependency(['tags' => 'file_cache']));
+        return $this->hasOne(File::class, ['id' => 'avatar_id']);
     }
 
     /**
@@ -102,7 +102,7 @@ class UserInfo extends \yii\db\ActiveRecord
      */
     public function getUser()
     {
-        return $this->hasOne(User::class, ['id' => 'user_id'])->cache(3600, new TagDependency(['tags' => 'user_cache']));
+        return $this->hasOne(User::class, ['id' => 'user_id']);
     }
 
     /**

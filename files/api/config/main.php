@@ -156,7 +156,7 @@ return [
                     'controller' => 'v1/wechat',
                     'pluralize' => false,
                     'extraPatterns' => [
-                        'POST link' => 'link',
+                      // 'POST link' => 'link',
                         'POST register' => 'register',
                         'POST login' => 'login',
                     ],
