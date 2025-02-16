@@ -17,7 +17,27 @@ class AuthController extends \yii\rest\Controller
 
         return $behaviors;
     }
+    public function actionRefresh(){
+
+        $refreshToken = Yii::$app->request->post("refreshToken");
+        if(!$refreshToken){
+            throw new BadRequestHttpException("refreshToken is required");
+        }
+        $user = User::findeByAuthKey($refreshToken);
+        if(!$user){
+            throw new BadRequestHttpException("no user");
+        }
+        $user->generateAuthKey();
+        if($user->validate()){
+            $user->save();
+        }else{
+            throw new BadRequestHttpException("save error");
+        }
+        return ['success' => true, 'message' => "refresh", 'token'=> $user->token()];
+
+    }
     public function actionLogin(){
+        
         $username = Yii::$app->request->post("username");
         if (!$username) {
             throw new BadRequestHttpException("username is required");

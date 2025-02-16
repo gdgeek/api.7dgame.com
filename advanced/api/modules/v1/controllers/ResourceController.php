@@ -71,11 +71,11 @@ class ResourceController extends ActiveController
         
         if (isset(Yii::$app->request->queryParams['type'])) {
             $type = HtmlPurifier::process(Yii::$app->request->queryParams['type']);
-            $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id, 'type' => $type])->cache(3600, new TagDependency(['tags' => 'resource_cache']));
+            $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id, 'type' => $type]);
         } else {
-            $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id])->cache(3600, new TagDependency(['tags' => 'resource_cache']));
+            $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id]);
         }
-        
+        $dataProvider->query->cache(3600, new TagDependency(['tags' => 'resource_cache']));
         return $dataProvider;
     }
 

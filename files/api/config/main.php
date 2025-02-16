@@ -167,6 +167,7 @@ return [
                     'pluralize' => false,
                     'extraPatterns' => [
                         'POST login' => 'login',
+                        'POST refresh' => 'refresh',
                     ],
                 ],
                 /*

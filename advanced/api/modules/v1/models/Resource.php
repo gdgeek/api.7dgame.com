@@ -118,7 +118,7 @@ class Resource extends \yii\db\ActiveRecord
      */
     public function getFile()
     {
-        return $this->hasOne(File::class, ['id' => 'file_id'])->cache(3600, new TagDependency(['tags' => 'file_cache']));
+        return $this->hasOne(File::class, ['id' => 'file_id']);
     }
 
     /**
@@ -128,7 +128,7 @@ class Resource extends \yii\db\ActiveRecord
      */
     public function getImage()
     {
-        return $this->hasOne(File::class, ['id' => 'image_id'])->cache(3600, new TagDependency(['tags' => 'file_cache']));
+        return $this->hasOne(File::class, ['id' => 'image_id']);
     }
 
     /**
