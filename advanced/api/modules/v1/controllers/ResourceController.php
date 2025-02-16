@@ -3,6 +3,7 @@
 namespace api\modules\v1\controllers;
 
 use api\modules\v1\models\ResourceSearch;
+use api\modules\v1\models\Resource;
 use mdm\admin\components\AccessControl;
 use bizley\jwt\JwtHttpBearerAuth;
 use Yii;
@@ -55,9 +56,14 @@ class ResourceController extends ActiveController
     {
         $actions = parent::actions();
         unset($actions['index']);
+        unset($actions['view']);
         return $actions;
     }
-
+    
+    public function actionView($id)
+    {
+        return Resource::find()->where(['id'=>$id])->cache(3600, new TagDependency(['tags' => 'resource_cache']))->one();
+    }
     public function actionIndex()
     {
         $searchModel = new ResourceSearch();
