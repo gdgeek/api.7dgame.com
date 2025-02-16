@@ -81,9 +81,12 @@ class UserController extends \yii\rest\Controller
     {
         $model = new UserDataForm(Yii::$app->user->identity);
         $post = Yii::$app->request->post();
-        if ($model->load($post, '') && $model->save()) {
+        $model->load($post, '');
+
+        if ($model->validate()) {
+            $model->save();
             return ['success' => true, 'message'=>'ok', 'data' => $this->getUserData()];
-            //return $this->getUserData();
+          
         } else {
             if (count($model->errors) == 0) {
                 throw new Exception("缺少数据", 400);
