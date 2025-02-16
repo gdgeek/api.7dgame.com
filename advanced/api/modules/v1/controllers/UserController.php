@@ -65,7 +65,7 @@ class UserController extends \yii\rest\Controller
         $user =  Yii::$app->user->identity;
       
         return [
-            'id' => $user->id,
+          //  'id' => $user->id,
             'userData' => $user->data,
             'userInfo' => $user->userInfo,
             'roles' => $user->roles,
