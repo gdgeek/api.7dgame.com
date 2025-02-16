@@ -6,6 +6,7 @@ use api\modules\v1\models\User;
 use Yii;
 use yii\behaviors\BlameableBehavior;
 
+use yii\caching\TagDependency;
 use api\modules\v1\components\Validator\JsonValidator;
 /**
  * This is the model class for table "resource".
@@ -29,6 +30,13 @@ use api\modules\v1\components\Validator\JsonValidator;
 class Resource extends \yii\db\ActiveRecord
 
 {
+
+
+    public function  afterSave($insert, $changedAttributes)
+    {
+        parent::afterSave($insert, $changedAttributes);
+        TagDependency::invalidate(Yii::$app->cache, 'resource_cache');
+    }
     public function behaviors()
     {
         return [
@@ -110,7 +118,7 @@ class Resource extends \yii\db\ActiveRecord
      */
     public function getFile()
     {
-        return $this->hasOne(File::className(), ['id' => 'file_id']);
+        return $this->hasOne(File::class, ['id' => 'file_id'])->cache(3600, new TagDependency(['tags' => 'file_cache']));
     }
 
     /**
@@ -120,7 +128,7 @@ class Resource extends \yii\db\ActiveRecord
      */
     public function getImage()
     {
-        return $this->hasOne(File::className(), ['id' => 'image_id']);
+        return $this->hasOne(File::class, ['id' => 'image_id'])->cache(3600, new TagDependency(['tags' => 'file_cache']));
     }
 
     /**
@@ -143,11 +151,11 @@ class Resource extends \yii\db\ActiveRecord
     public function afterDelete()
     {
         parent::afterDelete();
-        $file = File::findOne($this->file_id);
+        $file = $this->file;
         if ($file) {
             $file->delete();
         }
-        $image = File::findOne($this->image_id);
+        $image = $this->image;
         if ($image) {
             $image->delete();
         }
@@ -160,7 +168,7 @@ class Resource extends \yii\db\ActiveRecord
      */
     public function getMetaResources()
     {
-        return $this->hasMany(MetaResource::className(), ['resource_id' => 'id']);
+        return $this->hasMany(MetaResource::class, ['resource_id' => 'id']);
     }
 
     public function extraFields()

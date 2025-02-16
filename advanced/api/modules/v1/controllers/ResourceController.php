@@ -10,6 +10,7 @@ use yii\filters\auth\CompositeAuth;
 use yii\helpers\HtmlPurifier;
 use yii\rest\ActiveController;
 
+use yii\caching\TagDependency;
 class ResourceController extends ActiveController
 {
     public $modelClass = 'api\modules\v1\models\Resource';
@@ -59,17 +60,16 @@ class ResourceController extends ActiveController
 
     public function actionIndex()
     {
-
         $searchModel = new ResourceSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-
+        
         if (isset(Yii::$app->request->queryParams['type'])) {
             $type = HtmlPurifier::process(Yii::$app->request->queryParams['type']);
-            $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id, 'type' => $type]);
+            $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id, 'type' => $type])->cache(3600, new TagDependency(['tags' => 'resource_cache']));
         } else {
-            $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id]);
+            $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id])->cache(3600, new TagDependency(['tags' => 'resource_cache']));
         }
-
+        
         return $dataProvider;
     }
 
