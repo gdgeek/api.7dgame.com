@@ -3,7 +3,7 @@
 namespace api\modules\v1\models;
 
 use yii\db\Expression;
-
+use yii\caching\TagDependency;
 use mdm\admin\models\Assignment;
 use mdm\admin\components\Configs;
 use Yii;
@@ -46,16 +46,26 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
 {
     
     
+    public function  afterSave($insert, $changedAttributes)
+    {
+      
+        parent::afterSave($insert, $changedAttributes);
+        TagDependency::invalidate(Yii::$app->cache, 'user_cache');
+    }
     
     // public $token = null;
     const STATUS_DELETED = 0;
     const STATUS_TEMP = 1;
     const STATUS_INACTIVE = 9;
     const STATUS_ACTIVE = 10;
+    public static function findeByAuthKey($authKey)
+    {
+        return static::find(['auth_key' => $authKey])->cache(3600, new TagDependency(['tags' => 'user_cache']))->one();
+    }
     
     public static function findIdentity($id)
     {
-        return static::findOne(['id' => $id]);
+        return static::find(['id' => $id])->cache(3600, new TagDependency(['tags' => 'user_cache']))->one();
     }
     public static function findIdentityByAccessToken($token, $type = null)
     {
@@ -144,20 +154,9 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
         $data->id = $this->id;
         $data->nickname = $this->nickname;
         
-        $info = $this->userInfo;
+        $data->info = $this->userInfo;
         
-        if ($info) {
-            if(is_string($info->info)){
-                
-                $data->info = $info->info;
-            }else{
-                $data->info = json_encode($info->info);
-            }
-            $data->avatar_id = $info->avatar_id;
-            if ($info->avatar) {
-                $data->avatar = $info->avatar;
-            }
-        }
+      
         
         if ($this->email !== null) {
             $data->email = $this->email;
@@ -242,7 +241,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
     }
     public static function findByUsername($username)
     {
-        return static::findOne(['username' => $username, 'status' => self::STATUS_ACTIVE]);
+        return static::find(['username' => $username])->cache(3600, new TagDependency(['tags' => 'user_cache']))->one();
         
     }
     

@@ -69,12 +69,7 @@ class UserInfo extends \yii\db\ActiveRecord
         $fields = parent::fields();
         unset($fields['id']);
         unset($fields['user_id']);
-        $fields["info"] = function ($model) {
-            if (!is_string($model->info) && !is_null($model->info)) {
-                return json_encode($model->info);
-            }
-            return $model->info;
-        };
+       
         return $fields;
     }
 
