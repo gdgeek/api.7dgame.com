@@ -29,25 +29,28 @@ class UserDataForm extends Model
     public function __construct($user, array $config = [])
     {
         $this->_user = $user;
-        $info = $this->_user->userInfo;
+        $this->nickname = $this->_user->nickname;
+
         if($this->_user->userInfo){
-            $info = $this->_user->userInfo;
-        }else{
-            $info = new UserInfo();
-            $info->user_id = $this->_user->id;
-            $info->save();
+            $this->info = $this->_user->userInfo->info;
+            $this->avatar_id = $this->_user->userInfo->avatar_id;
         }
        
-        $this->info = $info->info;
-        $this->avatar_id = $info->avatar_id;
-        $this->nickname = $this->_user->nickname;
         parent::__construct($config);
     }
     public function save()
     {
         if ($this->validate()) {
             $this->_user->nickname = $this->nickname;
-            $info = $this->_user->userInfo;
+            $info = null;
+            if($this->_user->userInfo){
+                $info = $this->_user->userInfo;
+               
+            }else{
+                $info = new UserInfo();
+                $info->user_id = $this->_user->id;
+                
+            }
             
             $info->info = $this->info;
             $info->avatar_id = $this->avatar_id;

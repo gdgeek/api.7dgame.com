@@ -117,6 +117,11 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
     {
         return ['auth'];
     }
+
+    public function getVerse()
+    {
+        return $this->hasOne(Verse::className(), ['id' => 'verse_id']);
+    }
     /**
      * Gets query for [[UserInfo]].
      *
@@ -124,8 +129,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
      */
     public function getUserInfo()
     {
-        
-        return $this->hasOne(User::className(), ['id'=> 'user_id']);
+        return $this->hasOne(UserInfo::className(), ['user_id'=> 'id']);
 
     }
     public function token()
