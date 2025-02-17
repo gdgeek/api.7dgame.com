@@ -43,6 +43,7 @@ class UserDataForm extends Model
         if ($this->validate()) {
             $this->_user->nickname = $this->nickname;
             $info = null;
+           
             if($this->_user->userInfo){
                 $info = $this->_user->userInfo;
                
@@ -50,21 +51,23 @@ class UserDataForm extends Model
                 $info = new UserInfo();
                 $info->user_id = $this->_user->id;
                 
-            }
+            } 
             
             $info->info = $this->info;
+        
             $info->avatar_id = $this->avatar_id;
             $info->save();
-            
             if ($this->_user->validate()) {
                 $this->_user->save();
                 return true;
             }else{
-                throw new \Exception($this->_user->getError());
+                
+                throw new \Exception(json_encode($this->_user->getErrors()));
             }
            
         } else {
-            throw new \Exception($this->_user->getError());
+            throw new \Exception(json_encode($this->_user->getErrors()));
+         
         }
     }
     /**
