@@ -35,7 +35,7 @@ use yii\web\IdentityInterface;
  * @property Meta[] $metas //元数据
  * @property Resource[] $resources //资源
  * @property Space[] $spaces //空间
- * @property UserInfo[] $userInfos //用户信息
+ * @property UserInfo[] $userInfo //用户信息
  * @property Verse[] $verses
  * @property VerseOpen[] $verseOpens //开放宇宙
  * @property VerseShare[] $verseShares //共享宇宙
@@ -51,6 +51,12 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
 
         parent::afterSave($insert, $changedAttributes);
         TagDependency::invalidate(Yii::$app->cache, 'user_cache');
+
+        if (!$this->userInfo) {
+            $info = new UserInfo();
+            $info->user_id = $this->id;
+            $info->save();
+        }
     }
 
     // public $token = null;
@@ -111,27 +117,15 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
         return ['auth'];
     }
     /**
-     * Gets query for [[UserInfos]].
+     * Gets query for [[UserInfo]].
      *
      * @return \yii\db\ActiveQuery|yii\db\ActiveQuery
      */
     public function getUserInfo()
     {
-        $info = UserInfo::find()->where(['user_id' => $this->id]);
+        
+        return $this->hasOne(User::className(), ['id'=> 'user_id']);
 
-        if (!$info) {
-            $info = new UserInfo();
-            $info->user_id = $this->id;
-            if ($info->validate()) {
-                $info->save();
-                TagDependency::invalidate(Yii::$app->cache, 'user_cache');
-            } else {
-                throw new Exception('User info not found');
-            }
-        }
-        $info = UserInfo::find()->where(['user_id' => $this->id]);
-
-        return $info;
     }
     public function token()
     {
