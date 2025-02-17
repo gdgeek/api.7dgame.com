@@ -57,8 +57,6 @@ class WechatController extends \yii\rest\Controller
 
             throw new BadRequestHttpException("already registered,". $wechat->user->id);
         }else{
-
-
             $user = User::create($username, $password);
             if(!$user->validate()){
                 throw new BadRequestHttpException(json_encode($user->errors));
@@ -66,6 +64,7 @@ class WechatController extends \yii\rest\Controller
             $user->save();
             $user->addRoles(["user"]);
            
+            $wechat->user_id = $user->id;
            if(!$wechat->validate() ){
                 throw new BadRequestHttpException(json_encode($wechat->errors, true));
             }
