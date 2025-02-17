@@ -50,13 +50,14 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
     {
 
         parent::afterSave($insert, $changedAttributes);
-        TagDependency::invalidate(Yii::$app->cache, 'user_cache');
+     
 
         if (!$this->userInfo) {
             $info = new UserInfo();
             $info->user_id = $this->id;
             $info->save();
         }
+        TagDependency::invalidate(Yii::$app->cache, 'user_cache');
     }
 
     // public $token = null;
