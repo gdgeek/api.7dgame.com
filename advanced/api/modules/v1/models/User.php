@@ -8,7 +8,6 @@ use mdm\admin\models\Assignment;
 use mdm\admin\components\Configs;
 use Yii;
 use yii\behaviors\TimestampBehavior;
-use yii\db\ActiveRecord;
 use yii\web\IdentityInterface;
 //清理干净的 user 模型
 /**
@@ -136,16 +135,18 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
     public function token()
     {
         $now = new \DateTimeImmutable('now', new \DateTimeZone(\Yii::$app->timeZone));
-        $this->generateAuthKey();
+        $expires = $now->modify('+3 hour');
+        //$refreshExpires = $now->modify('+24 hour');
+       // $this->generateAuthKey();
         return [
-            'accessToken' => $this->generateAccessToken($now),
-            'expires' => $now->modify('+3 hour')->format('Y-m-d H:i:s'),
-            'refreshToken' => $this->auth_key,
+            'accessToken' => $this->generateAccessToken($now, $expires),
+            'expires' => $expires->format('Y-m-d H:i:s'),
+            'refreshToken' => $this->generateAccessToken($now, $now->modify('+24 hour')),
         ];
     }
     public function getAuth()
     {
-        return $this->generateAccessToken();
+        return $this->auth_key();
     }
     public function getRoles()
     {
@@ -165,22 +166,24 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
     }
 
     //生成token
-    public function generateAccessToken($now = null)
+    public function generateAccessToken($now = null, $expires = null)
     {
 
         if ($now == null) {
             $now = new \DateTimeImmutable('now', new \DateTimeZone(\Yii::$app->timeZone));
         }
-
-        $token = \Yii::$app->jwt->getBuilder()
-            ->issuedBy(\Yii::$app->request->hostInfo)
+        if($expires == null) {
+            $expires = $now->modify('+3 hour');
+        }
+        $token = Yii::$app->jwt->getBuilder()
+            ->issuedBy(Yii::$app->request->hostInfo)
             ->issuedAt($now) // Configures the time that the token was issue (iat claim)
             ->canOnlyBeUsedAfter($now)
-            ->expiresAt($now->modify('+3 hour')) // Configures the expiration time of the token (exp claim)
+            ->expiresAt($expires) // Configures the expiration time of the token (exp claim)
             ->withClaim('uid', $this->id) // Configures a new claim, called "uid"
             ->getToken(
-                \Yii::$app->jwt->getConfiguration()->signer(),
-                \Yii::$app->jwt->getConfiguration()->signingKey()
+                Yii::$app->jwt->getConfiguration()->signer(),
+                Yii::$app->jwt->getConfiguration()->signingKey()
             );
         return (string) $token->toString();
     }
@@ -201,7 +204,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
 
     public static function tokenToId($token)
     {
-        $claims = \Yii::$app->jwt->parse($token)->claims();
+        $claims = Yii::$app->jwt->parse($token)->claims();
         $uid = $claims->get('uid');
         return $uid;
     }
@@ -212,7 +215,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
     public static function findByToken($token, $type = null)
     {
 
-        $claims = \Yii::$app->jwt->parse($token)->claims();
+        $claims = Yii::$app->jwt->parse($token)->claims();
         $uid = $claims->get('uid');
         $user = static::findIdentity( $uid);
         // $user->token = $token;
