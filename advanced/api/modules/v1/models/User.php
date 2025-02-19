@@ -67,16 +67,16 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
     const STATUS_ACTIVE = 10;*/
     public static function findeByAuthKey($authKey)
     {
-        return static::find()->where(['auth_key' => $authKey])->cache(3600, new TagDependency(['tags' => 'user_cache']))->one();
+        return static::find()->where(['auth_key' => $authKey])->one();
     }
 
     public static function findIdentity($id)
     {
-        return static::find()->where(['id' => $id])->cache(3600, new TagDependency(['tags' => 'user_cache']))->one();
+        return static::find()->where(['id' => $id])->one();
     }
     public static function findIdentityByAccessToken($token, $type = null)
     {
-        $claims = \Yii::$app->jwt->parse($token)->claims();
+        $claims = Yii::$app->jwt->parse($token)->claims();
         $uid = $claims->get('uid');
         $user = static::findIdentity($uid);
         return $user;
@@ -214,7 +214,6 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
      */
     public static function findByToken($token, $type = null)
     {
-
         $claims = Yii::$app->jwt->parse($token)->claims();
         $uid = $claims->get('uid');
         $user = static::findIdentity( $uid);
@@ -231,7 +230,6 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
      */
     public function validatePassword($password)
     {
-
         return Yii::$app->security->validatePassword($password, $this->password_hash);
     }
 
@@ -247,7 +245,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
     }
     public static function findByUsername($username)
     {
-        return static::find()->where(['username' => $username])->cache(3600, new TagDependency(['tags' => 'user_cache']))->one();
+        return static::find()->where(['username' => $username])->one();
 
     }
 
