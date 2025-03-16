@@ -45,7 +45,7 @@ class TencentCloudController extends ActiveController
     }
     public function actionCloud()
     {
-        $cloud = \Yii::$app->secret->cloud;
+        $cloud = Yii::$app->secret->cloud;
         return $cloud;
     }
     public function actionToken($bucket, $region = 'ap-nanjing')

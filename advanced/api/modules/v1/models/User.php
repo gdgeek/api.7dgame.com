@@ -59,12 +59,6 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
         TagDependency::invalidate(Yii::$app->cache, 'user_cache');
     }
 
-    // public $token = null;
-    /*
-    const STATUS_DELETED = 0;
-    const STATUS_TEMP = 1;
-    const STATUS_INACTIVE = 9;
-    const STATUS_ACTIVE = 10;*/
     public static function findeByAuthKey($authKey)
     {
         return static::find()->where(['auth_key' => $authKey])->one();
@@ -136,8 +130,6 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
     {
         $now = new \DateTimeImmutable('now', new \DateTimeZone(\Yii::$app->timeZone));
         $expires = $now->modify('+3 hour');
-        //$refreshExpires = $now->modify('+24 hour');
-       // $this->generateAuthKey();
         return [
             'accessToken' => $this->generateAccessToken($now, $expires),
             'expires' => $expires->format('Y-m-d H:i:s'),
@@ -212,7 +204,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
      * {@inheritdoc}
      * @param \Lcobucci\JWT\Token $token
      */
-    public static function findByToken($token, $type = null)
+    public static function findByToken($token)
     {
         $claims = Yii::$app->jwt->parse($token)->claims();
         $uid = $claims->get('uid');
