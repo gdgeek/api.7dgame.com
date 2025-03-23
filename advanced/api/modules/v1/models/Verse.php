@@ -213,18 +213,6 @@ class Verse extends \yii\db\ActiveRecord
 
     }
 
-    /**
-     * Gets query for [[EventLinks]].
-     *
-     * @return \yii\db\ActiveQuery|EventLinkQuery
-     */
-    /*
-    public function getEventLinks()
-    {
-    return $this->hasMany(EventLink::className(), ['verse_id' => 'id']);
-    }
-    */
-
 
     /**
      * Gets query for [[Languages]].
@@ -235,16 +223,7 @@ class Verse extends \yii\db\ActiveRecord
     {
         return $this->hasMany(MultilanguageVerse::className(), ['verse_id' => 'id']);
     }
-    /**
-     * Gets query for [[MetaKnights]].
-     *
-     * @return \yii\db\ActiveQuery|MetaKnightQuery
-     */
-    /*
-    public function getMetaKnights()
-    {
-    return $this->hasMany(MetaKnight::className(), ['verse_id' => 'id']);
-    }*/
+  
     /**
      * Gets query for [[Metas]].
      *

@@ -2,7 +2,6 @@
 
 namespace api\modules\a1\models;
 
-//use api\modules\a1\models\EventLink;
 use api\modules\a1\models\File;
 use api\modules\a1\models\Meta;
 use api\modules\a1\models\Resource;
@@ -203,17 +202,7 @@ class Verse extends \yii\db\ActiveRecord
         return $this->hasMany(VerseCyber::className(), ['verse_id' => 'id']);
     }
     
-    /**
-    * Gets query for [[EventLinks]].
-    *
-    * @return \yii\db\ActiveQuery|EventLinkQuery
-    */
-    /*
-    public function getEventLinks()
-    {
-    return $this->hasMany(EventLink::className(), ['verse_id' => 'id']);
-    }
-    */
+   
     public function getResources()
     {
         $metas = $this->metas;
