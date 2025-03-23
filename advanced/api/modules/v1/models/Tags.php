@@ -2,7 +2,6 @@
 
 namespace api\modules\v1\models;
 
-use api\modules\v1\components\Validator\JsonValidator;
 use Yii;
 
 /**
@@ -12,8 +11,10 @@ use Yii;
  * @property string|null $name
  * @property string|null $info
  * @property int $managed
+ * @property string|null $key
  *
  * @property MessageTags[] $messageTags
+ * @property VerseTags[] $verseTags
  */
 class Tags extends \yii\db\ActiveRecord
 {
@@ -24,29 +25,17 @@ class Tags extends \yii\db\ActiveRecord
     {
         return 'tags';
     }
-    public function fields()
-    {
-        return [
-            'id',
-            'name',
-            'info' => function ($model) {
-                if(!is_string($model->info) && !is_null($model->info)){
-                    return json_encode($model->info);
-                }
-                return $model->info;
-            },
-            'managed',
-        ];
-    }
+
     /**
      * {@inheritdoc}
      */
     public function rules()
     {
         return [
-            [['info'], JsonValidator::class],
+            [['info'], 'safe'],
             [['managed'], 'integer'],
-            [['name'], 'string', 'max' => 255],
+            [['name', 'key'], 'string', 'max' => 255],
+            [['key'], 'unique'],
         ];
     }
 
@@ -60,13 +49,14 @@ class Tags extends \yii\db\ActiveRecord
             'name' => 'Name',
             'info' => 'Info',
             'managed' => 'Managed',
+            'key' => 'Key',
         ];
     }
 
     /**
      * Gets query for [[MessageTags]].
      *
-     * @return \yii\db\ActiveQuery|MessageTagsQuery
+     * @return \yii\db\ActiveQuery
      */
     public function getMessageTags()
     {
@@ -74,11 +64,12 @@ class Tags extends \yii\db\ActiveRecord
     }
 
     /**
-     * {@inheritdoc}
-     * @return TagsQuery the active query used by this AR class.
+     * Gets query for [[VerseTags]].
+     *
+     * @return \yii\db\ActiveQuery
      */
-    public static function find()
+    public function getVerseTags()
     {
-        return new TagsQuery(get_called_class());
+        return $this->hasMany(VerseTags::className(), ['tags_id' => 'id']);
     }
 }

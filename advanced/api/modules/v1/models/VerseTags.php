@@ -9,9 +9,9 @@ use Yii;
  *
  * @property int $id
  * @property int $verse_id
- * @property int $tag_id
+ * @property int $tags_id
  *
- * @property Tags $tag
+ * @property Tags $tags
  * @property Verse $verse
  */
 class VerseTags extends \yii\db\ActiveRecord
@@ -30,10 +30,11 @@ class VerseTags extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['verse_id', 'tag_id'], 'required'],
-            [['verse_id', 'tag_id'], 'integer'],
-            [['tag_id'], 'exist', 'skipOnError' => true, 'targetClass' => Tags::className(), 'targetAttribute' => ['tag_id' => 'id']],
+            [['verse_id', 'tags_id'], 'required'],
+            [['verse_id', 'tags_id'], 'integer'],
+            [['tags_id'], 'exist', 'skipOnError' => true, 'targetClass' => Tags::className(), 'targetAttribute' => ['tags_id' => 'id']],
             [['verse_id'], 'exist', 'skipOnError' => true, 'targetClass' => Verse::className(), 'targetAttribute' => ['verse_id' => 'id']],
+            [['verse_id', 'tags_id'], 'unique', 'targetAttribute' => ['verse_id', 'tags_id']],
         ];
     }
 
@@ -45,18 +46,18 @@ class VerseTags extends \yii\db\ActiveRecord
         return [
             'id' => 'ID',
             'verse_id' => 'Verse ID',
-            'tag_id' => 'Tag ID',
+            'tags_id' => 'Tags ID',
         ];
     }
 
     /**
-     * Gets query for [[Tag]].
+     * Gets query for [[Tags]].
      *
      * @return \yii\db\ActiveQuery
      */
-    public function getTag()
+    public function getTags()
     {
-        return $this->hasOne(Tags::className(), ['id' => 'tag_id']);
+        return $this->hasOne(Tags::className(), ['id' => 'tags_id']);
     }
 
     /**
