@@ -4,7 +4,6 @@ namespace api\modules\v1\components;
 
 use api\modules\v1\models\Cyber;
 use api\modules\v1\models\Meta;
-use api\modules\v1\models\MetaKnight;
 use api\modules\v1\models\Verse;
 use api\modules\v1\models\VerseScript;
 use api\modules\v1\models\VerseShare;
@@ -93,24 +92,7 @@ class VerseRule extends Rule
             }
         }
         
-        if ($controller == 'meta-knight') {
-            
-            //throw new BadRequestHttpException($controller . '$request->isGet');
-            
-            if (($request->isGet || $request->isDelete || $request->isPut) && isset($params['id'])) {
-                $knight = MetaKnight::findOne($params['id']);
-                if ($knight) {
-                    return $knight->verse;
-                }
-                
-            }
-            
-            if ($request->isPost && isset($post['verse_id'])) {
-                $verse = Verse::findOne($post['verse_id']);
-                return $verse;
-            }
-            
-        }
+       
         if ($controller == 'meta') {
             
             return null;
