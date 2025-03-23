@@ -46,8 +46,8 @@ class Verse extends \yii\db\ActiveRecord
             [
                 'class' => TimestampBehavior::class,
                 'attributes' => [
-                        \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => ['created_at'],
-                    ],
+                    \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => ['created_at'],
+                ],
                 'value' => new Expression('NOW()'),
             ],
             [
@@ -90,9 +90,11 @@ class Verse extends \yii\db\ActiveRecord
         unset($fields['updated_at']);
 
         $fields['editable'] = function () {
-            return $this->editable(); };
+            return $this->editable();
+        };
         $fields['viewable'] = function () {
-            return $this->viewable(); };
+            return $this->viewable();
+        };
 
         $fields['info'] = function () {
 
@@ -156,13 +158,12 @@ class Verse extends \yii\db\ActiveRecord
     public function getResources()
     {
         $metas = $this->metas;
-
         $ids = [];
-
         foreach ($metas as $meta) {
             $ids = array_merge_recursive($ids, $meta->resourceIds);
         }
 
+       
         $items = Resource::find()->where(['id' => $ids])->all();
         return $items;
     }
@@ -223,7 +224,7 @@ class Verse extends \yii\db\ActiveRecord
     {
         return $this->hasMany(MultilanguageVerse::className(), ['verse_id' => 'id']);
     }
-  
+
     /**
      * Gets query for [[Metas]].
      *
@@ -246,7 +247,8 @@ class Verse extends \yii\db\ActiveRecord
 
             }
         }
-        return Meta::find()->where(['id' => $ret]);
+
+        return Meta::find()->where(['id' => $ret])->all();
 
     }
     /**
