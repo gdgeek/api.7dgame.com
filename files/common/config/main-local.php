@@ -20,8 +20,15 @@ return [
             'class' => 'yii\db\Connection',
             'dsn' => 'mysql:host=' . getenv('MYSQL_HOST') . ';dbname=' . getenv('MYSQL_DB'),
             'username' => getenv('MYSQL_USERNAME'),
-            'password' => getenv('MYSQL_PASSWORD'),
+            'password' => getenv(name: 'MYSQL_PASSWORD'),
             'charset' => 'utf8',
+        ],
+
+        'redis' => [
+            'class' => 'yii\redis\Connection',
+            'hostname' => getenv('REDIS_HOST'),
+            'port' => getenv('REDIS_PORT'),
+            'database' => getenv('REDIS_DB'),
         ],
         'mailer' => [
             'class' => 'yii\swiftmailer\Mailer',

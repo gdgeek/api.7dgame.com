@@ -23,7 +23,7 @@ class AuthController extends \yii\rest\Controller
         if(!$refreshToken){
             throw new BadRequestHttpException("refreshToken is required");
         }
-        $user = User::findByToken($refreshToken);
+        $user = User::findByRefreshToken($refreshToken);
         if(!$user){
             throw new BadRequestHttpException("no user");
         }

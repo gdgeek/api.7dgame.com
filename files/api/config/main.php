@@ -258,7 +258,7 @@ return [
                         'v1/event-output',
                         'v1/event-link',
                         'v1/token',
-                        'v1/space',
+                     //   'v1/space',
                         'v1/cyber',
                         'v1/vp-map',
                     ],
@@ -353,15 +353,16 @@ return [
                     'controller' => 'v1/test',
                     'extraPatterns' => [
                         'GET file' => 'file',
+                        'GET test' => 'test',
                     ],
                 ],
-                [
+               /* [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/verse-space',
                     'extraPatterns' => [
                         'GET spaces' => 'spaces',
                     ],
-                ],
+                ],*/
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'a1/verse',

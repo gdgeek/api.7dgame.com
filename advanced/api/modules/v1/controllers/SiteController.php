@@ -261,7 +261,7 @@ class SiteController extends \yii\rest\Controller
                 throw new Exception('Error', 400);
             }
         } else {
-            throw new Exception(json_encode($model->getFirstErrors()), 400);
+            throw new Exception(json_encode($link->getFirstErrors()), 400);
         }
     }
     /**

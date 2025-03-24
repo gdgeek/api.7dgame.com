@@ -162,8 +162,6 @@ class Verse extends \yii\db\ActiveRecord
         foreach ($metas as $meta) {
             $ids = array_merge_recursive($ids, $meta->resourceIds);
         }
-
-       
         $items = Resource::find()->where(['id' => $ids])->all();
         return $items;
     }
@@ -177,7 +175,7 @@ class Verse extends \yii\db\ActiveRecord
             $this->save();
         }
     }
-
+/*
     public function getSpace()
     {
         if (is_string($this->data)) {
@@ -193,7 +191,7 @@ class Verse extends \yii\db\ActiveRecord
             }
 
         }
-    }
+    }*/
     public function extraFields()
     {
 
