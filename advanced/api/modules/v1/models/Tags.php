@@ -9,9 +9,8 @@ use Yii;
  *
  * @property int $id
  * @property string|null $name
- * @property string|null $info
- * @property int $managed
  * @property string|null $key
+ * @property string $type
  *
  * @property MessageTags[] $messageTags
  * @property VerseTags[] $verseTags
@@ -32,8 +31,8 @@ class Tags extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['info'], 'safe'],
-            [['managed'], 'integer'],
+           
+            [['type'], 'string'],
             [['name', 'key'], 'string', 'max' => 255],
             [['key'], 'unique'],
         ];
@@ -47,9 +46,8 @@ class Tags extends \yii\db\ActiveRecord
         return [
             'id' => 'ID',
             'name' => 'Name',
-            'info' => 'Info',
-            'managed' => 'Managed',
             'key' => 'Key',
+            'type' => 'Type',
         ];
     }
 

@@ -31,10 +31,10 @@ use yii\web\IdentityInterface;
  * @property AppleId[] $apples //苹果Id
  * @property Cyber[] $cybers //代码
  * @property File[] $files //文件
- * @property Like[] $likes //点赞
- * @property Meta[] $metas //元数据
- * @property Resource[] $resources //资源
- * @property Space[] $spaces //空间
+ //* @property Like[] $likes //点赞
+ //* @property Meta[] $metas //元数据
+ //* @property Resource[] $resources //资源
+ //* @property Space[] $spaces //空间
  * @property UserInfo[] $userInfo //用户信息
  * @property Verse[] $verses
  * @property VerseOpen[] $verseOpens //开放宇宙
