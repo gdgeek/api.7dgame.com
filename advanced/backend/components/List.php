@@ -1,9 +1,7 @@
 <?php
 
 namespace app\components;
-
 use yii\base\BaseObject;
-
 use yii\helpers\Url;
 
 /**

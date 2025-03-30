@@ -156,7 +156,6 @@ return [
                     'controller' => 'v1/wechat',
                     'pluralize' => false,
                     'extraPatterns' => [
-                      // 'POST link' => 'link',
                         'POST register' => 'register',
                         'POST login' => 'login',
                     ],
@@ -170,20 +169,7 @@ return [
                         'POST refresh' => 'refresh',
                     ],
                 ],
-                /*
-                [
-                    'class' => 'yii\rest\UrlRule',
-                    'controller' => 'wechat',
-                    'extraPatterns' => [
-                        'GET qrcode' => 'qrcode',
-                        'GET test' => 'test',
-                        'GET openid' => 'openid',
-                        'OPTIONS binding' => 'binding',
-                        'POST binding' => 'binding',
-                        'OPTIONS signup' => 'signup',
-                        'POST signup' => 'signup',
-                    ],
-                ],*/
+
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'site',
@@ -237,6 +223,17 @@ return [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => ['project', 'user', 'resource'],
                 ],
+
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'pluralize' => false,
+                    'controller' => [
+                        'v1/verse-tags',
+                    ],
+                    'extraPatterns' => [
+                        'POST remove' => 'remove',
+                    ],
+                ],
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => [
@@ -244,10 +241,8 @@ return [
                         'v1/prefab',
                         'v1/file',
                         'v1/verse-cyber',
-                        'v1/message',
                         'v1/reply',
                         'v1/resource',
-                        'v1/message-tags',
                         'v1/multilanguage-verse',
                         'v1/tags',
                         'v1/knight',
@@ -258,7 +253,6 @@ return [
                         'v1/event-output',
                         'v1/event-link',
                         'v1/token',
-                     //   'v1/space',
                         'v1/cyber',
                         'v1/vp-map',
                     ],
@@ -356,13 +350,13 @@ return [
                         'GET test' => 'test',
                     ],
                 ],
-               /* [
-                    'class' => 'yii\rest\UrlRule',
-                    'controller' => 'v1/verse-space',
-                    'extraPatterns' => [
-                        'GET spaces' => 'spaces',
-                    ],
-                ],*/
+                /* [
+                     'class' => 'yii\rest\UrlRule',
+                     'controller' => 'v1/verse-space',
+                     'extraPatterns' => [
+                         'GET spaces' => 'spaces',
+                     ],
+                 ],*/
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'a1/verse',

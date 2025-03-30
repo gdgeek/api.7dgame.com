@@ -207,6 +207,7 @@ class Verse extends \yii\db\ActiveRecord
             'verseRelease',
             'verseShare',
             'verseOpen',
+            'verseTags',
             'tags',
         ];
 
