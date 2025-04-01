@@ -234,6 +234,17 @@ return [
                         'POST remove' => 'remove',
                     ],
                 ],
+
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'pluralize' => false,
+                    'controller' => [
+                        'v1/snapshot',
+                    ],
+                    'extraPatterns' => [
+                        'POST take-photo' => 'take-photo',
+                    ],
+                ],
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => [
@@ -245,8 +256,8 @@ return [
                         'v1/resource',
                         'v1/multilanguage-verse',
                         'v1/tags',
-                        'v1/knight',
-                        'v1/meta-knight',
+                      //  'v1/knight',
+                      //  'v1/meta-knight',
                         'v1/verse-open',
                         'v1/verse-script',
                         'v1/event-input',

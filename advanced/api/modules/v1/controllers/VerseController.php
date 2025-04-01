@@ -1,6 +1,6 @@
 <?php
 namespace api\modules\v1\controllers;
-
+use api\modules\v1\models\Snapshot;
 use api\modules\v1\models\VerseSearch;
 use mdm\admin\components\AccessControl;
 use bizley\jwt\JwtHttpBearerAuth;
@@ -99,7 +99,14 @@ class VerseController extends ActiveController
         }
         return $model;
     }
-
-    /* */
-
+    public function actionSnapshot($id)
+    {
+        $snapshot = Snapshot::CreateById($id);
+        if ($snapshot->validate()) {
+            $snapshot->save();
+        } else {
+            throw new Exception(json_encode($snapshot->errors), 400);
+        }
+        return $snapshot;
+    }
 }

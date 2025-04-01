@@ -23,8 +23,15 @@ class m250330_134002_create_snapshot_table extends Migration
         }
         $this->createTable('{{%snapshot}}', [
             'id' => $this->primaryKey(),
-            'verse_id' => $this->integer(),
-            'snapshot' => $this->json()->notNull(),
+            'verse_id' => $this->integer()->notNull(),
+            'name' => $this->string(),
+            'description' => $this->string(),
+            'uuid' => $this->string(),
+            'code' => $this->text(),
+            'data' => $this->json(),
+            'image' =>$this->json(),
+            'metas' => $this->json(),
+            'resources' => $this->json(),
             'created_at' => $this->dateTime(),
             'author_id' => $this->integer(),
             'created_by' => $this->integer(),

@@ -1,17 +1,19 @@
 <?php
 namespace api\modules\v1\controllers;
-
-use api\modules\v1\models\SpaceSearch;
+use api\modules\v1\models\Snapshot;
+use api\modules\v1\models\VerseSearch;
 use mdm\admin\components\AccessControl;
 use bizley\jwt\JwtHttpBearerAuth;
 use Yii;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
+use api\modules\v1\models\data\VerseCodeTool;
 
-class SpaceController extends ActiveController
+use yii\base\Exception;
+class SnapshotController extends ActiveController
 {
 
-    public $modelClass = 'api\modules\v1\models\Space';
+    public $modelClass = 'api\modules\v1\models\Snapshot';
     public function behaviors()
     {
         $behaviors = parent::behaviors();
@@ -41,27 +43,23 @@ class SpaceController extends ActiveController
             ],
             'except' => ['options'],
         ];
+
         $behaviors['access'] = [
             'class' => AccessControl::class,
         ];
+
         return $behaviors;
     }
 
-    public function actions()
+
+    public function actionTakePhoto($id)
     {
-        $actions = parent::actions();
-        unset($actions['index']);
-        return $actions;
+        $snapshot = Snapshot::CreateById($id);
+        if ($snapshot->validate()) {
+            $snapshot->save();
+        } else {
+            throw new Exception(json_encode($snapshot->errors), 400);
+        }
+        return $snapshot;
     }
-    public function actionIndex()
-    {
-
-        $searchModel = new SpaceSearch();
-        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-
-        $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id]);
-
-        return $dataProvider;
-    }
-
 }

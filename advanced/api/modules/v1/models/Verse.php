@@ -74,9 +74,10 @@ class Verse extends \yii\db\ActiveRecord
         return [
             [['name'], 'required'],
             [['author_id', 'updater_id', 'image_id', 'version'], 'integer'],
-            [['created_at', 'updated_at'], 'safe'],
-            [['info', 'data'], JsonValidator::class],
-            [['name'], 'string', 'max' => 255],
+            [['created_at', 'updated_at', 'info', 'data'], 'safe'],
+           // [['info', 'data'], JsonValidator::class],
+            [['name', 'uuid', 'description'], 'string', 'max' => 255],
+            [['uuid'], 'unique'],
             [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['author_id' => 'id']],
             [['image_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['image_id' => 'id']],
             [['updater_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updater_id' => 'id']],
@@ -95,7 +96,7 @@ class Verse extends \yii\db\ActiveRecord
         $fields['viewable'] = function () {
             return $this->viewable();
         };
-
+       
         $fields['info'] = function () {
 
             return JsonValidator::to_string($this->info);
@@ -125,6 +126,8 @@ class Verse extends \yii\db\ActiveRecord
             'image_id' => 'Image Id',
             'data' => 'Data',
             'version' => 'Version',
+            'uuid' =>'Uuid',
+            'description' =>'Description',
         ];
     }
 
