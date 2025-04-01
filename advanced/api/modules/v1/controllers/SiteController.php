@@ -155,18 +155,11 @@ class SiteController extends \yii\rest\Controller
     public function actionTest()
     {
         $id = 408;
-        $url = getenv('A1_API_HOST') . Url::to(
-            [
-                "/v1/verse/$id",
-                'expand' => 'id,name,description,data,metas,resources,code,uuid,image'
-            ],
-            false
-        );
-        $response = file_get_contents($url);
+       
         $snapshot = \api\modules\v1\models\Snapshot::CreateById($id);
         $snapshot->save();
-        return $snapshot;
-       // return json_decode($response, true);
+        return $snapshot->toArray([],['code','id','name','data','description','metas','resources','uuid','image']);
+      
     }
 
     public function actionAppleIdCreate()

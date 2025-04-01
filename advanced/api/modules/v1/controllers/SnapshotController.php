@@ -47,14 +47,13 @@ class SnapshotController extends ActiveController
         $behaviors['access'] = [
             'class' => AccessControl::class,
         ];
-
         return $behaviors;
     }
 
 
-    public function actionTakePhoto($id)
+    public function actionTakePhoto($verse_id)
     {
-        $snapshot = Snapshot::CreateById($id);
+        $snapshot = Snapshot::CreateById($verse_id);
         if ($snapshot->validate()) {
             $snapshot->save();
         } else {

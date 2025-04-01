@@ -45,7 +45,7 @@ class Snapshot extends \yii\db\ActiveRecord
             ],
             [
                 'class' => BlameableBehavior::class,
-               // 'createdByAttribute' => 'author_id',
+                // 'createdByAttribute' => 'author_id',
                 'updatedByAttribute' => 'created_by',
             ],
         ];
@@ -127,37 +127,28 @@ class Snapshot extends \yii\db\ActiveRecord
     {
         return $this->hasOne(Verse::className(), ['id' => 'verse_id']);
     }
-    public function print(){
-        $data = [];
-        $expand = Yii::$app->request->get('expand');
-        if($expand){
-            $expand = explode(',', $expand);
-            foreach ($expand as $key) {
-                if($key == 'id')
-                {
-                    $data['id'] = $this->verse_id;
-                }else{
-                    $data[$key] = $this->$key;
-                }
-            }
-        }
-        return $data;
-    }
-    static function CreateById($verse_id){
-        $url = getenv('A1_API_HOST') . Url::to(
-            [
-                "/v1/verse/$verse_id",
-                'expand' => 'id,name,description,data,metas,resources,code,uuid,image'
-            ],
-            false
-        );
-        $response = file_get_contents($url);
-        return self::Create($response);
-    }
-    static function Create($response)
+ 
+    public function fields()
     {
-        $data = json_decode($response, associative: true);
-        $snapshot = new Snapshot();
+     
+        return [];
+    }
+    public function extraFields()
+    {
+        return ['code', 'id', 'name', 'data', 'description', 'metas', 'resources', 'uuid', 'image'];
+    }
+
+    static function CreateById($verse_id)
+    {
+        $verse = \api\modules\private\models\Verse::findOne($verse_id);
+        if (!$verse) {
+            throw new \yii\web\NotFoundHttpException('Verse not found');
+        }
+        $data = $verse->toArray([], ['code', 'id', 'name', 'data', 'description', 'metas', 'resources', 'uuid', 'image']);
+        $snapshot = Snapshot::find()->where(['verse_id' => $data['id']])->one();
+        if (!$snapshot) {
+            $snapshot = new Snapshot();
+        }
         $snapshot->verse_id = $data['id'];
         $snapshot->name = $data['name'];
         $snapshot->description = $data['description'];
