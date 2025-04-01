@@ -258,7 +258,7 @@ return [
                         'v1/tags',
                       //  'v1/knight',
                       //  'v1/meta-knight',
-                        'v1/verse-open',
+                      //  'v1/verse-open',
                         'v1/verse-script',
                         'v1/event-input',
                         'v1/event-output',
@@ -268,18 +268,19 @@ return [
                         'v1/vp-map',
                     ],
                 ],
+                /*
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/verse-release',
                     'extraPatterns' => [
                         'PUT verse' => 'verse',
                     ],
-                ],
+                ],*/
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/verse',
                     'extraPatterns' => [
-                        'PUT code' => 'update-code',
+                        'GET public' => 'public',
                     ],
                 ],
                 [
@@ -374,6 +375,7 @@ return [
                     'extraPatterns' => [
                         'GET open' => 'open',
                         'GET release' => 'release',
+                        'GET public' => 'public',
                     ],
                 ],
                 [
