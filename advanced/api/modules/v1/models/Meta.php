@@ -2,7 +2,7 @@
 
 namespace api\modules\v1\models;
 
-use api\modules\v1\models\Cyber;
+//use api\modules\v1\models\Cyber;
 use api\modules\v1\models\File;
 use api\modules\v1\models\User;
 use Yii;
@@ -80,31 +80,29 @@ class Meta extends \yii\db\ActiveRecord
             [['updater_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updater_id' => 'id']],
         ];
     }
+    public function afterFind()
+    {
+
+        parent::afterFind();
+        if (empty($this->uuid)) {
+            $this->uuid = \Faker\Provider\Uuid::uuid();
+            $this->save();
+        }
+    }
     public function fields()
     {
         $fields = parent::fields();
         unset($fields['updater_id']);
         unset($fields['updated_at']);
         unset($fields['created_at']);
-        $fields['image'] = function () {
-            return $this->image;
-        };
+      
         $fields['prefab'] = function () {
             return $this->prefab;
         };
         $fields['resources'] = function () {
             return $this->resources;
         };
-        $fields['info'] = function () { 
-            return $this->info;
-        };
-        $fields['data'] = function () {
-         
-            return $this->data;
-        };
-        $fields['events'] = function () {
-            return $this->events;
-        };
+       
         
         $fields['editable'] = function () {return $this->editable();};
         $fields['viewable'] = function () {return $this->viewable();};
@@ -208,7 +206,7 @@ class Meta extends \yii\db\ActiveRecord
         'author' => function () {
             return $this->author;
         },
-        'cyber',
+        //'cyber',
         'metaCode'
         
     ];
@@ -227,10 +225,10 @@ public function getMetaCode()
         $code = new MetaCode();
         
         $code->meta_id = $this->id;
-        $cyber = $this->cyber;
+       /* $cyber = $this->cyber;
         if($cyber){
             $code->blockly = $cyber->data;
-        }
+        }*/
         $code->save();
     }
     $code = $quest->one();
