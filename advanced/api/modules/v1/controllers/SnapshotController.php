@@ -1,7 +1,6 @@
 <?php
 namespace api\modules\v1\controllers;
 use api\modules\v1\models\Snapshot;
-use api\modules\v1\models\VerseSearch;
 use mdm\admin\components\AccessControl;
 use bizley\jwt\JwtHttpBearerAuth;
 use Yii;
@@ -59,6 +58,6 @@ class SnapshotController extends ActiveController
         } else {
             throw new Exception(json_encode($snapshot->errors), 400);
         }
-        return $snapshot;
+        return $snapshot->toArray([],['code','id','name','data','description','metas','resources','uuid','image']);
     }
 }

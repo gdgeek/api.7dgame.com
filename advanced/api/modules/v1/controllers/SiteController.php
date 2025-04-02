@@ -155,10 +155,10 @@ class SiteController extends \yii\rest\Controller
     public function actionTest()
     {
         $id = 408;
-       
+        $verse = \api\modules\private\models\Verse::findOne($id);
         $snapshot = \api\modules\v1\models\Snapshot::CreateById($id);
         $snapshot->save();
-        return $snapshot->toArray([],['code','id','name','data','description','metas','resources','uuid','image']);
+        return $verse->data;
       
     }
 

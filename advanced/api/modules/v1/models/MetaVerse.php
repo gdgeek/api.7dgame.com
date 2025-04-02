@@ -249,15 +249,7 @@ class MetaVerse extends \yii\db\ActiveRecord
     {
         return $this->hasMany(Meta::className(), ['verse_id' => 'id']);
     }
-    /**
-     * Gets query for [[VerseOpens]].
-     *
-     * @return \yii\db\ActiveQuery|VerseOpenQuery
-     */
-    public function getVerseOpen()
-    {
-        return $this->hasOne(VerseOpen::className(), ['verse_id' => 'id']);
-    }
+  
     /**
      * Gets query for [[Author]].
      *

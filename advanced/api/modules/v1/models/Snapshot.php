@@ -154,8 +154,13 @@ class Snapshot extends \yii\db\ActiveRecord
         $snapshot->description = $data['description'];
         $snapshot->uuid = $data['uuid'];
         $snapshot->code = $data['code'];
-        $snapshot->data = $data['data'];
-        $snapshot->metas = $data['metas'];
+        if(is_string($verse->data)){
+            $snapshot->data = json_decode($verse->data);
+        }else{
+            $snapshot->data = $verse->data;
+        }
+        
+        $snapshot->metas = $verse->metas;
         $snapshot->resources = $data['resources'];
         $snapshot->image = $data['image'];
         $snapshot->author_id = $snapshot->verse->author_id;

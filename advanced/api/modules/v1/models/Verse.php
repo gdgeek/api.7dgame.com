@@ -70,7 +70,6 @@ class Verse extends \yii\db\ActiveRecord
             [['name'], 'required'],
             [['author_id', 'updater_id', 'image_id', 'version'], 'integer'],
             [['created_at', 'updated_at', 'info', 'data'], 'safe'],
-
             [['name', 'uuid', 'description'], 'string', 'max' => 255],
             [['uuid'], 'unique'],
             [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['author_id' => 'id']],
@@ -234,16 +233,7 @@ class Verse extends \yii\db\ActiveRecord
         return Meta::find()->where(['id' => $ret])->all();
 
     }
-    /**
-     * Gets query for [[VerseOpens]].
-     *
-     * @return \yii\db\ActiveQuery|VerseOpenQuery
-     */
-    public function getVerseOpen()
-    {
-        return $this->hasOne(VerseOpen::className(), ['verse_id' => 'id']);
-    }
-
+ 
     /**
      * Gets query for [[VerseTags]].
      *

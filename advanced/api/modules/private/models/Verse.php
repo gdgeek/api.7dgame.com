@@ -68,8 +68,8 @@ class Verse extends \yii\db\ActiveRecord
         return [
             [['name'], 'required'],
             [['author_id', 'updater_id', 'image_id', 'version'], 'integer'],
-            [['created_at', 'updated_at'], 'safe'],
-            [['info', 'data'], 'string'],
+            [['created_at', 'updated_at','data'], 'safe'],
+            [['info'], 'string'],
             [['name'], 'string', 'max' => 255],
             [['uuid'], 'string', 'max' => 255],
             [['uuid'], 'unique'],
@@ -83,9 +83,6 @@ class Verse extends \yii\db\ActiveRecord
         if (parent::beforeSave($insert)) {
             if (empty($this->uuid)) {
                 $this->uuid = \Faker\Provider\Uuid::uuid();
-            }
-            if(is_string($this->data)){
-                $data = json_decode($this->data);
             }
             
             return true;
@@ -230,7 +227,7 @@ class Verse extends \yii\db\ActiveRecord
         if(is_string($this->data)){
             $data = json_decode($this->data);
         }else{
-            $data =json_decode(json_encode($this->data));
+            $data = json_decode(json_encode($this->data));
         }
         
         if (isset($data->children)) {

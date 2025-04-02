@@ -28,8 +28,6 @@ use yii\web\IdentityInterface;
  //* @property string|null $wx_openid
  * @property string|null $nickname
  *
- * @property AppleId[] $apples //苹果Id
- * @property Cyber[] $cybers //代码
  * @property File[] $files //文件
  //* @property Like[] $likes //点赞
  //* @property Meta[] $metas //元数据
@@ -37,10 +35,7 @@ use yii\web\IdentityInterface;
  //* @property Space[] $spaces //空间
  * @property UserInfo[] $userInfo //用户信息
  * @property Verse[] $verses
- * @property VerseOpen[] $verseOpens //开放宇宙
- * @property VerseShare[] $verseShares //共享宇宙
  * @property Token[] $vpTokens 游戏 token
- * @property Wx[] $wxes //微信登录用 要删除
  */
 class User extends \yii\db\ActiveRecord implements IdentityInterface
 {

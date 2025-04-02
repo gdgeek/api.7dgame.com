@@ -263,16 +263,7 @@ class Verse extends \yii\db\ActiveRecord
         return Meta::find()->where(['id' => $ret])->all();
         
     }
-    /**
-    * Gets query for [[VerseOpens]].
-    *
-    * @return \yii\db\ActiveQuery|VerseOpenQuery
-    */
-    public function getVerseOpen()
-    {
-        return $this->hasOne(VerseOpen::className(), ['verse_id' => 'id']);
-    }
-    
+
     public function getMessage()
     {
         return $this->hasOne(Message::class, ['id' => 'message_id'])
