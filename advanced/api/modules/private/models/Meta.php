@@ -112,8 +112,31 @@ class Meta extends \yii\db\ActiveRecord
     }
     public function getCode(){
 
-        $substring = "local meta = {}\nlocal index = ''\n";
-        return  $substring.$this->metaCode->code->lua;
+        $metaCode = $this->metaCode;
+        $cl = Yii::$app->request->get('cl');
+        if(!$cl){
+            $cl = 'lua';
+        }
+        if($metaCode && $metaCode->code){
+            $script = $metaCode->code->$cl;
+        }
+        
+        if($cl == 'lua'){
+            $substring = "local meta = {}\nlocal index = ''\n";
+        }else{
+            $substring = '';
+        }
+   
+
+        if(isset($script)){
+            if (strpos($script, $substring) !== false) {
+                return $script;
+            } else {
+                return $substring.$script;
+            }
+        }else{
+            return $substring;
+        }  
       
     }  
     /**
