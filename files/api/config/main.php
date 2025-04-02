@@ -212,13 +212,14 @@ return [
                         'POST file' => 'file',
                     ],
                 ],
+                /*
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/like',
                     'extraPatterns' => [
                         'POST remove' => 'remove',
                     ],
-                ],
+                ],*/
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => ['project', 'user', 'resource'],
@@ -251,21 +252,21 @@ return [
                         'v1/meta',
                         'v1/prefab',
                         'v1/file',
-                        'v1/verse-cyber',
-                        'v1/reply',
+                     //   'v1/verse-cyber',
+                     //   'v1/reply',
                         'v1/resource',
-                        'v1/multilanguage-verse',
+                     //   'v1/multilanguage-verse',
                         'v1/tags',
                       //  'v1/knight',
                       //  'v1/meta-knight',
                       //  'v1/verse-open',
-                        'v1/verse-script',
-                        'v1/event-input',
-                        'v1/event-output',
-                        'v1/event-link',
+                    //    'v1/verse-script',
+                   //     'v1/event-input',
+                  //      'v1/event-output',
+                  //      'v1/event-link',
                         'v1/token',
-                        'v1/cyber',
-                        'v1/vp-map',
+                 //       'v1/cyber',
+                  //      'v1/vp-map',
                     ],
                 ],
                 /*
@@ -290,13 +291,14 @@ return [
                         'PUT code' => 'update-code',
                     ],
                 ],
+                /*
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/vp-guide',
                     'extraPatterns' => [
                         'GET verses' => 'verses',
                     ],
-                ],
+                ],*/
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/person',
@@ -304,6 +306,7 @@ return [
                         'PUT auth' => 'auth',
                     ],
                 ],
+                /*
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/verse-share',
@@ -326,7 +329,7 @@ return [
                     'extraPatterns' => [
                         'PUT file' => 'file',
                     ],
-                ],
+                ],*/
                 [
                     'class' => 'yii\rest\UrlRule',
                     'pluralize' => false,
@@ -340,6 +343,7 @@ return [
                         'POST apple-id-create' => 'apple-id-create',
                     ],
                 ],
+                /*
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/meta-resource',
@@ -361,7 +365,7 @@ return [
                         'GET file' => 'file',
                         'GET test' => 'test',
                     ],
-                ],
+                ],*/
                 /* [
                      'class' => 'yii\rest\UrlRule',
                      'controller' => 'v1/verse-space',
@@ -378,6 +382,7 @@ return [
                         'GET public' => 'public',
                     ],
                 ],
+                /*
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => [
@@ -386,7 +391,7 @@ return [
                         'a1/vp-guide-cache',
                         'a1/vp-key-value'
                     ],
-                ],
+                ],*/
                 [
                     'class' => 'yii\rest\UrlRule',
 
@@ -402,6 +407,7 @@ return [
                         'GET find' => 'find',
                     ],
                 ],
+                /*
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/local',
@@ -415,7 +421,7 @@ return [
                         'OPTIONS signup' => 'signup',
                         'POST signup' => 'signup',
                     ],
-                ],
+                ],*/
 
             ],
 

@@ -46,7 +46,7 @@ class VerseCodeTool extends Model
             $verseCode->save();
         }else{
             $code->delete();
-            throw new \yii\web\ServerErrorHttpException(json_encode($metaCode->errors));
+            throw new \yii\web\ServerErrorHttpException(json_encode($verseCode->errors));
         }
     }
     /**
