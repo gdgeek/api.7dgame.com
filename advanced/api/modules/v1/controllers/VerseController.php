@@ -106,7 +106,7 @@ class VerseController extends ActiveController
         return $dataProvider;
     }
 
-    /*
+  
     public function actionUpdateCode($id)
     {
         $post = Yii::$app->request->post();
@@ -119,5 +119,5 @@ class VerseController extends ActiveController
             throw new Exception(json_encode($model->errors), 400);
         }
         return $model;
-    }*/
+    }
 }
