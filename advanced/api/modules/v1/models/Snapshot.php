@@ -127,10 +127,10 @@ class Snapshot extends \yii\db\ActiveRecord
     {
         return $this->hasOne(Verse::className(), ['id' => 'verse_id']);
     }
- 
+
     public function fields()
     {
-     
+
         return [];
     }
     public function extraFields()
@@ -149,20 +149,18 @@ class Snapshot extends \yii\db\ActiveRecord
         if (!$snapshot) {
             $snapshot = new Snapshot();
         }
-        $snapshot->verse_id = $data['id'];
-        $snapshot->name = $data['name'];
-        $snapshot->description = $data['description'];
-        $snapshot->uuid = $data['uuid'];
-        $snapshot->code = $data['code'];
-        if(is_string($verse->data)){
-            $snapshot->data = json_decode($verse->data);
-        }else{
-            $snapshot->data = $verse->data;
-        }
-        
+        $snapshot->verse_id == $verse->id;
+        $snapshot->name = $verse->name;
+        $snapshot->description = $verse->description;
+        $snapshot->uuid = $verse->uuid;
+        $snapshot->code = $verse->code;
+
+        $snapshot->data = $verse->data;
+
+
         $snapshot->metas = $verse->metas;
-        $snapshot->resources = $data['resources'];
-        $snapshot->image = $data['image'];
+        $snapshot->resources = $verse->resources;
+        $snapshot->image = $verse->image;
         $snapshot->author_id = $snapshot->verse->author_id;
         return $snapshot;
     }

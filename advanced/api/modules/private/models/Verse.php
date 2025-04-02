@@ -84,7 +84,17 @@ class Verse extends \yii\db\ActiveRecord
             if (empty($this->uuid)) {
                 $this->uuid = \Faker\Provider\Uuid::uuid();
             }
-            
+            if(empty($this->description)){
+                if(is_string($this->info)){
+                    $info = json_decode($this->info, true);
+                    
+                }else{
+                    $info = $this->info;
+                }
+                if(isset($info['description'])){
+                    $this->description = $info['description'];
+                }
+            }
             return true;
         }
         return false;
@@ -101,43 +111,34 @@ class Verse extends \yii\db\ActiveRecord
             'data',
             'image',
             'resources',
-            'description' => function()/* use($context)*/{
-                
-                if(is_string($this->info)){
-                    $info = json_decode($this->info, true);
-                    
-                }else{
-                    $info = $this->info;
-                }
-                if(isset($info['description'])){
-                    return $info['description'];
-                }
-                return;
-            },
-            'code' => function () {
-                $verseCode = $this->verseCode;
-                $cl = Yii::$app->request->get('cl');
-
-                $substring ="";
-                if(!$cl || $cl !='js'){
-                  $cl = 'lua';
-                   $substring ="local verse = {}\n local is_playing = false\n";
-                }
-                if($verseCode && $verseCode->code){
-                    $script = $verseCode->code->$cl;
-                }
-               
-                if(isset($script)){ 
-                    if (strpos($script, $substring) !== false) {
-                        return $script;
-                    } else {
-                        return $substring.$script;
-                    }
-                }else{
-                    return $substring;
-                }
-            },
+            'description',
+            'code',
         ];
+    }
+  
+    
+    public function getCode(){
+        $verseCode = $this->verseCode;
+        $cl = Yii::$app->request->get('cl');
+
+        $substring ="";
+        if(!$cl || $cl !='js'){
+          $cl = 'lua';
+           $substring ="local verse = {}\n local is_playing = false\n";
+        }
+        if($verseCode && $verseCode->code){
+            $script = $verseCode->code->$cl;
+        }
+       
+        if(isset($script)){ 
+            if (strpos($script, $substring) !== false) {
+                return $script;
+            } else {
+                return $substring.$script;
+            }
+        }else{
+            return $substring;
+        }
     }
     public function getVerseCode()
     {

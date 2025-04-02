@@ -83,7 +83,8 @@ class Verse extends \yii\db\ActiveRecord
         unset($fields['updater_id']);
         unset($fields['image_id']);
         unset($fields['updated_at']);
-
+        unset($fields['info']);
+        
         $fields['editable'] = function () {
             return $this->editable();
         };
@@ -91,16 +92,8 @@ class Verse extends \yii\db\ActiveRecord
             return $this->viewable();
         };
        
-        $fields['info'] = function () {
-
-            return $this->info;
-        };
-        $fields['data'] = function () {
-            if (!is_string($this->data) && !is_null($this->data)) {
-                return json_encode($this->data);
-            }
-            return $this->data;
-        };
+       
+     
 
         return $fields;
     }
@@ -197,6 +190,7 @@ class Verse extends \yii\db\ActiveRecord
             'image',
             'author',
             'script',
+            'description',
             'resources',
             'verseCode',
             'verseTags',

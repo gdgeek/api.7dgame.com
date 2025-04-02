@@ -26,15 +26,12 @@ use api\modules\v1\components\Validator\JsonValidator;
 * @property string|null $data
 * @property string|null $uuid
 *
-* @property Cyber[] $cybers
 * @property User $author
 * @property File $image
 * @property User $updater
-* @property MetaRete[] $metaRetes
 * @property string|null $events
 * @property string|null $title
 *
-* @property MetaResource[] $metaResources
 */
 class Meta extends \yii\db\ActiveRecord
 
@@ -75,7 +72,7 @@ class Meta extends \yii\db\ActiveRecord
         return [
             [['author_id', 'updater_id', 'image_id', 'prefab'], 'integer'],
             [['created_at', 'updated_at'], 'safe'],
-            [['info', 'data', 'events'], JsonValidator::class],
+            [['info', 'data', 'events'], 'safe'],
             [['uuid', 'title'], 'string', 'max' => 255],
             [['uuid'], 'unique'],
             [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['author_id' => 'id']],
@@ -99,19 +96,13 @@ class Meta extends \yii\db\ActiveRecord
             return $this->resources;
         };
         $fields['info'] = function () { 
-            return JsonValidator::to_string($this->info);
+            return $this->info;
         };
         $fields['data'] = function () {
-            
-            if(!is_string($this->data) && !is_null($this->data)){
-                return json_encode($this->data);
-            }
+         
             return $this->data;
         };
         $fields['events'] = function () {
-            if(!is_string($this->events) && !is_null($this->events)){
-                return json_encode($this->events);
-            }
             return $this->events;
         };
         
@@ -165,7 +156,7 @@ class Meta extends \yii\db\ActiveRecord
     /**
     * Gets query for [[Author]].
     *
-    * @return \yii\db\ActiveQuery|UserQuery
+    * @return \yii\db\ActiveQuery
     */
     public function getAuthor()
     {
@@ -175,7 +166,7 @@ class Meta extends \yii\db\ActiveRecord
     /**
     * Gets query for [[Updater]].
     *
-    * @return \yii\db\ActiveQuery|UserQuery
+    * @return \yii\db\ActiveQuery
     */
     public function getUpdater()
     {
@@ -198,25 +189,7 @@ class Meta extends \yii\db\ActiveRecord
         return $items;
     }
     
-    /**
-    * Gets query for [[Cybers]].
-    *
-    * @return \yii\db\ActiveQuery|CyberQuery
-    */
-    public function getCyber()
-    {
-        return $this->hasOne(Cyber::className(), ['meta_id' => 'id']);
-    }
-    
-    /**
-    * Gets query for [[MetaRetes]].
-    *
-    * @return \yii\db\ActiveQuery|MetaReteQuery
-    */
-    public function getMetaRetes()
-    {
-        return $this->hasMany(MetaRete::className(), ['meta_id' => 'id']);
-    }
+
     
     /**
     * Gets query for [[Image]].
@@ -235,12 +208,6 @@ class Meta extends \yii\db\ActiveRecord
         'author' => function () {
             return $this->author;
         },
-        /*'script' => function () {
-        if ($this->cyber) {
-        return $this->cyber->script;
-        }
-        return null;
-        },*/
         'cyber',
         'metaCode'
         
