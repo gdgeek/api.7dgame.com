@@ -3,16 +3,11 @@
 namespace api\modules\v1\models;
 
 use api\modules\v1\models\File;
-use api\modules\v1\models\Space;
 use api\modules\v1\models\User;
 use api\modules\v1\models\Tags;
 use api\modules\v1\models\VerseTags;
 use api\modules\v1\models\VerseCode;
-use api\modules\v1\models\VerseShare;
-use api\modules\v1\models\VerseRelease;
 
-use api\modules\v1\models\MultilanguageVerse;
-use api\modules\v1\components\Validator\JsonValidator;
 use Yii;
 use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
@@ -75,7 +70,7 @@ class Verse extends \yii\db\ActiveRecord
             [['name'], 'required'],
             [['author_id', 'updater_id', 'image_id', 'version'], 'integer'],
             [['created_at', 'updated_at', 'info', 'data'], 'safe'],
-           // [['info', 'data'], JsonValidator::class],
+
             [['name', 'uuid', 'description'], 'string', 'max' => 255],
             [['uuid'], 'unique'],
             [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['author_id' => 'id']],
@@ -99,7 +94,7 @@ class Verse extends \yii\db\ActiveRecord
        
         $fields['info'] = function () {
 
-            return JsonValidator::to_string($this->info);
+            return $this->info;
         };
         $fields['data'] = function () {
             if (!is_string($this->data) && !is_null($this->data)) {
@@ -200,16 +195,11 @@ class Verse extends \yii\db\ActiveRecord
 
         return [
             'metas',
-            'message',
             'image',
             'author',
             'script',
             'resources',
-            'languages',
             'verseCode',
-            'verseRelease',
-            'verseShare',
-            'verseOpen',
             'verseTags',
             'tags',
         ];
@@ -217,16 +207,7 @@ class Verse extends \yii\db\ActiveRecord
     }
 
 
-    /**
-     * Gets query for [[Languages]].
-     *
-     * @return \yii\db\ActiveQuery|LanguageQuery
-     */
-    public function getLanguages()
-    {
-        return $this->hasMany(MultilanguageVerse::className(), ['verse_id' => 'id']);
-    }
-
+    
     /**
      * Gets query for [[Metas]].
      *
@@ -284,10 +265,7 @@ class Verse extends \yii\db\ActiveRecord
         return $this->hasMany(Tags::className(), ['id' => 'tags_id'])
             ->viaTable('verse_tags', ['verse_id' => 'id']);
     }
-    public function getVerseRelease()
-    {
-        return $this->hasOne(VerseRelease::className(), ['verse_id' => 'id']);
-    }
+
     public function editable()
     {
         if (!isset(Yii::$app->user->identity)) {
@@ -297,10 +275,7 @@ class Verse extends \yii\db\ActiveRecord
         if ($userid == $this->author_id) {
             return true;
         }
-        $share = $this->verseShare;
-        if ($share && $share->editable) {
-            return true;
-        }
+      
         return false;
     }
 
@@ -313,15 +288,9 @@ class Verse extends \yii\db\ActiveRecord
         if ($userid == $this->author_id) {
             return true;
         }
-        $share = $this->verseShare;
-        if ($share) {
-            return true;
-        }
+    
 
-        $open = $this->verseOpen;
-        if ($open) {
-            return true;
-        }
+    
         return false;
     }
     public function getScript()
@@ -329,17 +298,7 @@ class Verse extends \yii\db\ActiveRecord
         return $this->hasOne(VerseScript::className(), ['verse_id' => 'id']);
 
     }
-    public function getVerseShare()
-    {
-
-        $share = VerseShare::findOne(['verse_id' => $this->id, 'user_id' => Yii::$app->user->id]);
-        return $share;
-    }
-    public function getMessage()
-    {
-        return $this->hasOne(Message::class, ['id' => 'message_id'])
-            ->viaTable('verse_open', ['verse_id' => 'id']);
-    }
+ 
     /**
      * Gets query for [[Author]].
      *
