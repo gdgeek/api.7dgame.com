@@ -18,8 +18,6 @@ class MetaIdRule extends Rule
         $get = Yii::$app->request->get();
         $meta_id = isset($post['meta_id']) ? $post['meta_id'] : $get['meta_id'] ?? null;
        
-
-      
         if (!$meta_id) {
             throw new BadRequestHttpException("no meta_id");
         }
