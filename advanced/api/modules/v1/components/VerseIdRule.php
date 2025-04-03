@@ -13,8 +13,11 @@ class VerseIdRule extends Rule
 
     private function getVerse($params)
     {
-
-        $verse_id = Yii::$app->request->get('verse_id') ;
+        $post = Yii::$app->request->post();
+        $get = Yii::$app->request->get();
+        $verse_id = isset($post['verse_id']) ? $post['verse_id'] : $get['verse_id'] ?? null;
+       
+         
         if (!$verse_id) {
             throw new BadRequestHttpException("no verse_id");
         }

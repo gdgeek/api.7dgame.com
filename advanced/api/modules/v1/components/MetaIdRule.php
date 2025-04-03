@@ -14,7 +14,12 @@ class MetaIdRule extends Rule
     private function getMeta($params)
     {
 
-        $meta_id = Yii::$app->request->get('meta_id');
+        $post = Yii::$app->request->post();
+        $get = Yii::$app->request->get();
+        $meta_id = isset($post['meta_id']) ? $post['meta_id'] : $get['meta_id'] ?? null;
+       
+
+      
         if (!$meta_id) {
             throw new BadRequestHttpException("no meta_id");
         }
