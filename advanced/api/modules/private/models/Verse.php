@@ -4,6 +4,10 @@ namespace api\modules\private\models;
 
 
 
+use api\modules\v1\models\File;
+use api\modules\v1\models\Resource;
+use api\modules\v1\models\VerseQuery;
+use api\modules\v1\models\VerseCode;
 
 use Yii;
 use yii\behaviors\BlameableBehavior;
@@ -25,9 +29,7 @@ use yii\db\Expression;
 * @property int|null $version
 *
 * @property Meta[] $metas
-* @property User $author
 * @property File $image_id0
-* @property User $updater
 
 */
 class Verse extends \yii\db\ActiveRecord
@@ -111,7 +113,7 @@ class Verse extends \yii\db\ActiveRecord
 
     public function getCode()
     {
-        $code = $this->verseCode;
+        $code = $this->getVerseCode()->one();
         $cl = Yii::$app->request->get('cl');
 
         $substring = "";
@@ -186,7 +188,7 @@ class Verse extends \yii\db\ActiveRecord
         }
         return array_map(function ($item) {
             return $item['parameters']['meta_id'] ?? null;
-        }, $data['children']['modules']);
+        }, is_array($data['children']['modules']) ? $data['children']['modules'] : []);
     }
 
 

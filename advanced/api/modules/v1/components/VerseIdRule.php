@@ -10,42 +10,42 @@ use yii\web\BadRequestHttpException;
 class VerseIdRule extends Rule
 {
     public $name = 'verse_id_rule';
-    
+
     private function getVerse($params)
     {
-        
+
         $verse_id = Yii::$app->request->getBodyParam('verse_id');
-        if(!$verse_id){
+        if (!$verse_id) {
             throw new BadRequestHttpException("no verse_id");
         }
 
         $verse = Verse::findOne($verse_id);
-        if(!$verse){
+        if (!$verse) {
             throw new BadRequestHttpException("no verse");
         }
         return $verse;
-        
-      
-        
+
+
+
     }
-    
+
     public function execute($user, $item, $params)
     {
-        
+
         $verse = $this->getVerse($params);
-        
+
         if ($verse->editable()) {
             return true;
         }
-        
-      //  $request = Yii::$app->request;
+
+        //  $request = Yii::$app->request;
         if (Yii::$app->request->isGet && $verse->viewable()) {
             return true;
         }
-       
+
         throw new BadRequestHttpException(" verse cant be edited");
-       
-       // return false;
-        
+
+        // return false;
+
     }
 }

@@ -2,7 +2,7 @@
 namespace api\modules\v1\controllers;
 
 use Yii;
-use yii\rest\ActiveController;
+use yii\rest\Controller;
 use api\modules\v1\models\Snapshot;
 use mdm\admin\components\AccessControl;
 use bizley\jwt\JwtHttpBearerAuth;
@@ -12,7 +12,7 @@ use yii\base\Exception;
 
 use api\modules\v1\models\data\VerseCodeTool;
 use api\modules\v1\models\data\MetaCodeTool;
-class SystemController extends ActiveController
+class SystemController extends Controller
 {
     public function behaviors()
     {
