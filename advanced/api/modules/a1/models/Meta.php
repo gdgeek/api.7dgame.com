@@ -218,17 +218,12 @@ class Meta extends \yii\db\ActiveRecord
     public function getResourceIds()
     {
         
-        if(is_string($this->data)){
-            $data = json_decode($this->data);
-        }else{
-            $data =json_decode(json_encode($this->data));
-        }
-        $resourceIds = \api\modules\v1\helper\Meta2Resources::Handle($data);
-        return $resourceIds;
+        
+        return \api\modules\v1\helper\Meta2Resources::Handle($this->data);
     }
     public function extraResources()
     {
-        $resourceIds = $this->resourceIds;
+        $resourceIds = $this->getResourceIds();
         $items = Resource::find()->where(['id' => $resourceIds])->all();
         return $items;
     }

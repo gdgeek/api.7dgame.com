@@ -6,7 +6,7 @@ use api\modules\private\models\File;
 use api\modules\private\models\MetaQuery;
 use api\modules\private\models\User;
 use api\modules\private\models\MetaCode;
-use api\modules\private\helper\Meta2Resources;
+use api\modules\v1\helper\Meta2Resources;
 use Yii;
 use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;

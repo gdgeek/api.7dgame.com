@@ -11,24 +11,23 @@ use yii\db\Expression;
 use yii\helpers\ArrayHelper;
 
 /**
-* This is the model class for table "file".
-*
-* @property int $id
-* @property string $md5
-* @property string|null $type
-* @property string|null $url
-* @property int $user_id
-* @property string $created_at
-* @property string|null $filename
-*
-* @property User $user
-* @property Picture[] $pictures
-* @property Polygen[] $polygens
-* @property Polygen[] $polygens0
-* @property Video[] $videos
-*/
+ * This is the model class for table "file".
+ *
+ * @property int $id
+ * @property string $md5
+ * @property string|null $type
+ * @property string|null $url
+ * @property int $user_id
+ * @property string $created_at
+ * @property string|null $filename
+ *
+ * @property User $user
+ * @property Picture[] $pictures
+ * @property Polygen[] $polygens
+ * @property Polygen[] $polygens0
+ * @property Video[] $videos
+ */
 class File extends \yii\db\ActiveRecord
-
 {
     private $header = null;
     private function getFileHeader()
@@ -62,12 +61,17 @@ class File extends \yii\db\ActiveRecord
             return ArrayHelper::getValue($header, 'Content-Type', 'application/octet-stream');
         }
         return 'application/octet-stream';
-        
+
     }
-    public function getFilterUrl()
+    public function getFilterUrl(): string
     {
-        if (preg_match('/^http[s]?:\/\/(\d+.\d+.\d+.\d+)[:]?\d+[\/]?/',
-        \Yii::$app->request->hostInfo, $matches)) {
+        if (
+            preg_match(
+                '/^http[s]?:\/\/(\d+.\d+.\d+.\d+)[:]?\d+[\/]?/',
+                Yii::$app->request->hostInfo,
+                $matches
+            )
+        ) {
             return str_replace('[ip]', $matches[1], $this->url);
         }
         return $this->url;
@@ -75,7 +79,6 @@ class File extends \yii\db\ActiveRecord
     public function fields()
     {
         $fields = parent::fields();
-        
         unset($fields['updater_id']);
         unset($fields['id']);
         unset($fields['user_id']);
@@ -83,7 +86,7 @@ class File extends \yii\db\ActiveRecord
         unset($fields['size']);
         unset($fields['filename']);
         $fields['url'] = function () {
-            return $this->filterUrl;
+            return $this->getFilterUrl();
         };
         return $fields;
     }
@@ -94,7 +97,7 @@ class File extends \yii\db\ActiveRecord
             $this->key = $this->md5 . '.' . pathinfo($this->filename, PATHINFO_EXTENSION);
             $this->save(false); // 保存模型，不进行验证
         }
-        
+
     }
 
     public function behaviors()
@@ -121,22 +124,22 @@ class File extends \yii\db\ActiveRecord
                     'type' => [
                         \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => [$this, 'getFileType'],
                     ],
-                    
+
                 ],
             ],
         ];
     }
     /**
-    * {@inheritdoc}
-    */
+     * {@inheritdoc}
+     */
     public static function tableName()
     {
         return 'file';
     }
-    
+
     /**
-    * {@inheritdoc}
-    */
+     * {@inheritdoc}
+     */
     public function rules()
     {
         return [
@@ -147,10 +150,10 @@ class File extends \yii\db\ActiveRecord
             [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['user_id' => 'id']],
         ];
     }
-    
+
     /**
-    * {@inheritdoc}
-    */
+     * {@inheritdoc}
+     */
     public function attributeLabels()
     {
         return [
@@ -165,17 +168,17 @@ class File extends \yii\db\ActiveRecord
             'key' => Yii::t('app', 'Key'),
         ];
     }
-    
+
     /**
-    * Gets query for [[User]].
-    *
-    * @return \yii\db\ActiveQuery
-    */
+     * Gets query for [[User]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
     public function getUser()
     {
         return $this->hasOne(User::className(), ['id' => 'user_id']);
     }
-    
+
     public function beforeValidate()
     {
         parent::beforeValidate();
@@ -186,43 +189,43 @@ class File extends \yii\db\ActiveRecord
         return true;
     }
     /**
-    * Gets query for [[Pictures]].
-    *
-    * @return \yii\db\ActiveQuery
-    */
+     * Gets query for [[Pictures]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
     public function getPictures()
     {
         return $this->hasMany(Picture::className(), ['file_id' => 'id']);
     }
-    
+
     /**
-    * Gets query for [[Polygens]].
-    *
-    * @return \yii\db\ActiveQuery
-    */
+     * Gets query for [[Polygens]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
     public function getPolygens()
     {
         return $this->hasMany(Polygen::className(), ['file_id' => 'id']);
     }
-    
+
     /**
-    * Gets query for [[Polygens0]].
-    *
-    * @return \yii\db\ActiveQuery
-    */
+     * Gets query for [[Polygens0]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
     public function getPolygens0()
     {
         return $this->hasMany(Polygen::className(), ['image_id' => 'id']);
     }
-    
+
     /**
-    * Gets query for [[Videos]].
-    *
-    * @return \yii\db\ActiveQuery
-    */
+     * Gets query for [[Videos]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
     public function getVideos()
     {
         return $this->hasMany(Video::className(), ['file_id' => 'id']);
     }
-    
+
 }
