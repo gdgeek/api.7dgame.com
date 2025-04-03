@@ -83,6 +83,7 @@ class Verse extends \yii\db\ActiveRecord
         unset($fields['updater_id']);
         unset($fields['image_id']);
         unset($fields['updated_at']);
+        unset($fields['script']);
         $fields['description'] = function () {
             return $this->description;
         };
@@ -140,10 +141,10 @@ class Verse extends \yii\db\ActiveRecord
 
             $code = new VerseCode();
             $code->verse_id = $this->id;
-            $script = $this->script;
-            if ($script) {
-                $code->blockly = $script->workspace;
-            }
+           // $script = $this->script;
+           // if ($script) {
+           //     $code->blockly = $script->workspace;
+           // }
             $code->save();
 
         }
@@ -196,7 +197,7 @@ class Verse extends \yii\db\ActiveRecord
             'metas',
             'image',
             'author',
-            'script',
+          //  'script',
             'description',
             'resources',
             'verseCode',
@@ -284,11 +285,12 @@ class Verse extends \yii\db\ActiveRecord
     
         return false;
     }
+    /*
     public function getScript()
     {
         return $this->hasOne(VerseScript::className(), ['verse_id' => 'id']);
 
-    }
+    }*/
  
     /**
      * Gets query for [[Author]].

@@ -288,11 +288,11 @@ class Verse extends \yii\db\ActiveRecord
     * Gets query for [[VerseRetes]].
     *
     * @return \yii\db\ActiveQuery|VerseReteQuery
-    */
+   
     public function getVerseRetes()
     {
         return $this->hasMany(VerseRete::className(), ['verse_id' => 'id']);
-    }
+    }*/
     public function getShare()
     {
         
@@ -305,7 +305,7 @@ class Verse extends \yii\db\ActiveRecord
     * Gets query for [[VerseScripts]].
     *
     * @return \yii\db\ActiveQuery|VerseScriptQuery
-    */
+  
     public function getVerseScripts()
     {
         return $this->hasMany(VerseScript::className(), ['verse_id' => 'id']);
@@ -314,5 +314,5 @@ class Verse extends \yii\db\ActiveRecord
     {
         return $this->hasOne(VerseScript::className(), ['verse_id' => 'id']);
     }
-    
+      */
 }

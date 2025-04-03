@@ -231,6 +231,19 @@ return [
                     'class' => 'yii\rest\UrlRule',
                     'pluralize' => false,
                     'controller' => [
+                        'v1/system',
+                    ],
+                    'extraPatterns' => [
+                        'POST take-photo' => 'take-photo',
+                        'GET verse' => 'verse',
+                        'PUT verse-code' => 'verse-code',
+                        'PUT meta-code' => 'meta-code',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'pluralize' => false,
+                    'controller' => [
                         'v1/snapshot',
                     ],
                     'extraPatterns' => [

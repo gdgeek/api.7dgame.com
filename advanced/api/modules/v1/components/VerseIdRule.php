@@ -14,7 +14,7 @@ class VerseIdRule extends Rule
     private function getVerse($params)
     {
 
-        $verse_id = Yii::$app->request->getBodyParam('verse_id');
+        $verse_id = Yii::$app->request->get('verse_id') ;
         if (!$verse_id) {
             throw new BadRequestHttpException("no verse_id");
         }
