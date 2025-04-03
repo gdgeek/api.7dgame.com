@@ -111,7 +111,7 @@ class VerseController extends ActiveController
     {
         $post = Yii::$app->request->post();
         $model = new VerseCodeTool($id);
-        $post = Yii::$app->request->post();
+       // $post = Yii::$app->request->post();
         $model->load($post, '');
         if ($model->validate()) {
             $model->save();

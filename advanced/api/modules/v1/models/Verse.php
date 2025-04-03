@@ -83,8 +83,9 @@ class Verse extends \yii\db\ActiveRecord
         unset($fields['updater_id']);
         unset($fields['image_id']);
         unset($fields['updated_at']);
-        unset($fields['info']);
-        
+        $fields['description'] = function () {
+            return $this->description;
+        };
         $fields['editable'] = function () {
             return $this->editable();
         };
@@ -92,8 +93,14 @@ class Verse extends \yii\db\ActiveRecord
             return $this->viewable();
         };
        
-       
-     
+        $fields['info'] = function () {
+
+            return $this->info;
+        };
+        $fields['data'] = function () {
+         
+            return $this->data;
+        };
 
         return $fields;
     }

@@ -158,7 +158,7 @@ class SiteController extends \yii\rest\Controller
         $verse = \api\modules\private\models\Verse::findOne($id);
         $snapshot = \api\modules\v1\models\Snapshot::CreateById($id);
         $snapshot->save();
-        return $verse->data;
+        return $verse->toArray([], ['code', 'id', 'name', 'data', 'description', 'metas', 'resources', 'uuid', 'image']);
       
     }
 

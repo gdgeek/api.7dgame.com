@@ -1,0 +1,378 @@
+{
+    "id": 408,
+    "name": "中国空间站",
+    "uuid": "88f275bf-9425-3240-8309-ecbc6a535041",
+    "metas": {
+        "id": 730,
+        "data": {
+            "type": "MetaRoot",
+            "parameters": {
+                "uuid": "df09e74a-72be-4634-b937-0dc3ab86eca1"
+            },
+            "children": {
+                "entities": [
+                    {
+                        "type": "Entity",
+                        "parameters": {
+                            "uuid": "3599df0b-7238-4d8f-8f50-9aacdb7a8b4d",
+                            "name": "Root",
+                            "transform": {
+                                "position": {
+                                    "x": 0,
+                                    "y": 0,
+                                    "z": 0
+                                },
+                                "rotate": {
+                                    "x": 0,
+                                    "y": 0,
+                                    "z": 0
+                                },
+                                "scale": {
+                                    "x": 0.01,
+                                    "y": 0.01,
+                                    "z": 0.01
+                                }
+                            },
+                            "active": true
+                        },
+                        "children": {
+                            "entities": [
+                                {
+                                    "type": "Polygen",
+                                    "parameters": {
+                                        "uuid": "bed10ab7-1be7-4bd2-8c19-a7839c32ed1f",
+                                        "name": "天宫2主体部件.glb [polygen]",
+                                        "transform": {
+                                            "position": {
+                                                "x": 0,
+                                                "y": 0,
+                                                "z": 0
+                                            },
+                                            "rotate": {
+                                                "x": 0,
+                                                "y": 0,
+                                                "z": 0
+                                            },
+                                            "scale": {
+                                                "x": 1,
+                                                "y": 1,
+                                                "z": 1
+                                            }
+                                        },
+                                        "active": true,
+                                        "resource": "334"
+                                    },
+                                    "children": {
+                                        "entities": [],
+                                        "components": [
+                                            {
+                                                "type": "Moved",
+                                                "parameters": {
+                                                    "uuid": "2d0f5373-f422-4a9d-8429-f94cbf0687b1",
+                                                    "magnetic": true,
+                                                    "scalable": false,
+                                                    "limit": {
+                                                        "x": {
+                                                            "enable": false,
+                                                            "min": 0,
+                                                            "max": 0
+                                                        },
+                                                        "y": {
+                                                            "enable": false,
+                                                            "min": 0,
+                                                            "max": 0
+                                                        },
+                                                        "z": {
+                                                            "enable": false,
+                                                            "min": 0,
+                                                            "max": 0
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        ],
+                                        "commands": []
+                                    }
+                                },
+                                {
+                                    "type": "Polygen",
+                                    "parameters": {
+                                        "uuid": "abdae0e6-a172-4f76-820a-f8b130afed5f",
+                                        "name": "天宫3部分.glb [polygen]",
+                                        "transform": {
+                                            "position": {
+                                                "x": 0,
+                                                "y": 0,
+                                                "z": 0
+                                            },
+                                            "rotate": {
+                                                "x": 0,
+                                                "y": 0,
+                                                "z": 0
+                                            },
+                                            "scale": {
+                                                "x": 1,
+                                                "y": 1,
+                                                "z": 1
+                                            }
+                                        },
+                                        "active": true,
+                                        "resource": "335"
+                                    },
+                                    "children": {
+                                        "entities": [],
+                                        "components": [
+                                            {
+                                                "type": "Moved",
+                                                "parameters": {
+                                                    "uuid": "b0047737-6d50-482e-91a4-827196bf0c94",
+                                                    "magnetic": true,
+                                                    "scalable": false,
+                                                    "limit": {
+                                                        "x": {
+                                                            "enable": false,
+                                                            "min": 0,
+                                                            "max": 0
+                                                        },
+                                                        "y": {
+                                                            "enable": false,
+                                                            "min": 0,
+                                                            "max": 0
+                                                        },
+                                                        "z": {
+                                                            "enable": false,
+                                                            "min": 0,
+                                                            "max": 0
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        ],
+                                        "commands": []
+                                    }
+                                },
+                                {
+                                    "type": "Polygen",
+                                    "parameters": {
+                                        "uuid": "89f93e91-12a8-447d-ad48-effb3f23bc19",
+                                        "name": "天宫1部件.glb [polygen]",
+                                        "transform": {
+                                            "position": {
+                                                "x": 0,
+                                                "y": 0,
+                                                "z": 0
+                                            },
+                                            "rotate": {
+                                                "x": 0,
+                                                "y": 0,
+                                                "z": 0
+                                            },
+                                            "scale": {
+                                                "x": 1,
+                                                "y": 1,
+                                                "z": 1
+                                            }
+                                        },
+                                        "active": true,
+                                        "resource": "333"
+                                    },
+                                    "children": {
+                                        "entities": [],
+                                        "components": [
+                                            {
+                                                "type": "Moved",
+                                                "parameters": {
+                                                    "uuid": "7aa215c0-262e-4462-a810-4dd6add4bee3",
+                                                    "magnetic": true,
+                                                    "scalable": false,
+                                                    "limit": {
+                                                        "x": {
+                                                            "enable": false,
+                                                            "min": 0,
+                                                            "max": 0
+                                                        },
+                                                        "y": {
+                                                            "enable": false,
+                                                            "min": 0,
+                                                            "max": 0
+                                                        },
+                                                        "z": {
+                                                            "enable": false,
+                                                            "min": 0,
+                                                            "max": 0
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        ],
+                                        "commands": []
+                                    }
+                                },
+                                {
+                                    "type": "Polygen",
+                                    "parameters": {
+                                        "uuid": "f9175972-ffae-4010-83b3-02a362122f82",
+                                        "name": "天宫4对接仓.glb [polygen]",
+                                        "transform": {
+                                            "position": {
+                                                "x": 0,
+                                                "y": 0,
+                                                "z": 0
+                                            },
+                                            "rotate": {
+                                                "x": 0,
+                                                "y": 0,
+                                                "z": 0
+                                            },
+                                            "scale": {
+                                                "x": 1,
+                                                "y": 1,
+                                                "z": 1
+                                            }
+                                        },
+                                        "active": true,
+                                        "resource": "336"
+                                    },
+                                    "children": {
+                                        "entities": [],
+                                        "components": [
+                                            {
+                                                "type": "Moved",
+                                                "parameters": {
+                                                    "uuid": "2aefa804-599f-4ff2-af4f-cc413ac5382e",
+                                                    "magnetic": true,
+                                                    "scalable": false,
+                                                    "limit": {
+                                                        "x": {
+                                                            "enable": false,
+                                                            "min": 0,
+                                                            "max": 0
+                                                        },
+                                                        "y": {
+                                                            "enable": false,
+                                                            "min": 0,
+                                                            "max": 0
+                                                        },
+                                                        "z": {
+                                                            "enable": false,
+                                                            "min": 0,
+                                                            "max": 0
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        ],
+                                        "commands": []
+                                    }
+                                }
+                            ],
+                            "components": [],
+                            "commands": []
+                        }
+                    }
+                ],
+                "addons": []
+            }
+        },
+        "uuid": "087a9088-dbe6-4680-924d-7bc9e92fb854",
+        "events": null,
+        "title": "礼物盒",
+        "prefab": 0,
+        "type": "entity",
+        "code": "local meta = {}\nlocal index = ''\nshow = true\n\nmeta['@1bc5a0a7-60e9-4ec7-8cf4-9146348c7e9b'] = function(parameter)\n  is_playing = true\n  print('1bc5a0a7-60e9-4ec7-8cf4-9146348c7e9b')\n  show = not show\n  _G.point.set_visual(_G.helper.handler(index, 'ca738582-8183-494d-a644-3dbcde2f7e1e'), show)\n\n  is_playing = false\nend\n\nmeta['#8e5d4ae8-14da-4351-8ba7-ea7c4a63ee88'] = function(parameter)\n  is_playing = true\n  print('8e5d4ae8-14da-4351-8ba7-ea7c4a63ee88')\n  _G.point.set_visual(_G.helper.handler(index, 'ca738582-8183-494d-a644-3dbcde2f7e1e'), show)\n  show = not show\n  is_playing = false\nend\n"
+    },
+    "data": {
+        "type": "Verse",
+        "parameters": {
+            "uuid": "7c9acb21-11ec-4f8f-aa99-e87bcc6d5f12"
+        },
+        "children": {
+            "modules": [
+                {
+                    "type": "Module",
+                    "parameters": {
+                        "uuid": "a489dde4-97f8-4029-82cf-a74c1dce0b6b",
+                        "title": "太空船",
+                        "transform": {
+                            "position": {
+                                "x": -1.7803324601026864,
+                                "y": 0,
+                                "z": 0
+                            },
+                            "rotate": {
+                                "x": 0,
+                                "y": 0,
+                                "z": 0
+                            },
+                            "scale": {
+                                "x": 0.1,
+                                "y": 0.1,
+                                "z": 0.1
+                            }
+                        },
+                        "meta_id": "730",
+                        "active": true
+                    }
+                }
+            ]
+        }
+    },
+    "image": {
+        "md5": "87d91ad2f311a6d61247da4631eb89bc",
+        "type": "image/jpeg",
+        "url": "https://7dgame-public-1251022382.cos.ap-nanjing.myqcloud.com/backup/87d91ad2f311a6d61247da4631eb89bc.jpg",
+        "key": "87d91ad2f311a6d61247da4631eb89bc.jpg"
+    },
+    "resources": [
+        {
+            "id": 333,
+            "info": "{\"center\":{\"x\":-3.57392,\"y\":337.55743,\"z\":-658.71562},\"size\":{\"x\":864.07962,\"y\":211.39971,\"z\":604.65168}}",
+            "uuid": "32f02950-1067-4dec-8e4d-af162d8db3b7",
+            "type": "polygen",
+            "file": {
+                "md5": "f4e0c39315638d285cc5a787c85503c7",
+                "type": "application/octet-stream",
+                "url": "https://mrpp-1257979353.cos.ap-chengdu.myqcloud.com/f4e0c39315638d285cc5a787c85503c7.glb",
+                "key": "f4e0c39315638d285cc5a787c85503c7.glb"
+            }
+        },
+        {
+            "id": 334,
+            "info": "{\"center\":{\"x\":-2.0e-5,\"y\":338.01897,\"z\":-264.9175},\"size\":{\"x\":1459.14777,\"y\":676.0382,\"z\":234.77377}}",
+            "uuid": "f8cfe6a6-fca2-4b67-9c32-31125d2e0026",
+            "type": "polygen",
+            "file": {
+                "md5": "4ca1fbed642f329bbcdc876856678d92",
+                "type": "application/octet-stream",
+                "url": "https://mrpp-1257979353.cos.ap-chengdu.myqcloud.com/4ca1fbed642f329bbcdc876856678d92.glb",
+                "key": "4ca1fbed642f329bbcdc876856678d92.glb"
+            }
+        },
+        {
+            "id": 335,
+            "info": "{\"center\":{\"x\":-4.47027,\"y\":462.94245,\"z\":126.82698},\"size\":{\"x\":712.90983,\"y\":460.44239,\"z\":680.35122}}",
+            "uuid": "7465ae10-09f2-4acc-8e90-3d5d950239de",
+            "type": "polygen",
+            "file": {
+                "md5": "e70935fa984c659291c3499807e72ccf",
+                "type": "application/octet-stream",
+                "url": "https://mrpp-1257979353.cos.ap-chengdu.myqcloud.com/e70935fa984c659291c3499807e72ccf.glb",
+                "key": "e70935fa984c659291c3499807e72ccf.glb"
+            }
+        },
+        {
+            "id": 336,
+            "info": "{\"center\":{\"x\":-4.1574,\"y\":337.84168,\"z\":664.17312},\"size\":{\"x\":693.56503,\"y\":210.24083,\"z\":593.73633}}",
+            "uuid": "1c6b62ae-1adc-465e-b5a2-f30b8002f0ef",
+            "type": "polygen",
+            "file": {
+                "md5": "ef867ee5e7664dff8ef6c8394bdd6e70",
+                "type": "application/octet-stream",
+                "url": "https://mrpp-1257979353.cos.ap-chengdu.myqcloud.com/ef867ee5e7664dff8ef6c8394bdd6e70.glb",
+                "key": "ef867ee5e7664dff8ef6c8394bdd6e70.glb"
+            }
+        }
+    ],
+    "description": null,
+    "code": "local verse = {}\n local is_playing = false\nverse['#622f96be-70c2-4a7b-9aa2-eec874176409:7d68be3f-0b90-4317-92c3-bfa1ee5a6fc1'] = function(parameter)\n  is_playing = true\n  print('622f96be-70c2-4a7b-9aa2-eec874176409:7d68be3f-0b90-4317-92c3-bfa1ee5a6fc1')\n  _G.event.signal('a489dde4-97f8-4029-82cf-a74c1dce0b6b', '8e5d4ae8-14da-4351-8ba7-ea7c4a63ee88')\n  is_playing = false\nend\n"
+}

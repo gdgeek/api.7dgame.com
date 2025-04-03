@@ -12,7 +12,7 @@ use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
 use yii\db\Expression;
 
-use api\modules\private\components\Validator\JsonValidator;
+
 /**
 * This is the model class for table "meta".
 *
@@ -74,7 +74,7 @@ class Meta extends \yii\db\ActiveRecord
         return [
             [['author_id', 'updater_id', 'image_id'], 'integer'],
             [['created_at', 'updated_at'], 'safe'],
-            [['info', 'data', 'events'], JsonValidator::class],
+            [['info', 'data', 'events'], 'safe'],
             [['uuid'], 'string', 'max' => 255],
             [['uuid'], 'unique'],
             [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['author_id' => 'id']],
@@ -101,15 +101,10 @@ class Meta extends \yii\db\ActiveRecord
         $fields['events'] = function () {
             return $this->events;
         };
-        $fields['code'] = function () { return $this->code; };
+        $fields['code'] = function () { return $this->getCode(); };
         return $fields;
     }
-    public function extraFields()
-    {
-        return [
-            'code'
-        ];
-    }
+  
     public function getCode(){
 
         $metaCode = $this->metaCode;
@@ -183,16 +178,7 @@ class Meta extends \yii\db\ActiveRecord
     }
     
     
-    /**
-    * Gets query for [[MetaRetes]].
-    *
-    * @return \yii\db\ActiveQuery|MetaReteQuery
-    */
-    public function getMetaRetes()
-    {
-        return $this->hasMany(MetaRete::className(), ['meta_id' => 'id']);
-    }
-    
+  
     /**
     * Gets query for [[Image]].
     *
@@ -205,20 +191,14 @@ class Meta extends \yii\db\ActiveRecord
     
     public function getResourceIds()
     {
-        
-        if(is_string($this->data)){
-            $data = json_decode($this->data);
-        }else{
-            $data =json_decode(json_encode($this->data));
-        }
-        $resourceIds =Meta2Resources::Handle($data);
-        return $resourceIds;
+      
+        return Meta2Resources::Handle($this->data);
+  
     }
     public function extraResources()
     {
-        $resourceIds = $this->resourceIds;
-        $items = Resource::find()->where(['id' => $resourceIds])->all();
-        return $items;
+        $ids = $this->getResourceIds();
+        return Resource::find()->where(['id' => $ids]);
     }
     
     public function extraEditor()
@@ -226,68 +206,7 @@ class Meta extends \yii\db\ActiveRecord
         $editor = \api\modules\v1\helper\Meta2Editor::Handle($this);
         return $editor;
     }
-    
-    public function upgrade($data)
-    {
-        $ret = false;
-        if (isset($data->parameters) && isset($data->parameters->transfrom)) {
-            
-            $ret = true;
-            $data->parameters->transform = $data->parameters->transfrom;
-            unset($data->parameters->transfrom);
-        }
-        
-        if (isset($data->chieldren)) {
-            
-            $ret = true;
-            $data->children = $data->chieldren;
-            unset($data->chieldren);
-        }
-        if (isset($data->children->entities)) {
-            foreach ($data->children->entities as $entity) {
-                if ($this->upgrade($entity)) {
-                    $ret = true;
-                    
-                }
-            }
-        }
-        if (isset($data->children->addons)) {
-            foreach ($data->children->addons as $addon) {
-                //   echo 123;
-                if ($this->upgrade($addon)) {
-                    $ret = true;
-                }
-            }
-        }
-        if (isset($data->children->components)) {
-            foreach ($data->children->components as $component) {
-                if ($this->upgrade($component)) {
-                    $ret = true;
-                }
-            }
-        }
-        
-        return $ret;
-    }
-    public function afterFind()
-    {
-        
-        parent::afterFind();
-        if(is_string($this->data)){
-            $data = json_decode($this->data);
-        }else{
-            $data =json_decode(json_encode($this->data));
-        }
-        $change = $this->upgrade($data);
-        if ($change) {
-            $this->data = json_encode($data);
-            $this->save();
-        }
-
-        // Ensure $events is initialized properly
-        $this->events = $data->events ?? null;
-        
-    }
+   
     /**
     * {@inheritdoc}
     * @return MetaQuery the active query used by this AR class.
