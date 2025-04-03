@@ -83,4 +83,16 @@ class SystemController extends Controller
         }
         return $verse->toArray([], ['code', 'id', 'name', 'data', 'description', 'metas', 'resources', 'uuid', 'image']);
     }
+
+    public function actionTakePhoto($verse_id)
+    {
+        
+        $snapshot = Snapshot::CreateById($verse_id);
+        if ($snapshot->validate()) {
+            $snapshot->save();
+        } else {
+            throw new Exception(json_encode($snapshot->errors), 400);
+        }
+        return $snapshot->toArray([],['code','id','name','data','description','metas','resources','uuid','image']);
+    }
 }

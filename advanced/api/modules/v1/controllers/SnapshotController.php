@@ -52,6 +52,7 @@ class SnapshotController extends ActiveController
 
     public function actionTakePhoto($verse_id)
     {
+        
         $snapshot = Snapshot::CreateById($verse_id);
         if ($snapshot->validate()) {
             $snapshot->save();

@@ -144,24 +144,23 @@ class Snapshot extends \yii\db\ActiveRecord
         if (!$verse) {
             throw new \yii\web\NotFoundHttpException('Verse not found');
         }
-        $data = $verse->toArray([], ['code', 'id', 'name', 'data', 'description', 'metas', 'resources', 'uuid', 'image']);
-        $snapshot = Snapshot::find()->where(['verse_id' => $data['id']])->one();
+  
+       
+        $snapshot = Snapshot::find()->where(['verse_id' =>$verse_id])->one();
         if (!$snapshot) {
             $snapshot = new Snapshot();
         }
-        $snapshot->verse_id == $verse->id;
+        $snapshot->verse_id = $verse->id;
         $snapshot->name = $verse->name;
         $snapshot->description = $verse->description;
         $snapshot->uuid = $verse->uuid;
         $snapshot->code = $verse->code;
 
         $snapshot->data = $verse->data;
-
-
         $snapshot->metas = $verse->metas;
         $snapshot->resources = $verse->resources;
         $snapshot->image = $verse->image;
-        $snapshot->author_id = $snapshot->verse->author_id;
+        $snapshot->author_id = $verse->author_id;
         return $snapshot;
     }
 }
