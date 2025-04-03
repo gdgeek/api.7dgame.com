@@ -157,7 +157,7 @@ class Snapshot extends \yii\db\ActiveRecord
         $snapshot->code = $verse->code;
 
         $snapshot->data = $verse->data;
-        $snapshot->metas = $verse->metas;
+        $snapshot->metas = $verse->getMetas()->all();
         $snapshot->resources = $verse->resources;
         $snapshot->image = $verse->image;
         $snapshot->author_id = $verse->author_id;
