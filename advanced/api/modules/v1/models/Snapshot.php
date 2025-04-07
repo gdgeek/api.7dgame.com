@@ -180,7 +180,7 @@ class Snapshot extends \yii\db\ActiveRecord
         }, $verse->getMetas()->all());
 
 
-        $snapshot->resources = $verse->getResources()->all();
+        $snapshot->resources = $verse->getResources();
         return $snapshot;
     }
 }
