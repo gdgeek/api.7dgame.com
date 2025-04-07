@@ -175,7 +175,7 @@ class Verse extends \yii\db\ActiveRecord
             $ids = array_merge_recursive($ids, $meta->getResourceIds());
         }
 
-        return Resource::find()->where(['id' => $ids])->all();
+        return Resource::find()->where(['id' => $ids]);
       
     }
 

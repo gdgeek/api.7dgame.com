@@ -34,10 +34,6 @@ use yii\db\Expression;
 class Meta extends \yii\db\ActiveRecord
 
 {
-    /**
-     * @var array|null Stores event data
-     */
-    public $events;
     
     public function behaviors()
     {
@@ -95,13 +91,12 @@ class Meta extends \yii\db\ActiveRecord
         $fields['type'] = function ($model) {
             return $model->prefab == 0 ? 'entity' : 'prefab';
         };
-        $fields['data'] = function () {
+       $fields['data'] = function () {
             return $this->data;
         };
-        $fields['events'] = function () {
-            return $this->events;
-        };
+       
         $fields['code'] = function () { return $this->getCode(); };
+        /* */
         return $fields;
     }
   

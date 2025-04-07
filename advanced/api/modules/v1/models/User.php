@@ -20,19 +20,11 @@ use yii\web\IdentityInterface;
  * @property string|null $password_hash
  * @property string|null $password_reset_token
  * @property string|null $email
- //* @property int $status
  * @property int|null $created_at
  * @property int|null $updated_at
- //* @property string|null $verification_token
-// * @property string|null $access_token
- //* @property string|null $wx_openid
  * @property string|null $nickname
  *
  * @property File[] $files //文件
- //* @property Like[] $likes //点赞
- //* @property Meta[] $metas //元数据
- //* @property Resource[] $resources //资源
- //* @property Space[] $spaces //空间
  * @property UserInfo[] $userInfo //用户信息
  * @property Verse[] $verses
  * @property Token[] $vpTokens 游戏 token
@@ -334,15 +326,5 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
         ];
     }
 
-    /**
-     * Gets query for [[Apples]].
-     *
-     * @return \yii\db\ActiveQuery
-    
-    public function getAppleId()//获取苹果id
-    {
-        return $this->hasOne(AppleId::className(), ['user_id' => 'id']);
-    }
- */
 
 }

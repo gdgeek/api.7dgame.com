@@ -160,7 +160,7 @@ class Verse extends \yii\db\ActiveRecord
         foreach ($metas as $meta) {
             $ids = array_merge_recursive($ids, $meta->resourceIds);
         }
-        $items = Resource::find()->where(['id' => $ids])->all();
+        $items = Resource::find()->where(['id' => $ids]);
         return $items;
     }
 
