@@ -15,10 +15,13 @@ class VerseIdRule extends Rule
     {
         $post = Yii::$app->request->post();
         $get = Yii::$app->request->get();
-        $verse_id = isset($post['verse_id']) ? $post['verse_id'] : $get['verse_id'] ?? null;
+        $verse_id = $params['verse_id'] ?? $post['verse_id'] ?? $get['verse_id'] 
+        ?? $params['id'] ?? $post['id'] ?? $get['id']
+        ?? null;
        
          
         if (!$verse_id) {
+
             throw new BadRequestHttpException("no verse_id");
         }
 

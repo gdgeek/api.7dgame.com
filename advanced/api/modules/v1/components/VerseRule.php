@@ -24,13 +24,11 @@ class VerseRule extends Rule
         
      
         if ($controller == 'verse') {
-            
             if (($request->isGet || $request->isPut || $request->isDelete) && isset($params['id'])) {
                 
                 $verse = Verse::findOne($params['id']);
                 return $verse;
             }
-            
         }
         
         throw new BadRequestHttpException($controller . '$request->isGet!!!!');
