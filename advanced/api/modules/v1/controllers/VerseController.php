@@ -81,6 +81,7 @@ class VerseController extends ActiveController
 
         return $dataProvider;
     }
+   
     public function actionIndex()
     {
 

@@ -93,13 +93,13 @@ class Verse extends \yii\db\ActiveRecord
         $fields['viewable'] = function () {
             return $this->viewable();
         };
-       
+
         $fields['info'] = function () {
 
             return $this->info;
         };
         $fields['data'] = function () {
-         
+
             return $this->data;
         };
 
@@ -121,8 +121,8 @@ class Verse extends \yii\db\ActiveRecord
             'image_id' => 'Image Id',
             'data' => 'Data',
             'version' => 'Version',
-            'uuid' =>'Uuid',
-            'description' =>'Description',
+            'uuid' => 'Uuid',
+            'description' => 'Description',
         ];
     }
 
@@ -141,10 +141,10 @@ class Verse extends \yii\db\ActiveRecord
 
             $code = new VerseCode();
             $code->verse_id = $this->id;
-           // $script = $this->script;
-           // if ($script) {
-           //     $code->blockly = $script->workspace;
-           // }
+            // $script = $this->script;
+            // if ($script) {
+            //     $code->blockly = $script->workspace;
+            // }
             $code->save();
 
         }
@@ -173,23 +173,23 @@ class Verse extends \yii\db\ActiveRecord
             $this->save();
         }
     }
-/*
-    public function getSpace()
-    {
-        if (is_string($this->data)) {
-            $data = json_decode($this->data);
-        } else {
-            $data = json_decode(json_encode($this->data));
-        }
-        if (isset($data->parameters) && isset($data->parameters->space)) {
-            $space = $data->parameters->space;
-            $model = Space::findOne($space->id);
-            if ($model) {
-                return $model->model;
+    /*
+        public function getSpace()
+        {
+            if (is_string($this->data)) {
+                $data = json_decode($this->data);
+            } else {
+                $data = json_decode(json_encode($this->data));
             }
+            if (isset($data->parameters) && isset($data->parameters->space)) {
+                $space = $data->parameters->space;
+                $model = Space::findOne($space->id);
+                if ($model) {
+                    return $model->model;
+                }
 
-        }
-    }*/
+            }
+        }*/
     public function extraFields()
     {
 
@@ -197,7 +197,7 @@ class Verse extends \yii\db\ActiveRecord
             'metas',
             'image',
             'author',
-          //  'script',
+            'public',
             'description',
             'resources',
             'verseCode',
@@ -208,7 +208,7 @@ class Verse extends \yii\db\ActiveRecord
     }
 
 
-    
+
     /**
      * Gets query for [[Metas]].
      *
@@ -235,7 +235,7 @@ class Verse extends \yii\db\ActiveRecord
         return Meta::find()->where(['id' => $ret])->all();
 
     }
- 
+
     /**
      * Gets query for [[VerseTags]].
      *
@@ -258,40 +258,35 @@ class Verse extends \yii\db\ActiveRecord
             ->viaTable('verse_tags', ['verse_id' => 'id']);
     }
 
+
+    public function getPublic()
+    {
+        $tag = $this->getTags()->andWhere(['key' => 'public'])->one();
+        if ($tag) {
+            return true;
+        }
+        return false;
+    }
+
     public function editable()
     {
-        if (!isset(Yii::$app->user->identity)) {
-            return false;
-        }
-        $userid = Yii::$app->user->identity->id;
-        if ($userid == $this->author_id) {
+        if (
+            isset(Yii::$app->user->identity)
+            && Yii::$app->user->identity->id == $this->author_id
+        ) {
             return true;
         }
-      
+
         return false;
     }
-
     public function viewable()
     {
-        if (!isset(Yii::$app->user->identity)) {
-            return false;
-        }
-        $userid = Yii::$app->user->identity->id;
-        if ($userid == $this->author_id) {
+        
+        if ($this->getPublic() || $this->editable()) {
             return true;
         }
-    
 
-    
-        return false;
     }
-    /*
-    public function getScript()
-    {
-        return $this->hasOne(VerseScript::className(), ['verse_id' => 'id']);
-
-    }*/
- 
     /**
      * Gets query for [[Author]].
      *
