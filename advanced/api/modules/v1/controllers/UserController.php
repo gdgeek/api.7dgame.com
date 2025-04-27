@@ -4,6 +4,8 @@ namespace api\modules\v1\controllers;
 
 use api\common\models\UserDataForm;
 use api\modules\v1\models\User;
+use api\modules\v1\models\UserInfo;
+
 use api\modules\v1\models\UserCreation;
 use mdm\admin\components\AccessControl;
 use mdm\admin\components\Configs;
@@ -15,7 +17,6 @@ use yii\filters\auth\CompositeAuth;
 class UserController extends \yii\rest\Controller
 
 {
-
     public function behaviors()
     {
 
@@ -23,7 +24,7 @@ class UserController extends \yii\rest\Controller
 
         // add CORS filter
         $behaviors['corsFilter'] = [
-            'class' => \yii\filters\Cors::className(),
+            'class' => \yii\filters\Cors::class,
             'cors' => [
                 'Origin' => ['*'],
                 'Access-Control-Request-Method' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],
@@ -33,20 +34,21 @@ class UserController extends \yii\rest\Controller
             ],
         ];
         $behaviors['authenticator'] = [
-            'class' => CompositeAuth::className(),
+            'class' => CompositeAuth::class,
             'authMethods' => [
                 JwtHttpBearerAuth::class,
             ],
             'except' => ['options'],
         ];
         // re-add authentication filter
-
+/*
         $behaviors['access'] = [
             'class' => AccessControl::class,
         ];
-
+*/
         return $behaviors;
     }
+    /*
     private function getAssignments($userId)
     {
         $manager = Configs::authManager();
@@ -57,14 +59,17 @@ class UserController extends \yii\rest\Controller
 
         }
         return $ret;
-    }
+    }*/
     private function getUserData()
     {
-        $user = new \stdClass();
-        $user->username = Yii::$app->user->identity->username;
-        $user->data = Yii::$app->user->identity->getData();
-        $user->roles = $this->getAssignments(Yii::$app->user->identity->id);
-        return $user;
+        $user =  Yii::$app->user->identity;
+      
+        return [
+            'id' => $user->id,
+            'userData' => $user->data,
+            'userInfo' => $user->userInfo,
+            'roles' => $user->roles,
+        ];
 
     }
     public function actionCreation()
@@ -72,12 +77,17 @@ class UserController extends \yii\rest\Controller
         $creation = new UserCreation();
         return $creation;
     }
-    public function actionSetData()
+    public function actionUpdate()
     {
         $model = new UserDataForm(Yii::$app->user->identity);
         $post = Yii::$app->request->post();
-        if ($model->load($post, '') && $model->save()) {
-            return $this->getUserData();
+        $model->load($post, '');
+
+        if ($model->validate()) {
+            $model->save();
+        
+            return ['success' => true, 'message'=>'ok', 'data' => $this->getUserData()];
+          
         } else {
             if (count($model->errors) == 0) {
                 throw new Exception("缺少数据", 400);
@@ -87,9 +97,14 @@ class UserController extends \yii\rest\Controller
 
         }
     }
-    public function actionGetData()
-    {
-        return $this->getUserData();
+    
+    public function actionInfo()
+    {   
+        //$id = User::tokenToId("eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgxIiwiaWF0IjoxNzM5NjkxNzkzLjU1MTg1LCJuYmYiOjE3Mzk2OTE3OTMuNTUxODUsImV4cCI6MTczOTcwMjU5My41NTE4NSwidWlkIjo1Mzl9.bIiR__RaesmVP4YCRE-eNL87TO4JFKDosAJmj-kmOPc");
+
+      
+        //throw new Exception(json_encode($id));
+        return ['success' => true, 'message'=>'ok', 'data' => $this->getUserData()];
     }
 
 }

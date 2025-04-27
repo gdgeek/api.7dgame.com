@@ -25,11 +25,7 @@ class VerseOpenRule extends Rule
         }
         if($request->isDelete){
             $id = isset($params['id']) ? $params['id'] : null;
-            
-            $open = VerseOpen::findOne(['id' => $id]);
-            if($open->verse->author_id == $userid){
-                return true;
-            }
+        
         }
         
         return false;

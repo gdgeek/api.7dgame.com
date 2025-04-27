@@ -3,6 +3,7 @@
 namespace api\modules\v1\controllers;
 
 use api\modules\v1\models\ResourceSearch;
+use api\modules\v1\models\Resource;
 use mdm\admin\components\AccessControl;
 use bizley\jwt\JwtHttpBearerAuth;
 use Yii;
@@ -10,6 +11,7 @@ use yii\filters\auth\CompositeAuth;
 use yii\helpers\HtmlPurifier;
 use yii\rest\ActiveController;
 
+use yii\caching\TagDependency;
 class ResourceController extends ActiveController
 {
     public $modelClass = 'api\modules\v1\models\Resource';
@@ -54,22 +56,26 @@ class ResourceController extends ActiveController
     {
         $actions = parent::actions();
         unset($actions['index']);
+        unset($actions['view']);
         return $actions;
     }
-
+    
+    public function actionView($id)
+    {
+        return Resource::find()->where(['id'=>$id])->one();
+    }
     public function actionIndex()
     {
-
         $searchModel = new ResourceSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-
+        
         if (isset(Yii::$app->request->queryParams['type'])) {
             $type = HtmlPurifier::process(Yii::$app->request->queryParams['type']);
             $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id, 'type' => $type]);
         } else {
             $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id]);
         }
-
+        //$dataProvider->query->cache(3600, new TagDependency(['tags' => 'resource_cache']));
         return $dataProvider;
     }
 

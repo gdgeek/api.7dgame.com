@@ -1,22 +1,13 @@
 <?php
 namespace backend\components;
 
-use yii\base\Widget;
-use yii\helpers\Html;
+
 use yii\widgets\LinkPager;
 
 use yii\helpers\ArrayHelper;
 
-use Closure;
-use Yii;
-use yii\base\InvalidConfigException;
-use yii\base\Model;
-use yii\helpers\Json;
-use yii\helpers\Url;
-use yii\i18n\Formatter;
-use yii\widgets\BaseListView;
-use yii\grid\GridViewAsset;
 
+use yii\widgets\BaseListView;
 class ModelView extends BaseListView
 {
 

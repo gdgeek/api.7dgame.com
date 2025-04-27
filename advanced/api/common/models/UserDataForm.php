@@ -4,6 +4,7 @@ namespace api\common\models;
 
 use api\modules\v1\components\Validator\JsonValidator;
 use api\modules\v1\models\File;
+use api\modules\v1\models\UserInfo;
 use yii\base\Model;
 
 /**
@@ -28,33 +29,45 @@ class UserDataForm extends Model
     public function __construct($user, array $config = [])
     {
         $this->_user = $user;
-        $info = $this->_user->userInfo;
-        
-        $this->info = $info->info;
-        $this->avatar_id = $info->avatar_id;
-        
-        
         $this->nickname = $this->_user->nickname;
+
+        if($this->_user->userInfo){
+            $this->info = $this->_user->userInfo->info;
+            $this->avatar_id = $this->_user->userInfo->avatar_id;
+        }
+       
         parent::__construct($config);
     }
     public function save()
     {
         if ($this->validate()) {
             $this->_user->nickname = $this->nickname;
-            
-            $info = $this->_user->userInfo;
+            $info = null;
+           
+            if($this->_user->userInfo){
+                $info = $this->_user->userInfo;
+               
+            }else{
+                $info = new UserInfo();
+                $info->user_id = $this->_user->id;
+                
+            } 
             
             $info->info = $this->info;
+        
             $info->avatar_id = $this->avatar_id;
-            
-            
+            $info->save();
             if ($this->_user->validate()) {
                 $this->_user->save();
                 return true;
+            }else{
+                
+                throw new \Exception(json_encode($this->_user->getErrors()));
             }
-            return false;
+           
         } else {
-            return false;
+            throw new \Exception(json_encode($this->_user->getErrors()));
+         
         }
     }
     /**

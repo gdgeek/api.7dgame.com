@@ -9,7 +9,8 @@ use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
 use yii\db\Expression;
 use yii\helpers\ArrayHelper;
-
+use yii\db\ActiveRecord;
+use yii\caching\TagDependency;
 /**
  * This is the model class for table "file".
  *
@@ -27,10 +28,16 @@ use yii\helpers\ArrayHelper;
  * @property Polygen[] $polygens0
  * @property Video[] $videos
  */
-class File extends \yii\db\ActiveRecord
+class File extends ActiveRecord
 
 {
 
+    public function  afterSave($insert, $changedAttributes)
+    {
+      
+        parent::afterSave($insert, $changedAttributes);
+        TagDependency::invalidate(Yii::$app->cache, 'file_cache');
+    }
     private $header = null;
     private function getFileHeader()
     {
@@ -68,7 +75,7 @@ class File extends \yii\db\ActiveRecord
     public function getFilterUrl()
     {
         if (preg_match('/^http[s]?:\/\/(\d+.\d+.\d+.\d+)[:]?\d+[\/]?/',
-            \Yii::$app->request->hostInfo, $matches)) {
+            Yii::$app->request->hostInfo, $matches)) {
             return str_replace('[ip]', $matches[1], $this->url);
         }
         return $this->url;
@@ -77,6 +84,7 @@ class File extends \yii\db\ActiveRecord
     {
         $fields = parent::fields();
 
+       // unset($fields['id']);
         unset($fields['updater_id']);
         unset($fields['user_id']);
         unset($fields['created_at']);
@@ -104,7 +112,7 @@ class File extends \yii\db\ActiveRecord
                 'class' => AttributesBehavior::class,
                 'attributes' => [
                     'size' => [
-                        \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => [$this, 'getFileSize'],
+                        \Yii\db\ActiveRecord::EVENT_BEFORE_INSERT => [$this, 'getFileSize'],
                     ],
                     'type' => [
                         \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => [$this, 'getFileType'],

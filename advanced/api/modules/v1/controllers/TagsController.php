@@ -5,7 +5,9 @@ use mdm\admin\components\AccessControl;
 use bizley\jwt\JwtHttpBearerAuth;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
+use Yii;
 
+use api\modules\v1\models\TagsSearch;
 class TagsController extends ActiveController
 {
     public $modelClass = 'api\modules\v1\models\Tags';
@@ -44,9 +46,17 @@ class TagsController extends ActiveController
     }
     public function actions()
     {
-
         $actions = parent::actions();
-        return ['index' => $actions['index']];
+        unset($actions['index']);
+        return $actions;
+    }
+   
+    public function actionIndex()
+    {
+
+        $searchModel = new TagsSearch();
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+        return $dataProvider;
     }
 
 }

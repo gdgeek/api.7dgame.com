@@ -116,12 +116,23 @@ class Meta extends \yii\db\ActiveRecord
     }
     public function getCode(){
         $metaCode = $this->metaCode;
+        $cl = Yii::$app->request->get('cl');
+        if(!$cl){
+            $cl = 'lua';
+        }
         if($metaCode && $metaCode->code){
-            $script = $metaCode->code->lua;
+            $script = $metaCode->code->$cl;
         }else if ($this->cyber && $this->cyber->script) {
             $script = $this->cyber->script;
         }
-        $substring = "local meta = {}\nlocal index = ''\n";
+        
+        if($cl == 'lua'){
+            $substring = "local meta = {}\nlocal index = ''\n";
+        }else{
+            $substring = '';
+        }
+   
+
         if(isset($script)){
             if (strpos($script, $substring) !== false) {
                 return $script;
@@ -207,17 +218,12 @@ class Meta extends \yii\db\ActiveRecord
     public function getResourceIds()
     {
         
-        if(is_string($this->data)){
-            $data = json_decode($this->data);
-        }else{
-            $data =json_decode(json_encode($this->data));
-        }
-        $resourceIds = \api\modules\v1\helper\Meta2Resources::Handle($data);
-        return $resourceIds;
+        
+        return \api\modules\v1\helper\Meta2Resources::Handle($this->data);
     }
     public function extraResources()
     {
-        $resourceIds = $this->resourceIds;
+        $resourceIds = $this->getResourceIds();
         $items = Resource::find()->where(['id' => $resourceIds])->all();
         return $items;
     }

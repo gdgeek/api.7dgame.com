@@ -4,6 +4,7 @@ namespace api\modules\v1\models;
 
 use api\modules\v1\models\File;
 
+use yii\caching\TagDependency;
 use api\modules\v1\components\Validator\JsonValidator;
 use Yii;
 
@@ -22,6 +23,13 @@ use Yii;
  */
 class UserInfo extends \yii\db\ActiveRecord
 {
+
+    public function  afterSave($insert, $changedAttributes)
+    {
+      
+        parent::afterSave($insert, $changedAttributes);
+        TagDependency::invalidate(Yii::$app->cache, 'userinfo_cache');
+    }
     /**
      * {@inheritdoc}
      */
@@ -39,8 +47,8 @@ class UserInfo extends \yii\db\ActiveRecord
             [['user_id'], 'required'],
             [['user_id', 'avatar_id', 'gold', 'points'], 'integer'],
             [['info'], JsonValidator::class],
-            [['avatar_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['avatar_id' => 'id']],
-            [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['user_id' => 'id']],
+            [['avatar_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::class, 'targetAttribute' => ['avatar_id' => 'id']],
+            [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::class, 'targetAttribute' => ['user_id' => 'id']],
         ];
     }
 
@@ -69,12 +77,11 @@ class UserInfo extends \yii\db\ActiveRecord
         $fields = parent::fields();
         unset($fields['id']);
         unset($fields['user_id']);
-        $fields["info"] = function ($model) {
-            if (!is_string($model->info) && !is_null($model->info)) {
-                return json_encode($model->info);
-            }
-            return $model->info;
+        unset($fields['avatar_id']);
+        $fields['avatar'] = function ($model) {
+            return $model->avatar;
         };
+        
         return $fields;
     }
 
@@ -85,7 +92,7 @@ class UserInfo extends \yii\db\ActiveRecord
      */
     public function getAvatar()
     {
-        return $this->hasOne(File::className(), ['id' => 'avatar_id']);
+        return $this->hasOne(File::class, ['id' => 'avatar_id']);
     }
 
     /**
@@ -95,7 +102,7 @@ class UserInfo extends \yii\db\ActiveRecord
      */
     public function getUser()
     {
-        return $this->hasOne(User::className(), ['id' => 'user_id']);
+        return $this->hasOne(User::class, ['id' => 'user_id']);
     }
 
     /**

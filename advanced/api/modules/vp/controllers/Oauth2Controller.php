@@ -174,7 +174,7 @@ class Oauth2Controller extends \yii\rest\Controller{
             'clientId'          => getenv('APPLE_CLIENT_ID'), // com.voxelparty.www
             'teamId'            => getenv('APPLE_AUTH_TEAM_ID') , // 1A234BFK46 https://developer.apple.com/account/#/membership/ (Team ID)
             'keyFileId'         => getenv('APPLE_AUTH_KEY_ID') , // 1ABC6523AA https://developer.apple.com/account/resources/authkeys/list (Key ID)
-            'keyFilePath'       => getenv('APPLE_AUTH_KEY'), // __DIR__ . '/AuthKey_1ABC6523AA.p8' -> Download key above
+            'keyFilePath'       => str_replace('{KEY_ID}', getenv($key), getenv('APPLE_AUTH_KEY')), // __DIR__ . '/AuthKey_1ABC6523AA.p8' -> Download key above
             'redirectUri'       => $url,
             'scope'             => "email name",
         ]);
@@ -302,7 +302,7 @@ class Oauth2Controller extends \yii\rest\Controller{
             'clientId'          => getenv('APPLE_CLIENT_ID'), // com.voxelparty.www
             'teamId'            => getenv('APPLE_AUTH_TEAM_ID') , // 1A234BFK46 https://developer.apple.com/account/#/membership/ (Team ID)
             'keyFileId'         => getenv('APPLE_AUTH_KEY_ID') , // 1ABC6523AA https://developer.apple.com/account/resources/authkeys/list (Key ID)
-            'keyFilePath'       => getenv('APPLE_AUTH_KEY'), // __DIR__ . '/AuthKey_1ABC6523AA.p8' -> Download key above
+            'keyFilePath'       => str_replace('{KEY_ID}', getenv($key), getenv('APPLE_AUTH_KEY')), // __DIR__ . '/AuthKey_1ABC6523AA.p8' -> Download key above
             'redirectUri'       => getenv('APPLE_REDIRECT_URI'),
             'scope'             => "email name",
         ]);

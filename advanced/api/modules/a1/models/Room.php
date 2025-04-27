@@ -32,7 +32,6 @@ use yii\db\Expression;
 
  */
 class Room extends \yii\db\ActiveRecord
-
 {
 
     public function behaviors()
@@ -91,6 +90,7 @@ class Room extends \yii\db\ActiveRecord
         unset($fields['data']);
         unset($fields['version']);
         unset($fields['name']);
+        /*
         if(is_string($this->data)){
             $data = json_decode($this->data);
         }else{
@@ -104,7 +104,7 @@ class Room extends \yii\db\ActiveRecord
         $fields['space'] = function ($model) use ($space) {
             $model = Space::findOne($space->id);
             return $model;
-        };
+        };*/
         return $fields;
     }
     /**
