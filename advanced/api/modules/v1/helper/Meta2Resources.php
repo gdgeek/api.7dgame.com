@@ -17,9 +17,12 @@ class Meta2Resources
             }
         }
 
+
         if ($resource && !in_array($resource, $resources)) {
-            array_push($resources, values: $resource);
+            array_push($resources, $resource);
         }
+
+    
         return $resources;
     }
     public static function HandleNode($node, &$resources)
