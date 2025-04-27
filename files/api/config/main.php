@@ -156,7 +156,6 @@ return [
                     'controller' => 'v1/wechat',
                     'pluralize' => false,
                     'extraPatterns' => [
-                      // 'POST link' => 'link',
                         'POST register' => 'register',
                         'POST login' => 'login',
                     ],
@@ -170,20 +169,7 @@ return [
                         'POST refresh' => 'refresh',
                     ],
                 ],
-                /*
-                [
-                    'class' => 'yii\rest\UrlRule',
-                    'controller' => 'wechat',
-                    'extraPatterns' => [
-                        'GET qrcode' => 'qrcode',
-                        'GET test' => 'test',
-                        'GET openid' => 'openid',
-                        'OPTIONS binding' => 'binding',
-                        'POST binding' => 'binding',
-                        'OPTIONS signup' => 'signup',
-                        'POST signup' => 'signup',
-                    ],
-                ],*/
+
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'site',
@@ -228,14 +214,41 @@ return [
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',
-                    'controller' => 'v1/like',
+                    'controller' => ['project', 'user', 'resource'],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'pluralize' => false,
+                    'controller' => [
+                        'v1/verse-tags',
+                    ],
                     'extraPatterns' => [
                         'POST remove' => 'remove',
                     ],
                 ],
+
                 [
                     'class' => 'yii\rest\UrlRule',
-                    'controller' => ['project', 'user', 'resource'],
+                    'pluralize' => false,
+                    'controller' => [
+                        'v1/system',
+                    ],
+                    'extraPatterns' => [
+                        'POST take-photo' => 'take-photo',
+                        'GET verse' => 'verse',
+                        'PUT verse-code' => 'verse-code',
+                        'PUT meta-code' => 'meta-code',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'pluralize' => false,
+                    'controller' => [
+                        'v1/snapshot',
+                    ],
+                    'extraPatterns' => [
+                        'POST take-photo' => 'take-photo',
+                    ],
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',
@@ -243,38 +256,19 @@ return [
                         'v1/meta',
                         'v1/prefab',
                         'v1/file',
-                        'v1/verse-cyber',
-                        'v1/message',
-                        'v1/reply',
                         'v1/resource',
-                        'v1/message-tags',
-                        'v1/multilanguage-verse',
                         'v1/tags',
-                        'v1/knight',
-                        'v1/meta-knight',
-                        'v1/verse-open',
-                        'v1/verse-script',
-                        'v1/event-input',
-                        'v1/event-output',
-                        'v1/event-link',
+
                         'v1/token',
-                        'v1/space',
-                        'v1/cyber',
-                        'v1/vp-map',
-                    ],
-                ],
-                [
-                    'class' => 'yii\rest\UrlRule',
-                    'controller' => 'v1/verse-release',
-                    'extraPatterns' => [
-                        'PUT verse' => 'verse',
+
                     ],
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/verse',
                     'extraPatterns' => [
-                        'PUT code' => 'update-code',
+                        'GET public' => 'public',
+                        'PUT code' => 'update-code'
                     ],
                 ],
                 [
@@ -284,13 +278,7 @@ return [
                         'PUT code' => 'update-code',
                     ],
                 ],
-                [
-                    'class' => 'yii\rest\UrlRule',
-                    'controller' => 'v1/vp-guide',
-                    'extraPatterns' => [
-                        'GET verses' => 'verses',
-                    ],
-                ],
+
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/person',
@@ -298,29 +286,7 @@ return [
                         'PUT auth' => 'auth',
                     ],
                 ],
-                [
-                    'class' => 'yii\rest\UrlRule',
-                    'controller' => 'v1/verse-share',
-                    'extraPatterns' => [
-                        'GET verses' => 'verses',
-                        'PUT put' => 'put',
-                    ],
-                ],
-                [
-                    'class' => 'yii\rest\UrlRule',
-                    'controller' => 'v1/verse-open',
-                    'extraPatterns' => [
-                        'GET verses' => 'verses',
-                    ],
-                ],
-                [
-                    'class' => 'yii\rest\UrlRule',
-                    'pluralize' => false,
-                    'controller' => 'v1/ai-rodin',
-                    'extraPatterns' => [
-                        'PUT file' => 'file',
-                    ],
-                ],
+
                 [
                     'class' => 'yii\rest\UrlRule',
                     'pluralize' => false,
@@ -334,51 +300,17 @@ return [
                         'POST apple-id-create' => 'apple-id-create',
                     ],
                 ],
-                [
-                    'class' => 'yii\rest\UrlRule',
-                    'controller' => 'v1/meta-resource',
-                    'extraPatterns' => [
-                        'GET resources' => 'resources',
-                    ],
-                ],
-                [
-                    'class' => 'yii\rest\UrlRule',
-                    'controller' => 'v1/verse-meta',
-                    'extraPatterns' => [
-                        'GET metas' => 'metas',
-                    ],
-                ],
-                [
-                    'class' => 'yii\rest\UrlRule',
-                    'controller' => 'v1/test',
-                    'extraPatterns' => [
-                        'GET file' => 'file',
-                    ],
-                ],
-                [
-                    'class' => 'yii\rest\UrlRule',
-                    'controller' => 'v1/verse-space',
-                    'extraPatterns' => [
-                        'GET spaces' => 'spaces',
-                    ],
-                ],
+
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'a1/verse',
                     'extraPatterns' => [
                         'GET open' => 'open',
                         'GET release' => 'release',
+                        'GET public' => 'public',
                     ],
                 ],
-                [
-                    'class' => 'yii\rest\UrlRule',
-                    'controller' => [
-                        'a1/vp-guide',
-                        'a1/verse-cache',
-                        'a1/vp-guide-cache',
-                        'a1/vp-key-value'
-                    ],
-                ],
+
                 [
                     'class' => 'yii\rest\UrlRule',
 
@@ -392,20 +324,6 @@ return [
                     'controller' => 'v1/cyber-script',
                     'extraPatterns' => [
                         'GET find' => 'find',
-                    ],
-                ],
-                [
-                    'class' => 'yii\rest\UrlRule',
-                    'controller' => 'v1/local',
-                    'extraPatterns' => [
-                        'GET information' => 'information',
-                        'GET param' => 'param',
-                        'GET ready' => 'ready',
-                        'GET init' => 'init',
-                        'OPTIONS init' => 'init',
-                        'POST init' => 'init',
-                        'OPTIONS signup' => 'signup',
-                        'POST signup' => 'signup',
                     ],
                 ],
 

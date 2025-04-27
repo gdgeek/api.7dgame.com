@@ -23,7 +23,7 @@ class MetaRule extends Rule
             return false;
         }
         
-        $userid = Yii::$app->user->identity->id;
+       // $userid = Yii::$app->user->identity->id;
         // throw new BadRequestHttpException($meta->editable());
         
         return $meta->editable();

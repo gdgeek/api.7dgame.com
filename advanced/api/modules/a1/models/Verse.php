@@ -2,12 +2,11 @@
 
 namespace api\modules\a1\models;
 
-//use api\modules\a1\models\EventLink;
 use api\modules\a1\models\File;
 use api\modules\a1\models\Meta;
 use api\modules\a1\models\Resource;
 use api\modules\v1\models\User;
-use api\modules\v1\models\MultilanguageVerse;
+//use api\modules\v1\models\MultilanguageVerse;
 use api\modules\v1\models\VerseQuery;
 use api\modules\v1\models\VerseCode;
 
@@ -88,49 +87,26 @@ class Verse extends \yii\db\ActiveRecord
     public function extraFields()
     {
         
-        
         $language = Yii::$app->request->get('language');
         if(!isset($language)){
             $language = 'en-us';
         }
-        $context = MultilanguageVerse::find()->where(['verse_id' => $this->id, 'language' => $language])->one();
+       //$context = MultilanguageVerse::find()->where(['verse_id' => $this->id, 'language' => $language])->one();
         return [
             'id',
             'metas',
-            'name' => function() use($context){
-                if(isset($context)){
-                    return $context->name;
-                }    
+            'name' => function(){
+              
                 return $this->name;
             },
             
             
-            'description' => function() use($context){
-                if(isset($context)){
-                    return $context->description;
-                }    
-                if(is_string($this->info)){
-                    $info = json_decode($this->info, true);
-                    
-                }else{
-                    $info = $this->info;
-                }
-                if(isset($info['description'])){
-                    return $info['description'];
-                }
-                return;
-            },
             'uuid' => function () {
-                if (empty($this->uuid)) {
-                    $this->uuid = \Faker\Provider\Uuid::uuid();
-                    $this->save();
-                }
+              
                 return $this->uuid;
             },
             'data' => function () {
-                if (!is_string($this->data) && !is_null($this->data)) {
-                    return json_encode($this->data);
-                }
+               
                 return $this->data;
                 
             },
@@ -203,17 +179,7 @@ class Verse extends \yii\db\ActiveRecord
         return $this->hasMany(VerseCyber::className(), ['verse_id' => 'id']);
     }
     
-    /**
-    * Gets query for [[EventLinks]].
-    *
-    * @return \yii\db\ActiveQuery|EventLinkQuery
-    */
-    /*
-    public function getEventLinks()
-    {
-    return $this->hasMany(EventLink::className(), ['verse_id' => 'id']);
-    }
-    */
+   
     public function getResources()
     {
         $metas = $this->metas;
@@ -274,16 +240,7 @@ class Verse extends \yii\db\ActiveRecord
         return Meta::find()->where(['id' => $ret])->all();
         
     }
-    /**
-    * Gets query for [[VerseOpens]].
-    *
-    * @return \yii\db\ActiveQuery|VerseOpenQuery
-    */
-    public function getVerseOpen()
-    {
-        return $this->hasOne(VerseOpen::className(), ['verse_id' => 'id']);
-    }
-    
+
     public function getMessage()
     {
         return $this->hasOne(Message::class, ['id' => 'message_id'])
@@ -331,11 +288,11 @@ class Verse extends \yii\db\ActiveRecord
     * Gets query for [[VerseRetes]].
     *
     * @return \yii\db\ActiveQuery|VerseReteQuery
-    */
+   
     public function getVerseRetes()
     {
         return $this->hasMany(VerseRete::className(), ['verse_id' => 'id']);
-    }
+    }*/
     public function getShare()
     {
         
@@ -348,7 +305,7 @@ class Verse extends \yii\db\ActiveRecord
     * Gets query for [[VerseScripts]].
     *
     * @return \yii\db\ActiveQuery|VerseScriptQuery
-    */
+  
     public function getVerseScripts()
     {
         return $this->hasMany(VerseScript::className(), ['verse_id' => 'id']);
@@ -357,5 +314,5 @@ class Verse extends \yii\db\ActiveRecord
     {
         return $this->hasOne(VerseScript::className(), ['verse_id' => 'id']);
     }
-    
+      */
 }

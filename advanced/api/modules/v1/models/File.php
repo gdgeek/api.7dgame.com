@@ -9,7 +9,7 @@ use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
 use yii\db\Expression;
 use yii\helpers\ArrayHelper;
-
+use yii\db\ActiveRecord;
 use yii\caching\TagDependency;
 /**
  * This is the model class for table "file".
@@ -28,7 +28,7 @@ use yii\caching\TagDependency;
  * @property Polygen[] $polygens0
  * @property Video[] $videos
  */
-class File extends \yii\db\ActiveRecord
+class File extends ActiveRecord
 
 {
 
@@ -75,7 +75,7 @@ class File extends \yii\db\ActiveRecord
     public function getFilterUrl()
     {
         if (preg_match('/^http[s]?:\/\/(\d+.\d+.\d+.\d+)[:]?\d+[\/]?/',
-            \Yii::$app->request->hostInfo, $matches)) {
+            Yii::$app->request->hostInfo, $matches)) {
             return str_replace('[ip]', $matches[1], $this->url);
         }
         return $this->url;
@@ -112,7 +112,7 @@ class File extends \yii\db\ActiveRecord
                 'class' => AttributesBehavior::class,
                 'attributes' => [
                     'size' => [
-                        \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => [$this, 'getFileSize'],
+                        \Yii\db\ActiveRecord::EVENT_BEFORE_INSERT => [$this, 'getFileSize'],
                     ],
                     'type' => [
                         \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => [$this, 'getFileType'],

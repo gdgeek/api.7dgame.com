@@ -7,7 +7,7 @@ use Yii;
 use yii\behaviors\BlameableBehavior;
 
 use yii\caching\TagDependency;
-use api\modules\v1\components\Validator\JsonValidator;
+
 /**
  * This is the model class for table "resource".
  *
@@ -63,8 +63,8 @@ class Resource extends \yii\db\ActiveRecord
         return [
             [['name', 'type', 'file_id'], 'required'],
             [['author_id', 'updater_id', 'file_id', 'image_id'], 'integer'],
-            [['created_at'], 'safe'],
-            [['info'], JsonValidator::class],
+            [['created_at','info'], 'safe'],
+           
             [['name', 'type', 'uuid'], 'string', 'max' => 255],
             [['uuid'], 'unique'],
             [['updater_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::class, 'targetAttribute' => ['updater_id' => 'id']],
@@ -161,22 +161,14 @@ class Resource extends \yii\db\ActiveRecord
         }
     }
 
-    /**
-     * Gets query for [[MetaResources]].
-     *
-     * @return \yii\db\ActiveQuery|MetaResourceQuery
-     */
-    public function getMetaResources()
-    {
-        return $this->hasMany(MetaResource::class, ['resource_id' => 'id']);
-    }
+  
 
     public function extraFields()
     {
         return [
             'file',
             'image',
-            'metaResources',
+            
             'author',
         ];
     }

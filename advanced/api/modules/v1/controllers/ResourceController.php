@@ -62,7 +62,7 @@ class ResourceController extends ActiveController
     
     public function actionView($id)
     {
-        return Resource::find()->where(['id'=>$id])->cache(3600, new TagDependency(['tags' => 'resource_cache']))->one();
+        return Resource::find()->where(['id'=>$id])->one();
     }
     public function actionIndex()
     {
@@ -75,7 +75,7 @@ class ResourceController extends ActiveController
         } else {
             $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id]);
         }
-        $dataProvider->query->cache(3600, new TagDependency(['tags' => 'resource_cache']));
+        //$dataProvider->query->cache(3600, new TagDependency(['tags' => 'resource_cache']));
         return $dataProvider;
     }
 

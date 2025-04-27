@@ -22,29 +22,14 @@ use Yii;
  * @property string|null $wx_openid
  * @property string|null $nickname
  *
- * @property Feedback[] $feedbacks
- * @property Feedback[] $feedbacks0
  * @property File[] $files
- * @property Invitation[] $invitations
- * @property Invitation[] $invitations0
- * @property Like[] $likes
- * @property Message[] $messages
- * @property Message[] $messages0
  * @property Meta[] $metas
  * @property Meta[] $metas0
- * @property Order[] $orders
- * @property Reply[] $replies
- * @property Reply[] $replies0
  * @property Resource[] $resources
  * @property Resource[] $resources0
  * @property UserInfo[] $userInfos
  * @property Verse[] $verses
  * @property Verse[] $verses0
- * @property VerseCyber[] $verseCybers
- * @property VerseCyber[] $verseCybers0
- * @property VerseOpen[] $verseOpens
- * @property VerseShare[] $verseShares
- * @property Wx[] $wxes
  */
 class Person extends \yii\db\ActiveRecord
 

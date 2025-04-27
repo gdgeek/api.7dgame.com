@@ -2,13 +2,11 @@
 
 namespace api\modules\v1\components;
 
-use api\modules\v1\models\Knight;
 use api\modules\v1\models\Meta;
 use api\modules\v1\models\MetaResource;
 use api\modules\v1\models\Resource;
 use api\modules\v1\models\Space;
 use api\modules\v1\models\Verse;
-use api\modules\v1\models\VerseKnight;
 use api\modules\v1\models\VerseSpace;
 use api\modules\v1\models\VerseMeta;
 use Yii;
@@ -120,36 +118,7 @@ class BindingRule extends Rule
             }
             
         }
-        if ($controller == 'verse-knight') {
-            if ($request->isGet) {
-                if (isset($params['verse_id'])) {
-                    $verse = Verse::findOne($params['verse_id']);
-                    if ($verse && $verse->viewable()) {
-                        return true;
-                    }
-                }
-                
-            }
-            
-            if ($request->isPost) {
-                if (isset($post['verse_id']) && isset($post['knight_id'])) {
-                    
-                    $verse = Verse::findOne($post['verse_id']);
-                    $knight = Knight::findOne($post['knight_id']);
-                    if ($verse && $verse->editable() && $knight && $knight->author_id == $userid) {
-                        return true;
-                    }
-                }
-            }
-            if ($request->isDelete) {
-                if (isset($params['id'])) {
-                    $vk = VerseKnight::findOne($params['id']);
-                    if ($vk && $vk->verse->editable()) {
-                        return true;
-                    }
-                }
-            }
-        }
+       
         return false;
         
     }

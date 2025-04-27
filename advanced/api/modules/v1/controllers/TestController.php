@@ -1,6 +1,7 @@
 <?php
 namespace api\modules\v1\controllers;
 
+use api\modules\v1\RefreshToken;
 use yii\rest\ActiveController;
 
 class TestController extends ActiveController
@@ -20,6 +21,17 @@ class TestController extends ActiveController
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
         $output = curl_exec($curl);
         return $output;
+    }
+    public function actionTest(){
+       $all =  RefreshToken::find()->all();
+       $one =  RefreshToken::find()->where(['key' => 'KQ5N52i3OAq2jOAL3I0yaMAMCg91PiCb'])->one();
+
+        /*一个随机字符串 */ 
+      // $one->key = \Yii::$app->security->generateRandomString();
+       $one->save();
+       // $refreshToken = new RefreshToken();
+      //  $refreshToken->save();
+        return $one;
     }
 
 }

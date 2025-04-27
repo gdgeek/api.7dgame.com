@@ -85,6 +85,7 @@ class UserController extends \yii\rest\Controller
 
         if ($model->validate()) {
             $model->save();
+        
             return ['success' => true, 'message'=>'ok', 'data' => $this->getUserData()];
           
         } else {
