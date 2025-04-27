@@ -22,6 +22,8 @@ class VerseIdRule extends Rule
          
         if (!$verse_id) {
 
+
+            
             throw new BadRequestHttpException("no verse_id");
         }
 
