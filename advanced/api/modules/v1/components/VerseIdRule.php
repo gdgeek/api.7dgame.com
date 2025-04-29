@@ -22,11 +22,9 @@ class VerseIdRule extends Rule
          
         if (!$verse_id) {
 
-
-            
             throw new BadRequestHttpException("no verse_id");
         }
-
+  
         $verse = Verse::findOne($verse_id);
         if (!$verse) {
             throw new BadRequestHttpException("no verse");
