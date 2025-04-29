@@ -46,9 +46,8 @@ class TagsController extends ActiveController
     }
     public function actions()
     {
-        $actions = parent::actions();
-        unset($actions['index']);
-        return $actions;
+     //  $actions = parent::actions();
+        return [];
     }
    
     public function actionIndex()

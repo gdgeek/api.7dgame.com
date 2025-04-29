@@ -12,7 +12,6 @@ use Yii;
  * @property string|null $key
  * @property string $type
  *
- * @property MessageTags[] $messageTags
  * @property VerseTags[] $verseTags
  */
 class Tags extends \yii\db\ActiveRecord
@@ -34,7 +33,9 @@ class Tags extends \yii\db\ActiveRecord
            
             [['type'], 'string'],
             [['name', 'key'], 'string', 'max' => 255],
-            [['key'], 'unique'],
+            //name 和 key 必须提供
+            [['name', 'key'], 'required'],
+            [['name','key'], 'unique'],
         ];
     }
 
@@ -51,15 +52,7 @@ class Tags extends \yii\db\ActiveRecord
         ];
     }
 
-    /**
-     * Gets query for [[MessageTags]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getMessageTags()
-    {
-        return $this->hasMany(MessageTags::className(), ['tag_id' => 'id']);
-    }
+  
 
     /**
      * Gets query for [[VerseTags]].

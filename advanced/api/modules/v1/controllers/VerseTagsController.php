@@ -1,6 +1,6 @@
 <?php
 namespace api\modules\v1\controllers;
-
+use api\modules\v1\models\Tags;
 use api\modules\v1\models\VerseSearch;
 use mdm\admin\components\AccessControl;
 use bizley\jwt\JwtHttpBearerAuth;
@@ -50,13 +50,49 @@ class VerseTagsController extends ActiveController
 
         return $behaviors;
     }
+    public function actions()
+    {
+        //  $actions = parent::actions();
+        return [];
+    }
+
+    //添加标签
+    public function actionCreate(){
+        $verse_id = Yii::$app->request->post('verse_id');
+        $tags_id = Yii::$app->request->post('tags_id');
+        $tags = Tags::findOne($tags_id);
+        if(!$tags) {
+            throw new Exception('Tags not found');
+        }
+        $permission = Yii::$app->user->can('root')||  Yii::$app->user->can('admin');
+        if($tags->type == 'Status' && !$permission){
+            throw new Exception('You do not have permission to add this tag');
+        }
+
+        $model = new \api\modules\v1\models\VerseTags();
+        $model->verse_id = $verse_id;
+        $model->tags_id = $tags_id;
+        
+        if($model->save()){
+            return [
+                'success' => true,
+                'message' => 'success'
+            ];
+        }else {
+           
+            throw new Exception(json_encode($model->getErrors()));
+        }
+    }
     public function actionRemove(){
         $verse_id = Yii::$app->request->post('verse_id');
         $tags_id = Yii::$app->request->post('tags_id');
         $model = \api\modules\v1\models\VerseTags::find()->where(['verse_id' => $verse_id, 'tags_id' => $tags_id])->one();
         if($model){
             $model->delete();
-            return ['status' => 'success'];
+            return [
+                'success' => true,
+                'message' => 'success'
+            ];
         }
         throw new Exception('VerseTags not found');
     }
