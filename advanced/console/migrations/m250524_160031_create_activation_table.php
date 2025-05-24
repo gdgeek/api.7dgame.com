@@ -15,6 +15,10 @@ class m250524_160031_create_activation_table extends Migration
      */
     public function safeUp()
     {
+         if ($this->db->driverName === 'mysql') {
+            // http://stackoverflow.com/questions/766809/whats-the-difference-between-utf8-general-ci-and-utf8-unicode-ci
+            $tableOptions = 'CHARACTER SET utf8 COLLATE utf8_unicode_ci ENGINE=InnoDB';
+        }
         $this->createTable('{{%activation}}', [
             'id' => $this->primaryKey(),
             'begin' => $this->dateTime()->notNull(),
@@ -22,7 +26,7 @@ class m250524_160031_create_activation_table extends Migration
             'device_id' => $this->integer()->notNull(),
             'created_at' => $this->dateTime()->notNull(),
             'updated_at' => $this->dateTime()->notNull(),
-        ]);
+        ], $tableOptions);
 
         // creates index for column `device_id`
         $this->createIndex(
