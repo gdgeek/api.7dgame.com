@@ -84,7 +84,6 @@ class File extends ActiveRecord
     {
         $fields = parent::fields();
 
-       // unset($fields['id']);
         unset($fields['updater_id']);
         unset($fields['user_id']);
         unset($fields['created_at']);

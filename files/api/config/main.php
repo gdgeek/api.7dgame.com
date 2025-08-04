@@ -150,6 +150,11 @@ return [
                         'GET info' => 'info',
                         'GET creation' => 'creation',
                     ],
+                ], 
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/phototype',
+                    'pluralize' => true,
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',
