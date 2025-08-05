@@ -57,7 +57,7 @@ class PhototypeController extends ActiveController
     {
         $searchModel = new PhototypeSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-        $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id]);
+      //  $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id]);
        // throw new BadRequestHttpException('This endpoint is not available.');
         return $dataProvider;
     }

@@ -1,12 +1,10 @@
 <?php
-
+/*
 namespace app\components;
 use yii\base\BaseObject;
 use yii\helpers\Url;
 
-/**
- * template module definition class
- */
+
 class List extends BaseObject
 {
     public $models;
@@ -32,3 +30,4 @@ class List extends BaseObject
 		return $list;
 	}
 }
+*/
