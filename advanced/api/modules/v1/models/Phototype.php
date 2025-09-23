@@ -21,9 +21,11 @@ use yii\db\Expression;
  * @property string|null $uuid
  * @property int|null $image_id
  * @property int|null $updater_id
+ * @property int|null $resource_id 
  *
  * @property User $author
  * @property File $image
+ * @property Resource $resource
  * @property User $updater
  */
 class Phototype extends \yii\db\ActiveRecord
@@ -64,12 +66,13 @@ class Phototype extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['author_id', 'image_id', 'updater_id'], 'integer'],
+            [['author_id', 'image_id', 'updater_id', 'resource_id'], 'integer'],
             [['data', 'schema', 'created_at', 'updated_at'], 'safe'],
             [['title', 'uuid'], 'string', 'max' => 255],
             [['uuid'], 'unique'],
             [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['author_id' => 'id']],
             [['image_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['image_id' => 'id']],
+            [['resource_id'], 'exist', 'skipOnError' => true, 'targetClass' => Resource::className(), 'targetAttribute' => ['resource_id' => 'id']], 
             [['updater_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updater_id' => 'id']],
         ];
     }
@@ -90,9 +93,19 @@ class Phototype extends \yii\db\ActiveRecord
             'uuid' => Yii::t('app', 'Uuid'),
             'image_id' => Yii::t('app', 'Image ID'),
             'updater_id' => Yii::t('app', 'Updater ID'),
+            'resource_id' => Yii::t('app', 'Resource ID'), 
         ];
     }
-
+	/**
+    * Gets query for [[Resource]]. 
+    * 
+    * @return \yii\db\ActiveQuery 
+    */ 
+    public function getResource() 
+    { 
+        return $this->hasOne(Resource::className(), ['id' => 'resource_id']); 
+    } 
+ 
     /**
      * Gets query for [[Author]].
      *
@@ -128,6 +141,7 @@ class Phototype extends \yii\db\ActiveRecord
         return [
             'image',
             'author',
+            'resource',
         ];
     }
 }
