@@ -2,7 +2,6 @@
 
 namespace api\modules\a1\models;
 
-use api\modules\v1\models\Cyber;
 use api\modules\v1\models\File;
 use api\modules\v1\models\MetaQuery;
 use api\modules\v1\models\User;
@@ -118,11 +117,9 @@ class Meta extends \yii\db\ActiveRecord
         if(!$cl){
             $cl = 'lua';
         }
-        $cyber = $this->getCyber();
+       
         if($metaCode && $metaCode->code){
             $script = $metaCode->code->$cl;
-        }else if ($cyber && $cyber->script) {
-            $script = $cyber->script;
         }
         
         if($cl == 'lua'){
@@ -184,16 +181,7 @@ class Meta extends \yii\db\ActiveRecord
     {
         return $this->hasOne(MetaCode::className(), ['meta_id' => 'id']);
     }
-    /**
-    * Gets query for [[Cybers]].
-    *
-    * @return \yii\db\ActiveQuery|CyberQuery
-    */
-    public function getCyber()
-    {
-        return $this->hasOne(Cyber::className(), ['meta_id' => 'id']);
-    }
-    
+
    
     /**
     * Gets query for [[Image]].
@@ -207,7 +195,6 @@ class Meta extends \yii\db\ActiveRecord
     
     public function getResourceIds()
     {
-        
         
         return \api\modules\v1\helper\Meta2Resources::Handle($this->data);
     }
