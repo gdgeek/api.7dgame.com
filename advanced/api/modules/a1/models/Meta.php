@@ -2,6 +2,7 @@
 
 namespace api\modules\a1\models;
 
+use api\modules\v1\models\Cyber;
 use api\modules\v1\models\File;
 use api\modules\v1\models\MetaQuery;
 use api\modules\v1\models\User;
@@ -25,9 +26,11 @@ use api\modules\v1\components\Validator\JsonValidator;
 * @property string|null $data
 * @property string|null $uuid
 *
+* @property Cyber[] $cybers
 * @property User $author
 * @property File $image
 * @property User $updater
+* @property MetaRete[] $metaRetes
 */
 class Meta extends \yii\db\ActiveRecord
 
@@ -112,14 +115,15 @@ class Meta extends \yii\db\ActiveRecord
         ];
     }
     public function getCode(){
-        $metaCode = $this->getMetaCode();
+        $metaCode = $this->metaCode;
         $cl = Yii::$app->request->get('cl');
         if(!$cl){
             $cl = 'lua';
         }
-       
         if($metaCode && $metaCode->code){
             $script = $metaCode->code->$cl;
+        }else if ($this->cyber && $this->cyber->script) {
+            $script = $this->cyber->script;
         }
         
         if($cl == 'lua'){
@@ -181,8 +185,26 @@ class Meta extends \yii\db\ActiveRecord
     {
         return $this->hasOne(MetaCode::className(), ['meta_id' => 'id']);
     }
-
-   
+    /**
+    * Gets query for [[Cybers]].
+    *
+    * @return \yii\db\ActiveQuery|CyberQuery
+    */
+    public function getCyber()
+    {
+        return $this->hasOne(Cyber::className(), ['meta_id' => 'id']);
+    }
+    
+    /**
+    * Gets query for [[MetaRetes]].
+    *
+    * @return \yii\db\ActiveQuery|MetaReteQuery
+    */
+    public function getMetaRetes()
+    {
+        return $this->hasMany(MetaRete::className(), ['meta_id' => 'id']);
+    }
+    
     /**
     * Gets query for [[Image]].
     *
@@ -195,6 +217,7 @@ class Meta extends \yii\db\ActiveRecord
     
     public function getResourceIds()
     {
+        
         
         return \api\modules\v1\helper\Meta2Resources::Handle($this->data);
     }
