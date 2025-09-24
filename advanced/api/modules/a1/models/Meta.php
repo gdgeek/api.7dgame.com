@@ -26,11 +26,9 @@ use api\modules\v1\components\Validator\JsonValidator;
 * @property string|null $data
 * @property string|null $uuid
 *
-* @property Cyber[] $cybers
 * @property User $author
 * @property File $image
 * @property User $updater
-* @property MetaRete[] $metaRetes
 */
 class Meta extends \yii\db\ActiveRecord
 
@@ -115,15 +113,16 @@ class Meta extends \yii\db\ActiveRecord
         ];
     }
     public function getCode(){
-        $metaCode = $this->metaCode;
+        $metaCode = $this->getMetaCode();
         $cl = Yii::$app->request->get('cl');
         if(!$cl){
             $cl = 'lua';
         }
+        $cyber = $this->getCyber();
         if($metaCode && $metaCode->code){
             $script = $metaCode->code->$cl;
-        }else if ($this->cyber && $this->cyber->script) {
-            $script = $this->cyber->script;
+        }else if ($cyber && $cyber->script) {
+            $script = $cyber->script;
         }
         
         if($cl == 'lua'){
@@ -195,16 +194,7 @@ class Meta extends \yii\db\ActiveRecord
         return $this->hasOne(Cyber::className(), ['meta_id' => 'id']);
     }
     
-    /**
-    * Gets query for [[MetaRetes]].
-    *
-    * @return \yii\db\ActiveQuery|MetaReteQuery
-    */
-    public function getMetaRetes()
-    {
-        return $this->hasMany(MetaRete::className(), ['meta_id' => 'id']);
-    }
-    
+   
     /**
     * Gets query for [[Image]].
     *

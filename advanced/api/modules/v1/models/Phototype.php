@@ -66,10 +66,11 @@ class Phototype extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
+            [['title'], 'required'], 
             [['author_id', 'image_id', 'updater_id', 'resource_id'], 'integer'],
             [['data', 'schema', 'created_at', 'updated_at'], 'safe'],
-            [['title', 'uuid'], 'string', 'max' => 255],
-            [['uuid'], 'unique'],
+            [['title', 'uuid', 'type'], 'string', 'max' => 255],
+            [['uuid', 'type'], 'unique'],
             [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['author_id' => 'id']],
             [['image_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['image_id' => 'id']],
             [['resource_id'], 'exist', 'skipOnError' => true, 'targetClass' => Resource::className(), 'targetAttribute' => ['resource_id' => 'id']], 
@@ -94,6 +95,7 @@ class Phototype extends \yii\db\ActiveRecord
             'image_id' => Yii::t('app', 'Image ID'),
             'updater_id' => Yii::t('app', 'Updater ID'),
             'resource_id' => Yii::t('app', 'Resource ID'), 
+            'type' => Yii::t('app', 'Type'),
         ];
     }
 	/**
