@@ -17,6 +17,11 @@ class m250730_061852_create_phototype_table extends Migration
      */
     public function safeUp()
     {
+
+        if ($this->db->driverName === 'mysql') {
+            // http://stackoverflow.com/questions/766809/whats-the-difference-between-utf8-general-ci-and-utf8-unicode-ci
+            $tableOptions = 'CHARACTER SET utf8 COLLATE utf8_unicode_ci ENGINE=InnoDB';
+        }
         $this->createTable('{{%phototype}}', [
             'id' => $this->primaryKey(),
             'title' => $this->string()->notNull(),
@@ -28,7 +33,7 @@ class m250730_061852_create_phototype_table extends Migration
             'uuid' => $this->string()->unique(),
             'image_id' => $this->integer(),
             'updater_id' => $this->integer(),
-        ]);
+        ], $tableOptions);
 
         // creates index for column `author_id`
         $this->createIndex(

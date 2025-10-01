@@ -27,6 +27,7 @@ use yii\db\Expression;
 * @property string|null $data
 * @property int|null $version
 *
+* @property Manager[] $managers
 * @property Meta[] $metas
 * @property User $author
 * @property File $image_id0
@@ -51,6 +52,16 @@ class Verse extends \yii\db\ActiveRecord
                 'updatedByAttribute' => 'updater_id',
             ],
         ];
+    }
+
+    /** 
+     * Gets query for [[Managers]]. 
+     * 
+     * @return \yii\db\ActiveQuery 
+     */
+    public function getManagers()
+    {
+        return $this->hasMany(Manager::className(), ['verse_id' => 'id']);
     }
 
     /**
@@ -111,18 +122,18 @@ class Verse extends \yii\db\ActiveRecord
     public function attributeLabels()
     {
         return [
-            'id' => 'ID',
-            'author_id' => 'Author ID',
-            'updater_id' => 'Updater ID',
-            'created_at' => 'Created At',
-            'updated_at' => 'Updated At',
-            'name' => 'Name',
-            'info' => 'Info',
-            'image_id' => 'Image Id',
-            'data' => 'Data',
-            'version' => 'Version',
-            'uuid' => 'Uuid',
-            'description' => 'Description',
+            'id' => Yii::t('app', 'ID'),
+            'author_id' => Yii::t('app', 'Author ID'),
+            'updater_id' => Yii::t('app', 'Updater ID'),
+            'created_at' => Yii::t('app', 'Created At'),
+            'updated_at' => Yii::t('app', 'Updated At'),
+            'name' => Yii::t('app', 'Name'),
+            'info' => Yii::t('app', 'Info'),
+            'data' => Yii::t('app', 'Data'),
+            'image_id' => Yii::t('app', 'Image ID'),
+            'version' => Yii::t('app', 'Version'),
+            'uuid' => Yii::t('app', 'Uuid'),
+            'description' => Yii::t('app', 'Description'),
         ];
     }
 
@@ -141,10 +152,6 @@ class Verse extends \yii\db\ActiveRecord
 
             $code = new VerseCode();
             $code->verse_id = $this->id;
-            // $script = $this->script;
-            // if ($script) {
-            //     $code->blockly = $script->workspace;
-            // }
             $code->save();
 
         }
@@ -281,7 +288,7 @@ class Verse extends \yii\db\ActiveRecord
     }
     public function viewable()
     {
-        
+
         if ($this->getPublic() || $this->editable()) {
             return true;
         }
