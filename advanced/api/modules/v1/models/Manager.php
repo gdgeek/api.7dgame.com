@@ -35,6 +35,7 @@ class Manager extends \yii\db\ActiveRecord
             [['data'], 'safe'],
             [['type'], 'string', 'max' => 255],
             [['verse_id'], 'exist', 'skipOnError' => true, 'targetClass' => Verse::className(), 'targetAttribute' => ['verse_id' => 'id']],
+            [['verse_id', 'type'], 'unique', 'targetAttribute' => ['verse_id', 'type']],
         ];
     }
 
