@@ -1,6 +1,5 @@
 <?php
-
-namespace api\modules\v1\models;
+namespace api\modules\private\models;
 
 use Yii;
 
@@ -51,23 +50,7 @@ class Manager extends \yii\db\ActiveRecord
             'data' => Yii::t('app', 'Data'),
         ];
     }
-    public function fields()
-    {
-        $fields = parent::fields();
 
-        unset($fields['id']);
-        unset($fields['verse_id']);
-
-        return $fields;
-    }
-    public function extraFields()
-    {
-        return [
-            "json" => function () {
-                return json_decode($this->data, true);
-            }
-        ];
-    }
     /**
      * Gets query for [[Verse]].
      *

@@ -2,10 +2,10 @@
 
 namespace api\modules\private\models;
 
-use api\modules\private\models\File;
+use api\modules\v1\models\File;
 use api\modules\private\models\MetaQuery;
-use api\modules\private\models\User;
-use api\modules\private\models\MetaCode;
+use api\modules\v1\models\User;
+use api\modules\v1\models\MetaCode;
 use api\modules\v1\helper\Meta2Resources;
 use Yii;
 use yii\behaviors\BlameableBehavior;

@@ -2,7 +2,7 @@
 
 namespace api\modules\private\models;
 
-use api\modules\private\models\User;
+use api\modules\v1\models\User;
 use Yii;
 use yii\behaviors\AttributesBehavior;
 use yii\behaviors\BlameableBehavior;

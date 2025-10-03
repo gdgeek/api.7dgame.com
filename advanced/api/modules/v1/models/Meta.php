@@ -107,6 +107,7 @@ class Meta extends \yii\db\ActiveRecord
         unset($fields['updater_id']);
         unset($fields['updated_at']);
         unset($fields['created_at']);
+        unset($fields['author_id']);
 
         $fields['prefab'] = function () {
             return $this->prefab;
@@ -115,8 +116,6 @@ class Meta extends \yii\db\ActiveRecord
             return $this->getResources();
         };
       
-
-
         $fields['editable'] = function () {
             return $this->editable(); };
         $fields['viewable'] = function () {

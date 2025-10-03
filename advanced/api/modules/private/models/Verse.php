@@ -110,7 +110,10 @@ class Verse extends \yii\db\ActiveRecord
         ];
     }
 
-
+    public function getManagers()
+    {
+        return $this->hasMany(Manager::className(), ['verse_id' => 'id']);
+    }
     public function getCode()
     {
         $code = $this->getVerseCode()->one();
@@ -180,7 +183,7 @@ class Verse extends \yii\db\ActiveRecord
     }
 
 
-    public function getMetaIds()
+    public function getMetaIds(): array
     {
         $data = $this->data;
         if (!isset($data['children']) || !isset($data['children']['modules'])) {
@@ -199,7 +202,7 @@ class Verse extends \yii\db\ActiveRecord
      */
 
 
-    public function getMetas()
+    public function getMetas(): MetaQuery
     {
         return Meta::find()->where(['id' => $this->getMetaIds()]);
     }
@@ -210,7 +213,7 @@ class Verse extends \yii\db\ActiveRecord
      *
      * @return \yii\db\ActiveQuery|UserQuery
      */
-    public function getAuthor()
+    public function getAuthor(): ActiveQuery
     {
         return $this->hasOne(User::className(), ['id' => 'author_id']);
     }

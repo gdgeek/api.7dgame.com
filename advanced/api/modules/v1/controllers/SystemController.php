@@ -4,6 +4,7 @@ namespace api\modules\v1\controllers;
 use Yii;
 use yii\rest\Controller;
 use api\modules\v1\models\Snapshot;
+use api\modules\v1\models\Verse;
 use mdm\admin\components\AccessControl;
 use bizley\jwt\JwtHttpBearerAuth;
 use yii\filters\auth\CompositeAuth;
@@ -35,18 +36,18 @@ class SystemController extends Controller
                 ],
             ],
         ];
+        /*
+                $behaviors['authenticator'] = [
+                    'class' => CompositeAuth::class,
+                    'authMethods' => [
+                        JwtHttpBearerAuth::class,
+                    ],
+                    'except' => ['options'],
+                ];
 
-        $behaviors['authenticator'] = [
-            'class' => CompositeAuth::class,
-            'authMethods' => [
-                JwtHttpBearerAuth::class,
-            ],
-            'except' => ['options'],
-        ];
-
-        $behaviors['access'] = [
-            'class' => AccessControl::class,
-        ];
+                $behaviors['access'] = [
+                    'class' => AccessControl::class,
+                ];*/
         return $behaviors;
     }
 
@@ -75,13 +76,20 @@ class SystemController extends Controller
         }
         return $model;
     }
-    public function actionVerse($verse_id)
+    public function actionVerse($verse_id, $test = true)
     {
         $verse = \api\modules\private\models\Verse::findOne($verse_id);
-        if (!$verse) {
+        $verse2 = \api\modules\v1\models\VerseSnapshot::findOne($verse_id);
+        if (!$verse2) {
             throw new Exception("Verse not found", 404);
         }
-        return $verse->toArray([], ['code', 'id', 'name', 'data', 'description', 'metas', 'resources', 'uuid', 'image']);
+        if ($test) {
+            
+            return $verse2->toArray([], ['code', 'id', 'name', 'data', 'description', 'metas', 'resources', 'uuid', 'image', 'managers']);
+        } else {
+            return $verse->toArray([], ['code', 'id', 'name', 'data', 'description', 'metas', 'resources', 'uuid', 'image', 'managers']);
+        }
+
     }
 
     public function actionTakePhoto($verse_id)
@@ -92,6 +100,6 @@ class SystemController extends Controller
         } else {
             throw new Exception(json_encode($snapshot->errors), 400);
         }
-        return $snapshot->toArray([],['code','id','name','data','description','metas','resources','uuid','image']);
+        return $snapshot->toArray([], ['code', 'id', 'name', 'data', 'description', 'metas', 'resources', 'uuid', 'image']);
     }
 }
