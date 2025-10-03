@@ -50,9 +50,7 @@ class VerseSnapshot extends Verse
             'id',
             'name',
             'uuid',
-            'metas' => function (): array {
-                return $this->getMetas()->all();
-            },
+            'metas',
             'data',
             'image',
             'resources',
@@ -89,9 +87,9 @@ class VerseSnapshot extends Verse
     public function getMetas(): ActiveQuery
     {
         
-       // return $this->hasMany(MetaSnapshot::className(), ['id' => 'meta_id'])
-        //    ->viaTable('verse_meta', ['verse_id' => 'id']);
-        return MetaSnapshot::find()->where(['id' => $this->getMetaIds()]);
+        $query = MetaSnapshot::find()->where(['id' => $this->getMetaIds()]);
+        $query->multiple = true;
+        return $query;
 
     }
 
