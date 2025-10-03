@@ -16,14 +16,14 @@ use Yii;
  */
 class ManagerSnapshot extends Manager
 {
-   function fields()
+    function fields()
     {
         $fields = parent::fields();
 
         unset($fields['id']);
         unset($fields['verse_id']);
         unset($fields['data']);
-       $fields['params'] = function () {
+        $fields['data'] = function () {
             return json_encode($this->data);
         };
 
