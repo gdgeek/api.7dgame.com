@@ -31,13 +31,13 @@ use yii\caching\TagDependency;
 class File extends ActiveRecord
 
 {
-
+/*
     public function  afterSave($insert, $changedAttributes)
     {
       
         parent::afterSave($insert, $changedAttributes);
         TagDependency::invalidate(Yii::$app->cache, 'file_cache');
-    }
+    }*/
     private $header = null;
     private function getFileHeader()
     {
@@ -84,7 +84,6 @@ class File extends ActiveRecord
     {
         $fields = parent::fields();
 
-       // unset($fields['id']);
         unset($fields['updater_id']);
         unset($fields['user_id']);
         unset($fields['created_at']);

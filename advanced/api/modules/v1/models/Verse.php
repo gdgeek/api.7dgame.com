@@ -7,7 +7,7 @@ use api\modules\v1\models\User;
 use api\modules\v1\models\Tags;
 use api\modules\v1\models\VerseTags;
 use api\modules\v1\models\VerseCode;
-
+use yii\db\ActiveQuery;
 use Yii;
 use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
@@ -26,7 +26,9 @@ use yii\db\Expression;
 * @property int|null $image_id
 * @property string|null $data
 * @property int|null $version
+* @property string|null $description
 *
+* @property Manager[] $managers
 * @property Meta[] $metas
 * @property User $author
 * @property File $image_id0
@@ -51,6 +53,16 @@ class Verse extends \yii\db\ActiveRecord
                 'updatedByAttribute' => 'updater_id',
             ],
         ];
+    }
+
+    /** 
+     * Gets query for [[Managers]]. 
+     * 
+     * @return \yii\db\ActiveQuery 
+     */
+    public function getManagers(): ActiveQuery
+    {
+        return $this->hasMany(Manager::className(), ['verse_id' => 'id']);
     }
 
     /**
@@ -99,7 +111,6 @@ class Verse extends \yii\db\ActiveRecord
             return $this->info;
         };
         $fields['data'] = function () {
-
             return $this->data;
         };
 
@@ -111,18 +122,18 @@ class Verse extends \yii\db\ActiveRecord
     public function attributeLabels()
     {
         return [
-            'id' => 'ID',
-            'author_id' => 'Author ID',
-            'updater_id' => 'Updater ID',
-            'created_at' => 'Created At',
-            'updated_at' => 'Updated At',
-            'name' => 'Name',
-            'info' => 'Info',
-            'image_id' => 'Image Id',
-            'data' => 'Data',
-            'version' => 'Version',
-            'uuid' => 'Uuid',
-            'description' => 'Description',
+            'id' => Yii::t('app', 'ID'),
+            'author_id' => Yii::t('app', 'Author ID'),
+            'updater_id' => Yii::t('app', 'Updater ID'),
+            'created_at' => Yii::t('app', 'Created At'),
+            'updated_at' => Yii::t('app', 'Updated At'),
+            'name' => Yii::t('app', 'Name'),
+            'info' => Yii::t('app', 'Info'),
+            'data' => Yii::t('app', 'Data'),
+            'image_id' => Yii::t('app', 'Image ID'),
+            'version' => Yii::t('app', 'Version'),
+            'uuid' => Yii::t('app', 'Uuid'),
+            'description' => Yii::t('app', 'Description'),
         ];
     }
 
@@ -141,10 +152,6 @@ class Verse extends \yii\db\ActiveRecord
 
             $code = new VerseCode();
             $code->verse_id = $this->id;
-            // $script = $this->script;
-            // if ($script) {
-            //     $code->blockly = $script->workspace;
-            // }
             $code->save();
 
         }
@@ -153,12 +160,12 @@ class Verse extends \yii\db\ActiveRecord
     }
 
 
-    public function getResources()
+    public function getResources(): array
     {
-        $metas = $this->metas;
+        $metas = $this->getMetas()->all();
         $ids = [];
         foreach ($metas as $meta) {
-            $ids = array_merge_recursive($ids, $meta->resourceIds);
+            $ids = array_merge_recursive($ids, $meta->getResourceIds());
         }
         $items = Resource::find()->where(['id' => $ids])->all();
         return $items;
@@ -173,28 +180,14 @@ class Verse extends \yii\db\ActiveRecord
             $this->save();
         }
     }
-    /*
-        public function getSpace()
-        {
-            if (is_string($this->data)) {
-                $data = json_decode($this->data);
-            } else {
-                $data = json_decode(json_encode($this->data));
-            }
-            if (isset($data->parameters) && isset($data->parameters->space)) {
-                $space = $data->parameters->space;
-                $model = Space::findOne($space->id);
-                if ($model) {
-                    return $model->model;
-                }
-
-            }
-        }*/
+  
     public function extraFields()
     {
-
+        
         return [
-            'metas',
+            'metas' => function (): array {
+                return $this->getMetas()->all();
+            },
             'image',
             'author',
             'public',
@@ -205,8 +198,20 @@ class Verse extends \yii\db\ActiveRecord
             'tags',
         ];
 
+
+
     }
 
+     public function getMetaIds()
+    {
+        $data = $this->data;
+        if (!isset($data['children']) || !isset($data['children']['modules'])) {
+            return [];
+        }
+        return array_map(function ($item) {
+            return $item['parameters']['meta_id'] ?? null;
+        }, is_array($data['children']['modules']) ? $data['children']['modules'] : []);
+    }
 
 
     /**
@@ -214,7 +219,19 @@ class Verse extends \yii\db\ActiveRecord
      *
      * @return \yii\db\ActiveQuery|MetaQuery
      */
-    public function getMetas()
+
+
+    public function getMetas(): ActiveQuery
+    {
+        return Meta::find()->where(['id' => $this->getMetaIds()]);
+    }
+
+    /**
+     * Gets query for [[Metas]].
+     *
+     * @return \yii\db\ActiveQuery
+     
+    public function getMetas(): ActiveQuery|array
     {
         $ret = [];
         if (is_string($this->data)) {
@@ -232,9 +249,12 @@ class Verse extends \yii\db\ActiveRecord
             }
         }
 
+        //这个有一个问题啊，我希望返回数组，但我不适用all的时候，只有一个数据就返回对象，能否保证我返回数组
+        
         return Meta::find()->where(['id' => $ret])->all();
 
     }
+        */
 
     /**
      * Gets query for [[VerseTags]].
@@ -281,7 +301,7 @@ class Verse extends \yii\db\ActiveRecord
     }
     public function viewable()
     {
-        
+
         if ($this->getPublic() || $this->editable()) {
             return true;
         }

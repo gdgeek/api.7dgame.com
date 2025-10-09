@@ -19,7 +19,9 @@ use yii\db\Expression;
  * @property string|null $metas
  * @property string|null $resources
  * @property string|null $created_at
+ * @property string|null $description
  * @property int|null $created_by
+ * @property string|null $managers 
  *
  * @property User $author
  * @property User $createdBy
@@ -60,10 +62,10 @@ class Snapshot extends \yii\db\ActiveRecord
     {
         return [
             [['verse_id'], 'required'],
-            [['verse_id',/* 'author_id',*/ 'created_by'], 'integer'],
+            [['verse_id', 'created_by'], 'integer'],
             [['code'], 'string'],
-            [['data',/* 'image',*/ 'metas', 'resources', 'created_at'], 'safe'],
-            [[/*'name', 'description',*/ 'uuid'/*, 'type'*/], 'string', 'max' => 255],
+            [['data', 'metas', 'resources', 'created_at', 'managers'], 'safe'],
+            [['uuid'], 'string', 'max' => 255],
             //    [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['author_id' => 'id']],
             [['created_by'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['created_by' => 'id']],
             [['verse_id'], 'exist', 'skipOnError' => true, 'targetClass' => Verse::className(), 'targetAttribute' => ['verse_id' => 'id']],
@@ -78,18 +80,18 @@ class Snapshot extends \yii\db\ActiveRecord
         return [
             'id' => Yii::t('app', 'ID'),
             'verse_id' => Yii::t('app', 'Verse ID'),
-            //  'name' => Yii::t('app', 'Name'),
-            //  'description' => Yii::t('app', 'Description'),
+
             'uuid' => Yii::t('app', 'Uuid'),
             'code' => Yii::t('app', 'Code'),
             'data' => Yii::t('app', 'Data'),
-            //   'image' => Yii::t('app', 'Image'),
+
             'metas' => Yii::t('app', 'Metas'),
             'resources' => Yii::t('app', 'Resources'),
             'created_at' => Yii::t('app', 'Created At'),
-            //    'author_id' => Yii::t('app', 'Author ID'),
+
             'created_by' => Yii::t('app', 'Created By'),
-            //   'type' => Yii::t('app', 'Type'),
+
+            'managers' => Yii::t('app', 'Managers'),
         ];
     }
 
@@ -126,7 +128,7 @@ class Snapshot extends \yii\db\ActiveRecord
             'name' => function () {
                 return $this->verse->name;
             },
-            'description' => function () {
+            'description' => function (): string {
                 return $this->verse->description;
             },
             'image' => function () {
@@ -141,13 +143,14 @@ class Snapshot extends \yii\db\ActiveRecord
             'data',
             'metas',
             'resources',
+            'managers',
         ];
     }
 
 
     static function CreateById($verse_id)
     {
-        $verse = \api\modules\private\models\Verse::findOne($verse_id);
+        $verse = \api\modules\v1\models\VerseSnapshot::findOne($verse_id);
         if (!$verse) {
             throw new \yii\web\NotFoundHttpException('Verse not found');
         }
@@ -162,7 +165,7 @@ class Snapshot extends \yii\db\ActiveRecord
         $snapshot->uuid = $verse->uuid;
         $snapshot->code = $verse->code;
         $snapshot->data = json_encode($verse->data);
-
+        $snapshot->managers = $verse->managers;
 
 
 

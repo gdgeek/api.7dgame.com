@@ -107,15 +107,15 @@ class Meta extends \yii\db\ActiveRecord
         unset($fields['updater_id']);
         unset($fields['updated_at']);
         unset($fields['created_at']);
+        unset($fields['author_id']);
 
         $fields['prefab'] = function () {
             return $this->prefab;
         };
         $fields['resources'] = function () {
-            return $this->resources;
+            return $this->getResources();
         };
-
-
+      
         $fields['editable'] = function () {
             return $this->editable(); };
         $fields['viewable'] = function () {
@@ -188,10 +188,11 @@ class Meta extends \yii\db\ActiveRecord
     {
         return \api\modules\v1\helper\Meta2Resources::Handle($this->data);
     }
+  
     public function getResources()
     {
-        $resourceIds = $this->resourceIds;
-        $items = Resource::find()->where(['id' => $resourceIds])->all();
+        $ids = $this->getResourceIds();
+        $items = Resource::find()->where(['id' => $ids])->all();
         return $items;
     }
 
@@ -220,12 +221,7 @@ class Meta extends \yii\db\ActiveRecord
         $code = $quest->one();
         if ($code == null) {
             $code = new MetaCode();
-
             $code->meta_id = $this->id;
-            /* $cyber = $this->cyber;
-             if($cyber){
-                 $code->blockly = $cyber->data;
-             }*/
             $code->save();
         }
         $code = $quest->one();

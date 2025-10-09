@@ -6,7 +6,6 @@ use api\modules\a1\models\File;
 use api\modules\a1\models\Meta;
 use api\modules\a1\models\Resource;
 use api\modules\v1\models\User;
-//use api\modules\v1\models\MultilanguageVerse;
 use api\modules\v1\models\VerseQuery;
 use api\modules\v1\models\VerseCode;
 

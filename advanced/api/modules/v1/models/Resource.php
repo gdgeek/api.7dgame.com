@@ -64,7 +64,6 @@ class Resource extends \yii\db\ActiveRecord
             [['name', 'type', 'file_id'], 'required'],
             [['author_id', 'updater_id', 'file_id', 'image_id'], 'integer'],
             [['created_at','info'], 'safe'],
-           
             [['name', 'type', 'uuid'], 'string', 'max' => 255],
             [['uuid'], 'unique'],
             [['updater_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::class, 'targetAttribute' => ['updater_id' => 'id']],
@@ -168,7 +167,6 @@ class Resource extends \yii\db\ActiveRecord
         return [
             'file',
             'image',
-            
             'author',
         ];
     }
