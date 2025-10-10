@@ -136,7 +136,7 @@ class Snapshot extends \yii\db\ActiveRecord
                 return $this->verse->getImage()->one();
             },
             'author_id' => function (): int {
-                return $this->verse->author_id ?? 0;
+                return $this->verse->author_id;
             },
             'uuid',
             'verse_id',
