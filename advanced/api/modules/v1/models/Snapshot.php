@@ -125,17 +125,18 @@ class Snapshot extends \yii\db\ActiveRecord
 
         return [
             'id',
-            'name' => function () {
-                return $this->verse->name;
+            'name' => function (): string {
+                  return $this->verse->name ?? "";
             },
             'description' => function (): string {
-                return $this->verse->description;
+
+                return $this->verse->description ?? "";
             },
             'image' => function () {
                 return $this->verse->getImage()->one();
             },
-            'author_id' => function () {
-                return $this->verse->author_id;
+            'author_id' => function (): int {
+                return $this->verse->author_id ?? 0;
             },
             'uuid',
             'verse_id',
