@@ -130,14 +130,10 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
         return $user;
     }
     public function token()
-    {   
-        $token = RefreshToken::find()->where(['user_id' => $this->id])->one();
-        if($token){
-            $token->delete();
-        }
+    {
         $token = new RefreshToken();
         $token->user_id = $this->id;
-      
+
         $token->key = Yii::$app->security->generateRandomString();
         $token->save();
         $now = new \DateTimeImmutable('now', new \DateTimeZone(\Yii::$app->timeZone));

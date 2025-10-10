@@ -3,12 +3,12 @@
 use yii\db\Migration;
 
 /**
- * Handles the creation of table `{{%refresh_token}}`.
+ * Handles the creation of table `{{%user_linked}}`.
  * Has foreign keys to the tables:
  *
  * - `{{%user}}`
  */
-class m251010_084227_create_refresh_token_table extends Migration
+class m251010_084227_create_user_linked_table extends Migration
 {
     /**
      * {@inheritdoc}
@@ -20,7 +20,7 @@ class m251010_084227_create_refresh_token_table extends Migration
             // http://stackoverflow.com/questions/766809/whats-the-difference-between-utf8-general-ci-and-utf8-unicode-ci
             $tableOptions = 'CHARACTER SET utf8 COLLATE utf8_unicode_ci ENGINE=InnoDB';
         }
-        $this->createTable('{{%refresh_token}}', [
+        $this->createTable('{{%user_linked}}', [
             'id' => $this->primaryKey(),
             'user_id' => $this->integer()->notNull(),
             'key' => $this->string()->notNull(),
@@ -29,15 +29,15 @@ class m251010_084227_create_refresh_token_table extends Migration
 
         // creates index for column `user_id`
         $this->createIndex(
-            '{{%idx-refresh_token-user_id}}',
-            '{{%refresh_token}}',
+            '{{%idx-user_linked-user_id}}',
+            '{{%user_linked}}',
             'user_id'
         );
 
         // add foreign key for table `{{%user}}`
         $this->addForeignKey(
-            '{{%fk-refresh_token-user_id}}',
-            '{{%refresh_token}}',
+            '{{%fk-user_linked-user_id}}',
+            '{{%user_linked}}',
             'user_id',
             '{{%user}}',
             'id',
@@ -52,16 +52,16 @@ class m251010_084227_create_refresh_token_table extends Migration
     {
         // drops foreign key for table `{{%user}}`
         $this->dropForeignKey(
-            '{{%fk-refresh_token-user_id}}',
-            '{{%refresh_token}}'
+            '{{%fk-user_linked-user_id}}',
+            '{{%user_linked}}'
         );
 
         // drops index for column `user_id`
         $this->dropIndex(
-            '{{%idx-refresh_token-user_id}}',
-            '{{%refresh_token}}'
+            '{{%idx-user_linked-user_id}}',
+            '{{%user_linked}}'
         );
 
-        $this->dropTable('{{%refresh_token}}');
+        $this->dropTable('{{%user_linked}}');
     }
 }

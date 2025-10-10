@@ -1,5 +1,5 @@
 <?php
-/*
+
 namespace api\modules\v1;
 class RefreshToken extends \yii\redis\ActiveRecord
 {
@@ -10,4 +10,3 @@ class RefreshToken extends \yii\redis\ActiveRecord
     }
 
 }
-*/

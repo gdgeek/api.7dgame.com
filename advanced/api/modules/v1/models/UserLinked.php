@@ -15,7 +15,7 @@ use yii\db\Expression;
  *
  * @property User $user
  */
-class RefreshToken extends \yii\db\ActiveRecord
+class UserLinked extends \yii\db\ActiveRecord
 {
 
         public function behaviors()
@@ -36,7 +36,7 @@ class RefreshToken extends \yii\db\ActiveRecord
      */
     public static function tableName()
     {
-        return 'refresh_token';
+        return 'user_linked';
     }
 
     /**
