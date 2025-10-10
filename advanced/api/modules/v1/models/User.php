@@ -2,7 +2,7 @@
 
 namespace api\modules\v1\models;
 
-use api\modules\v1\RefreshToken;
+use api\modules\v1\models\RefreshToken;
 use yii\db\Expression;
 use yii\caching\TagDependency;
 use mdm\admin\models\Assignment;

@@ -1,7 +1,7 @@
 <?php
 namespace api\modules\v1\controllers;
 
-use api\modules\v1\RefreshToken;
+use api\modules\v1\models\RefreshToken;
 use yii\rest\ActiveController;
 
 class TestController extends ActiveController
