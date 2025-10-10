@@ -24,7 +24,8 @@ class UserLinked extends \yii\db\ActiveRecord
             [
                 'class' => TimestampBehavior::class,
                 'attributes' => [
-                    \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => ['created_at'],
+               //     \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => ['created_at'],
+                    \yii\db\ActiveRecord::EVENT_BEFORE_UPDATE => ['created_at'],
                 ],
                 'value' => new Expression('NOW()'),
             ],

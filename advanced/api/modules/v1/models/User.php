@@ -2,7 +2,7 @@
 
 namespace api\modules\v1\models;
 
-use api\modules\v1\models\RefreshToken;
+use api\modules\v1\RefreshToken;
 use yii\db\Expression;
 use yii\caching\TagDependency;
 use mdm\admin\models\Assignment;
@@ -128,6 +128,10 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
             throw new \yii\web\UnauthorizedHttpException('User is not found.');
         }
         return $user;
+    }
+    public function getRefreshToken()
+    {
+        return $this->hasOne(RefreshToken::className(), ['user_id' => 'id'])->orderBy(['id' => SORT_DESC]);
     }
     public function token()
     {
@@ -289,12 +293,10 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
             [['username', 'password_hash', 'password_reset_token', /*'verification_token', 'access_token',*/ 'nickname'], 'string', 'max' => 255],
             [['auth_key'], 'string', 'max' => 32],
             [['username'], 'required'],
-            //['username', 'email', 'message' => 'The email format is invalid.'],
             [['username', 'password_reset_token'], 'unique'],
             [['password'], 'string', 'min' => 6, 'max' => 20, 'message' => 'Password must be between 6 and 20 characters.'],
             ['password', 'match', 'pattern' => '/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,}$/i', 'message' => 'Password must contain at least one lowercase letter, one uppercase letter, one digit, and one special character.'],
-            //  ['status', 'default', 'value' => self::STATUS_ACTIVE],
-            // ['status', 'in', 'range' => [self::STATUS_ACTIVE, self::STATUS_TEMP, self::STATUS_INACTIVE, self::STATUS_DELETED]],
+       
         ];
         if ($this->new_version) {
             $rules[] = ['username', 'email', 'message' => 'The email format is invalid.'];

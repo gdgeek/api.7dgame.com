@@ -219,6 +219,14 @@ return [
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/tools',
+                    'pluralize' => false,
+                    'extraPatterns' => [
+                        'GET user-linked' => 'user-linked',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
                     'controller' => ['project', 'user', 'resource'],
                 ],
                 [

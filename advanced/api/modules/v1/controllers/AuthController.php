@@ -2,6 +2,7 @@
 
 namespace api\modules\v1\controllers;
 
+use api\modules\v1\models\UserLinked;
 use yii\web\BadRequestHttpException;
 use api\modules\v1\models\User;
 use Yii;
@@ -36,6 +37,8 @@ class AuthController extends \yii\rest\Controller
         return ['success' => true, 'message' => "refresh", 'token'=> $user->token()];
 
     }
+
+    
     public function actionLogin(){
         
         $username = Yii::$app->request->post("username");
