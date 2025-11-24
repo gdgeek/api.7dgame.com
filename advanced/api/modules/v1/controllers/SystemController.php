@@ -66,9 +66,11 @@ class SystemController extends Controller
 
     public function actionMetaCode($meta_id)
     {
+       
         $model = new MetaCodeTool($meta_id);
         $post = Yii::$app->request->post();
         $model->load($post, '');
+        
         if ($model->validate()) {
             $model->save();
         } else {
