@@ -47,7 +47,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
         TagDependency::invalidate(Yii::$app->cache, 'user_cache');
     }
 
-    public static function findeByAuthKey($authKey)
+    public static function findByAuthKey($authKey)
     {
         return static::find()->where(['auth_key' => $authKey])->one();
     }
@@ -150,7 +150,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
     }
     public function getAuth()
     {
-        return $this->auth_key();
+        return $this->auth_key;
     }
     public function getRoles()
     {
