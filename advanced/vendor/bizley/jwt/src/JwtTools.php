@@ -115,7 +115,6 @@ class JwtTools extends Component
      */
     public function parse(string $jwt): BaseJwt\Token
     {
-       // throw new InvalidConfigException($jwt);
         return $this->getParser()->parse($jwt);
     }
 

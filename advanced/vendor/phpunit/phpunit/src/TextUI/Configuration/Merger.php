@@ -107,6 +107,12 @@ final readonly class Merger
             $failOnDeprecation = $xmlConfiguration->phpunit()->failOnDeprecation();
         }
 
+        if ($cliConfiguration->hasFailOnPhpunitDeprecation()) {
+            $failOnPhpunitDeprecation = $cliConfiguration->failOnPhpunitDeprecation();
+        } else {
+            $failOnPhpunitDeprecation = $xmlConfiguration->phpunit()->failOnPhpunitDeprecation();
+        }
+
         if ($cliConfiguration->hasFailOnEmptyTestSuite()) {
             $failOnEmptyTestSuite = $cliConfiguration->failOnEmptyTestSuite();
         } else {
@@ -153,6 +159,12 @@ final readonly class Merger
             $stopOnDeprecation = $cliConfiguration->stopOnDeprecation();
         } else {
             $stopOnDeprecation = $xmlConfiguration->phpunit()->stopOnDeprecation();
+        }
+
+        $specificDeprecationToStopOn = null;
+
+        if ($cliConfiguration->hasSpecificDeprecationToStopOn()) {
+            $specificDeprecationToStopOn = $cliConfiguration->specificDeprecationToStopOn();
         }
 
         if ($cliConfiguration->hasStopOnError()) {
@@ -447,6 +459,12 @@ final readonly class Merger
             $displayDetailsOnTestsThatTriggerDeprecations = $xmlConfiguration->phpunit()->displayDetailsOnTestsThatTriggerDeprecations();
         }
 
+        if ($cliConfiguration->hasDisplayDetailsOnPhpunitDeprecations()) {
+            $displayDetailsOnPhpunitDeprecations = $cliConfiguration->displayDetailsOnPhpunitDeprecations();
+        } else {
+            $displayDetailsOnPhpunitDeprecations = $xmlConfiguration->phpunit()->displayDetailsOnPhpunitDeprecations();
+        }
+
         if ($cliConfiguration->hasDisplayDetailsOnTestsThatTriggerErrors()) {
             $displayDetailsOnTestsThatTriggerErrors = $cliConfiguration->displayDetailsOnTestsThatTriggerErrors();
         } else {
@@ -602,6 +620,12 @@ final readonly class Merger
             $testsUsing = $cliConfiguration->testsUsing();
         }
 
+        $testsRequiringPhpExtension = null;
+
+        if ($cliConfiguration->hasTestsRequiringPhpExtension()) {
+            $testsRequiringPhpExtension = $cliConfiguration->testsRequiringPhpExtension();
+        }
+
         $filter = null;
 
         if ($cliConfiguration->hasFilter()) {
@@ -729,6 +753,10 @@ final readonly class Merger
             $displayDetailsOnTestsThatTriggerDeprecations = true;
         }
 
+        if ($failOnPhpunitDeprecation) {
+            $displayDetailsOnPhpunitDeprecations = true;
+        }
+
         if ($failOnNotice) {
             $displayDetailsOnTestsThatTriggerNotices = true;
         }
@@ -797,6 +825,7 @@ final readonly class Merger
             $xmlConfiguration->codeCoverage()->ignoreDeprecatedCodeUnits(),
             $disableCodeCoverageIgnore,
             $failOnDeprecation,
+            $failOnPhpunitDeprecation,
             $failOnEmptyTestSuite,
             $failOnIncomplete,
             $failOnNotice,
@@ -805,6 +834,7 @@ final readonly class Merger
             $failOnWarning,
             $stopOnDefect,
             $stopOnDeprecation,
+            $specificDeprecationToStopOn,
             $stopOnError,
             $stopOnFailure,
             $stopOnIncomplete,
@@ -833,6 +863,7 @@ final readonly class Merger
             $displayDetailsOnIncompleteTests,
             $displayDetailsOnSkippedTests,
             $displayDetailsOnTestsThatTriggerDeprecations,
+            $displayDetailsOnPhpunitDeprecations,
             $displayDetailsOnTestsThatTriggerErrors,
             $displayDetailsOnTestsThatTriggerNotices,
             $displayDetailsOnTestsThatTriggerWarnings,
@@ -855,6 +886,7 @@ final readonly class Merger
             $testDoxOutputSummary,
             $testsCovering,
             $testsUsing,
+            $testsRequiringPhpExtension,
             $filter,
             $excludeFilter,
             $groups,

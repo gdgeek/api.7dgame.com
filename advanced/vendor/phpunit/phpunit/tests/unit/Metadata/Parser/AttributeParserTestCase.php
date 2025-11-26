@@ -17,6 +17,7 @@ use PHPUnit\Metadata\DependsOnMethod;
 use PHPUnit\Metadata\RequiresPhp;
 use PHPUnit\Metadata\RequiresPhpExtension;
 use PHPUnit\Metadata\RequiresPhpunit;
+use PHPUnit\Metadata\RequiresPhpunitExtension;
 use PHPUnit\Metadata\RequiresSetting;
 use PHPUnit\Metadata\Version\ComparisonRequirement;
 use PHPUnit\Metadata\Version\ConstraintRequirement;
@@ -37,6 +38,7 @@ use PHPUnit\TestFixture\Metadata\Attribute\IgnorePhpunitDeprecationsMethodTest;
 use PHPUnit\TestFixture\Metadata\Attribute\LargeTest;
 use PHPUnit\TestFixture\Metadata\Attribute\MediumTest;
 use PHPUnit\TestFixture\Metadata\Attribute\NonPhpunitAttributeTest;
+use PHPUnit\TestFixture\Metadata\Attribute\PhpunitAttributeThatDoesNotExistTest;
 use PHPUnit\TestFixture\Metadata\Attribute\PreserveGlobalStateTest;
 use PHPUnit\TestFixture\Metadata\Attribute\ProcessIsolationTest;
 use PHPUnit\TestFixture\Metadata\Attribute\RequiresFunctionTest;
@@ -45,6 +47,7 @@ use PHPUnit\TestFixture\Metadata\Attribute\RequiresOperatingSystemFamilyTest;
 use PHPUnit\TestFixture\Metadata\Attribute\RequiresOperatingSystemTest;
 use PHPUnit\TestFixture\Metadata\Attribute\RequiresPhpExtensionTest;
 use PHPUnit\TestFixture\Metadata\Attribute\RequiresPhpTest;
+use PHPUnit\TestFixture\Metadata\Attribute\RequiresPhpunitExtensionTest;
 use PHPUnit\TestFixture\Metadata\Attribute\RequiresPhpunitTest;
 use PHPUnit\TestFixture\Metadata\Attribute\RequiresSettingTest;
 use PHPUnit\TestFixture\Metadata\Attribute\SmallTest;
@@ -313,6 +316,22 @@ abstract class AttributeParserTestCase extends TestCase
         assert($versionRequirement instanceof ComparisonRequirement);
 
         $this->assertSame('>= 10.0.0', $versionRequirement->asString());
+    }
+
+    #[TestDox('Parses #[RequiresPhpunitExtension] attribute on class')]
+    public function test_parses_RequiresPhpunitExtension_attribute_on_class(): void
+    {
+        $metadata = $this->parser()->forClass(RequiresPhpunitExtensionTest::class)->isRequiresPhpunitExtension();
+
+        $this->assertCount(1, $metadata);
+
+        $requirement = $metadata->asArray()[0];
+
+        $this->assertTrue($requirement->isRequiresPhpunitExtension());
+
+        assert($requirement instanceof RequiresPhpunitExtension);
+
+        $this->assertSame('PHPUnit\TestFixture\Metadata\Attribute\SomeExtension', $requirement->extensionClass());
     }
 
     #[TestDox('Parses #[RequiresSetting] attribute on class')]
@@ -867,6 +886,24 @@ abstract class AttributeParserTestCase extends TestCase
         $this->assertSame('^10.0', $versionRequirement->asString());
     }
 
+    #[TestDox('Parses #[RequiresPhpunitExtension] attribute on method')]
+    public function test_parses_RequiresPhpunitExtension_attribute_on_method(): void
+    {
+        $metadata = $this->parser()->forMethod(RequiresPhpunitExtensionTest::class, 'testOne')->isRequiresPhpunitExtension();
+
+        $this->assertCount(2, $metadata);
+
+        $requirement = $metadata->asArray()[0];
+        $this->assertTrue($requirement->isRequiresPhpunitExtension());
+        assert($requirement instanceof RequiresPhpunitExtension);
+        $this->assertSame('PHPUnit\TestFixture\Metadata\Attribute\SomeExtension', $requirement->extensionClass());
+
+        $requirement = $metadata->asArray()[1];
+        $this->assertTrue($requirement->isRequiresPhpunitExtension());
+        assert($requirement instanceof RequiresPhpunitExtension);
+        $this->assertSame('PHPUnit\TestFixture\Metadata\Attribute\SomeOtherExtension', $requirement->extensionClass());
+    }
+
     #[TestDox('Parses #[RequiresSetting] attribute on method')]
     public function test_parses_RequiresSetting_attribute_on_method(): void
     {
@@ -991,6 +1028,13 @@ abstract class AttributeParserTestCase extends TestCase
     public function test_ignores_attributes_not_owned_by_PHPUnit(): void
     {
         $metadata = $this->parser()->forClassAndMethod(NonPhpunitAttributeTest::class, 'testOne');
+
+        $this->assertTrue($metadata->isEmpty());
+    }
+
+    public function test_ignores_attributes_in_PHPUnit_namespace_that_do_not_exist(): void
+    {
+        $metadata = $this->parser()->forClassAndMethod(PhpunitAttributeThatDoesNotExistTest::class, 'testOne');
 
         $this->assertTrue($metadata->isEmpty());
     }

@@ -731,6 +731,26 @@ final class BuilderTest extends TestCase
         $configuration->testsUsing();
     }
 
+    #[TestDox('--requires-php-extension extension')]
+    public function testRequiresPhpExtension(): void
+    {
+        $configuration = (new Builder)->fromParameters(['--requires-php-extension', 'extension']);
+
+        $this->assertTrue($configuration->hasTestsRequiringPhpExtension());
+        $this->assertSame(['extension'], $configuration->testsRequiringPhpExtension());
+    }
+
+    public function testRequiresPhpExtensionMayNotBeConfigured(): void
+    {
+        $configuration = (new Builder)->fromParameters([]);
+
+        $this->assertFalse($configuration->hasTestsRequiringPhpExtension());
+
+        $this->expectException(Exception::class);
+
+        $configuration->testsRequiringPhpExtension();
+    }
+
     #[TestDox('--test-suffix string')]
     public function testTestSuffix(): void
     {
@@ -1235,6 +1255,26 @@ final class BuilderTest extends TestCase
         $configuration->failOnDeprecation();
     }
 
+    #[TestDox('--fail-on-phpunit-deprecation')]
+    public function testFailOnPhpunitDeprecation(): void
+    {
+        $configuration = (new Builder)->fromParameters(['--fail-on-phpunit-deprecation']);
+
+        $this->assertTrue($configuration->hasFailOnPhpunitDeprecation());
+        $this->assertTrue($configuration->failOnPhpunitDeprecation());
+    }
+
+    public function testFailOnPhpunitDeprecationMayNotBeConfigured(): void
+    {
+        $configuration = (new Builder)->fromParameters([]);
+
+        $this->assertFalse($configuration->hasFailOnPhpunitDeprecation());
+
+        $this->expectException(Exception::class);
+
+        $configuration->failOnPhpunitDeprecation();
+    }
+
     #[TestDox('--fail-on-empty-test-suite')]
     public function testFailOnEmptyTestSuite(): void
     {
@@ -1382,6 +1422,17 @@ final class BuilderTest extends TestCase
 
         $this->assertTrue($configuration->hasStopOnDeprecation());
         $this->assertTrue($configuration->stopOnDeprecation());
+    }
+
+    #[TestDox('--stop-on-deprecation=message')]
+    public function testStopOnDeprecationMessage(): void
+    {
+        $configuration = (new Builder)->fromParameters(['--stop-on-deprecation=message']);
+
+        $this->assertTrue($configuration->hasStopOnDeprecation());
+        $this->assertTrue($configuration->stopOnDeprecation());
+        $this->assertTrue($configuration->hasSpecificDeprecationToStopOn());
+        $this->assertSame('message', $configuration->specificDeprecationToStopOn());
     }
 
     public function testStopOnDeprecationMayNotBeConfigured(): void
@@ -1969,6 +2020,26 @@ final class BuilderTest extends TestCase
         $this->expectException(Exception::class);
 
         $configuration->displayDetailsOnTestsThatTriggerDeprecations();
+    }
+
+    #[TestDox('--display-phpunit-deprecations')]
+    public function testDisplayPhpunitDeprecations(): void
+    {
+        $configuration = (new Builder)->fromParameters(['--display-phpunit-deprecations']);
+
+        $this->assertTrue($configuration->hasDisplayDetailsOnPhpunitDeprecations());
+        $this->assertTrue($configuration->displayDetailsOnPhpunitDeprecations());
+    }
+
+    public function testDisplayPhpunitDeprecationsMayNotBeConfigured(): void
+    {
+        $configuration = (new Builder)->fromParameters([]);
+
+        $this->assertFalse($configuration->hasDisplayDetailsOnPhpunitDeprecations());
+
+        $this->expectException(Exception::class);
+
+        $configuration->displayDetailsOnPhpunitDeprecations();
     }
 
     #[TestDox('--display-errors')]

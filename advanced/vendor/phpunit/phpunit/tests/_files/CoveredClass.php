@@ -9,23 +9,6 @@
  */
 namespace PHPUnit\TestFixture;
 
-class CoveredParentClass
-{
-    public function publicMethod(): void
-    {
-        $this->protectedMethod();
-    }
-
-    protected function protectedMethod(): void
-    {
-        $this->privateMethod();
-    }
-
-    private function privateMethod(): void
-    {
-    }
-}
-
 final class CoveredClass extends CoveredParentClass
 {
     public function publicMethod(): void

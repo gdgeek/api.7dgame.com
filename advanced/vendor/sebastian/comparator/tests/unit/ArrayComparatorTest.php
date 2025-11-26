@@ -23,7 +23,7 @@ final class ArrayComparatorTest extends TestCase
     private ArrayComparator $comparator;
 
     /**
-     * @return non-empty-list<array{0: ?array, 1: ?array}>
+     * @return non-empty-list<array{0: ?array<null>, 1: ?array<null>}>
      */
     public static function acceptsFailsProvider(): array
     {
@@ -35,7 +35,7 @@ final class ArrayComparatorTest extends TestCase
     }
 
     /**
-     * @return non-empty-list<array{0: array, 1: array, 2?: float, 3?: bool}>
+     * @return non-empty-list<array{0: array<mixed>, 1: array<mixed>, 2?: float, 3?: bool}>
      */
     public static function assertEqualsSucceedsProvider(): array
     {
@@ -73,35 +73,11 @@ final class ArrayComparatorTest extends TestCase
                 ['true'],
                 [true],
             ],
-            [
-                [1, [1, 2, 3]],
-                [[3, 1, 2], 1],
-                0,
-                true,
-            ],
-            [
-                [1, [4, 7], [1, 2, 3], [0, 0, 0, 0]],
-                [[3, 1, 2], [0, 0, 0, 0], [4, 7], 1],
-                0,
-                true,
-            ],
-            [
-                [1, [4, [4, 5, 6, 7, 8]], [1, 2, 3]],
-                [[3, 1, 2], [[4, 8, 6, 7, 5], 4], 1],
-                0,
-                true,
-            ],
-            [
-                [null, null, 1, 1],
-                [1, null, 1, null],
-                0,
-                true,
-            ],
         ];
     }
 
     /**
-     * @return non-empty-list<array{0: array, 1: array, 2?: float, 3?: bool}>
+     * @return non-empty-list<array{0: array<mixed>, 1: array<mixed>, 2?: float, 3?: bool}>
      */
     public static function assertEqualsFailsProvider(): array
     {
@@ -145,23 +121,40 @@ final class ArrayComparatorTest extends TestCase
                 ['false'],
                 [false],
             ],
+        ];
+    }
+
+    /**
+     * @return non-empty-list<array{0: string, 1: array<string>, 2: array<string>, 3?: float, 4?: bool}>
+     */
+    public static function assertEqualsFailsWithDiffProvider(): array
+    {
+        return [
             [
-                ['a' => '1', 'b' => '2'],
-                ['c' => '1', 'd' => '2'],
-                0,
-                true,
+                "
+--- Expected
++++ Actual
+@@ @@
+ Array (
+-    0 => 'Too short to cut XYZ'
++    0 => 'Too short to cut HERE'
+ )
+",
+                ['Too short to cut XYZ'],
+                ['Too short to cut HERE'],
             ],
             [
-                ['a' => '1', 'b' => '2'],
-                ['a' => '2', 'b' => '1'],
-                0,
-                true,
-            ],
-            [
-                ['a' => '1', 'b' => '2'],
-                ['a' => '1', 'b' => '2', 'c' => '2'],
-                0,
-                true,
+                "
+--- Expected
++++ Actual
+@@ @@
+ Array (
+-    0 => '... contains important clue XYZ and more behind'
++    0 => '... contains important clue HERE and more behind'
+ )
+",
+                ['Some really long string that just keeps going and going and going but contains important clue XYZ and more behind'],
+                ['Some really long string that just keeps going and going and going but contains important clue HERE and more behind'],
             ],
         ];
     }
@@ -219,5 +212,26 @@ final class ArrayComparatorTest extends TestCase
         $this->expectExceptionMessage('Failed asserting that two arrays are equal');
 
         $this->comparator->assertEquals($expected, $actual, $delta, $canonicalize);
+    }
+
+    /**
+     * @param array<mixed> $expected
+     * @param array<mixed> $actual
+     */
+    #[DataProvider('assertEqualsFailsWithDiffProvider')]
+    public function testAssertEqualsFailsWithDiff(
+        string $expectedDiff,
+        array $expected,
+        array $actual,
+        float $delta = 0.0,
+        bool $canonicalize = false
+    ): void {
+        try {
+            $this->comparator->assertEquals($expected, $actual, $delta, $canonicalize);
+            $this->fail('Expected ComparisonFailure not thrown');
+        } catch (ComparisonFailure $e) {
+            $this->assertEquals('Failed asserting that two arrays are equal.', $e->getMessage());
+            $this->assertEquals($expectedDiff, $e->getDiff());
+        }
     }
 }

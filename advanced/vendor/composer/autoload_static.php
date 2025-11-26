@@ -11,15 +11,14 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         'ec07570ca5a812141189b1fa81503674' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/Assert/Functions.php',
         '6e3fae29631ef280660b3cdad06f25a8' => __DIR__ . '/..' . '/symfony/deprecation-contracts/function.php',
         '2cffec82183ee1cea088009cef9a6fc3' => __DIR__ . '/..' . '/ezyang/htmlpurifier/library/HTMLPurifier.composer.php',
-        '7b11c4dc42b3b3023073cb14e519683c' => __DIR__ . '/..' . '/ralouphie/getallheaders/src/getallheaders.php',
         '0e6d7bf4a5811bfa5cf40c5ccd6fae6a' => __DIR__ . '/..' . '/symfony/polyfill-mbstring/bootstrap.php',
-        '37a3dc5111fe8f707ab4c132ef1dbc62' => __DIR__ . '/..' . '/guzzlehttp/guzzle/src/functions_include.php',
+        '7b11c4dc42b3b3023073cb14e519683c' => __DIR__ . '/..' . '/ralouphie/getallheaders/src/getallheaders.php',
         'e69f7f6ee287b969198c3c9d6777bd38' => __DIR__ . '/..' . '/symfony/polyfill-intl-normalizer/bootstrap.php',
-        '25072dd6e2470089de65ae7bf11d3109' => __DIR__ . '/..' . '/symfony/polyfill-php72/bootstrap.php',
+        '37a3dc5111fe8f707ab4c132ef1dbc62' => __DIR__ . '/..' . '/guzzlehttp/guzzle/src/functions_include.php',
         'f598d06aa772fa33d905e87be6398fb1' => __DIR__ . '/..' . '/symfony/polyfill-intl-idn/bootstrap.php',
         '320cde22f66dd4f5d3fd621d3e88b98f' => __DIR__ . '/..' . '/symfony/polyfill-ctype/bootstrap.php',
-        'a4a119a56e50fbb293281d9a48007e0e' => __DIR__ . '/..' . '/symfony/polyfill-php80/bootstrap.php',
         '662a729f963d39afe703c9d9b7ab4a8c' => __DIR__ . '/..' . '/symfony/polyfill-php83/bootstrap.php',
+        'a4a119a56e50fbb293281d9a48007e0e' => __DIR__ . '/..' . '/symfony/polyfill-php80/bootstrap.php',
         '180092cfc969a12e06f2132a203a3184' => __DIR__ . '/..' . '/codeception/verify/src/Codeception/function.php',
         'a9ed0d27b5a698798a89181429f162c5' => __DIR__ . '/..' . '/khanamiryan/qrcode-detector-decoder/lib/Common/customFunctions.php',
         '07d7f1a47144818725fd8d91a907ac57' => __DIR__ . '/..' . '/laminas/laminas-diactoros/src/functions/create_uploaded_file.php',
@@ -98,7 +97,6 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         array (
             'Symfony\\Polyfill\\Php83\\' => 23,
             'Symfony\\Polyfill\\Php80\\' => 23,
-            'Symfony\\Polyfill\\Php72\\' => 23,
             'Symfony\\Polyfill\\Mbstring\\' => 26,
             'Symfony\\Polyfill\\Intl\\Normalizer\\' => 33,
             'Symfony\\Polyfill\\Intl\\Idn\\' => 26,
@@ -106,10 +104,12 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
             'Symfony\\Contracts\\Service\\' => 26,
             'Symfony\\Contracts\\HttpClient\\' => 29,
             'Symfony\\Contracts\\Cache\\' => 24,
+            'Symfony\\Component\\Yaml\\' => 23,
             'Symfony\\Component\\VarExporter\\' => 30,
             'Symfony\\Component\\Mime\\' => 23,
             'Symfony\\Component\\HttpFoundation\\' => 33,
             'Symfony\\Component\\HttpClient\\' => 29,
+            'Symfony\\Component\\Finder\\' => 25,
             'Symfony\\Component\\DomCrawler\\' => 29,
             'Symfony\\Component\\Cache\\' => 24,
             'Symfony\\Component\\BrowserKit\\' => 29,
@@ -134,6 +134,7 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         'O' => 
         array (
             'Overtrue\\Socialite\\' => 19,
+            'OpenApi\\' => 8,
         ),
         'N' => 
         array (
@@ -144,6 +145,7 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         array (
             'Monolog\\' => 8,
             'MathPHP\\' => 8,
+            'Masterminds\\' => 12,
         ),
         'L' => 
         array (
@@ -272,10 +274,6 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-php80',
         ),
-        'Symfony\\Polyfill\\Php72\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/symfony/polyfill-php72',
-        ),
         'Symfony\\Polyfill\\Mbstring\\' => 
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-mbstring',
@@ -304,6 +302,10 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         array (
             0 => __DIR__ . '/..' . '/symfony/cache-contracts',
         ),
+        'Symfony\\Component\\Yaml\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/symfony/yaml',
+        ),
         'Symfony\\Component\\VarExporter\\' => 
         array (
             0 => __DIR__ . '/..' . '/symfony/var-exporter',
@@ -319,6 +321,10 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         'Symfony\\Component\\HttpClient\\' => 
         array (
             0 => __DIR__ . '/..' . '/symfony/http-client',
+        ),
+        'Symfony\\Component\\Finder\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/symfony/finder',
         ),
         'Symfony\\Component\\DomCrawler\\' => 
         array (
@@ -381,6 +387,10 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         array (
             0 => __DIR__ . '/..' . '/overtrue/socialite/src',
         ),
+        'OpenApi\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/zircote/swagger-php/src',
+        ),
         'Nyholm\\Psr7\\' => 
         array (
             0 => __DIR__ . '/..' . '/nyholm/psr7/src',
@@ -396,6 +406,10 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         'MathPHP\\' => 
         array (
             0 => __DIR__ . '/..' . '/markrogoyski/math-php/src',
+        ),
+        'Masterminds\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/masterminds/html5/src',
         ),
         'League\\OAuth2\\Client\\' => 
         array (
@@ -512,6 +526,7 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         'PHPUnit\\Event\\Code\\IssueTrigger\\IndirectTrigger' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Value/Test/Issue/IndirectTrigger.php',
         'PHPUnit\\Event\\Code\\IssueTrigger\\IssueTrigger' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Value/Test/Issue/IssueTrigger.php',
         'PHPUnit\\Event\\Code\\IssueTrigger\\SelfTrigger' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Value/Test/Issue/SelfTrigger.php',
+        'PHPUnit\\Event\\Code\\IssueTrigger\\TestTrigger' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Value/Test/Issue/TestTrigger.php',
         'PHPUnit\\Event\\Code\\IssueTrigger\\UnknownTrigger' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Value/Test/Issue/UnknownTrigger.php',
         'PHPUnit\\Event\\Code\\NoTestCaseObjectOnCallStackException' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Exception/NoTestCaseObjectOnCallStackException.php',
         'PHPUnit\\Event\\Code\\Phpt' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Value/Test/Phpt.php',
@@ -573,6 +588,10 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         'PHPUnit\\Event\\TestData\\TestDataCollectionIterator' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Value/Test/TestData/TestDataCollectionIterator.php',
         'PHPUnit\\Event\\TestRunner\\BootstrapFinished' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/TestRunner/BootstrapFinished.php',
         'PHPUnit\\Event\\TestRunner\\BootstrapFinishedSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/TestRunner/BootstrapFinishedSubscriber.php',
+        'PHPUnit\\Event\\TestRunner\\ChildProcessFinished' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/TestRunner/ChildProcessFinished.php',
+        'PHPUnit\\Event\\TestRunner\\ChildProcessFinishedSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/TestRunner/ChildProcessFinishedSubscriber.php',
+        'PHPUnit\\Event\\TestRunner\\ChildProcessStarted' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/TestRunner/ChildProcessStarted.php',
+        'PHPUnit\\Event\\TestRunner\\ChildProcessStartedSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/TestRunner/ChildProcessStartedSubscriber.php',
         'PHPUnit\\Event\\TestRunner\\Configured' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/TestRunner/Configured.php',
         'PHPUnit\\Event\\TestRunner\\ConfiguredSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/TestRunner/ConfiguredSubscriber.php',
         'PHPUnit\\Event\\TestRunner\\DeprecationTriggered' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/TestRunner/DeprecationTriggered.php',
@@ -620,10 +639,14 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         'PHPUnit\\Event\\TestSuite\\TestSuiteWithName' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Value/TestSuite/TestSuiteWithName.php',
         'PHPUnit\\Event\\Test\\AfterLastTestMethodCalled' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Test/HookMethod/AfterLastTestMethodCalled.php',
         'PHPUnit\\Event\\Test\\AfterLastTestMethodCalledSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Test/HookMethod/AfterLastTestMethodCalledSubscriber.php',
+        'PHPUnit\\Event\\Test\\AfterLastTestMethodErrored' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Test/HookMethod/AfterLastTestMethodErrored.php',
+        'PHPUnit\\Event\\Test\\AfterLastTestMethodErroredSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Test/HookMethod/AfterLastTestMethodErroredSubscriber.php',
         'PHPUnit\\Event\\Test\\AfterLastTestMethodFinished' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Test/HookMethod/AfterLastTestMethodFinished.php',
         'PHPUnit\\Event\\Test\\AfterLastTestMethodFinishedSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Test/HookMethod/AfterLastTestMethodFinishedSubscriber.php',
         'PHPUnit\\Event\\Test\\AfterTestMethodCalled' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Test/HookMethod/AfterTestMethodCalled.php',
         'PHPUnit\\Event\\Test\\AfterTestMethodCalledSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Test/HookMethod/AfterTestMethodCalledSubscriber.php',
+        'PHPUnit\\Event\\Test\\AfterTestMethodErrored' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Test/HookMethod/AfterTestMethodErrored.php',
+        'PHPUnit\\Event\\Test\\AfterTestMethodErroredSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Test/HookMethod/AfterTestMethodErroredSubscriber.php',
         'PHPUnit\\Event\\Test\\AfterTestMethodFinished' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Test/HookMethod/AfterTestMethodFinished.php',
         'PHPUnit\\Event\\Test\\AfterTestMethodFinishedSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Test/HookMethod/AfterTestMethodFinishedSubscriber.php',
         'PHPUnit\\Event\\Test\\BeforeFirstTestMethodCalled' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Test/HookMethod/BeforeFirstTestMethodCalled.php',
@@ -634,6 +657,8 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         'PHPUnit\\Event\\Test\\BeforeFirstTestMethodFinishedSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Test/HookMethod/BeforeFirstTestMethodFinishedSubscriber.php',
         'PHPUnit\\Event\\Test\\BeforeTestMethodCalled' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Test/HookMethod/BeforeTestMethodCalled.php',
         'PHPUnit\\Event\\Test\\BeforeTestMethodCalledSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Test/HookMethod/BeforeTestMethodCalledSubscriber.php',
+        'PHPUnit\\Event\\Test\\BeforeTestMethodErrored' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Test/HookMethod/BeforeTestMethodErrored.php',
+        'PHPUnit\\Event\\Test\\BeforeTestMethodErroredSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Test/HookMethod/BeforeTestMethodErroredSubscriber.php',
         'PHPUnit\\Event\\Test\\BeforeTestMethodFinished' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Test/HookMethod/BeforeTestMethodFinished.php',
         'PHPUnit\\Event\\Test\\BeforeTestMethodFinishedSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Test/HookMethod/BeforeTestMethodFinishedSubscriber.php',
         'PHPUnit\\Event\\Test\\ComparatorRegistered' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Test/ComparatorRegistered.php',
@@ -687,10 +712,14 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         'PHPUnit\\Event\\Test\\PhpunitWarningTriggeredSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Test/Issue/PhpunitWarningTriggeredSubscriber.php',
         'PHPUnit\\Event\\Test\\PostConditionCalled' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Test/HookMethod/PostConditionCalled.php',
         'PHPUnit\\Event\\Test\\PostConditionCalledSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Test/HookMethod/PostConditionCalledSubscriber.php',
+        'PHPUnit\\Event\\Test\\PostConditionErrored' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Test/HookMethod/PostConditionErrored.php',
+        'PHPUnit\\Event\\Test\\PostConditionErroredSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Test/HookMethod/PostConditionErroredSubscriber.php',
         'PHPUnit\\Event\\Test\\PostConditionFinished' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Test/HookMethod/PostConditionFinished.php',
         'PHPUnit\\Event\\Test\\PostConditionFinishedSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Test/HookMethod/PostConditionFinishedSubscriber.php',
         'PHPUnit\\Event\\Test\\PreConditionCalled' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Test/HookMethod/PreConditionCalled.php',
         'PHPUnit\\Event\\Test\\PreConditionCalledSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Test/HookMethod/PreConditionCalledSubscriber.php',
+        'PHPUnit\\Event\\Test\\PreConditionErrored' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Test/HookMethod/PreConditionErrored.php',
+        'PHPUnit\\Event\\Test\\PreConditionErroredSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Test/HookMethod/PreConditionErroredSubscriber.php',
         'PHPUnit\\Event\\Test\\PreConditionFinished' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Test/HookMethod/PreConditionFinished.php',
         'PHPUnit\\Event\\Test\\PreConditionFinishedSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Test/HookMethod/PreConditionFinishedSubscriber.php',
         'PHPUnit\\Event\\Test\\PreparationFailed' => __DIR__ . '/..' . '/phpunit/phpunit/src/Event/Events/Test/Lifecycle/PreparationFailed.php',
@@ -762,6 +791,7 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         'PHPUnit\\Framework\\Attributes\\RequiresPhp' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/Attributes/RequiresPhp.php',
         'PHPUnit\\Framework\\Attributes\\RequiresPhpExtension' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/Attributes/RequiresPhpExtension.php',
         'PHPUnit\\Framework\\Attributes\\RequiresPhpunit' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/Attributes/RequiresPhpunit.php',
+        'PHPUnit\\Framework\\Attributes\\RequiresPhpunitExtension' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/Attributes/RequiresPhpunitExtension.php',
         'PHPUnit\\Framework\\Attributes\\RequiresSetting' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/Attributes/RequiresSetting.php',
         'PHPUnit\\Framework\\Attributes\\RunClassInSeparateProcess' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/Attributes/RunClassInSeparateProcess.php',
         'PHPUnit\\Framework\\Attributes\\RunInSeparateProcess' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/Attributes/RunInSeparateProcess.php',
@@ -870,6 +900,8 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         'PHPUnit\\Framework\\MockObject\\Generator\\DuplicateMethodException' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/MockObject/Generator/Exception/DuplicateMethodException.php',
         'PHPUnit\\Framework\\MockObject\\Generator\\Exception' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/MockObject/Generator/Exception/Exception.php',
         'PHPUnit\\Framework\\MockObject\\Generator\\Generator' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/MockObject/Generator/Generator.php',
+        'PHPUnit\\Framework\\MockObject\\Generator\\HookedProperty' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/MockObject/Generator/HookedProperty.php',
+        'PHPUnit\\Framework\\MockObject\\Generator\\HookedPropertyGenerator' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/MockObject/Generator/HookedPropertyGenerator.php',
         'PHPUnit\\Framework\\MockObject\\Generator\\InvalidMethodNameException' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/MockObject/Generator/Exception/InvalidMethodNameException.php',
         'PHPUnit\\Framework\\MockObject\\Generator\\MockClass' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/MockObject/Generator/MockClass.php',
         'PHPUnit\\Framework\\MockObject\\Generator\\MockMethod' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/MockObject/Generator/MockMethod.php',
@@ -905,7 +937,6 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         'PHPUnit\\Framework\\MockObject\\NeverReturningMethodException' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/MockObject/Exception/NeverReturningMethodException.php',
         'PHPUnit\\Framework\\MockObject\\NoMoreReturnValuesConfiguredException' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/MockObject/Exception/NoMoreReturnValuesConfiguredException.php',
         'PHPUnit\\Framework\\MockObject\\ProxiedCloneMethod' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/MockObject/Runtime/Api/ProxiedCloneMethod.php',
-        'PHPUnit\\Framework\\MockObject\\ReflectionException' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/MockObject/Exception/ReflectionException.php',
         'PHPUnit\\Framework\\MockObject\\ReturnValueGenerator' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/MockObject/Runtime/ReturnValueGenerator.php',
         'PHPUnit\\Framework\\MockObject\\ReturnValueNotConfiguredException' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/MockObject/Exception/ReturnValueNotConfiguredException.php',
         'PHPUnit\\Framework\\MockObject\\Rule\\AnyInvokedCount' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/MockObject/Runtime/Rule/AnyInvokedCount.php',
@@ -919,6 +950,9 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         'PHPUnit\\Framework\\MockObject\\Rule\\Parameters' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/MockObject/Runtime/Rule/Parameters.php',
         'PHPUnit\\Framework\\MockObject\\Rule\\ParametersRule' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/MockObject/Runtime/Rule/ParametersRule.php',
         'PHPUnit\\Framework\\MockObject\\RuntimeException' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/MockObject/Exception/RuntimeException.php',
+        'PHPUnit\\Framework\\MockObject\\Runtime\\PropertyGetHook' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/MockObject/Runtime/PropertyHook/PropertyGetHook.php',
+        'PHPUnit\\Framework\\MockObject\\Runtime\\PropertyHook' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/MockObject/Runtime/PropertyHook/PropertyHook.php',
+        'PHPUnit\\Framework\\MockObject\\Runtime\\PropertySetHook' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/MockObject/Runtime/PropertyHook/PropertySetHook.php',
         'PHPUnit\\Framework\\MockObject\\Stub' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/MockObject/Runtime/Interface/Stub.php',
         'PHPUnit\\Framework\\MockObject\\StubApi' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/MockObject/Runtime/Api/StubApi.php',
         'PHPUnit\\Framework\\MockObject\\StubInternal' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/MockObject/Runtime/Interface/StubInternal.php',
@@ -932,8 +966,9 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         'PHPUnit\\Framework\\MockObject\\Stub\\ReturnValueMap' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/MockObject/Runtime/Stub/ReturnValueMap.php',
         'PHPUnit\\Framework\\MockObject\\Stub\\Stub' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/MockObject/Runtime/Stub/Stub.php',
         'PHPUnit\\Framework\\MockObject\\TestDoubleState' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/MockObject/Runtime/Api/TestDoubleState.php',
+        'PHPUnit\\Framework\\NativeType' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/NativeType.php',
         'PHPUnit\\Framework\\NoChildTestSuiteException' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/Exception/NoChildTestSuiteException.php',
-        'PHPUnit\\Framework\\PhptAssertionFailedError' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/Exception/PHPTAssertionFailedError.php',
+        'PHPUnit\\Framework\\PhptAssertionFailedError' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/Exception/PhptAssertionFailedError.php',
         'PHPUnit\\Framework\\ProcessIsolationException' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/Exception/ProcessIsolationException.php',
         'PHPUnit\\Framework\\Reorderable' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/Reorderable.php',
         'PHPUnit\\Framework\\SelfDescribing' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/SelfDescribing.php',
@@ -968,7 +1003,6 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         'PHPUnit\\Framework\\UnknownClassOrInterfaceException' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/Exception/UnknownClassOrInterfaceException.php',
         'PHPUnit\\Framework\\UnknownTypeException' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/Exception/UnknownTypeException.php',
         'PHPUnit\\Logging\\EventLogger' => __DIR__ . '/..' . '/phpunit/phpunit/src/Logging/EventLogger.php',
-        'PHPUnit\\Logging\\Exception' => __DIR__ . '/..' . '/phpunit/phpunit/src/Logging/Exception.php',
         'PHPUnit\\Logging\\JUnit\\JunitXmlLogger' => __DIR__ . '/..' . '/phpunit/phpunit/src/Logging/JUnit/JunitXmlLogger.php',
         'PHPUnit\\Logging\\JUnit\\Subscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Logging/JUnit/Subscriber/Subscriber.php',
         'PHPUnit\\Logging\\JUnit\\TestErroredSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Logging/JUnit/Subscriber/TestErroredSubscriber.php',
@@ -978,6 +1012,7 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         'PHPUnit\\Logging\\JUnit\\TestPreparationFailedSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Logging/JUnit/Subscriber/TestPreparationFailedSubscriber.php',
         'PHPUnit\\Logging\\JUnit\\TestPreparationStartedSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Logging/JUnit/Subscriber/TestPreparationStartedSubscriber.php',
         'PHPUnit\\Logging\\JUnit\\TestPreparedSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Logging/JUnit/Subscriber/TestPreparedSubscriber.php',
+        'PHPUnit\\Logging\\JUnit\\TestPrintedUnexpectedOutputSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Logging/JUnit/Subscriber/TestPrintedUnexpectedOutputSubscriber.php',
         'PHPUnit\\Logging\\JUnit\\TestRunnerExecutionFinishedSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Logging/JUnit/Subscriber/TestRunnerExecutionFinishedSubscriber.php',
         'PHPUnit\\Logging\\JUnit\\TestSkippedSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Logging/JUnit/Subscriber/TestSkippedSubscriber.php',
         'PHPUnit\\Logging\\JUnit\\TestSuiteFinishedSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Logging/JUnit/Subscriber/TestSuiteFinishedSubscriber.php',
@@ -992,7 +1027,9 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         'PHPUnit\\Logging\\TeamCity\\TestPreparedSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Logging/TeamCity/Subscriber/TestPreparedSubscriber.php',
         'PHPUnit\\Logging\\TeamCity\\TestRunnerExecutionFinishedSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Logging/TeamCity/Subscriber/TestRunnerExecutionFinishedSubscriber.php',
         'PHPUnit\\Logging\\TeamCity\\TestSkippedSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Logging/TeamCity/Subscriber/TestSkippedSubscriber.php',
+        'PHPUnit\\Logging\\TeamCity\\TestSuiteBeforeFirstTestMethodErroredSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Logging/TeamCity/Subscriber/TestSuiteBeforeFirstTestMethodErroredSubscriber.php',
         'PHPUnit\\Logging\\TeamCity\\TestSuiteFinishedSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Logging/TeamCity/Subscriber/TestSuiteFinishedSubscriber.php',
+        'PHPUnit\\Logging\\TeamCity\\TestSuiteSkippedSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Logging/TeamCity/Subscriber/TestSuiteSkippedSubscriber.php',
         'PHPUnit\\Logging\\TeamCity\\TestSuiteStartedSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Logging/TeamCity/Subscriber/TestSuiteStartedSubscriber.php',
         'PHPUnit\\Logging\\TestDox\\HtmlRenderer' => __DIR__ . '/..' . '/phpunit/phpunit/src/Logging/TestDox/HtmlRenderer.php',
         'PHPUnit\\Logging\\TestDox\\NamePrettifier' => __DIR__ . '/..' . '/phpunit/phpunit/src/Logging/TestDox/NamePrettifier.php',
@@ -1074,6 +1111,7 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         'PHPUnit\\Metadata\\RequiresPhp' => __DIR__ . '/..' . '/phpunit/phpunit/src/Metadata/RequiresPhp.php',
         'PHPUnit\\Metadata\\RequiresPhpExtension' => __DIR__ . '/..' . '/phpunit/phpunit/src/Metadata/RequiresPhpExtension.php',
         'PHPUnit\\Metadata\\RequiresPhpunit' => __DIR__ . '/..' . '/phpunit/phpunit/src/Metadata/RequiresPhpunit.php',
+        'PHPUnit\\Metadata\\RequiresPhpunitExtension' => __DIR__ . '/..' . '/phpunit/phpunit/src/Metadata/RequiresPhpunitExtension.php',
         'PHPUnit\\Metadata\\RequiresSetting' => __DIR__ . '/..' . '/phpunit/phpunit/src/Metadata/RequiresSetting.php',
         'PHPUnit\\Metadata\\RunClassInSeparateProcess' => __DIR__ . '/..' . '/phpunit/phpunit/src/Metadata/RunClassInSeparateProcess.php',
         'PHPUnit\\Metadata\\RunInSeparateProcess' => __DIR__ . '/..' . '/phpunit/phpunit/src/Metadata/RunInSeparateProcess.php',
@@ -1142,11 +1180,9 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         'PHPUnit\\Runner\\HookMethodCollection' => __DIR__ . '/..' . '/phpunit/phpunit/src/Runner/HookMethod/HookMethodCollection.php',
         'PHPUnit\\Runner\\InvalidOrderException' => __DIR__ . '/..' . '/phpunit/phpunit/src/Runner/Exception/InvalidOrderException.php',
         'PHPUnit\\Runner\\InvalidPhptFileException' => __DIR__ . '/..' . '/phpunit/phpunit/src/Runner/Exception/InvalidPhptFileException.php',
-        'PHPUnit\\Runner\\NoIgnoredEventException' => __DIR__ . '/..' . '/phpunit/phpunit/src/Runner/Exception/NoIgnoredEventException.php',
         'PHPUnit\\Runner\\ParameterDoesNotExistException' => __DIR__ . '/..' . '/phpunit/phpunit/src/Runner/Exception/ParameterDoesNotExistException.php',
         'PHPUnit\\Runner\\PhptExternalFileCannotBeLoadedException' => __DIR__ . '/..' . '/phpunit/phpunit/src/Runner/Exception/PhptExternalFileCannotBeLoadedException.php',
         'PHPUnit\\Runner\\PhptTestCase' => __DIR__ . '/..' . '/phpunit/phpunit/src/Runner/PHPT/PhptTestCase.php',
-        'PHPUnit\\Runner\\ReflectionException' => __DIR__ . '/..' . '/phpunit/phpunit/src/Runner/Exception/ReflectionException.php',
         'PHPUnit\\Runner\\ResultCache\\DefaultResultCache' => __DIR__ . '/..' . '/phpunit/phpunit/src/Runner/ResultCache/DefaultResultCache.php',
         'PHPUnit\\Runner\\ResultCache\\NullResultCache' => __DIR__ . '/..' . '/phpunit/phpunit/src/Runner/ResultCache/NullResultCache.php',
         'PHPUnit\\Runner\\ResultCache\\ResultCache' => __DIR__ . '/..' . '/phpunit/phpunit/src/Runner/ResultCache/ResultCache.php',
@@ -1165,6 +1201,8 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         'PHPUnit\\Runner\\TestSuiteSorter' => __DIR__ . '/..' . '/phpunit/phpunit/src/Runner/TestSuiteSorter.php',
         'PHPUnit\\Runner\\UnsupportedPhptSectionException' => __DIR__ . '/..' . '/phpunit/phpunit/src/Runner/Exception/UnsupportedPhptSectionException.php',
         'PHPUnit\\Runner\\Version' => __DIR__ . '/..' . '/phpunit/phpunit/src/Runner/Version.php',
+        'PHPUnit\\TestRunner\\IssueFilter' => __DIR__ . '/..' . '/phpunit/phpunit/src/Runner/IssueFilter.php',
+        'PHPUnit\\TestRunner\\TestResult\\AfterTestClassMethodErroredSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Runner/TestResult/Subscriber/AfterTestClassMethodErroredSubscriber.php',
         'PHPUnit\\TestRunner\\TestResult\\BeforeTestClassMethodErroredSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Runner/TestResult/Subscriber/BeforeTestClassMethodErroredSubscriber.php',
         'PHPUnit\\TestRunner\\TestResult\\Collector' => __DIR__ . '/..' . '/phpunit/phpunit/src/Runner/TestResult/Collector.php',
         'PHPUnit\\TestRunner\\TestResult\\ExecutionStartedSubscriber' => __DIR__ . '/..' . '/phpunit/phpunit/src/Runner/TestResult/Subscriber/ExecutionStartedSubscriber.php',
@@ -1240,7 +1278,6 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         'PHPUnit\\TextUI\\Configuration\\Group' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/Value/Group.php',
         'PHPUnit\\TextUI\\Configuration\\GroupCollection' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/Value/GroupCollection.php',
         'PHPUnit\\TextUI\\Configuration\\GroupCollectionIterator' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/Value/GroupCollectionIterator.php',
-        'PHPUnit\\TextUI\\Configuration\\IncludePathNotConfiguredException' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/Exception/IncludePathNotConfiguredException.php',
         'PHPUnit\\TextUI\\Configuration\\IniSetting' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/Value/IniSetting.php',
         'PHPUnit\\TextUI\\Configuration\\IniSettingCollection' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/Value/IniSettingCollection.php',
         'PHPUnit\\TextUI\\Configuration\\IniSettingCollectionIterator' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/Value/IniSettingCollectionIterator.php',
@@ -1249,7 +1286,6 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         'PHPUnit\\TextUI\\Configuration\\NoBaselineException' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/Exception/NoBaselineException.php',
         'PHPUnit\\TextUI\\Configuration\\NoBootstrapException' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/Exception/NoBootstrapException.php',
         'PHPUnit\\TextUI\\Configuration\\NoCacheDirectoryException' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/Exception/NoCacheDirectoryException.php',
-        'PHPUnit\\TextUI\\Configuration\\NoCliArgumentException' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/Exception/NoCliArgumentException.php',
         'PHPUnit\\TextUI\\Configuration\\NoConfigurationFileException' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/Exception/NoConfigurationFileException.php',
         'PHPUnit\\TextUI\\Configuration\\NoCoverageCacheDirectoryException' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/Exception/NoCoverageCacheDirectoryException.php',
         'PHPUnit\\TextUI\\Configuration\\NoCustomCssFileException' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/Exception/NoCustomCssFileException.php',
@@ -1261,6 +1297,7 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         'PHPUnit\\TextUI\\Configuration\\Source' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/Value/Source.php',
         'PHPUnit\\TextUI\\Configuration\\SourceFilter' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/SourceFilter.php',
         'PHPUnit\\TextUI\\Configuration\\SourceMapper' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/SourceMapper.php',
+        'PHPUnit\\TextUI\\Configuration\\SpecificDeprecationToStopOnNotConfiguredException' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/Exception/SpecificDeprecationToStopOnNotConfiguredException.php',
         'PHPUnit\\TextUI\\Configuration\\TestDirectory' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/Value/TestDirectory.php',
         'PHPUnit\\TextUI\\Configuration\\TestDirectoryCollection' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/Value/TestDirectoryCollection.php',
         'PHPUnit\\TextUI\\Configuration\\TestDirectoryCollectionIterator' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/Value/TestDirectoryCollectionIterator.php',
@@ -1275,7 +1312,6 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         'PHPUnit\\TextUI\\Configuration\\VariableCollection' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/Value/VariableCollection.php',
         'PHPUnit\\TextUI\\Configuration\\VariableCollectionIterator' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/Value/VariableCollectionIterator.php',
         'PHPUnit\\TextUI\\Exception' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Exception/Exception.php',
-        'PHPUnit\\TextUI\\ExtensionsNotConfiguredException' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Exception/ExtensionsNotConfiguredException.php',
         'PHPUnit\\TextUI\\Help' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Help.php',
         'PHPUnit\\TextUI\\InvalidSocketException' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Exception/InvalidSocketException.php',
         'PHPUnit\\TextUI\\Output\\DefaultPrinter' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Output/Printer/DefaultPrinter.php',
@@ -1306,7 +1342,6 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         'PHPUnit\\TextUI\\Output\\Printer' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Output/Printer/Printer.php',
         'PHPUnit\\TextUI\\Output\\SummaryPrinter' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Output/SummaryPrinter.php',
         'PHPUnit\\TextUI\\Output\\TestDox\\ResultPrinter' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Output/TestDox/ResultPrinter.php',
-        'PHPUnit\\TextUI\\ReflectionException' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Exception/ReflectionException.php',
         'PHPUnit\\TextUI\\RuntimeException' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Exception/RuntimeException.php',
         'PHPUnit\\TextUI\\ShellExitCodeCalculator' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/ShellExitCodeCalculator.php',
         'PHPUnit\\TextUI\\TestDirectoryNotFoundException' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Exception/TestDirectoryNotFoundException.php',
@@ -1347,7 +1382,6 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         'PHPUnit\\TextUI\\XmlConfiguration\\Logging\\TestDox\\Text' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/Xml/Logging/TestDox/Text.php',
         'PHPUnit\\TextUI\\XmlConfiguration\\Migration' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/Xml/Migration/Migrations/Migration.php',
         'PHPUnit\\TextUI\\XmlConfiguration\\MigrationBuilder' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/Xml/Migration/MigrationBuilder.php',
-        'PHPUnit\\TextUI\\XmlConfiguration\\MigrationBuilderException' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/Xml/Migration/MigrationBuilderException.php',
         'PHPUnit\\TextUI\\XmlConfiguration\\MigrationException' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/Xml/Migration/MigrationException.php',
         'PHPUnit\\TextUI\\XmlConfiguration\\Migrator' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/Xml/Migration/Migrator.php',
         'PHPUnit\\TextUI\\XmlConfiguration\\MoveAttributesFromFilterWhitelistToCoverage' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/Xml/Migration/Migrations/MoveAttributesFromFilterWhitelistToCoverage.php',
@@ -1362,6 +1396,7 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         'PHPUnit\\TextUI\\XmlConfiguration\\RemoveCacheTokensAttribute' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/Xml/Migration/Migrations/RemoveCacheTokensAttribute.php',
         'PHPUnit\\TextUI\\XmlConfiguration\\RemoveConversionToExceptionsAttributes' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/Xml/Migration/Migrations/RemoveConversionToExceptionsAttributes.php',
         'PHPUnit\\TextUI\\XmlConfiguration\\RemoveCoverageElementCacheDirectoryAttribute' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/Xml/Migration/Migrations/RemoveCoverageElementCacheDirectoryAttribute.php',
+        'PHPUnit\\TextUI\\XmlConfiguration\\RemoveCoverageElementIncludeUncoveredFilesAttribute' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/Xml/Migration/Migrations/RemoveCoverageElementIncludeUncoveredFilesAttribute.php',
         'PHPUnit\\TextUI\\XmlConfiguration\\RemoveCoverageElementProcessUncoveredFilesAttribute' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/Xml/Migration/Migrations/RemoveCoverageElementProcessUncoveredFilesAttribute.php',
         'PHPUnit\\TextUI\\XmlConfiguration\\RemoveEmptyFilter' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/Xml/Migration/Migrations/RemoveEmptyFilter.php',
         'PHPUnit\\TextUI\\XmlConfiguration\\RemoveListeners' => __DIR__ . '/..' . '/phpunit/phpunit/src/TextUI/Configuration/Xml/Migration/Migrations/RemoveListeners.php',
@@ -1394,6 +1429,8 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         'PHPUnit\\Util\\Filesystem' => __DIR__ . '/..' . '/phpunit/phpunit/src/Util/Filesystem.php',
         'PHPUnit\\Util\\Filter' => __DIR__ . '/..' . '/phpunit/phpunit/src/Util/Filter.php',
         'PHPUnit\\Util\\GlobalState' => __DIR__ . '/..' . '/phpunit/phpunit/src/Util/GlobalState.php',
+        'PHPUnit\\Util\\Http\\Downloader' => __DIR__ . '/..' . '/phpunit/phpunit/src/Util/Http/Downloader.php',
+        'PHPUnit\\Util\\Http\\PhpDownloader' => __DIR__ . '/..' . '/phpunit/phpunit/src/Util/Http/PhpDownloader.php',
         'PHPUnit\\Util\\InvalidDirectoryException' => __DIR__ . '/..' . '/phpunit/phpunit/src/Util/Exception/InvalidDirectoryException.php',
         'PHPUnit\\Util\\InvalidJsonException' => __DIR__ . '/..' . '/phpunit/phpunit/src/Util/Exception/InvalidJsonException.php',
         'PHPUnit\\Util\\InvalidVersionOperatorException' => __DIR__ . '/..' . '/phpunit/phpunit/src/Util/Exception/InvalidVersionOperatorException.php',
@@ -1594,10 +1631,12 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         'SebastianBergmann\\Comparator\\ComparisonFailure' => __DIR__ . '/..' . '/sebastian/comparator/src/ComparisonFailure.php',
         'SebastianBergmann\\Comparator\\DOMNodeComparator' => __DIR__ . '/..' . '/sebastian/comparator/src/DOMNodeComparator.php',
         'SebastianBergmann\\Comparator\\DateTimeComparator' => __DIR__ . '/..' . '/sebastian/comparator/src/DateTimeComparator.php',
+        'SebastianBergmann\\Comparator\\EnumerationComparator' => __DIR__ . '/..' . '/sebastian/comparator/src/EnumerationComparator.php',
         'SebastianBergmann\\Comparator\\Exception' => __DIR__ . '/..' . '/sebastian/comparator/src/exceptions/Exception.php',
         'SebastianBergmann\\Comparator\\ExceptionComparator' => __DIR__ . '/..' . '/sebastian/comparator/src/ExceptionComparator.php',
         'SebastianBergmann\\Comparator\\Factory' => __DIR__ . '/..' . '/sebastian/comparator/src/Factory.php',
         'SebastianBergmann\\Comparator\\MockObjectComparator' => __DIR__ . '/..' . '/sebastian/comparator/src/MockObjectComparator.php',
+        'SebastianBergmann\\Comparator\\NumberComparator' => __DIR__ . '/..' . '/sebastian/comparator/src/NumberComparator.php',
         'SebastianBergmann\\Comparator\\NumericComparator' => __DIR__ . '/..' . '/sebastian/comparator/src/NumericComparator.php',
         'SebastianBergmann\\Comparator\\ObjectComparator' => __DIR__ . '/..' . '/sebastian/comparator/src/ObjectComparator.php',
         'SebastianBergmann\\Comparator\\ResourceComparator' => __DIR__ . '/..' . '/sebastian/comparator/src/ResourceComparator.php',
@@ -1699,6 +1738,8 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         'TheSeer\\Tokenizer\\XMLSerializer' => __DIR__ . '/..' . '/theseer/tokenizer/src/XMLSerializer.php',
         'UnhandledMatchError' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/UnhandledMatchError.php',
         'ValueError' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/ValueError.php',
+        'staabm\\SideEffectsDetector\\SideEffect' => __DIR__ . '/..' . '/staabm/side-effects-detector/lib/SideEffect.php',
+        'staabm\\SideEffectsDetector\\SideEffectsDetector' => __DIR__ . '/..' . '/staabm/side-effects-detector/lib/SideEffectsDetector.php',
         '©' => __DIR__ . '/..' . '/symfony/cache/Traits/ValueWrapper.php',
     );
 

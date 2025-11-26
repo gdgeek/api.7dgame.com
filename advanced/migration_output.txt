@@ -1,0 +1,43 @@
+Yii Migration Tool (based on Yii v2.0.51)
+
+Exception 'yii\db\Exception' with message 'SQLSTATE[HY000] [2002] No such file or directory'
+
+in /Users/dirui/Projects/web/backend/api.7dgame.com/advanced/vendor/yiisoft/yii2/db/Connection.php:648
+
+Error Info:
+Array
+(
+    [0] => HY000
+    [1] => 2002
+    [2] => No such file or directory
+)
+
+Caused by: Exception 'PDOException' with message 'SQLSTATE[HY000] [2002] No such file or directory'
+
+in /Users/dirui/Projects/web/backend/api.7dgame.com/advanced/vendor/yiisoft/yii2/db/Connection.php:722
+
+Stack trace:
+#0 /Users/dirui/Projects/web/backend/api.7dgame.com/advanced/vendor/yiisoft/yii2/db/Connection.php(722): PDO->__construct('mysql:host=loca...', 'root', Object(SensitiveParameterValue), NULL)
+#1 /Users/dirui/Projects/web/backend/api.7dgame.com/advanced/vendor/yiisoft/yii2/db/Connection.php(637): yii\db\Connection->createPdoInstance()
+#2 /Users/dirui/Projects/web/backend/api.7dgame.com/advanced/vendor/yiisoft/yii2/db/Connection.php(1067): yii\db\Connection->open()
+#3 /Users/dirui/Projects/web/backend/api.7dgame.com/advanced/vendor/yiisoft/yii2/db/Connection.php(1054): yii\db\Connection->getMasterPdo()
+#4 /Users/dirui/Projects/web/backend/api.7dgame.com/advanced/vendor/yiisoft/yii2/db/Command.php(261): yii\db\Connection->getSlavePdo(true)
+#5 /Users/dirui/Projects/web/backend/api.7dgame.com/advanced/vendor/yiisoft/yii2/db/Command.php(1181): yii\db\Command->prepare(true)
+#6 /Users/dirui/Projects/web/backend/api.7dgame.com/advanced/vendor/yiisoft/yii2/db/Command.php(417): yii\db\Command->queryInternal('fetchAll', NULL)
+#7 /Users/dirui/Projects/web/backend/api.7dgame.com/advanced/vendor/yiisoft/yii2/db/mysql/Schema.php(366): yii\db\Command->queryAll()
+#8 /Users/dirui/Projects/web/backend/api.7dgame.com/advanced/vendor/yiisoft/yii2/db/mysql/Schema.php(134): yii\db\mysql\Schema->findColumns(Object(yii\db\TableSchema))
+#9 /Users/dirui/Projects/web/backend/api.7dgame.com/advanced/vendor/yiisoft/yii2/db/Schema.php(756): yii\db\mysql\Schema->loadTableSchema('migration')
+#10 /Users/dirui/Projects/web/backend/api.7dgame.com/advanced/vendor/yiisoft/yii2/db/Schema.php(192): yii\db\Schema->getTableMetadata('{{%migration}}', 'schema', true)
+#11 /Users/dirui/Projects/web/backend/api.7dgame.com/advanced/vendor/yiisoft/yii2/console/controllers/MigrateController.php(211): yii\db\Schema->getTableSchema('{{%migration}}', true)
+#12 /Users/dirui/Projects/web/backend/api.7dgame.com/advanced/vendor/yiisoft/yii2/console/controllers/BaseMigrateController.php(908): yii\console\controllers\MigrateController->getMigrationHistory(NULL)
+#13 /Users/dirui/Projects/web/backend/api.7dgame.com/advanced/vendor/yiisoft/yii2/console/controllers/BaseMigrateController.php(183): yii\console\controllers\BaseMigrateController->getNewMigrations()
+#14 [internal function]: yii\console\controllers\BaseMigrateController->actionUp(0)
+#15 /Users/dirui/Projects/web/backend/api.7dgame.com/advanced/vendor/yiisoft/yii2/base/InlineAction.php(57): call_user_func_array(Array, Array)
+#16 /Users/dirui/Projects/web/backend/api.7dgame.com/advanced/vendor/yiisoft/yii2/base/Controller.php(178): yii\base\InlineAction->runWithParams(Array)
+#17 /Users/dirui/Projects/web/backend/api.7dgame.com/advanced/vendor/yiisoft/yii2/console/Controller.php(180): yii\base\Controller->runAction('', Array)
+#18 /Users/dirui/Projects/web/backend/api.7dgame.com/advanced/vendor/yiisoft/yii2/base/Module.php(552): yii\console\Controller->runAction('', Array)
+#19 /Users/dirui/Projects/web/backend/api.7dgame.com/advanced/vendor/yiisoft/yii2/console/Application.php(180): yii\base\Module->runAction('migrate', Array)
+#20 /Users/dirui/Projects/web/backend/api.7dgame.com/advanced/vendor/yiisoft/yii2/console/Application.php(147): yii\console\Application->runAction('migrate', Array)
+#21 /Users/dirui/Projects/web/backend/api.7dgame.com/advanced/vendor/yiisoft/yii2/base/Application.php(384): yii\console\Application->handleRequest(Object(yii\console\Request))
+#22 /Users/dirui/Projects/web/backend/api.7dgame.com/advanced/yii(23): yii\base\Application->run()
+#23 {main}

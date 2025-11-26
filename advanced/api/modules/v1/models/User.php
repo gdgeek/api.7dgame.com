@@ -295,7 +295,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
             [['username'], 'required'],
             [['username', 'password_reset_token'], 'unique'],
             [['password'], 'string', 'min' => 6, 'max' => 20, 'message' => 'Password must be between 6 and 20 characters.'],
-            ['password', 'match', 'pattern' => '/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,}$/i', 'message' => 'Password must contain at least one lowercase letter, one uppercase letter, one digit, and one special character.'],
+            ['password', 'match', 'pattern' => '/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{6,}$/', 'message' => 'Password must contain at least one lowercase letter, one uppercase letter, one digit, and one special character.'],
        
         ];
         if ($this->new_version) {

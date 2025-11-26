@@ -271,9 +271,11 @@ return [
                         'v1/file',
                         'v1/resource',
                         'v1/tags',
-
                         'v1/token',
-
+                        'v1/edu-school',
+                        'v1/edu-teacher',
+                        'v1/edu-class',
+                        'v1/edu-student',
                     ],
                 ],
                 [
@@ -330,6 +332,15 @@ return [
                     'pluralize' => false,
                     'controller' => [
                         'a1/game'
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/swagger',
+                    'pluralize' => false,
+                    'extraPatterns' => [
+                        'GET json' => 'json',
+                        'GET yaml' => 'yaml',
                     ],
                 ],
                 [

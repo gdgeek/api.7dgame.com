@@ -129,15 +129,6 @@ return array (
       '@yii/debug' => $vendorDir . '/yiisoft/yii2-debug/src',
     ),
   ),
-  'bizley/jwt' => 
-  array (
-    'name' => 'bizley/jwt',
-    'version' => '4.1.1.0',
-    'alias' => 
-    array (
-      '@bizley/jwt' => $vendorDir . '/bizley/jwt/src',
-    ),
-  ),
   'yiisoft/yii2-redis' => 
   array (
     'name' => 'yiisoft/yii2-redis',
@@ -145,6 +136,15 @@ return array (
     'alias' => 
     array (
       '@yii/redis' => $vendorDir . '/yiisoft/yii2-redis/src',
+    ),
+  ),
+  'bizley/jwt' => 
+  array (
+    'name' => 'bizley/jwt',
+    'version' => '4.1.2.0',
+    'alias' => 
+    array (
+      '@bizley/jwt' => $vendorDir . '/bizley/jwt/src',
     ),
   ),
 );

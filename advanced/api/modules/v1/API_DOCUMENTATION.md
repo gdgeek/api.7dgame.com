@@ -578,6 +578,74 @@ Authorization: Bearer {accessToken}
 
 ---
 
+## 教育管理 (Education)
+
+> **认证要求**: JWT Token + 权限控制
+
+### 27. 学校管理 (EduSchool)
+
+**端点**:
+- `GET /v1/edu-school/index`: 获取学校列表
+- `GET /v1/edu-school/view?id={id}`: 查看学校详情
+- `POST /v1/edu-school/create`: 创建学校
+- `PUT /v1/edu-school/update?id={id}`: 更新学校信息
+- `DELETE /v1/edu-school/delete?id={id}`: 删除学校
+
+**Headers**:
+```
+Authorization: Bearer {accessToken}
+```
+
+---
+
+### 28. 教师管理 (EduTeacher)
+
+**端点**:
+- `GET /v1/edu-teacher/index`: 获取教师列表
+- `GET /v1/edu-teacher/view?id={id}`: 查看教师详情
+- `POST /v1/edu-teacher/create`: 创建教师
+- `PUT /v1/edu-teacher/update?id={id}`: 更新教师信息
+- `DELETE /v1/edu-teacher/delete?id={id}`: 删除教师
+
+**Headers**:
+```
+Authorization: Bearer {accessToken}
+```
+
+---
+
+### 29. 班级管理 (EduClass)
+
+**端点**:
+- `GET /v1/edu-class/index`: 获取班级列表
+- `GET /v1/edu-class/view?id={id}`: 查看班级详情
+- `POST /v1/edu-class/create`: 创建班级
+- `PUT /v1/edu-class/update?id={id}`: 更新班级信息
+- `DELETE /v1/edu-class/delete?id={id}`: 删除班级
+
+**Headers**:
+```
+Authorization: Bearer {accessToken}
+```
+
+---
+
+### 30. 学生管理 (EduStudent)
+
+**端点**:
+- `GET /v1/edu-student/index`: 获取学生列表
+- `GET /v1/edu-student/view?id={id}`: 查看学生详情
+- `POST /v1/edu-student/create`: 创建学生
+- `PUT /v1/edu-student/update?id={id}`: 更新学生信息
+- `DELETE /v1/edu-student/delete?id={id}`: 删除学生
+
+**Headers**:
+```
+Authorization: Bearer {accessToken}
+```
+
+---
+
 ## 通用说明
 
 ### 认证流程
