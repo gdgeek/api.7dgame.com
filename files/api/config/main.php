@@ -282,11 +282,18 @@ return [
                     'class' => 'yii\rest\UrlRule',
                     'pluralize' => false,
                     'controller' => [
-                        
                         'v1/edu-school',
                         'v1/edu-teacher',
                         'v1/edu-class',
                         'v1/edu-student',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'pluralize' => false,
+                    'controller' => 'v1/domain',
+                    'extraPatterns' => [
+                        'GET info' => 'info',
                     ],
                 ],
                 [
