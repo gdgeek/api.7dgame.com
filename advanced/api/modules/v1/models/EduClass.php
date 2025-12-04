@@ -4,6 +4,8 @@ namespace api\modules\v1\models;
 
 use Yii;
 use OpenApi\Annotations as OA;
+use yii\behaviors\TimestampBehavior;
+use yii\db\Expression;
 
 /**
  * This is the model class for table "edu_class".
@@ -36,6 +38,22 @@ use OpenApi\Annotations as OA;
  */
 class EduClass extends \yii\db\ActiveRecord
 {
+
+
+    public function behaviors()
+    {
+        return [
+            [
+                'class' => TimestampBehavior::class,
+                'attributes' => [
+                        \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => ['created_at', 'updated_at'],
+                        \yii\db\ActiveRecord::EVENT_BEFORE_UPDATE => ['updated_at'],
+
+                    ],
+                'value' => new Expression('NOW()'),
+            ]
+        ];
+    }
     /**
      * {@inheritdoc}
      */
@@ -44,13 +62,21 @@ class EduClass extends \yii\db\ActiveRecord
         return 'edu_class';
     }
 
+    public function fields()
+    {
+        return ['id', 'name', 'created_at', 'updated_at', 'info','school_id'];
+    }
+    public function extraFields()
+    {
+        return ['image', 'school', 'eduStudents', 'eduTeachers', 'students', 'teachers'];
+    }
     /**
      * {@inheritdoc}
      */
     public function rules()
     {
         return [
-            [['created_at', 'updated_at'], 'required'],
+            [['school_id'], 'required'],
             [['created_at', 'updated_at', 'info'], 'safe'],
             [['school_id', 'image_id'], 'integer'],
             [['name'], 'string', 'max' => 255],
@@ -104,7 +130,15 @@ class EduClass extends \yii\db\ActiveRecord
     {
         return $this->hasMany(EduStudent::className(), ['class_id' => 'id']);
     }
-
+     /**
+     * Gets query for [[User]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getStudents()
+    {
+        return $this->hasMany(User::className(), ['id' => 'user_id'])->viaTable('edu_student', ['class_id' => 'id']);
+    }
     /**
      * Gets query for [[EduTeachers]].
      *
@@ -114,4 +148,13 @@ class EduClass extends \yii\db\ActiveRecord
     {
         return $this->hasMany(EduTeacher::className(), ['class_id' => 'id']);
     }
+       /**
+     * Gets query for [[User]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getTeachers()
+    {
+        return $this->hasMany(User::className(), ['id' => 'user_id'])->viaTable('edu_teacher', ['class_id' => 'id']);
+    }   
 }

@@ -34,6 +34,8 @@ class EduStudent extends \yii\db\ActiveRecord
             [['user_id', 'class_id'], 'integer'],
             [['class_id'], 'exist', 'skipOnError' => true, 'targetClass' => EduClass::className(), 'targetAttribute' => ['class_id' => 'id']],
             [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['user_id' => 'id']],
+            // user_id and class_id are unique together, the same student cannot be added to the same class repeatedly
+            [['user_id'], 'unique', 'targetAttribute' => ['user_id', 'class_id'], 'message' => 'This student is already in this class'],
         ];
     }
 
@@ -58,6 +60,22 @@ class EduStudent extends \yii\db\ActiveRecord
     {
         return $this->hasOne(EduClass::className(), ['id' => 'class_id']);
     }
+
+    public function fields()
+    {
+        return [
+            'id',
+            'user' => function () {
+                return $this->user ? $this->user->toArray(['username', 'nickname']) : null;
+            },
+        ];
+    }
+
+    public function extraFields()
+    {
+        return ['class'];
+    }
+
 
     /**
      * Gets query for [[User]].

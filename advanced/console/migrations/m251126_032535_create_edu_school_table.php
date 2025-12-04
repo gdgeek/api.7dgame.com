@@ -9,6 +9,8 @@ use yii\db\Migration;
  * - `{{%file}}`
  * - `{{%user}}`
  */
+
+//php yii migrate/create create_edu_class_table --fields="name:string,created_at:dateTime:notNull,updated_at:dateTime:notNull,school_id:integer:foreignKey(edu_school),image_id:integer:foreignKey(file),info:json"
 class m251126_032535_create_edu_school_table extends Migration
 {
     /**
@@ -27,7 +29,7 @@ class m251126_032535_create_edu_school_table extends Migration
             'updated_at' => $this->dateTime()->notNull(),
             'image_id' => $this->integer(),
             'info' => $this->json(),
-            'principal' => $this->integer(),
+            'principal_id' => $this->integer(),
         ],$tableOptions);
 
         // creates index for column `image_id`
@@ -47,18 +49,18 @@ class m251126_032535_create_edu_school_table extends Migration
             'CASCADE'
         );
 
-        // creates index for column `principal`
+        // creates index for column `principal_id`
         $this->createIndex(
-            '{{%idx-edu_school-principal}}',
+            '{{%idx-edu_school-principal_id}}',
             '{{%edu_school}}',
-            'principal'
+            'principal_id'
         );
 
         // add foreign key for table `{{%user}}`
         $this->addForeignKey(
-            '{{%fk-edu_school-principal}}',
+            '{{%fk-edu_school-principal_id}}',
             '{{%edu_school}}',
-            'principal',
+            'principal_id',
             '{{%user}}',
             'id',
             'CASCADE'
@@ -84,13 +86,13 @@ class m251126_032535_create_edu_school_table extends Migration
 
         // drops foreign key for table `{{%user}}`
         $this->dropForeignKey(
-            '{{%fk-edu_school-principal}}',
+            '{{%fk-edu_school-principal_id}}',
             '{{%edu_school}}'
         );
 
-        // drops index for column `principal`
+        // drops index for column `principal_id`
         $this->dropIndex(
-            '{{%idx-edu_school-principal}}',
+            '{{%idx-edu_school-principal_id}}',
             '{{%edu_school}}'
         );
 

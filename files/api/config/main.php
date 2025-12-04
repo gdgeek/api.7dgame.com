@@ -280,6 +280,17 @@ return [
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',
+                    'pluralize' => false,
+                    'controller' => [
+                        
+                        'v1/edu-school',
+                        'v1/edu-teacher',
+                        'v1/edu-class',
+                        'v1/edu-student',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/verse',
                     'extraPatterns' => [
                         'GET public' => 'public',

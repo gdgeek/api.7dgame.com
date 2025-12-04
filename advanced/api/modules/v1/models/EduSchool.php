@@ -1,7 +1,8 @@
 <?php
 
 namespace api\modules\v1\models;
-
+use yii\behaviors\TimestampBehavior;
+use yii\db\Expression;
 use Yii;
 
 /**
@@ -13,14 +14,31 @@ use Yii;
  * @property string $updated_at
  * @property int|null $image_id
  * @property string|null $info
- * @property int|null $principal
+ * @property int|null $principal_id
  *
  * @property EduClass[] $eduClasses
  * @property File $image
- * @property User $principal0
+ * @property User $principal
  */
 class EduSchool extends \yii\db\ActiveRecord
 {
+
+
+
+    public function behaviors()
+    {
+        return [
+            [
+                'class' => TimestampBehavior::class,
+                'attributes' => [
+                        \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => ['created_at', 'updated_at'],
+                        \yii\db\ActiveRecord::EVENT_BEFORE_UPDATE => ['updated_at'],
+
+                    ],
+                'value' => new Expression('NOW()'),
+            ]
+        ];
+    }
     /**
      * {@inheritdoc}
      */
@@ -35,12 +53,11 @@ class EduSchool extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['created_at', 'updated_at'], 'required'],
             [['created_at', 'updated_at', 'info'], 'safe'],
-            [['image_id', 'principal'], 'integer'],
+            [['image_id', 'principal_id'], 'integer'],
             [['name'], 'string', 'max' => 255],
             [['image_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['image_id' => 'id']],
-            [['principal'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['principal' => 'id']],
+            [['principal_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['principal_id' => 'id']],
         ];
     }
 
@@ -56,7 +73,7 @@ class EduSchool extends \yii\db\ActiveRecord
             'updated_at' => Yii::t('app', 'Updated At'),
             'image_id' => Yii::t('app', 'Image ID'),
             'info' => Yii::t('app', 'Info'),
-            'principal' => Yii::t('app', 'Principal'),
+            'principal_id' => Yii::t('app', 'Principal ID'),
         ];
     }
 
@@ -79,14 +96,25 @@ class EduSchool extends \yii\db\ActiveRecord
     {
         return $this->hasOne(File::className(), ['id' => 'image_id']);
     }
-
+    public function filelds()
+    {
+        return ['id', 'name', 'info'];
+    }
+    public function extraFields()
+    {
+        return ['image', 'eduClasses', 'principal','classes'];
+    }
+    public function getClasses()
+    {
+        return $this->hasMany(EduClass::className(), ['school_id' => 'id']);
+    }
     /**
-     * Gets query for [[Principal0]].
+     * Gets query for [[Principal]].
      *
      * @return \yii\db\ActiveQuery
      */
-    public function getPrincipal0()
+    public function getPrincipal()
     {
-        return $this->hasOne(User::className(), ['id' => 'principal']);
+        return $this->hasOne(User::className(), ['id' => 'principal_id']);
     }
 }

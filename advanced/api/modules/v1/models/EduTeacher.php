@@ -32,6 +32,8 @@ class EduTeacher extends \yii\db\ActiveRecord
         return [
             [['user_id', 'class_id'], 'required'],
             [['user_id', 'class_id'], 'integer'],
+            // user_id 和 class_id 联合唯一，同一教师不能重复添加到同一班级
+            [['user_id'], 'unique', 'targetAttribute' => ['user_id', 'class_id'], 'message' => 'This teacher is already in this class'],
             [['class_id'], 'exist', 'skipOnError' => true, 'targetClass' => EduClass::className(), 'targetAttribute' => ['class_id' => 'id']],
             [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['user_id' => 'id']],
         ];
@@ -59,6 +61,21 @@ class EduTeacher extends \yii\db\ActiveRecord
         return $this->hasOne(EduClass::className(), ['id' => 'class_id']);
     }
 
+    public function fields()
+    {
+        return [
+            'id',
+            'user' => function () {
+                return $this->user ? $this->user->toArray(['username', 'nickname']) : null;
+            },
+        ];
+    }
+
+    public function extraFields()
+    {
+        return ['class'];
+    }
+
     /**
      * Gets query for [[User]].
      *
@@ -66,6 +83,6 @@ class EduTeacher extends \yii\db\ActiveRecord
      */
     public function getUser()
     {
-        return $this->hasOne(User::className(), ['id' => 'user_id']);
+        return $this->hasOne(User::className(), ['id' => 'user_id']); 
     }
 }

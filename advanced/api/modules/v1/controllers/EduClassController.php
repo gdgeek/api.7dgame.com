@@ -4,6 +4,7 @@ namespace api\modules\v1\controllers;
 
 use yii\web\BadRequestHttpException;
 use api\modules\v1\models\User;
+use api\modules\v1\models\EduClassSearch;
 use mdm\admin\components\AccessControl;
 
 use yii\filters\auth\CompositeAuth;
@@ -30,6 +31,13 @@ class EduClassController extends ActiveController
      *     summary="Get class list",
      *     description="Get list of classes",
      *     security={{"BearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="school_id",
+     *         in="query",
+     *         description="Filter by school ID (required)",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
      *     @OA\Parameter(
      *         name="page",
      *         in="query",
@@ -76,7 +84,28 @@ class EduClassController extends ActiveController
      */
     public function actions()
     {
-        return parent::actions();
+        $actions = parent::actions();
+        unset($actions['index']);
+        return $actions;
+    }
+
+    /**
+     * List edu classes with search/filter support
+     * @throws BadRequestHttpException if school_id is not provided
+     */
+    public function actionIndex()
+    {
+        $params = Yii::$app->request->queryParams;
+        
+        // school_id 是必填参数
+        if (empty($params['school_id'])) {
+            throw new BadRequestHttpException('缺少 school_id 参数，请指定学校');
+        }
+
+        $searchModel = new EduClassSearch();
+        $dataProvider = $searchModel->search($params);
+
+        return $dataProvider;
     }
 
     public function behaviors()
