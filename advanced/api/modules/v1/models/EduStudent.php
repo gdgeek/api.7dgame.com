@@ -35,7 +35,7 @@ class EduStudent extends \yii\db\ActiveRecord
             [['class_id'], 'exist', 'skipOnError' => true, 'targetClass' => EduClass::className(), 'targetAttribute' => ['class_id' => 'id']],
             [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['user_id' => 'id']],
             // user_id and class_id are unique together, the same student cannot be added to the same class repeatedly
-            [['user_id'], 'unique', 'targetAttribute' => ['user_id', 'class_id'], 'message' => 'This student is already in this class'],
+            [['user_id', 'class_id'], 'unique', 'targetAttribute' => ['user_id', 'class_id'], 'message' => 'This student is already in this class'],
         ];
     }
 

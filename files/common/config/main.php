@@ -12,7 +12,13 @@ return [
     
     'components' => [
         'cache' => [
-            'class' => 'yii\caching\FileCache',
+            'class' => 'yii\redis\Cache',
+            'redis' => [
+                'hostname' => getenv('REDIS_HOST') ?: 'localhost',
+                'port' => getenv('REDIS_PORT') ?: 6379,
+                'database' => getenv('REDIS_DB') ?: 0,
+                'password' => getenv('REDIS_PASSWORD') ?: null,
+            ],
         ],
         'urlManager' => [
             'enablePrettyUrl' => true,
@@ -22,16 +28,10 @@ return [
         'i18n' => [
             'translations' => [
                 'app*' => [
-                    'class' => 'yii\i18n\PhpMessageSource',
-                    'basePath' => '@common/messages',
+                    'class' => 'yii\i18n\DbMessageSource',
                     'sourceLanguage' => 'en-US',
-                    'fileMap' => [
-                        'app' => 'app.php',
-                        'app/editor' => 'editor.php',
-                        'app/system' => 'system.php',
-                        'app/error' => 'error.php',
-                        'app/site' => 'site.php',
-                    ],
+                    'enableCaching' => true,
+                    'cachingDuration' => 3600,
                 ],
             ],
         ],

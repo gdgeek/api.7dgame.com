@@ -61,10 +61,36 @@ class DomainController extends ActiveController
     }
     public function actionInfo($url)
     {
+        return Yii::t('app', 'No Overtime Tech');
+        // 根据请求设置当前语言（优先 query 参数，其次 Accept-Language）
+        $lang = Yii::$app->request->get('lang');
+        if (!$lang) {
+            $acceptLang = Yii::$app->request->headers->get('Accept-Language');
+            if ($acceptLang) {
+                $lang = explode(',', $acceptLang)[0];
+                $lang = explode(';', $lang)[0];
+            }
+        }
+        if ($lang) {
+            Yii::$app->language = $lang;
+        }
+
         //从url中分析出domain
         $parsedUrl = parse_url($url);
+        $info = [
+            'domain' => $url,
+            'title' => Yii::t('app', 'AR UGC Platform'),
+
+            'description' => Yii::t('app', 'AR UGC Platform helps the education industry quickly create AR content and improve teaching effectiveness.'),
+            'keywords' => Yii::t('app', 'AR UGC,AR Creation,EdTech,Augmented Reality,Teaching Tools'),
+            'author' => Yii::t('app', 'AR UGC Tech'),
+
+        ];
         if (!isset($parsedUrl['host'])) {
-            throw new BadRequestHttpException('无效的URL参数');
+
+            $info['domain'] = $url;
+            return $info;
+
         }
         $domainName = $parsedUrl['host'];// 只要二级域名
         $parts = explode('.', $domainName);
@@ -72,34 +98,45 @@ class DomainController extends ActiveController
             $domainName = $parts[count($parts) - 2] . '.' . $parts[count($parts) - 1];
         }
 
-        //增加缓存机制
+        //增加缓存机制（缓存 key 包含语言）
         $cache = Yii::$app->cache;
-        $cacheKey = 'domain_info_' . md5($domainName);
+        $currentLang = Yii::$app->language;
+        $cacheKey = 'domain_info_' . md5($domainName . '_' . $currentLang);
         $cachedData = $cache->get($cacheKey);
         if ($cachedData !== false) {
-            
+
             return $cachedData;
         }
 
         $domain = $this->modelClass::findOne(['domain' => $domainName]);
         if (!$domain) {
-            $info =
-                [
-                    'domain' => $domainName,
-                    'title' => '不加班AR创作平台',
-                    'info' => [
-                        'description' => '不加班AR创作平台，助力教育行业快速创建AR内容，提升教学效果。',
-                        'keywords' => '不加班,AR创作,教育科技,增强现实,教学工具',
-                        'author' => '不加班科技',
-                    ],
-                ];
+
+
+            $info['domain'] = $domainName;
+            $cache->set($cacheKey, $info, 3600); // 缓存1小时
+
+            return $info;
+        } else {
+            $info['domain'] = $domain->domain;
+            //多语言支持：数据库字段也用 Yii::t() 包装
+            $info['title'] = $domain->title ? Yii::t('app', $domain->title) : $info['title'];
+            if (is_array($domain->info)) {
+                $info['description'] = isset($domain->info['description']) 
+                    ? Yii::t('app', $domain->info['description']) 
+                    : $info['description'];
+                $info['keywords'] = isset($domain->info['keywords']) 
+                    ? Yii::t('app', $domain->info['keywords']) 
+                    : $info['keywords'];
+                $info['author'] = isset($domain->info['author']) 
+                    ? Yii::t('app', $domain->info['author']) 
+                    : $info['author'];
+            }
+            $info['info'] = $domain->info;
             $cache->set($cacheKey, $info, 3600); // 缓存1小时
             return $info;
         }
 
 
-
-        return $domainName;
 
     }
 

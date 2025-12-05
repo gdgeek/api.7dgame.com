@@ -21,7 +21,9 @@ class m251204_082359_create_domain_table extends Migration
             'id' => $this->primaryKey(),
             'domain' => $this->string()->notNull()->unique(),
             'title' => $this->string(),
-            'info' => $this->json(),
+            'author'=>$this->string(),
+            'description'=> $this->string(),
+            'keywords'=> $this->string(),
         ], $tableOptions);
     }
 

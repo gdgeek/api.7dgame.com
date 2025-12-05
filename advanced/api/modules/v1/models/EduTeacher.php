@@ -33,7 +33,7 @@ class EduTeacher extends \yii\db\ActiveRecord
             [['user_id', 'class_id'], 'required'],
             [['user_id', 'class_id'], 'integer'],
             // user_id 和 class_id 联合唯一，同一教师不能重复添加到同一班级
-            [['user_id'], 'unique', 'targetAttribute' => ['user_id', 'class_id'], 'message' => 'This teacher is already in this class'],
+            [['user_id', 'class_id'], 'unique', 'targetAttribute' => ['user_id', 'class_id'], 'message' => 'This teacher is already in this class'],
             [['class_id'], 'exist', 'skipOnError' => true, 'targetClass' => EduClass::className(), 'targetAttribute' => ['class_id' => 'id']],
             [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['user_id' => 'id']],
         ];

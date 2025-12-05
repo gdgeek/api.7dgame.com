@@ -10,7 +10,9 @@ use Yii;
  * @property int $id
  * @property string $domain
  * @property string|null $title
- * @property string|null $info
+ * @property string|null $author
+ * @property string|null $description
+ * @property string|null $keywords
  */
 class Domain extends \yii\db\ActiveRecord
 {
@@ -29,8 +31,7 @@ class Domain extends \yii\db\ActiveRecord
     {
         return [
             [['domain'], 'required'],
-            [['info'], 'safe'],
-            [['domain', 'title'], 'string', 'max' => 255],
+            [['domain', 'title', 'author', 'description', 'keywords'], 'string', 'max' => 255],
             [['domain'], 'unique'],
         ];
     }
@@ -44,7 +45,9 @@ class Domain extends \yii\db\ActiveRecord
             'id' => Yii::t('app', 'ID'),
             'domain' => Yii::t('app', 'Domain'),
             'title' => Yii::t('app', 'Title'),
-            'info' => Yii::t('app', 'Info'),
+            'author' => Yii::t('app', 'Author'),
+            'description' => Yii::t('app', 'Description'),
+            'keywords' => Yii::t('app', 'Keywords'),
         ];
     }
 }
