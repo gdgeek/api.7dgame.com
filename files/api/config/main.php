@@ -291,6 +291,32 @@ return [
                 [
                     'class' => 'yii\rest\UrlRule',
                     'pluralize' => false,
+                    'controller' => 'v1/edu-class',
+                    'extraPatterns' => [
+                        'GET by-teacher' => 'by-teacher',
+                        'GET by-student' => 'by-student',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'pluralize' => false,
+                    'controller' => 'v1/edu-student',
+                    'extraPatterns' => [
+                        'GET me' => 'me',
+                        'POST join' => 'join',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'pluralize' => false,
+                    'controller' => 'v1/edu-teacher',
+                    'extraPatterns' => [
+                        'GET me' => 'me',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'pluralize' => false,
                     'controller' => 'v1/domain',
                     'extraPatterns' => [
                         'GET info' => 'info',

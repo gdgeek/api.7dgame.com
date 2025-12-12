@@ -61,9 +61,11 @@ class DomainController extends ActiveController
     }
     public function actionInfo($url)
     {
-        return Yii::t('app', 'No Overtime Tech');
+      
+     //   return Yii::t('app', 'No Overtime Tech');
         // 根据请求设置当前语言（优先 query 参数，其次 Accept-Language）
         $lang = Yii::$app->request->get('lang');
+        
         if (!$lang) {
             $acceptLang = Yii::$app->request->headers->get('Accept-Language');
             if ($acceptLang) {
@@ -80,11 +82,9 @@ class DomainController extends ActiveController
         $info = [
             'domain' => $url,
             'title' => Yii::t('app', 'AR UGC Platform'),
-
             'description' => Yii::t('app', 'AR UGC Platform helps the education industry quickly create AR content and improve teaching effectiveness.'),
             'keywords' => Yii::t('app', 'AR UGC,AR Creation,EdTech,Augmented Reality,Teaching Tools'),
             'author' => Yii::t('app', 'AR UGC Tech'),
-
         ];
         if (!isset($parsedUrl['host'])) {
 

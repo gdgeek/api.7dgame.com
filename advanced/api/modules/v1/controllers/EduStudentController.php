@@ -52,5 +52,58 @@ class EduStudentController extends ActiveController
         
         return $behaviors;
     }
+
+    /**
+     * Get current user's student record
+     * @return \api\modules\v1\models\EduStudent|null
+     */
+    public function actionMe()
+    {
+        $userId = Yii::$app->user->id;
+        
+        $student = \api\modules\v1\models\EduStudent::find()
+            ->where(['user_id' => $userId])
+            ->one();
+        
+        return $student;
+    }
+
+    /**
+     * Join a class as student
+     * @return \api\modules\v1\models\EduStudent
+     * @throws BadRequestHttpException
+     */
+    public function actionJoin()
+    {
+        $classId = Yii::$app->request->post('class_id');
+        
+        if (empty($classId)) {
+            throw new BadRequestHttpException('class_id is required');
+        }
+
+        // Check if class exists
+        $class = \api\modules\v1\models\EduClass::findOne($classId);
+        if (!$class) {
+            throw new BadRequestHttpException('Class not found');
+        }
+
+        $userId = Yii::$app->user->id;
+
+        // Check if already a student (user_id is unique)
+        $existing = \api\modules\v1\models\EduStudent::findOne(['user_id' => $userId]);
+        if ($existing) {
+            throw new BadRequestHttpException('You are already in a class');
+        }
+
+        $student = new \api\modules\v1\models\EduStudent();
+        $student->user_id = $userId;
+        $student->class_id = $classId;
+
+        if (!$student->save()) {
+            throw new BadRequestHttpException(json_encode($student->errors));
+        }
+
+        return $student;
+    }
     
 }

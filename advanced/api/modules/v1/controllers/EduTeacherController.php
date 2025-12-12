@@ -53,4 +53,19 @@ class EduTeacherController extends ActiveController
         return $behaviors;
     }
     
+    /**
+     * Get current user's teacher records
+     * @return array
+     */
+    public function actionMe()
+    {
+        $userId = Yii::$app->user->id;
+
+        $teachers = \api\modules\v1\models\EduTeacher::find()
+            ->where(['user_id' => $userId])
+            ->all();
+
+        return $teachers;
+    }
+    
 }

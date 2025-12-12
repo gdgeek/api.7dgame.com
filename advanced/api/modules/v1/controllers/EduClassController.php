@@ -91,21 +91,47 @@ class EduClassController extends ActiveController
 
     /**
      * List edu classes with search/filter support
-     * @throws BadRequestHttpException if school_id is not provided
      */
     public function actionIndex()
     {
         $params = Yii::$app->request->queryParams;
-        
-        // school_id 是必填参数
-        if (empty($params['school_id'])) {
-            throw new BadRequestHttpException('缺少 school_id 参数，请指定学校');
-        }
 
         $searchModel = new EduClassSearch();
         $dataProvider = $searchModel->search($params);
 
         return $dataProvider;
+    }
+
+    /**
+     * Get all classes where current user is a teacher
+     * @return array
+     */
+    public function actionByTeacher()
+    {
+        $userId = Yii::$app->user->id;
+        
+        $classes = \api\modules\v1\models\EduClass::find()
+            ->innerJoin('edu_teacher', 'edu_teacher.class_id = edu_class.id')
+            ->where(['edu_teacher.user_id' => $userId])
+            ->all();
+        
+        return $classes;
+    }
+
+    /**
+     * Get all classes where current user is a student
+     * @return array
+     */
+    public function actionByStudent()
+    {
+        $userId = Yii::$app->user->id;
+        
+        $classes = \api\modules\v1\models\EduClass::find()
+            ->innerJoin('edu_student', 'edu_student.class_id = edu_class.id')
+            ->where(['edu_student.user_id' => $userId])
+            ->all();
+        
+        return $classes;
     }
 
     public function behaviors()
