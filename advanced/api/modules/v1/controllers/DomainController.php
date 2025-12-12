@@ -59,13 +59,41 @@ class DomainController extends ActiveController
         // unset($actions['delete'], $actions['create'], $actions['update'], $actions['view'], $actions['index']);
         return [];
     }
-    public function actionInfo($url)
+    public function actionInfo($url = null)
     {
-      
-     //   return Yii::t('app', 'No Overtime Tech');
+        $request = Yii::$app->request;
+        $headers = $request->headers;
+
+        // 1. 优先尝试 Origin (通常用于跨域 API 调用)
+        $origin = $headers->get('Origin');
+        if ($url === null) {
+            if ($origin) {
+                $url = $origin;
+            }
+            // 2. 其次尝试 Referer (页面跳转或同域请求)
+            elseif ($referer = $headers->get('Referer')) {
+                // Referer 是完整 URL，需要解析出 scheme 和 host
+                $parsed = parse_url($referer);
+                if (isset($parsed['scheme']) && isset($parsed['host'])) {
+                    $url = $parsed['scheme'] . '://' . $parsed['host'];
+                    // 如果有端口号也加上
+                    if (isset($parsed['port'])) {
+                        $url .= ':' . $parsed['port'];
+                    }
+                } else {
+                    $url = $referer;
+                }
+            }
+            // 3. 最后回退到当前后端域名
+            else {
+                $url = $request->hostInfo;
+            }
+        }
+        // 默认值
+        //   return Yii::t('app', 'No Overtime Tech');
         // 根据请求设置当前语言（优先 query 参数，其次 Accept-Language）
         $lang = Yii::$app->request->get('lang');
-        
+
         if (!$lang) {
             $acceptLang = Yii::$app->request->headers->get('Accept-Language');
             if ($acceptLang) {
@@ -79,13 +107,15 @@ class DomainController extends ActiveController
 
         //从url中分析出domain
         $parsedUrl = parse_url($url);
+
         $info = [
             'domain' => $url,
-            'title' => Yii::t('app', 'AR UGC Platform'),
-            'description' => Yii::t('app', 'AR UGC Platform helps the education industry quickly create AR content and improve teaching effectiveness.'),
-            'keywords' => Yii::t('app', 'AR UGC,AR Creation,EdTech,Augmented Reality,Teaching Tools'),
-            'author' => Yii::t('app', 'AR UGC Tech'),
+            'title' => Yii::t('app', '不加班AR创造平台'),
+            'description' => Yii::t('app', '让每个人都可以快乐的创造世界'),
+            'keywords' => Yii::t('app', 'AR,用户生成内容,教育,教学,不加班'),
+            'author' => Yii::t('app', '上海不加班网络科技有限公司'),
         ];
+
         if (!isset($parsedUrl['host'])) {
 
             $info['domain'] = $url;
@@ -94,6 +124,7 @@ class DomainController extends ActiveController
         }
         $domainName = $parsedUrl['host'];// 只要二级域名
         $parts = explode('.', $domainName);
+
         if (count($parts) > 2) {
             $domainName = $parts[count($parts) - 2] . '.' . $parts[count($parts) - 1];
         }
@@ -101,7 +132,9 @@ class DomainController extends ActiveController
         //增加缓存机制（缓存 key 包含语言）
         $cache = Yii::$app->cache;
         $currentLang = Yii::$app->language;
+
         $cacheKey = 'domain_info_' . md5($domainName . '_' . $currentLang);
+
         $cachedData = $cache->get($cacheKey);
         if ($cachedData !== false) {
 
@@ -120,18 +153,9 @@ class DomainController extends ActiveController
             $info['domain'] = $domain->domain;
             //多语言支持：数据库字段也用 Yii::t() 包装
             $info['title'] = $domain->title ? Yii::t('app', $domain->title) : $info['title'];
-            if (is_array($domain->info)) {
-                $info['description'] = isset($domain->info['description']) 
-                    ? Yii::t('app', $domain->info['description']) 
-                    : $info['description'];
-                $info['keywords'] = isset($domain->info['keywords']) 
-                    ? Yii::t('app', $domain->info['keywords']) 
-                    : $info['keywords'];
-                $info['author'] = isset($domain->info['author']) 
-                    ? Yii::t('app', $domain->info['author']) 
-                    : $info['author'];
-            }
-            $info['info'] = $domain->info;
+            $info['description'] = $domain->description ? Yii::t('app', $domain->description) : $info['description'];
+            $info['keywords'] = $domain->keywords ? Yii::t('app', $domain->keywords) : $info['keywords'];
+            $info['author'] = $domain->author ? Yii::t('app', $domain->author) : $info['author'];
             $cache->set($cacheKey, $info, 3600); // 缓存1小时
             return $info;
         }

@@ -29,7 +29,7 @@ return [
             'translations' => [
                 'app*' => [
                     'class' => 'yii\i18n\DbMessageSource',
-                    'sourceLanguage' => 'en-US',
+                    'sourceLanguage' => 'zh-CN',
                     'enableCaching' => true,
                     'cachingDuration' => 3600,
                 ],
