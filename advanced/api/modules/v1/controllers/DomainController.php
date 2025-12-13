@@ -114,6 +114,16 @@ class DomainController extends ActiveController
             'description' => Yii::t('app', '让每个人都可以快乐的创造世界'),
             'keywords' => Yii::t('app', 'AR,用户生成内容,教育,教学,不加班'),
             'author' => Yii::t('app', '上海不加班网络科技有限公司'),
+            'links' => [
+                [
+                    'name' => Yii::t('app', '沪ICP备15039333号'),
+                    'url' => 'https://beian.miit.gov.cn/',
+                ],
+                [
+                    'name' => Yii::t('app', '上海不加班网络科技有限公司'),
+                    'url' => 'https://www.bujiaban.com',
+                ],
+            ],
         ];
 
         if (!isset($parsedUrl['host'])) {
@@ -156,6 +166,15 @@ class DomainController extends ActiveController
             $info['description'] = $domain->description ? Yii::t('app', $domain->description) : $info['description'];
             $info['keywords'] = $domain->keywords ? Yii::t('app', $domain->keywords) : $info['keywords'];
             $info['author'] = $domain->author ? Yii::t('app', $domain->author) : $info['author'];
+            $links = [];
+            foreach ($domain->links as $link) {
+                $links[] = [
+                    'name' => Yii::t('app', $link['name']),
+                    'url' => $link['url'],
+                ];
+                 
+            }
+            $info['links'] = $links;
             $cache->set($cacheKey, $info, 3600); // 缓存1小时
             return $info;
         }
