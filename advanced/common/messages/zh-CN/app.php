@@ -48,4 +48,9 @@ return [
     "Execute"=>"可执行",
     "Trigger"=>"触发",
     "Alpha"=>"透明度",
+    'BuJiaBan AR Creation Platform' => '不加班AR创造平台',
+    'Let everyone happily create their own world' => '让每个人都可以快乐的创造世界',
+    'AR,用户生成内容,教育,教学,不加班' => 'AR,用户生成内容,教育,教学,不加班',
+    'Shanghai No-Overtime Network Technology Co., Ltd.' => '上海不加班网络科技有限公司',
+    'Shanghai ICP Filing No. 15039333' => '沪ICP备15039333号',
 ];

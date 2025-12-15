@@ -61,12 +61,14 @@ class DomainController extends ActiveController
     }
     public function actionInfo($url = null)
     {
+
         $request = Yii::$app->request;
         $headers = $request->headers;
 
         // 1. 优先尝试 Origin (通常用于跨域 API 调用)
-        $origin = $headers->get('Origin');
+       
         if ($url === null) {
+             $origin = $headers->get('Origin');
             if ($origin) {
                 $url = $origin;
             }
@@ -89,8 +91,7 @@ class DomainController extends ActiveController
                 $url = $request->hostInfo;
             }
         }
-        // 默认值
-        //   return Yii::t('app', 'No Overtime Tech');
+        
         // 根据请求设置当前语言（优先 query 参数，其次 Accept-Language）
         $lang = Yii::$app->request->get('lang');
 
@@ -102,19 +103,84 @@ class DomainController extends ActiveController
             }
         }
         if ($lang) {
-            Yii::$app->language = $lang;
+            // 增加校验：只允许字母、数字、短横线、下划线，防止 "Invalid language code" 异常
+            if (preg_match('/^[a-z0-9_-]+$/i', $lang)) {
+                Yii::$app->language = $lang;
+            }
+        }
+       
+
+        // 从url中分析出domain
+        $parsedUrl = parse_url($url);
+        
+        // 提取二级域名逻辑提前，以便用于缓存 Key
+        $domainName = $url;
+        if (isset($parsedUrl['host'])) {
+            $domainName = $parsedUrl['host'];
+            $parts = explode('.', $domainName);
+            if (count(value: $parts) > 2) {
+                $domainName = $parts[count($parts) - 2] . '.' . $parts[count($parts) - 1];
+            }
         }
 
-        //从url中分析出domain
-        $parsedUrl = parse_url($url);
+        // 增加缓存机制（缓存 key 包含语言）
+        $cache = Yii::$app->cache;
+        $currentLang = Yii::$app->language;
+        $cacheKey = 'domain_info_' . md5($domainName . '_' . $currentLang);
 
+        // 1. 先查缓存，命中则直接返回，避免后续开销
+        $cachedData = $cache->get($cacheKey);
+        if ($cachedData !== false) {
+            return $cachedData;
+        }
+
+        // 2. 查库 (先查库，有数据则用数据，无数据后续再填默认值)
+        $domain = $this->modelClass::findOne(['domain' => $domainName]);
+        
         $info = [
-            'domain' => $url,
-            'title' => Yii::t('app', '不加班AR创造平台'),
-            'description' => Yii::t('app', '让每个人都可以快乐的创造世界'),
-            'keywords' => Yii::t('app', 'AR,用户生成内容,教育,教学,不加班'),
-            'author' => Yii::t('app', '上海不加班网络科技有限公司'),
-            'links' => [
+            'domain' => $domainName,
+            'title' => null,
+            'description' => null,
+            'keywords' => null,
+            'author' => null,
+            'links' => null,
+        ];
+
+        if ($domain) {
+            $info['domain'] = $domain->domain;
+            if ($domain->title) $info['title'] = Yii::t('app', $domain->title);
+            if ($domain->description) $info['description'] = Yii::t('app', $domain->description);
+            if ($domain->keywords) $info['keywords'] = Yii::t('app', $domain->keywords);
+            if ($domain->author) $info['author'] = Yii::t('app', $domain->author);
+            
+            if (!empty($domain->links)) {
+                $links = [];
+                foreach ($domain->links as $link) {
+                    $links[] = [
+                        'name' => Yii::t('app', $link['name']),
+                        'url' => $link['url'],
+                    ];
+                }
+                $info['links'] = $links;
+            }
+        }
+        
+        // 3. 填充默认值 (仅当字段为空时才翻译默认值，避免不必要的翻译开销)
+        if (empty($info['title'])) {
+            $info['title'] = Yii::t('app', '不加班AR创作平台');
+        }
+        if (empty($info['description'])) {
+            $info['description'] = Yii::t('app', '让每个人都可以快乐的创造世界。');
+        }
+        if (empty($info['keywords'])) {
+            $info['keywords'] = Yii::t('app', 'AR, User-Generated Content, Education, Teaching, No Overtime');
+        }
+        if (empty($info['author'])) {
+            $info['author'] = Yii::t('app', '上海不加班网络科技有限公司');
+        }
+        
+        if (empty($info['links'])) {
+            $info['links'] = [
                 [
                     'name' => Yii::t('app', '沪ICP备15039333号'),
                     'url' => 'https://beian.miit.gov.cn/',
@@ -123,61 +189,13 @@ class DomainController extends ActiveController
                     'name' => Yii::t('app', '上海不加班网络科技有限公司'),
                     'url' => 'https://www.bujiaban.com',
                 ],
-            ],
-        ];
-
-        if (!isset($parsedUrl['host'])) {
-
-            $info['domain'] = $url;
-            return $info;
-
-        }
-        $domainName = $parsedUrl['host'];// 只要二级域名
-        $parts = explode('.', $domainName);
-
-        if (count($parts) > 2) {
-            $domainName = $parts[count($parts) - 2] . '.' . $parts[count($parts) - 1];
+            ];
         }
 
-        //增加缓存机制（缓存 key 包含语言）
-        $cache = Yii::$app->cache;
-        $currentLang = Yii::$app->language;
-
-        $cacheKey = 'domain_info_' . md5($domainName . '_' . $currentLang);
-
-        $cachedData = $cache->get($cacheKey);
-        if ($cachedData !== false) {
-
-            return $cachedData;
-        }
-
-        $domain = $this->modelClass::findOne(['domain' => $domainName]);
-        if (!$domain) {
-
-
-            $info['domain'] = $domainName;
-            $cache->set($cacheKey, $info, 3600); // 缓存1小时
-
-            return $info;
-        } else {
-            $info['domain'] = $domain->domain;
-            //多语言支持：数据库字段也用 Yii::t() 包装
-            $info['title'] = $domain->title ? Yii::t('app', $domain->title) : $info['title'];
-            $info['description'] = $domain->description ? Yii::t('app', $domain->description) : $info['description'];
-            $info['keywords'] = $domain->keywords ? Yii::t('app', $domain->keywords) : $info['keywords'];
-            $info['author'] = $domain->author ? Yii::t('app', $domain->author) : $info['author'];
-            $links = [];
-            foreach ($domain->links as $link) {
-                $links[] = [
-                    'name' => Yii::t('app', $link['name']),
-                    'url' => $link['url'],
-                ];
-                 
-            }
-            $info['links'] = $links;
-            $cache->set($cacheKey, $info, 3600); // 缓存1小时
-            return $info;
-        }
+        // 4. 写入缓存
+        $cache->set($cacheKey, $info, 3600); // 缓存1小时
+       
+        return $info;
 
 
 

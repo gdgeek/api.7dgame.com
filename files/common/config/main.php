@@ -1,7 +1,7 @@
 <?php
 return [
     'language' => 'zh-CN',
-    'sourceLanguage' => 'en-US',
+    'sourceLanguage' => 'zh-CN',
     'aliases' => [
         '@bower' => '@vendor/yidas/yii2-bower-asset/bower',
         '@npm' => '@vendor/npm-asset',
@@ -30,7 +30,7 @@ return [
                 'app*' => [
                     'class' => 'yii\i18n\DbMessageSource',
                     'sourceLanguage' => 'zh-CN',
-                    'enableCaching' => true,
+                    'enableCaching' => false,
                     'cachingDuration' => 3600,
                 ],
             ],
