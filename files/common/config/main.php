@@ -30,7 +30,7 @@ return [
                 'app*' => [
                     'class' => 'yii\i18n\DbMessageSource',
                     'sourceLanguage' => 'zh-CN',
-                    'enableCaching' => false,
+                    'enableCaching' => true,
                     'cachingDuration' => 3600,
                 ],
             ],
