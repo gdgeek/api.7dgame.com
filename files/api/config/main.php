@@ -276,6 +276,7 @@ return [
                         'v1/edu-teacher',
                         'v1/edu-class',
                         'v1/edu-student',
+                        'v1/group',
                     ],
                 ],
                 [
@@ -286,6 +287,7 @@ return [
                         'v1/edu-teacher',
                         'v1/edu-class',
                         'v1/edu-student',
+                        'v1/group',
                     ],
                 ],
                 [
