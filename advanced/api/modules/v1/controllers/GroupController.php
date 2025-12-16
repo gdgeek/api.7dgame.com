@@ -49,4 +49,38 @@ class GroupController extends ActiveController
         
         return $behaviors;
     }
+
+    /**
+     * Join a group
+     * @return \api\modules\v1\models\GroupUser
+     */
+    public function actionJoin()
+    {
+        $userId = Yii::$app->user->id;
+        $groupId = Yii::$app->request->post('group_id');
+        
+        if (!$groupId) {
+            throw new \yii\web\BadRequestHttpException('Group ID is required.');
+        }
+        
+        $group = Group::findOne($groupId);
+        if (!$group) {
+            throw new \yii\web\NotFoundHttpException('Group not found.');
+        }
+        
+        $model = \api\modules\v1\models\GroupUser::find()
+            ->where(['user_id' => $userId, 'group_id' => $groupId])
+            ->one();
+            
+        if (!$model) {
+            $model = new \api\modules\v1\models\GroupUser();
+            $model->user_id = $userId;
+            $model->group_id = $groupId;
+            if (!$model->save()) {
+                throw new \yii\web\ServerErrorHttpException('Failed to join group.');
+            }
+        }
+        
+        return $model;
+    }
 }

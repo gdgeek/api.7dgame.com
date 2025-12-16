@@ -297,6 +297,16 @@ return [
                     'extraPatterns' => [
                         'GET by-teacher' => 'by-teacher',
                         'GET by-student' => 'by-student',
+                        'GET {id}/groups' => 'group',
+                        'POST {id}/group' => 'create-group',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'pluralize' => false,
+                    'controller' => 'v1/group',
+                    'extraPatterns' => [
+                        'POST join' => 'join',
                     ],
                 ],
                 [

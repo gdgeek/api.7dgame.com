@@ -134,6 +134,69 @@ class EduClassController extends ActiveController
         return $classes;
     }
 
+    /**
+     * Get groups for a class
+     * @param int $id Class ID
+     * @return array
+     */
+    public function actionGroup($id)
+    {
+        $class = $this->findModel($id);
+        return $class->groups;
+    }
+
+    /**
+     * Create a group for a class
+     * @param int $id Class ID
+     * @return \api\modules\v1\models\Group
+     */
+    public function actionCreateGroup($id)
+    {
+        $class = $this->findModel($id);
+        
+        $group = new \api\modules\v1\models\Group();
+        $group->load(Yii::$app->request->post(), '');
+        
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            if ($group->save()) {
+                // Link to class
+                $link = new \api\modules\v1\models\EduClassGroup();
+                $link->class_id = $class->id;
+                $link->group_id = $group->id;
+                if (!$link->save()) {
+                    throw new \Exception('Failed to save link.');
+                }
+                
+                $transaction->commit();
+                return $group;
+            } elseif (!$group->hasErrors()) {
+                throw new \yii\web\ServerErrorHttpException('Failed to create the object for unknown reason.');
+            }
+        } catch (\Exception $e) {
+            $transaction->rollBack();
+            throw $e;
+        }
+        
+        return $group;
+    }
+
+    /**
+     * Finds the EduClass model based on its primary key value.
+     * If the model is not found, a 404 HTTP exception will be thrown.
+     * @param integer $id
+     * @return \api\modules\v1\models\EduClass the loaded model
+     * @throws \yii\web\NotFoundHttpException if the model cannot be found
+     */
+    protected function findModel($id)
+    {
+        if (($model = \api\modules\v1\models\EduClass::findOne($id)) !== null) {
+            return $model;
+        }
+
+        throw new \yii\web\NotFoundHttpException('The requested page does not exist.');
+    }
+
     public function behaviors()
     {
         $behaviors = parent::behaviors();

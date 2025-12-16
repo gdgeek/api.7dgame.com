@@ -156,5 +156,26 @@ class EduClass extends \yii\db\ActiveRecord
     public function getTeachers()
     {
         return $this->hasMany(User::className(), ['id' => 'user_id'])->viaTable('edu_teacher', ['class_id' => 'id']);
-    }   
+    }
+
+    /**
+     * Gets query for [[EduClassGroups]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getEduClassGroups()
+    {
+        return $this->hasMany(EduClassGroup::className(), ['class_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[Groups]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getGroups()
+    {
+        return $this->hasMany(Group::className(), ['id' => 'group_id'])
+            ->via('eduClassGroups');
+    }
 }
