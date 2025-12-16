@@ -21,7 +21,7 @@ use OpenApi\Annotations as OA;
  */
 class EduClassController extends ActiveController
 {
-    
+
     public $modelClass = 'api\modules\v1\models\EduClass';
 
     /**
@@ -109,12 +109,12 @@ class EduClassController extends ActiveController
     public function actionByTeacher()
     {
         $userId = Yii::$app->user->id;
-        
+
         $classes = \api\modules\v1\models\EduClass::find()
             ->innerJoin('edu_teacher', 'edu_teacher.class_id = edu_class.id')
             ->where(['edu_teacher.user_id' => $userId])
             ->all();
-        
+
         return $classes;
     }
 
@@ -125,24 +125,36 @@ class EduClassController extends ActiveController
     public function actionByStudent()
     {
         $userId = Yii::$app->user->id;
-        
+
         $classes = \api\modules\v1\models\EduClass::find()
             ->innerJoin('edu_student', 'edu_student.class_id = edu_class.id')
             ->where(['edu_student.user_id' => $userId])
             ->all();
-        
+
         return $classes;
     }
 
     /**
      * Get groups for a class
      * @param int $id Class ID
-     * @return array
+     * @return \yii\data\ActiveDataProvider
      */
-    public function actionGroup($id)
+    public function actionGetGroups($id)
     {
-        $class = $this->findModel($id);
-        return $class->groups;
+
+
+        $searchModel = new \api\modules\v1\models\GroupSearch();
+
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+        
+        // 使用手写 leftJoin，Group 模型不需要定义 getEduClassGroups 关联
+        // EduClassGroup 单向依赖 Group 和 EduClass
+        $dataProvider->query
+            ->select('`group`.*')
+            ->leftJoin('edu_class_group', 'edu_class_group.group_id = `group`.id')
+            ->andWhere(['edu_class_group.class_id' => $id]);
+            
+        return $dataProvider;
     }
 
     /**
@@ -153,10 +165,10 @@ class EduClassController extends ActiveController
     public function actionCreateGroup($id)
     {
         $class = $this->findModel($id);
-        
+
         $group = new \api\modules\v1\models\Group();
         $group->load(Yii::$app->request->post(), '');
-        
+
         $transaction = Yii::$app->db->beginTransaction();
         try {
             if ($group->save()) {
@@ -167,7 +179,15 @@ class EduClassController extends ActiveController
                 if (!$link->save()) {
                     throw new \Exception('Failed to save link.');
                 }
-                
+
+                // Add creator to group
+                $groupUser = new \api\modules\v1\models\GroupUser();
+                $groupUser->group_id = $group->id;
+                $groupUser->user_id = Yii::$app->user->id;
+                if (!$groupUser->save()) {
+                    throw new \Exception('Failed to add user to group.');
+                }
+
                 $transaction->commit();
                 return $group;
             } elseif (!$group->hasErrors()) {
@@ -177,7 +197,7 @@ class EduClassController extends ActiveController
             $transaction->rollBack();
             throw $e;
         }
-        
+
         return $group;
     }
 
@@ -200,7 +220,7 @@ class EduClassController extends ActiveController
     public function behaviors()
     {
         $behaviors = parent::behaviors();
-        
+
         // add CORS filter
         $behaviors['corsFilter'] = [
             'class' => \yii\filters\Cors::class,
@@ -218,7 +238,7 @@ class EduClassController extends ActiveController
                 ],
             ],
         ];
-        
+
         // unset($behaviors['authenticator']);
         $behaviors['authenticator'] = [
             'class' => CompositeAuth::class,
@@ -227,12 +247,12 @@ class EduClassController extends ActiveController
             ],
             'except' => ['options'],
         ];
-        
+
         $behaviors['access'] = [
             'class' => AccessControl::class,
         ];
-        
+
         return $behaviors;
     }
-    
+
 }

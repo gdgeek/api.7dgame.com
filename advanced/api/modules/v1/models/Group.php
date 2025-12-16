@@ -16,6 +16,7 @@ use yii\behaviors\BlameableBehavior;
  * @property string $updated_at
  * @property int|null $image_id
  * @property int $user_id
+ * @property string|null $name
  * @property string|null $info
  * @property string|null $description
  *
@@ -43,6 +44,7 @@ class Group extends \yii\db\ActiveRecord
             [
                 'class' => BlameableBehavior::class,
                 'createdByAttribute' => 'user_id',
+                'updatedByAttribute' => false,
             ],
         ];
     }
@@ -62,9 +64,10 @@ class Group extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['created_at', 'updated_at', 'user_id'], 'required'],
+         //   [['created_at', 'updated_at', 'user_id'], 'required'],
             [['created_at', 'updated_at', 'info'], 'safe'],
-            [['description'], 'string'],
+            [['description', 'name'], 'string'],
+            [['name'], 'string', 'max' => 255],
             [['image_id', 'user_id'], 'integer'],
             [['image_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['image_id' => 'id']],
             [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['user_id' => 'id']],
@@ -82,6 +85,7 @@ class Group extends \yii\db\ActiveRecord
             'updated_at' => Yii::t('app', 'Updated At'),
             'image_id' => Yii::t('app', 'Image ID'),
             'user_id' => Yii::t('app', 'User ID'),
+            'name' => Yii::t('app', 'Name'),
             'info' => Yii::t('app', 'Info'),
             'description' => Yii::t('app', 'Description'),
         ];
@@ -135,5 +139,21 @@ class Group extends \yii\db\ActiveRecord
     public function getGroupVerses()
     {
         return $this->hasMany(GroupVerse::className(), ['group_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[Verses]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getVerses()
+    {
+        return $this->hasMany(Verse::className(), ['id' => 'verse_id'])
+            ->via('groupVerses');
+    }
+
+    public function extraFields()
+    {
+        return ['image', 'user', 'groupUsers', 'groupVerses', 'verses'];
     }
 }

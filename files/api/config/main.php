@@ -277,6 +277,7 @@ return [
                         'v1/edu-class',
                         'v1/edu-student',
                         'v1/group',
+                        'v1/group-verse',
                     ],
                 ],
                 [
@@ -288,6 +289,7 @@ return [
                         'v1/edu-class',
                         'v1/edu-student',
                         'v1/group',
+                        'v1/group-verse',
                     ],
                 ],
                 [
@@ -297,7 +299,7 @@ return [
                     'extraPatterns' => [
                         'GET by-teacher' => 'by-teacher',
                         'GET by-student' => 'by-student',
-                        'GET {id}/groups' => 'group',
+                        'GET {id}/groups' => 'get-groups',
                         'POST {id}/group' => 'create-group',
                     ],
                 ],
@@ -307,6 +309,7 @@ return [
                     'controller' => 'v1/group',
                     'extraPatterns' => [
                         'POST join' => 'join',
+                        'GET {id}/verses' => 'get-verses',
                     ],
                 ],
                 [

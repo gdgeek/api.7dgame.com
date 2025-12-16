@@ -16,7 +16,7 @@ class GroupController extends ActiveController
     public function behaviors()
     {
         $behaviors = parent::behaviors();
-        
+
         // add CORS filter
         $behaviors['corsFilter'] = [
             'class' => \yii\filters\Cors::class,
@@ -34,7 +34,7 @@ class GroupController extends ActiveController
                 ],
             ],
         ];
-        
+
         $behaviors['authenticator'] = [
             'class' => CompositeAuth::class,
             'authMethods' => [
@@ -42,11 +42,11 @@ class GroupController extends ActiveController
             ],
             'except' => ['options'],
         ];
-        
+
         $behaviors['access'] = [
             'class' => AccessControl::class,
         ];
-        
+
         return $behaviors;
     }
 
@@ -58,20 +58,20 @@ class GroupController extends ActiveController
     {
         $userId = Yii::$app->user->id;
         $groupId = Yii::$app->request->post('group_id');
-        
+
         if (!$groupId) {
             throw new \yii\web\BadRequestHttpException('Group ID is required.');
         }
-        
+
         $group = Group::findOne($groupId);
         if (!$group) {
             throw new \yii\web\NotFoundHttpException('Group not found.');
         }
-        
+
         $model = \api\modules\v1\models\GroupUser::find()
             ->where(['user_id' => $userId, 'group_id' => $groupId])
             ->one();
-            
+
         if (!$model) {
             $model = new \api\modules\v1\models\GroupUser();
             $model->user_id = $userId;
@@ -80,7 +80,34 @@ class GroupController extends ActiveController
                 throw new \yii\web\ServerErrorHttpException('Failed to join group.');
             }
         }
-        
+
         return $model;
+    }
+
+    /**
+     * Get verses for a group
+     * @param int $id Group ID
+     * @return array
+     */
+    public function actionGetVerses($id)
+    {
+
+        $group = Group::findOne($id);
+        if (!$group) {
+            throw new \yii\web\NotFoundHttpException('Group not found.');
+        }
+
+        $searchModel = new \api\modules\v1\models\VerseSearch();
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+
+        // 使用 leftJoin 手动关联 group_verse 表
+        // 这样 Verse 模型不需要定义任何与 Group 相关的关联
+        // Group 单向依赖 Verse
+        $dataProvider->query
+            ->select('verse.*')
+            ->leftJoin('group_verse', 'group_verse.verse_id = verse.id')
+            ->andWhere(['group_verse.group_id' => $id]);
+
+        return $dataProvider;
     }
 }
