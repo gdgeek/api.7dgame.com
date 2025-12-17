@@ -1,6 +1,8 @@
 <?php
 
 namespace api\modules\v1\models;
+
+use api\modules\v1\components\SchoolPrincipalRule;
 use yii\behaviors\TimestampBehavior;
 use yii\db\Expression;
 use Yii;
@@ -39,6 +41,40 @@ class EduSchool extends \yii\db\ActiveRecord
             ]
         ];
     }
+
+    /**
+     * 保存后清除校长缓存
+     * @param bool $insert
+     * @param array $changedAttributes
+     */
+    public function afterSave($insert, $changedAttributes)
+    {
+        parent::afterSave($insert, $changedAttributes);
+        
+        // 清除缓存
+        if ($this->principal_id) {
+            SchoolPrincipalRule::clearCache($this->principal_id, $this->id);
+        }
+        
+        // 如果是更新且 principal_id 发生变化，也清除旧校长的缓存
+        if (!$insert && isset($changedAttributes['principal_id']) && $changedAttributes['principal_id']) {
+            SchoolPrincipalRule::clearCache($changedAttributes['principal_id'], $this->id);
+        }
+    }
+
+    /**
+     * 删除后清除校长缓存
+     */
+    public function afterDelete()
+    {
+        parent::afterDelete();
+        
+        // 清除缓存
+        if ($this->principal_id) {
+            SchoolPrincipalRule::clearCache($this->principal_id, $this->id);
+        }
+    }
+
     /**
      * {@inheritdoc}
      */

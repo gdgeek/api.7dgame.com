@@ -2,6 +2,7 @@
 
 namespace api\modules\v1\models;
 
+use api\modules\v1\components\GroupOwnerRule;
 use Yii;
 
 use yii\behaviors\TimestampBehavior;
@@ -47,6 +48,35 @@ class Group extends \yii\db\ActiveRecord
                 'updatedByAttribute' => false,
             ],
         ];
+    }
+
+    /**
+     * 保存后清除创建者缓存
+     * @param bool $insert
+     * @param array $changedAttributes
+     */
+    public function afterSave($insert, $changedAttributes)
+    {
+        parent::afterSave($insert, $changedAttributes);
+        
+        // 清除缓存
+        GroupOwnerRule::clearCache($this->user_id, $this->id);
+        
+        // 如果是更新且 user_id 发生变化，也清除旧创建者的缓存
+        if (!$insert && isset($changedAttributes['user_id'])) {
+            GroupOwnerRule::clearCache($changedAttributes['user_id'], $this->id);
+        }
+    }
+
+    /**
+     * 删除后清除创建者缓存
+     */
+    public function afterDelete()
+    {
+        parent::afterDelete();
+        
+        // 清除缓存
+        GroupOwnerRule::clearCache($this->user_id, $this->id);
     }
 
 
@@ -152,8 +182,30 @@ class Group extends \yii\db\ActiveRecord
             ->via('groupVerses');
     }
 
+    /**
+     * 检查当前用户是否已加入本组
+     * 创建者也算已加入
+     * @return bool
+     */
+    public function getJoined()
+    {
+        $userId = Yii::$app->user->id;
+        if (!$userId) {
+            return false;
+        }
+        
+        // 创建者算已加入
+        if ($this->user_id == $userId) {
+            return true;
+        }
+        
+        return GroupUser::find()
+            ->where(['user_id' => $userId, 'group_id' => $this->id])
+            ->exists();
+    }
+
     public function extraFields()
     {
-        return ['image', 'user', 'groupUsers', 'groupVerses', 'verses'];
+        return ['image', 'user', 'groupUsers', 'groupVerses', 'verses', 'joined'];
     }
 }

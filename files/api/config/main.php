@@ -295,6 +295,14 @@ return [
                 [
                     'class' => 'yii\rest\UrlRule',
                     'pluralize' => false,
+                    'controller' => 'v1/edu-school',
+                    'extraPatterns' => [
+                        'GET principal' => 'principal',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'pluralize' => false,
                     'controller' => 'v1/edu-class',
                     'extraPatterns' => [
                         'GET by-teacher' => 'by-teacher',
@@ -309,7 +317,11 @@ return [
                     'controller' => 'v1/group',
                     'extraPatterns' => [
                         'POST join' => 'join',
+                        'POST {id}/join' => 'join',
+                        'POST {id}/leave' => 'leave',
                         'GET {id}/verses' => 'get-verses',
+                        'POST {id}/verse' => 'create-verse',
+                        'DELETE {id}/verse/{verseId}' => 'delete-verse',
                     ],
                 ],
                 [
