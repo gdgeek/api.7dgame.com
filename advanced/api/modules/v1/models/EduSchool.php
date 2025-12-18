@@ -51,14 +51,15 @@ class EduSchool extends \yii\db\ActiveRecord
     {
         parent::afterSave($insert, $changedAttributes);
         
-        // 清除缓存
+        // 清除学校 principal_id 缓存
+        SchoolPrincipalRule::clearSchoolCache($this->id);
+
+        // 兼容历史：若仍存在按 userId 的缓存键，一并清理
         if ($this->principal_id) {
-            SchoolPrincipalRule::clearCache($this->principal_id, $this->id);
+            SchoolPrincipalRule::clearCache($this->principal_id);
         }
-        
-        // 如果是更新且 principal_id 发生变化，也清除旧校长的缓存
         if (!$insert && isset($changedAttributes['principal_id']) && $changedAttributes['principal_id']) {
-            SchoolPrincipalRule::clearCache($changedAttributes['principal_id'], $this->id);
+            SchoolPrincipalRule::clearCache($changedAttributes['principal_id']);
         }
     }
 
@@ -69,9 +70,12 @@ class EduSchool extends \yii\db\ActiveRecord
     {
         parent::afterDelete();
         
-        // 清除缓存
+        // 清除学校 principal_id 缓存
+        SchoolPrincipalRule::clearSchoolCache($this->id);
+
+        // 兼容历史：若仍存在按 userId 的缓存键，一并清理
         if ($this->principal_id) {
-            SchoolPrincipalRule::clearCache($this->principal_id, $this->id);
+            SchoolPrincipalRule::clearCache($this->principal_id);
         }
     }
 

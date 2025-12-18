@@ -3,6 +3,7 @@
 namespace api\modules\v1\models;
 
 use api\modules\v1\components\GroupOwnerRule;
+use api\modules\v1\components\GroupMemberRule;
 use Yii;
 
 use yii\behaviors\TimestampBehavior;
@@ -61,6 +62,7 @@ class Group extends \yii\db\ActiveRecord
         
         // 清除缓存
         GroupOwnerRule::clearCache($this->user_id, $this->id);
+        GroupMemberRule::clearGroupOwnerCache($this->id);
         
         // 如果是更新且 user_id 发生变化，也清除旧创建者的缓存
         if (!$insert && isset($changedAttributes['user_id'])) {
@@ -77,6 +79,7 @@ class Group extends \yii\db\ActiveRecord
         
         // 清除缓存
         GroupOwnerRule::clearCache($this->user_id, $this->id);
+        GroupMemberRule::clearGroupOwnerCache($this->id);
     }
 
 

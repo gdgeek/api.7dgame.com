@@ -2,6 +2,7 @@
 
 namespace api\modules\v1\models;
 
+use api\modules\v1\components\ClassSchoolPrincipalRule;
 use Yii;
 use OpenApi\Annotations as OA;
 use yii\behaviors\TimestampBehavior;
@@ -53,6 +54,26 @@ class EduClass extends \yii\db\ActiveRecord
                 'value' => new Expression('NOW()'),
             ]
         ];
+    }
+
+    /**
+     * 保存后清除班级所属学校缓存
+     * @param bool $insert
+     * @param array $changedAttributes
+     */
+    public function afterSave($insert, $changedAttributes)
+    {
+        parent::afterSave($insert, $changedAttributes);
+        ClassSchoolPrincipalRule::clearCache($this->id);
+    }
+
+    /**
+     * 删除后清除班级所属学校缓存
+     */
+    public function afterDelete()
+    {
+        parent::afterDelete();
+        ClassSchoolPrincipalRule::clearCache($this->id);
     }
     /**
      * {@inheritdoc}

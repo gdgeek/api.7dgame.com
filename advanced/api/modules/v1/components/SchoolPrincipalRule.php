@@ -25,74 +25,81 @@ class SchoolPrincipalRule extends Rule
      * 缓存时间（秒）
      */
     const CACHE_DURATION = 300; // 5分钟
-    
-    /**
-     * 请求内缓存（避免同一请求多次查询）
-     * @var array
-     */
-    private static $principalCache = [];
 
     /**
-     * 从请求参数中获取 School
+     * 请求内缓存 school.principal_id（避免同一请求重复查 edu_school）
+     * @var array<int, int|null>
+     */
+    private static $schoolPrincipalIdCache = [];
+
+    /**
+     * school.principal_id 的应用缓存 key
+     */
+    private const SCHOOL_PRINCIPAL_ID_CACHE_KEY_PREFIX = 'school_principal_id_';
+
+    /**
+     * 从请求参数中获取 school_id（不查询数据库）
      * @param array $params
-     * @return EduSchool
+     * @return int
      * @throws BadRequestHttpException
      */
-    private function getSchool($params)
+    private function getSchoolId($params)
     {
         $post = Yii::$app->request->post();
         $get = Yii::$app->request->get();
-        
-        $schoolId = $params['school_id'] ?? $post['school_id'] ?? $get['school_id'] 
+
+        $schoolId = $params['school_id'] ?? $post['school_id'] ?? $get['school_id']
             ?? $params['id'] ?? $post['id'] ?? $get['id']
             ?? null;
-       
+
         if (!$schoolId) {
             throw new BadRequestHttpException("school_id is required");
         }
-  
-        $school = EduSchool::findOne($schoolId);
-        if (!$school) {
-            throw new BadRequestHttpException("School not found");
-        }
-        
-        return $school;
+
+        return (int)$schoolId;
     }
 
     /**
-     * 检查用户是否是学校校长（带缓存）
-     * @param int $userId
+     * 获取学校 principal_id（保证学校存在，带缓存）
      * @param int $schoolId
-     * @return bool
+     * @return int|null
+     * @throws BadRequestHttpException
      */
-    private function isPrincipal($userId, $schoolId)
+    private function getSchoolPrincipalId($schoolId)
     {
-        $cacheKey = "school_principal_{$userId}_{$schoolId}";
-        
-        // 1. 先检查请求内缓存（最快）
-        if (isset(self::$principalCache[$cacheKey])) {
-            return self::$principalCache[$cacheKey];
+        $schoolId = (int)$schoolId;
+        if (array_key_exists($schoolId, self::$schoolPrincipalIdCache)) {
+            return self::$schoolPrincipalIdCache[$schoolId];
         }
-        
-        // 2. 再检查应用缓存
-        $cache = Yii::$app->cache;
-        $result = $cache->get($cacheKey);
-        
-        if ($result !== false) {
-            self::$principalCache[$cacheKey] = $result;
-            return $result;
+
+        $cacheKey = self::SCHOOL_PRINCIPAL_ID_CACHE_KEY_PREFIX . $schoolId;
+        $cached = Yii::$app->cache->get($cacheKey);
+        if ($cached !== false && $cached !== null) {
+            $principalId = ((int)$cached === -1) ? null : (int)$cached;
+            self::$schoolPrincipalIdCache[$schoolId] = $principalId;
+            return $principalId;
         }
-        
-        // 3. 查询数据库
-        $result = EduSchool::find()
-            ->where(['id' => $schoolId, 'principal_id' => $userId])
-            ->exists();
-        
-        // 4. 写入缓存
-        $cache->set($cacheKey, $result, self::CACHE_DURATION);
-        self::$principalCache[$cacheKey] = $result;
-        
-        return $result;
+
+        $principalId = EduSchool::find()
+            ->select('principal_id')
+            ->where(['id' => $schoolId])
+            ->scalar();
+
+        if ($principalId === false || $principalId === null) {
+            // principal_id 为 null 与 school 不存在无法区分，因此额外确认学校是否存在
+            $exists = EduSchool::find()->where(['id' => $schoolId])->exists();
+            if (!$exists) {
+                throw new BadRequestHttpException("School not found");
+            }
+
+            self::$schoolPrincipalIdCache[$schoolId] = null;
+            Yii::$app->cache->set($cacheKey, -1, self::CACHE_DURATION);
+            return null;
+        }
+
+        self::$schoolPrincipalIdCache[$schoolId] = (int)$principalId;
+        Yii::$app->cache->set($cacheKey, self::$schoolPrincipalIdCache[$schoolId], self::CACHE_DURATION);
+        return self::$schoolPrincipalIdCache[$schoolId];
     }
     
     /**
@@ -100,13 +107,34 @@ class SchoolPrincipalRule extends Rule
      * 在学校更换校长时调用
      * 
      * @param int $userId
+     */
+    public static function clearCache($userId)
+    {
+        if (!$userId) {
+            return;
+        }
+
+        $userId = (int)$userId;
+        // 兼容历史：之前按 userId 缓存 principal_schools_{userId}
+        Yii::$app->cache->delete("principal_schools_{$userId}");
+    }
+
+    /**
+     * 清除学校 principal_id 缓存
+     * 在学校更换校长/删除时调用
+     *
      * @param int $schoolId
      */
-    public static function clearCache($userId, $schoolId)
+    public static function clearSchoolCache($schoolId)
     {
-        $cacheKey = "school_principal_{$userId}_{$schoolId}";
+        if (!$schoolId) {
+            return;
+        }
+
+        $schoolId = (int)$schoolId;
+        $cacheKey = self::SCHOOL_PRINCIPAL_ID_CACHE_KEY_PREFIX . $schoolId;
         Yii::$app->cache->delete($cacheKey);
-        unset(self::$principalCache[$cacheKey]);
+        unset(self::$schoolPrincipalIdCache[$schoolId]);
     }
 
     /**
@@ -122,9 +150,9 @@ class SchoolPrincipalRule extends Rule
             return false;
         }
 
-        $school = $this->getSchool($params);
-
-        // 检查当前用户是否是学校校长
-        return $this->isPrincipal($user, $school->id);
+        $userId = (int)$user;
+        $schoolId = $this->getSchoolId($params);
+        $principalId = $this->getSchoolPrincipalId($schoolId);
+        return $principalId !== null && $principalId === $userId;
     }
 }

@@ -34,12 +34,23 @@ class GroupMemberRule extends Rule
     private static $memberCache = [];
 
     /**
-     * 从请求参数中获取 Group
+     * 请求内缓存 group.owner_id（避免同一请求重复查 group）
+     * @var array<int, int>
+     */
+    private static $groupOwnerCache = [];
+
+    /**
+     * group.owner_id 的应用缓存 key
+     */
+    private const GROUP_OWNER_ID_CACHE_KEY_PREFIX = 'group_owner_id_';
+
+    /**
+     * 从请求参数中获取 group_id（不查询数据库）
      * @param array $params
-     * @return Group
+     * @return int
      * @throws BadRequestHttpException
      */
-    private function getGroup($params)
+    private function getGroupId($params)
     {
         $post = Yii::$app->request->post();
         $get = Yii::$app->request->get();
@@ -51,13 +62,59 @@ class GroupMemberRule extends Rule
         if (!$groupId) {
             throw new BadRequestHttpException("group_id is required");
         }
-  
-        $group = Group::findOne($groupId);
-        if (!$group) {
+
+        return (int)$groupId;
+    }
+
+    /**
+     * 获取小组创建者 user_id（保证小组存在）
+     * @param int $groupId
+     * @return int
+     * @throws BadRequestHttpException
+     */
+    private function getGroupOwnerId($groupId)
+    {
+        $groupId = (int)$groupId;
+        if (isset(self::$groupOwnerCache[$groupId])) {
+            return self::$groupOwnerCache[$groupId];
+        }
+
+        $cacheKey = self::GROUP_OWNER_ID_CACHE_KEY_PREFIX . $groupId;
+        $cachedOwnerId = Yii::$app->cache->get($cacheKey);
+        if ($cachedOwnerId !== false && $cachedOwnerId !== null) {
+            self::$groupOwnerCache[$groupId] = (int)$cachedOwnerId;
+            return self::$groupOwnerCache[$groupId];
+        }
+
+        $ownerId = Group::find()
+            ->select('user_id')
+            ->where(['id' => $groupId])
+            ->scalar();
+
+        if ($ownerId === false || $ownerId === null) {
             throw new BadRequestHttpException("Group not found");
         }
-        
-        return $group;
+
+        self::$groupOwnerCache[$groupId] = (int)$ownerId;
+        Yii::$app->cache->set($cacheKey, self::$groupOwnerCache[$groupId], self::CACHE_DURATION);
+        return self::$groupOwnerCache[$groupId];
+    }
+
+    /**
+     * 清除 group.owner_id 缓存
+     * 在小组转让/删除时调用
+     * @param int $groupId
+     */
+    public static function clearGroupOwnerCache($groupId)
+    {
+        if (!$groupId) {
+            return;
+        }
+
+        $groupId = (int)$groupId;
+        $cacheKey = self::GROUP_OWNER_ID_CACHE_KEY_PREFIX . $groupId;
+        Yii::$app->cache->delete($cacheKey);
+        unset(self::$groupOwnerCache[$groupId]);
     }
 
     /**
@@ -68,6 +125,8 @@ class GroupMemberRule extends Rule
      */
     private function isMember($userId, $groupId)
     {
+        $userId = (int)$userId;
+        $groupId = (int)$groupId;
         $cacheKey = "group_member_{$userId}_{$groupId}";
         
         // 1. 先检查请求内缓存（最快）
@@ -77,9 +136,12 @@ class GroupMemberRule extends Rule
         
         // 2. 再检查应用缓存
         $cache = Yii::$app->cache;
-        $result = $cache->get($cacheKey);
-        
-        if ($result !== false) {
+
+        // 注意：Yii cache get() 以 false 表示未命中，无法区分“命中且值为 false”。
+        // 这里缓存存 0/1 整数，从而可用 !== false 判断。
+        $cached = $cache->get($cacheKey);
+        if ($cached !== false) {
+            $result = (bool)(int)$cached;
             self::$memberCache[$cacheKey] = $result;
             return $result;
         }
@@ -90,7 +152,7 @@ class GroupMemberRule extends Rule
             ->exists();
         
         // 4. 写入缓存
-        $cache->set($cacheKey, $result, self::CACHE_DURATION);
+        $cache->set($cacheKey, (int)$result, self::CACHE_DURATION);
         self::$memberCache[$cacheKey] = $result;
         
         return $result;
@@ -105,6 +167,12 @@ class GroupMemberRule extends Rule
      */
     public static function clearCache($userId, $groupId)
     {
+        if (!$userId || !$groupId) {
+            return;
+        }
+
+        $userId = (int)$userId;
+        $groupId = (int)$groupId;
         $cacheKey = "group_member_{$userId}_{$groupId}";
         Yii::$app->cache->delete($cacheKey);
         unset(self::$memberCache[$cacheKey]);
@@ -123,18 +191,16 @@ class GroupMemberRule extends Rule
             return false;
         }
 
-        $group = $this->getGroup($params);
+        $userId = (int)$user;
+        $groupId = $this->getGroupId($params);
 
-        // 检查当前用户是否是小组成员
-        if ($this->isMember($user, $group->id)) {
+        // 先确保 group 存在，并优先判断是否为创建者（可避免一次 GroupUser exists）
+        $ownerId = $this->getGroupOwnerId($groupId);
+        if ($ownerId === $userId) {
             return true;
         }
 
-        // 检查当前用户是否是小组创建者（不需要缓存，Group 已经查出来了）
-        if ($group->user_id == $user) {
-            return true;
-        }
-
-        return false;
+        // 再判断是否为成员（走缓存）
+        return $this->isMember($userId, $groupId);
     }
 }

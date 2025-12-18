@@ -307,6 +307,7 @@ return [
                     'extraPatterns' => [
                         'GET by-teacher' => 'by-teacher',
                         'GET by-student' => 'by-student',
+                        'GET teacher-me' => 'teacher-me',
                         'GET {id}/groups' => 'get-groups',
                         'POST {id}/group' => 'create-group',
                     ],

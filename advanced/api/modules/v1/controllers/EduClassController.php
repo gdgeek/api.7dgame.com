@@ -10,6 +10,7 @@ use mdm\admin\components\AccessControl;
 use yii\filters\auth\CompositeAuth;
 use bizley\jwt\JwtHttpBearerAuth;
 use yii\rest\ActiveController;
+use yii\data\ActiveDataProvider;
 use Yii;
 use OpenApi\Annotations as OA;
 
@@ -119,6 +120,40 @@ class EduClassController extends ActiveController
     }
 
     /**
+     * Get all classes where current user is a teacher (dataProvider)
+     * GET /v1/edu-class/teacher-me
+     *
+     * @return ActiveDataProvider
+     */
+    public function actionTeacherMe()
+    {
+        $userId = (int)Yii::$app->user->id;
+        if (!$userId) {
+            throw new BadRequestHttpException('Unauthorized');
+        }
+
+        $query = \api\modules\v1\models\EduClass::find()
+            ->alias('c')
+            ->select('c.*')
+            ->innerJoin('edu_teacher t', 't.class_id = c.id')
+            ->andWhere(['t.user_id' => $userId])
+            ->distinct();
+
+        // 可选：按 school_id 过滤
+        $schoolId = Yii::$app->request->get('school_id');
+        if ($schoolId !== null && $schoolId !== '') {
+            $query->andWhere(['c.school_id' => (int)$schoolId]);
+        }
+
+        return new ActiveDataProvider([
+            'query' => $query,
+            'sort' => [
+                'defaultOrder' => ['created_at' => SORT_DESC],
+            ],
+        ]);
+    }
+
+    /**
      * Get all classes where current user is a student
      * @return array
      */
@@ -149,7 +184,9 @@ class EduClassController extends ActiveController
         
         // 使用手写 leftJoin，Group 模型不需要定义 getEduClassGroups 关联
         // EduClassGroup 单向依赖 Group 和 EduClass
-        $dataProvider->query
+        /** @var \yii\db\ActiveQuery $query */
+        $query = $dataProvider->query;
+        $query
             ->select('`group`.*')
             ->leftJoin('edu_class_group', 'edu_class_group.group_id = `group`.id')
             ->andWhere(['edu_class_group.class_id' => $id]);

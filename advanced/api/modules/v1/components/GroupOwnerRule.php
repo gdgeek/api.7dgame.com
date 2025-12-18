@@ -25,89 +25,110 @@ class GroupOwnerRule extends Rule
      * 缓存时间（秒）
      */
     const CACHE_DURATION = 300; // 5分钟
-    
-    /**
-     * 请求内缓存（避免同一请求多次查询）
-     * @var array
-     */
-    private static $ownerCache = [];
 
     /**
-     * 从请求参数中获取 Group
+     * 请求内缓存 group.owner_id（避免同一请求重复查 group）
+     * @var array<int, int>
+     */
+    private static $groupOwnerCache = [];
+
+    /**
+     * group.owner_id 的应用缓存 key
+     */
+    private const GROUP_OWNER_ID_CACHE_KEY_PREFIX = 'group_owner_id_';
+
+    /**
+     * 从请求参数中获取 group_id（不查询数据库）
      * @param array $params
-     * @return Group
+     * @return int
      * @throws BadRequestHttpException
      */
-    private function getGroup($params)
+    private function getGroupId($params)
     {
         $post = Yii::$app->request->post();
         $get = Yii::$app->request->get();
-        
-        $groupId = $params['group_id'] ?? $post['group_id'] ?? $get['group_id'] 
+
+        $groupId = $params['group_id'] ?? $post['group_id'] ?? $get['group_id']
             ?? $params['id'] ?? $post['id'] ?? $get['id']
             ?? null;
-       
+
         if (!$groupId) {
             throw new BadRequestHttpException("group_id is required");
         }
-  
-        $group = Group::findOne($groupId);
-        if (!$group) {
-            throw new BadRequestHttpException("Group not found");
-        }
-        
-        return $group;
+
+        return (int)$groupId;
     }
 
     /**
-     * 检查用户是否是小组创建者（带缓存）
+     * 获取小组创建者 user_id（保证小组存在）
+     * @param int $groupId
+     * @return int
+     * @throws BadRequestHttpException
+     */
+    private function getGroupOwnerId($groupId)
+    {
+        $groupId = (int)$groupId;
+        if (isset(self::$groupOwnerCache[$groupId])) {
+            return self::$groupOwnerCache[$groupId];
+        }
+
+        $cacheKey = self::GROUP_OWNER_ID_CACHE_KEY_PREFIX . $groupId;
+        $cachedOwnerId = Yii::$app->cache->get($cacheKey);
+        if ($cachedOwnerId !== false && $cachedOwnerId !== null) {
+            self::$groupOwnerCache[$groupId] = (int)$cachedOwnerId;
+            return self::$groupOwnerCache[$groupId];
+        }
+
+        $ownerId = Group::find()
+            ->select('user_id')
+            ->where(['id' => $groupId])
+            ->scalar();
+
+        if ($ownerId === false || $ownerId === null) {
+            throw new BadRequestHttpException("Group not found");
+        }
+
+        self::$groupOwnerCache[$groupId] = (int)$ownerId;
+        Yii::$app->cache->set($cacheKey, self::$groupOwnerCache[$groupId], self::CACHE_DURATION);
+        return self::$groupOwnerCache[$groupId];
+    }
+
+    /**
+     * 检查用户是否是小组创建者
      * @param int $userId
      * @param int $groupId
      * @return bool
      */
     private function isOwner($userId, $groupId)
     {
-        $cacheKey = "group_owner_{$userId}_{$groupId}";
-        
-        // 1. 先检查请求内缓存（最快）
-        if (isset(self::$ownerCache[$cacheKey])) {
-            return self::$ownerCache[$cacheKey];
-        }
-        
-        // 2. 再检查应用缓存
-        $cache = Yii::$app->cache;
-        $result = $cache->get($cacheKey);
-        
-        if ($result !== false) {
-            self::$ownerCache[$cacheKey] = $result;
-            return $result;
-        }
-        
-        // 3. 查询数据库
-        $result = Group::find()
-            ->where(['id' => $groupId, 'user_id' => $userId])
-            ->exists();
-        
-        // 4. 写入缓存
-        $cache->set($cacheKey, $result, self::CACHE_DURATION);
-        self::$ownerCache[$cacheKey] = $result;
-        
-        return $result;
+        return $this->getGroupOwnerId($groupId) === (int)$userId;
     }
-    
+
     /**
      * 清除用户的小组创建者缓存
      * 在小组转让/删除时调用
-     * 
+     *
      * @param int $userId
      * @param int $groupId
      */
     public static function clearCache($userId, $groupId)
     {
-        $cacheKey = "group_owner_{$userId}_{$groupId}";
+        if (!$userId || !$groupId) {
+            return;
+        }
+
+        $userId = (int)$userId;
+        $groupId = (int)$groupId;
+
+        // 兼容：删除旧的 per-user+group key（如果历史遗留还在）
+        Yii::$app->cache->delete("group_owner_{$userId}_{$groupId}");
+
+        // 新缓存：按 groupId 缓存 ownerId
+        $cacheKey = self::GROUP_OWNER_ID_CACHE_KEY_PREFIX . $groupId;
         Yii::$app->cache->delete($cacheKey);
-        unset(self::$ownerCache[$cacheKey]);
+        unset(self::$groupOwnerCache[$groupId]);
     }
+    
 
     /**
      * 执行规则检查
@@ -122,9 +143,9 @@ class GroupOwnerRule extends Rule
             return false;
         }
 
-        $group = $this->getGroup($params);
+        $groupId = $this->getGroupId($params);
 
-        // 检查当前用户是否是小组创建者
-        return $this->isOwner($user, $group->id);
+        // 先走缓存/一次查询判断归属，避免额外 findOne
+        return $this->isOwner($user, $groupId);
     }
 }
