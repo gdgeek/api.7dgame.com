@@ -308,6 +308,8 @@ return [
                         'GET by-teacher' => 'by-teacher',
                         'GET by-student' => 'by-student',
                         'GET teacher-me' => 'teacher-me',
+                        'POST {id}/teacher' => 'teacher',
+                        'DELETE {id}/teacher' => 'remove-teacher',
                         'GET {id}/groups' => 'get-groups',
                         'POST {id}/group' => 'create-group',
                     ],

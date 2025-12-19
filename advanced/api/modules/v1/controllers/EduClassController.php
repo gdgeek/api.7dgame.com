@@ -3,8 +3,12 @@
 namespace api\modules\v1\controllers;
 
 use yii\web\BadRequestHttpException;
+use yii\web\ConflictHttpException;
+use yii\web\NotFoundHttpException;
+use yii\web\ServerErrorHttpException;
 use api\modules\v1\models\User;
 use api\modules\v1\models\EduClassSearch;
+use api\modules\v1\models\EduTeacher;
 use mdm\admin\components\AccessControl;
 
 use yii\filters\auth\CompositeAuth;
@@ -145,12 +149,105 @@ class EduClassController extends ActiveController
             $query->andWhere(['c.school_id' => (int)$schoolId]);
         }
 
+        // 按 expand 预加载关联，避免 N+1
+        $expandRaw = (string)Yii::$app->request->get('expand', '');
+        $expand = array_filter(array_map('trim', explode(',', $expandRaw)));
+
+        $with = [];
+        if (in_array('school', $expand, true)) {
+            $with[] = 'school';
+        }
+        if (in_array('image', $expand, true)) {
+            $with[] = 'image';
+        }
+        if (!empty($with)) {
+            $query->with($with);
+        }
+
         return new ActiveDataProvider([
             'query' => $query,
             'sort' => [
                 'defaultOrder' => ['created_at' => SORT_DESC],
             ],
         ]);
+    }
+
+    /**
+     * Add a teacher to a class
+     * POST /v1/edu-class/{id}/teacher
+     *
+     * Body: {"user_id": 123}，如果不传 user_id，默认添加当前登录用户
+     *
+     * @param int $id Class ID
+     * @return EduTeacher
+     */
+    public function actionTeacher($id)
+    {
+        $class = $this->findModel($id);
+
+        $userId = (int)Yii::$app->request->post('user_id', 0);
+        if ($userId <= 0) {
+            $userId = (int)Yii::$app->user->id;
+        }
+        if ($userId <= 0) {
+            throw new BadRequestHttpException('user_id is required');
+        }
+
+        $exists = EduTeacher::find()
+            ->andWhere(['class_id' => (int)$class->id, 'user_id' => $userId])
+            ->exists();
+        if ($exists) {
+            throw new ConflictHttpException('This teacher is already in this class');
+        }
+
+        $model = new EduTeacher();
+        $model->class_id = (int)$class->id;
+        $model->user_id = $userId;
+
+        if ($model->save()) {
+            Yii::$app->response->statusCode = 201;
+            return $model;
+        }
+
+        // 让 Yii2 统一输出 422 + errors
+        return $model;
+    }
+
+    /**
+     * Remove a teacher from a class
+     * DELETE /v1/edu-class/{id}/teacher
+     *
+     * 支持：?user_id=123 或 Body: {"user_id":123}；如果不传 user_id，默认移除当前登录用户
+     *
+     * @param int $id Class ID
+     * @return null
+     */
+    public function actionRemoveTeacher($id)
+    {
+        $class = $this->findModel($id);
+
+        $userId = (int)Yii::$app->request->get('user_id', 0);
+        if ($userId <= 0) {
+            $userId = (int)Yii::$app->request->post('user_id', 0);
+        }
+        if ($userId <= 0) {
+            $userId = (int)Yii::$app->user->id;
+        }
+        if ($userId <= 0) {
+            throw new BadRequestHttpException('user_id is required');
+        }
+
+        $model = EduTeacher::findOne(['class_id' => (int)$class->id, 'user_id' => $userId]);
+        if (!$model) {
+            throw new NotFoundHttpException('This teacher is not in this class');
+        }
+
+        if ($model->delete() === false) {
+            throw new ServerErrorHttpException('Failed to delete the object for unknown reason.');
+        }
+
+        Yii::$app->response->statusCode = 204;
+        return null;
     }
 
     /**

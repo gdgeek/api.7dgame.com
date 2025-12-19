@@ -8,6 +8,7 @@ use api\modules\v1\models\Tags;
 use api\modules\v1\models\VerseTags;
 use api\modules\v1\models\VerseCode;
 use yii\db\ActiveQuery;
+use yii\db\Query;
 use Yii;
 use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
@@ -37,6 +38,149 @@ use yii\db\Expression;
 */
 class Verse extends \yii\db\ActiveRecord
 {
+    private const GROUP_EDITABLE_PREFETCH_THRESHOLD = 20;
+
+    private const GROUP_EDITABLE_CACHE_DURATION = 300;
+    private const GROUP_VERSE_REV_CACHE_KEY = 'verse_group_verse_rev';
+    private const USER_GROUP_REV_CACHE_KEY_PREFIX = 'verse_user_group_rev_';
+    private const USER_EDITABLE_VERSE_SET_CACHE_KEY_PREFIX = 'verse_group_editable_verse_ids_';
+
+    /**
+     * 请求内缓存：当前用户通过 group 成员身份可编辑的 verseId 集合
+     * 结构：[
+     *   userId => [ verseId => true, ... ],
+     * ]
+     *
+     * @var array
+     */
+    private static $groupEditableVerseIdSetByUser = [];
+
+    /**
+     * 请求内缓存：按 (userId, verseId) 记忆化 exists 结果
+     * 结构：[ userId => [ verseId => bool, ... ] ]
+     *
+     * @var array
+     */
+    private static $groupEditableMemoByUser = [];
+
+    /**
+     * 请求内计数：同一用户在一次请求里检查 editable 的次数
+     *
+     * @var array
+     */
+    private static $groupEditableCheckCountByUser = [];
+
+    public static function bumpGroupVerseRevision(): void
+    {
+        $cache = Yii::$app->cache ?? null;
+        if (!$cache) {
+            return;
+        }
+
+        $current = $cache->get(self::GROUP_VERSE_REV_CACHE_KEY);
+        $next = is_numeric($current) ? ((int)$current + 1) : 2;
+        $cache->set(self::GROUP_VERSE_REV_CACHE_KEY, $next, 0);
+    }
+
+    public static function bumpUserGroupRevision(int $userId): void
+    {
+        if ($userId <= 0) {
+            return;
+        }
+
+        $cache = Yii::$app->cache ?? null;
+        if (!$cache) {
+            return;
+        }
+
+        $key = self::USER_GROUP_REV_CACHE_KEY_PREFIX . $userId;
+        $current = $cache->get($key);
+        $next = is_numeric($current) ? ((int)$current + 1) : 2;
+        $cache->set($key, $next, 0);
+    }
+
+    private static function getGroupVerseRevision(): int
+    {
+        $cache = Yii::$app->cache ?? null;
+        if (!$cache) {
+            return 1;
+        }
+
+        $value = $cache->get(self::GROUP_VERSE_REV_CACHE_KEY);
+        return is_numeric($value) ? (int)$value : 1;
+    }
+
+    private static function getUserGroupRevision(int $userId): int
+    {
+        $cache = Yii::$app->cache ?? null;
+        if (!$cache) {
+            return 1;
+        }
+
+        $value = $cache->get(self::USER_GROUP_REV_CACHE_KEY_PREFIX . $userId);
+        return is_numeric($value) ? (int)$value : 1;
+    }
+
+    private static function getUserEditableVerseSetCacheKey(int $userId): string
+    {
+        $groupVerseRev = self::getGroupVerseRevision();
+        $userGroupRev = self::getUserGroupRevision($userId);
+
+        return self::USER_EDITABLE_VERSE_SET_CACHE_KEY_PREFIX . $userId . '_gr' . $groupVerseRev . '_ur' . $userGroupRev;
+    }
+
+    /**
+     * @return array|null 返回 verseIdSet（[id=>true]）或 null（缓存未命中）
+     */
+    private static function getCachedGroupEditableVerseIdSet(int $userId): ?array
+    {
+        $cache = Yii::$app->cache ?? null;
+        if (!$cache) {
+            return null;
+        }
+
+        $key = self::getUserEditableVerseSetCacheKey($userId);
+        $cached = $cache->get($key);
+        if ($cached === false || !is_array($cached)) {
+            return null;
+        }
+
+        return $cached;
+    }
+
+    /**
+     * @return array 返回 verseIdSet（[id=>true]）
+     */
+    private static function getOrBuildGroupEditableVerseIdSet(int $userId): array
+    {
+        $cached = self::getCachedGroupEditableVerseIdSet($userId);
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        $verseIds = (new Query())
+            ->select('DISTINCT gv.verse_id')
+            ->from(['gv' => 'group_verse'])
+            ->innerJoin(['gu' => 'group_user'], 'gu.group_id = gv.group_id')
+            ->where(['gu.user_id' => $userId])
+            ->column();
+
+        $set = $verseIds
+            ? array_fill_keys(array_map('intval', $verseIds), true)
+            : [];
+
+        $cache = Yii::$app->cache ?? null;
+        if ($cache) {
+            $cache->set(
+                self::getUserEditableVerseSetCacheKey($userId),
+                $set,
+                self::GROUP_EDITABLE_CACHE_DURATION
+            );
+        }
+
+        return $set;
+    }
+
     public function behaviors()
     {
         return [
@@ -96,14 +240,18 @@ class Verse extends \yii\db\ActiveRecord
         unset($fields['image_id']);
         unset($fields['updated_at']);
         unset($fields['script']);
+
+
         $fields['description'] = function () {
             return $this->description;
         };
         $fields['editable'] = function () {
-            return $this->editable();
+       
+
+            return $this->editable;
         };
         $fields['viewable'] = function () {
-            return $this->viewable();
+            return $this->viewable;
         };
 
         $fields['info'] = function () {
@@ -136,8 +284,6 @@ class Verse extends \yii\db\ActiveRecord
             'description' => Yii::t('app', 'Description'),
         ];
     }
-
-
     /**
      * Gets query for [[VerseCode]].
      *
@@ -153,7 +299,6 @@ class Verse extends \yii\db\ActiveRecord
             $code = new VerseCode();
             $code->verse_id = $this->id;
             $code->save();
-
         }
 
         return $quest;
@@ -226,36 +371,7 @@ class Verse extends \yii\db\ActiveRecord
         return Meta::find()->where(['id' => $this->getMetaIds()]);
     }
 
-    /**
-     * Gets query for [[Metas]].
-     *
-     * @return \yii\db\ActiveQuery
-     
-    public function getMetas(): ActiveQuery|array
-    {
-        $ret = [];
-        if (is_string($this->data)) {
-            $data = json_decode($this->data);
-        } else {
-            $data = json_decode(json_encode($this->data));
-        }
-        if (isset($data->children) && isset($data->children->modules)) {
-            foreach ($data->children->modules as $item) {
-
-                if (isset($item->parameters->meta_id)) {
-                    $ret[] = $item->parameters->meta_id;
-                }
-
-            }
-        }
-
-        //这个有一个问题啊，我希望返回数组，但我不适用all的时候，只有一个数据就返回对象，能否保证我返回数组
-        
-        return Meta::find()->where(['id' => $ret])->all();
-
-    }
-        */
-
+   
     /**
      * Gets query for [[VerseTags]].
      *
@@ -287,30 +403,86 @@ class Verse extends \yii\db\ActiveRecord
         }
         return false;
     }
+    public function getEditable()
+    {
+        return $this->editable();
+    }
 
     public function editable()
     {
+       
         if (
             isset(Yii::$app->user->identity)
-            && Yii::$app->user->identity->id == $this->author_id
+            && (int)Yii::$app->user->id === (int)$this->author_id
         ) {
             return true;
         }
 
-        return false;
+        $userId = (int)Yii::$app->user->id;
+        if ($userId <= 0) {
+            return false;
+        }
+  
+        $verseId = (int)$this->id;
+
+        // 先尝试跨请求缓存（命中后写入请求内 set）
+        if (!isset(self::$groupEditableVerseIdSetByUser[$userId])) {
+            $cachedSet = self::getCachedGroupEditableVerseIdSet($userId);
+            if ($cachedSet !== null) {
+                self::$groupEditableVerseIdSetByUser[$userId] = $cachedSet;
+                return isset(self::$groupEditableVerseIdSetByUser[$userId][$verseId]);
+            }
+        }
+
+        // 如果已经预取过全集合，O(1) 判断
+        if (isset(self::$groupEditableVerseIdSetByUser[$userId])) {
+        
+            return isset(self::$groupEditableVerseIdSetByUser[$userId][$verseId]);
+        }
+
+        // 先走记忆化：避免同一请求内重复判断同一个 verse
+        if (isset(self::$groupEditableMemoByUser[$userId][$verseId])) {
+       
+            return (bool)self::$groupEditableMemoByUser[$userId][$verseId];
+        }
+
+        // 自适应策略：小量调用用 EXISTS（避免一次性拉全量 verse_id）；大量调用（列表）再预取
+        $count = (int)(self::$groupEditableCheckCountByUser[$userId] ?? 0) + 1;
+        self::$groupEditableCheckCountByUser[$userId] = $count;
+
+        if ($count >= self::GROUP_EDITABLE_PREFETCH_THRESHOLD) {
+            self::$groupEditableVerseIdSetByUser[$userId] = self::getOrBuildGroupEditableVerseIdSet($userId);
+
+            return isset(self::$groupEditableVerseIdSetByUser[$userId][$verseId]);
+        }
+   
+        // EXISTS 单条判断：
+        // 只要该 verse 在任意一个 group 里，并且当前用户属于该 group，则 editable=true
+        $exists = (new Query())
+            ->from(['gv' => 'group_verse'])
+            ->innerJoin(['gu' => 'group_user'], 'gu.group_id = gv.group_id')
+            ->where(['gu.user_id' => $userId, 'gv.verse_id' => $verseId])
+            ->exists();
+
+        self::$groupEditableMemoByUser[$userId][$verseId] = (bool)$exists;
+     
+        return (bool)$exists;
+    }
+    public function getViewable()
+    {
+        return $this->viewable();
     }
     public function viewable()
     {
-
-        if ($this->getPublic() || $this->editable()) {
+        if ($this->public || $this->editable) {
             return true;
         }
-
+        return false;
     }
     /**
      * Gets query for [[Author]].
      *
-     * @return \yii\db\ActiveQuery|UserQuery
+     * @return \yii\db\ActiveQuery
      */
     public function getAuthor()
     {
@@ -330,7 +502,7 @@ class Verse extends \yii\db\ActiveRecord
     /**
      * Gets query for [[Updater]].
      *
-     * @return \yii\db\ActiveQuery|UserQuery
+     * @return \yii\db\ActiveQuery
      */
     public function getUpdater()
     {

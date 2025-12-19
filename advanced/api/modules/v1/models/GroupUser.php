@@ -63,11 +63,15 @@ class GroupUser extends \yii\db\ActiveRecord
         
         // 清除缓存
         GroupMemberRule::clearCache($this->user_id, $this->group_id);
+
+        // group 成员变更会影响 verse 的 editable 计算
+        Verse::bumpUserGroupRevision((int)$this->user_id);
         
         // 如果是更新且 group_id 或 user_id 发生变化，也清除旧的缓存
         if (!$insert) {
             if (isset($changedAttributes['user_id'])) {
                 GroupMemberRule::clearCache($changedAttributes['user_id'], $this->group_id);
+                Verse::bumpUserGroupRevision((int)$changedAttributes['user_id']);
             }
             if (isset($changedAttributes['group_id'])) {
                 GroupMemberRule::clearCache($this->user_id, $changedAttributes['group_id']);
@@ -84,6 +88,9 @@ class GroupUser extends \yii\db\ActiveRecord
         
         // 清除缓存
         GroupMemberRule::clearCache($this->user_id, $this->group_id);
+
+        // group 成员变更会影响 verse 的 editable 计算
+        Verse::bumpUserGroupRevision((int)$this->user_id);
     }
 
     /**

@@ -68,4 +68,16 @@ class GroupVerse extends \yii\db\ActiveRecord
     {
         return $this->hasOne(Verse::className(), ['id' => 'verse_id']);
     }
+
+    public function afterSave($insert, $changedAttributes)
+    {
+        parent::afterSave($insert, $changedAttributes);
+        Verse::bumpGroupVerseRevision();
+    }
+
+    public function afterDelete()
+    {
+        parent::afterDelete();
+        Verse::bumpGroupVerseRevision();
+    }
 }

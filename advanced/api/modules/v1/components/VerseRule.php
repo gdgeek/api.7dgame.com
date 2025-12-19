@@ -43,13 +43,12 @@ class VerseRule extends Rule
         if (!$verse) {
             throw new BadRequestHttpException("no verse");
         }
-        
-        if ($verse->editable()) {
+        if ($verse->editable) {
             return true;
         }
         
         $request = Yii::$app->request;
-        if ($request->isGet && $verse->viewable()) {
+        if ($request->isGet && $verse->viewable) {
             return true;
         }
         
