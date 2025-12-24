@@ -79,14 +79,41 @@ class Meta extends \yii\db\ActiveRecord
             [['updater_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updater_id' => 'id']],
         ];
     }
+    public function afterSave($insert, $changedAttributes)
+    {
+        parent::afterSave($insert, $changedAttributes);
+
+        $newResourceIds = array_unique(array_filter($this->getResourceIds()));
+        $oldResourceIds = MetaResource::find()
+            ->select('resource_id')
+            ->where(['meta_id' => $this->id])
+            ->column();
+
+        $toAdd = array_diff($newResourceIds, $oldResourceIds);
+        $toDelete = array_diff($oldResourceIds, $newResourceIds);
+
+        if (!empty($toDelete)) {
+            MetaResource::deleteAll(['meta_id' => $this->id, 'resource_id' => $toDelete]);
+        }
+
+        foreach ($toAdd as $resourceId) {
+            $metaResource = new MetaResource();
+            $metaResource->meta_id = $this->id;
+            $metaResource->resource_id = $resourceId;
+            $metaResource->save();
+        }
+    }
+
     public function afterFind()
     {
 
         parent::afterFind();
-        if (empty($this->uuid)) {
-            $this->uuid = \Faker\Provider\Uuid::uuid();
-            $this->save();
-        }
+
+
+        parent::afterFind();
+        MetaVersion::upgrade($this);
+        
+      
     }
 
     public function extraFields()
@@ -103,24 +130,20 @@ class Meta extends \yii\db\ActiveRecord
     }
     public function fields()
     {
-        $fields = parent::fields();
-        unset($fields['updater_id']);
-        unset($fields['updated_at']);
-        unset($fields['created_at']);
-        unset($fields['author_id']);
-
-        $fields['prefab'] = function () {
-            return $this->prefab;
-        };
-        $fields['resources'] = function () {
-            return $this->getResources();
-        };
-      
-        $fields['editable'] = function () {
-            return $this->editable(); };
-        $fields['viewable'] = function () {
-            return $this->viewable(); };
-        return $fields;
+       
+        return [
+            'id',
+          //  'image_id',
+            'uuid',
+            'events',
+            'title',
+            'prefab',
+            'editable',
+            'viewable',
+            'resources',
+            'data',
+            'info',
+        ];
     }
     /**
      * {@inheritdoc}
@@ -140,6 +163,11 @@ class Meta extends \yii\db\ActiveRecord
             'uuid' => 'Uuid',
         ];
     }
+
+    public function getViewable()
+    {
+        return $this->viewable();
+    }
     public function viewable()
     {
         if (!isset(Yii::$app->user->identity)) {
@@ -152,6 +180,11 @@ class Meta extends \yii\db\ActiveRecord
 
         return true;
     }
+    public function getEditable()
+    {
+        return $this->editable();
+    }
+
     public function editable()
     {
         if (!isset(Yii::$app->user->identity)) {
@@ -191,9 +224,11 @@ class Meta extends \yii\db\ActiveRecord
   
     public function getResources()
     {
-        $ids = $this->getResourceIds();
-        $items = Resource::find()->where(['id' => $ids])->all();
-        return $items;
+        return Resource::find()
+            ->alias('r')
+            ->innerJoin(['mr' => MetaResource::tableName()], 'mr.resource_id = r.id')
+            ->where(['mr.meta_id' => $this->id])
+            ->all();
     }
 
 
@@ -228,7 +263,12 @@ class Meta extends \yii\db\ActiveRecord
         return $quest;
     }
 
+    public function getVersion(){
 
+        return $this->hasOne(Version::className(), ['id' => 'version_id'])
+            ->viaTable('meta_version', ['meta_id' => 'id']);
+        
+    }
     /**
      * Gets query for [[VerseMeta]].
      *

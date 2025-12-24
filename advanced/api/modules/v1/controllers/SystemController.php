@@ -104,4 +104,13 @@ class SystemController extends Controller
         }
         return $snapshot->toArray([], ['code', 'id', 'name', 'data', 'description', 'metas', 'resources', 'uuid', 'image']);
     }
+    public function actionUpgrade()
+    {
+        set_time_limit(0);
+     
+        
+        return [
+            'status' => 'success',
+        ];
+    }
 }

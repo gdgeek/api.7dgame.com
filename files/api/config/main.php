@@ -247,6 +247,7 @@ return [
                         'v1/system',
                     ],
                     'extraPatterns' => [
+                        'GET upgrade' => 'upgrade',
                         'POST take-photo' => 'take-photo',
                         'GET verse' => 'verse',
                         'PUT verse-code' => 'verse-code',

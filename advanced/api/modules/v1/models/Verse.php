@@ -26,7 +26,6 @@ use yii\db\Expression;
 * @property string|null $info
 * @property int|null $image_id
 * @property string|null $data
-* @property int|null $version
 * @property string|null $description
 *
 * @property Manager[] $managers
@@ -78,7 +77,7 @@ class Verse extends \yii\db\ActiveRecord
         }
 
         $current = $cache->get(self::GROUP_VERSE_REV_CACHE_KEY);
-        $next = is_numeric($current) ? ((int)$current + 1) : 2;
+        $next = is_numeric($current) ? ((int) $current + 1) : 2;
         $cache->set(self::GROUP_VERSE_REV_CACHE_KEY, $next, 0);
     }
 
@@ -95,7 +94,7 @@ class Verse extends \yii\db\ActiveRecord
 
         $key = self::USER_GROUP_REV_CACHE_KEY_PREFIX . $userId;
         $current = $cache->get($key);
-        $next = is_numeric($current) ? ((int)$current + 1) : 2;
+        $next = is_numeric($current) ? ((int) $current + 1) : 2;
         $cache->set($key, $next, 0);
     }
 
@@ -107,7 +106,7 @@ class Verse extends \yii\db\ActiveRecord
         }
 
         $value = $cache->get(self::GROUP_VERSE_REV_CACHE_KEY);
-        return is_numeric($value) ? (int)$value : 1;
+        return is_numeric($value) ? (int) $value : 1;
     }
 
     private static function getUserGroupRevision(int $userId): int
@@ -118,7 +117,7 @@ class Verse extends \yii\db\ActiveRecord
         }
 
         $value = $cache->get(self::USER_GROUP_REV_CACHE_KEY_PREFIX . $userId);
-        return is_numeric($value) ? (int)$value : 1;
+        return is_numeric($value) ? (int) $value : 1;
     }
 
     private static function getUserEditableVerseSetCacheKey(int $userId): string
@@ -224,7 +223,7 @@ class Verse extends \yii\db\ActiveRecord
     {
         return [
             [['name'], 'required'],
-            [['author_id', 'updater_id', 'image_id', 'version'], 'integer'],
+            [['author_id', 'updater_id', 'image_id'], 'integer'],
             [['created_at', 'updated_at', 'info', 'data'], 'safe'],
             [['name', 'uuid', 'description'], 'string', 'max' => 255],
             [['uuid'], 'unique'],
@@ -246,8 +245,6 @@ class Verse extends \yii\db\ActiveRecord
             return $this->description;
         };
         $fields['editable'] = function () {
-       
-
             return $this->editable;
         };
         $fields['viewable'] = function () {
@@ -279,11 +276,21 @@ class Verse extends \yii\db\ActiveRecord
             'info' => Yii::t('app', 'Info'),
             'data' => Yii::t('app', 'Data'),
             'image_id' => Yii::t('app', 'Image ID'),
-            'version' => Yii::t('app', 'Version'),
             'uuid' => Yii::t('app', 'Uuid'),
             'description' => Yii::t('app', 'Description'),
         ];
     }
+    /**
+     * Gets query for [[Version]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getVersion()
+    {
+        return $this->hasOne(Version::className(), ['id' => 'version_id'])
+            ->viaTable('verse_version', ['verse_id' => 'id']);
+    }
+
     /**
      * Gets query for [[VerseCode]].
      *
@@ -307,32 +314,53 @@ class Verse extends \yii\db\ActiveRecord
 
     public function getResources(): array
     {
-        $metas = $this->getMetas()->all();
-        $ids = [];
-        foreach ($metas as $meta) {
-            $ids = array_merge_recursive($ids, $meta->getResourceIds());
-        }
-        $items = Resource::find()->where(['id' => $ids])->all();
-        return $items;
+        return Resource::find()
+            ->alias('r')
+            ->select('r.*')
+            ->distinct()
+            ->innerJoin(['mr' => MetaResource::tableName()], 'mr.resource_id = r.id')
+            ->innerJoin(['vm' => VerseMeta::tableName()], 'vm.meta_id = mr.meta_id')
+            ->where(['vm.verse_id' => $this->id])
+            ->all();
     }
 
+    public function afterSave($insert, $changedAttributes)
+    {
+        parent::afterSave($insert, $changedAttributes);
+
+        $newMetaIds = array_unique(array_filter($this->getMetaIds()));
+        $oldMetaIds = VerseMeta::find()
+            ->select('meta_id')
+            ->where(['verse_id' => $this->id])
+            ->column();
+
+        $toAdd = array_diff($newMetaIds, $oldMetaIds);
+        $toDelete = array_diff($oldMetaIds, $newMetaIds);
+
+        if (!empty($toDelete)) {
+            VerseMeta::deleteAll(['verse_id' => $this->id, 'meta_id' => $toDelete]);
+        }
+       // throw new \Exception('toAdd: ' . json_encode($toAdd));
+        foreach ($toAdd as $metaId) {
+            $verseMeta = new VerseMeta();
+            $verseMeta->verse_id = $this->id;
+            $verseMeta->meta_id = $metaId;
+            $verseMeta->save();
+        }
+    }
+    
     public function afterFind()
     {
-
         parent::afterFind();
-        if (empty($this->uuid)) {
-            $this->uuid = \Faker\Provider\Uuid::uuid();
-            $this->save();
-        }
+        VerseVersion::upgrade($this);
+        
     }
-  
+
     public function extraFields()
     {
-        
+
         return [
-            'metas' => function (): array {
-                return $this->getMetas()->all();
-            },
+            'metas',
             'image',
             'author',
             'public',
@@ -341,13 +369,15 @@ class Verse extends \yii\db\ActiveRecord
             'verseCode',
             'verseTags',
             'tags',
+            'version',
         ];
 
 
 
     }
+   
 
-     public function getMetaIds()
+    public function getMetaIds()
     {
         $data = $this->data;
         if (!isset($data['children']) || !isset($data['children']['modules'])) {
@@ -368,10 +398,12 @@ class Verse extends \yii\db\ActiveRecord
 
     public function getMetas(): ActiveQuery
     {
-        return Meta::find()->where(['id' => $this->getMetaIds()]);
+        
+        return $this->hasMany(Meta::className(), ['id' => 'meta_id'])
+            ->viaTable('verse_meta', ['verse_id' => 'id']);
     }
 
-   
+
     /**
      * Gets query for [[VerseTags]].
      *
@@ -397,12 +429,28 @@ class Verse extends \yii\db\ActiveRecord
 
     public function getPublic()
     {
-        $tag = $this->getTags()->andWhere(['key' => 'public'])->one();
+        $tag = $this->getProperties()->andWhere(['key' => 'public'])->one();
         if ($tag) {
             return true;
         }
         return false;
     }
+
+    /**
+     * Gets query for [[VerseProperties]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getVerseProperties()
+    {
+        return $this->hasMany(VerseProperty::className(), ['verse_id' => 'id']);
+    }
+    public function getProperties()
+    {
+        return $this->hasMany(Property::className(), ['id' => 'property_id'])
+            ->viaTable('verse_property', ['verse_id' => 'id']);
+    }
+
     public function getEditable()
     {
         return $this->editable();
@@ -410,20 +458,20 @@ class Verse extends \yii\db\ActiveRecord
 
     public function editable()
     {
-       
+
         if (
             isset(Yii::$app->user->identity)
-            && (int)Yii::$app->user->id === (int)$this->author_id
+            && (int) Yii::$app->user->id === (int) $this->author_id
         ) {
             return true;
         }
 
-        $userId = (int)Yii::$app->user->id;
+        $userId = (int) Yii::$app->user->id;
         if ($userId <= 0) {
             return false;
         }
-  
-        $verseId = (int)$this->id;
+
+        $verseId = (int) $this->id;
 
         // 先尝试跨请求缓存（命中后写入请求内 set）
         if (!isset(self::$groupEditableVerseIdSetByUser[$userId])) {
@@ -436,18 +484,18 @@ class Verse extends \yii\db\ActiveRecord
 
         // 如果已经预取过全集合，O(1) 判断
         if (isset(self::$groupEditableVerseIdSetByUser[$userId])) {
-        
+
             return isset(self::$groupEditableVerseIdSetByUser[$userId][$verseId]);
         }
 
         // 先走记忆化：避免同一请求内重复判断同一个 verse
         if (isset(self::$groupEditableMemoByUser[$userId][$verseId])) {
-       
-            return (bool)self::$groupEditableMemoByUser[$userId][$verseId];
+
+            return (bool) self::$groupEditableMemoByUser[$userId][$verseId];
         }
 
         // 自适应策略：小量调用用 EXISTS（避免一次性拉全量 verse_id）；大量调用（列表）再预取
-        $count = (int)(self::$groupEditableCheckCountByUser[$userId] ?? 0) + 1;
+        $count = (int) (self::$groupEditableCheckCountByUser[$userId] ?? 0) + 1;
         self::$groupEditableCheckCountByUser[$userId] = $count;
 
         if ($count >= self::GROUP_EDITABLE_PREFETCH_THRESHOLD) {
@@ -455,7 +503,7 @@ class Verse extends \yii\db\ActiveRecord
 
             return isset(self::$groupEditableVerseIdSetByUser[$userId][$verseId]);
         }
-   
+
         // EXISTS 单条判断：
         // 只要该 verse 在任意一个 group 里，并且当前用户属于该 group，则 editable=true
         $exists = (new Query())
@@ -464,9 +512,9 @@ class Verse extends \yii\db\ActiveRecord
             ->where(['gu.user_id' => $userId, 'gv.verse_id' => $verseId])
             ->exists();
 
-        self::$groupEditableMemoByUser[$userId][$verseId] = (bool)$exists;
-     
-        return (bool)$exists;
+        self::$groupEditableMemoByUser[$userId][$verseId] = (bool) $exists;
+
+        return (bool) $exists;
     }
     public function getViewable()
     {
