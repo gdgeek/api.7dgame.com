@@ -15,12 +15,6 @@ return [
         'v1' => [
             'class' => 'api\modules\v1\Module',
         ],
-        'a1' => [
-            'class' => 'api\modules\a1\Module',
-        ],
-        'vp' => [
-            'class' => 'api\modules\vp\Module',
-        ],
     ],
     'as cors' => [
         'class' => \yii\filters\Cors::className(),
@@ -51,9 +45,6 @@ return [
             'enableSession' => false,
             'loginUrl' => null,
         ],
-        'player' => [
-            'class' => 'api\modules\vp\helper\Player',
-        ],
         'log' => [
             'traceLevel' => 3, //YII_DEBUG ? 3 : 0,
             'targets' => [
@@ -83,53 +74,6 @@ return [
                     'pattern' => 'apple-app-site-association',
                     'route' => 'site/apple-app-site-association',
                     'suffix' => ''
-                ],
-                [
-                    'class' => 'yii\rest\UrlRule',
-                    'controller' => 'vp/site',
-                    'extraPatterns' => [
-                        'GET check' => 'check',
-                        'POST check' => 'check',
-                        'GET log' => 'log',
-                        'GET test' => 'test',
-                        'GET token' => 'token',
-                    ],
-                ],
-                [
-                    'class' => 'yii\rest\UrlRule',
-                    'controller' => 'vp/oauth2',
-                    'pluralize' => false,
-                    'extraPatterns' => [
-                        'POST apple-id' => 'apple-id',
-                        'POST binding' => 'binding',
-                        'GET test' => 'test',
-                        'POST login' => 'login',
-                    ],
-                ],
-                [
-                    'class' => 'yii\rest\UrlRule',
-                    'controller' => 'vp/guide',
-                    'extraPatterns' => [
-                        'GET verse' => 'verse',
-                    ],
-                ],
-                [
-                    'class' => 'yii\rest\UrlRule',
-                    'controller' => 'vp/map',
-                    'extraPatterns' => [
-                        'GET page' => 'page',
-                        'GET setup' => 'setup',
-                    ],
-                ],
-                [
-                    'class' => 'yii\rest\UrlRule',
-                    'controller' => 'vp/level',
-                    'extraPatterns' => [
-                        'GET record' => 'record',
-                        'POST record' => 'record',
-                        'GET log' => 'log',
-                        'GET stars' => 'stars',
-                    ],
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',
@@ -384,42 +328,6 @@ return [
                         'POST apple-id-create' => 'apple-id-create',
                     ],
                 ],
-
-                [
-                    'class' => 'yii\rest\UrlRule',
-                    'controller' => 'a1/verse',
-                    'extraPatterns' => [
-                        'GET open' => 'open',
-                        'GET release' => 'release',
-                        'GET public' => 'public',
-                    ],
-                ],
-
-                [
-                    'class' => 'yii\rest\UrlRule',
-
-                    'pluralize' => false,
-                    'controller' => [
-                        'a1/game'
-                    ],
-                ],
-                [
-                    'class' => 'yii\rest\UrlRule',
-                    'controller' => 'v1/swagger',
-                    'pluralize' => false,
-                    'extraPatterns' => [
-                        'GET json' => 'json',
-                        'GET yaml' => 'yaml',
-                    ],
-                ],
-                [
-                    'class' => 'yii\rest\UrlRule',
-                    'controller' => 'v1/cyber-script',
-                    'extraPatterns' => [
-                        'GET find' => 'find',
-                    ],
-                ],
-
             ],
 
         ],
