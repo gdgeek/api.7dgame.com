@@ -358,7 +358,12 @@ return [
                     'controller' => 'v1/verse',
                     'extraPatterns' => [
                         'GET public' => 'public',
-                        'PUT code' => 'update-code'
+                        'PUT code' => 'update-code',
+                        'PUT {id}/code' => 'update-code',
+                        'POST {id}/public' => 'add-public',
+                        'DELETE {id}/public' => 'remove-public',
+                        'POST {id}/tag' => 'add-tag',
+                        'DELETE {id}/tag' => 'remove-tag',
                     ],
                 ],
                 [
@@ -366,6 +371,7 @@ return [
                     'controller' => 'v1/meta',
                     'extraPatterns' => [
                         'PUT code' => 'update-code',
+                        'PUT {id}/code' => 'update-code',
                     ],
                 ],
 
