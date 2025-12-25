@@ -50,7 +50,7 @@ class SystemController extends Controller
                 ];*/
         return $behaviors;
     }
-
+/*
     public function actionVerseCode($verse_id)
     {
         $post = Yii::$app->request->post();
@@ -77,7 +77,7 @@ class SystemController extends Controller
             throw new Exception(json_encode($model->errors), 400);
         }
         return $model;
-    }
+    }*/
     public function actionVerse($verse_id, $test = true)
     {
         $verse = \api\modules\private\models\Verse::findOne($verse_id);
@@ -86,7 +86,6 @@ class SystemController extends Controller
             throw new Exception("Verse not found", 404);
         }
         if ($test) {
-            
             return $verse2->toArray([], ['code', 'id', 'name', 'data', 'description', 'metas', 'resources', 'uuid', 'image', 'managers']);
         } else {
             return $verse->toArray([], ['code', 'id', 'name', 'data', 'description', 'metas', 'resources', 'uuid', 'image', 'managers']);

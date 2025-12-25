@@ -70,7 +70,7 @@ class VerseController extends ActiveController
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
 
-        $dataProvider->query->innerJoin('verse_property AS vp1', 'vp1.verse_id = snapshot.verse_id')
+        $dataProvider->query->innerJoin('verse_property AS vp1', 'vp1.verse_id = verse.id')
             ->innerJoin('property', 'property.id = vp1.property_id')
             ->andWhere(['property.key' => 'public']);
             /*
@@ -262,6 +262,24 @@ class VerseController extends ActiveController
             ];
         }
         throw new Exception('VerseTags not found');
+    }
+
+    /**
+     * 为 verse 创建快照
+     * POST /verse/{id}/take-photo
+     * @param int $id verse ID
+     * @return array
+     * @throws Exception
+     */
+    public function actionTakePhoto($id)
+    {
+        $snapshot = Snapshot::CreateById($id);
+        if ($snapshot->validate()) {
+            $snapshot->save();
+        } else {
+            throw new Exception(json_encode($snapshot->errors), 400);
+        }
+        return $snapshot->toArray([], ['code', 'id', 'name', 'data', 'description', 'metas', 'resources', 'uuid', 'image']);
     }
 
     /**

@@ -34,6 +34,8 @@ class VerseVersion extends \yii\db\ActiveRecord
             [['verse_id', 'version_id'], 'integer'],
             [['verse_id'], 'exist', 'skipOnError' => true, 'targetClass' => Verse::className(), 'targetAttribute' => ['verse_id' => 'id']],
             [['version_id'], 'exist', 'skipOnError' => true, 'targetClass' => Version::className(), 'targetAttribute' => ['version_id' => 'id']],
+            [['verse_id', 'version_id'], 'unique', 'targetAttribute' => ['verse_id', 'version_id']],
+
         ];
     }
 

@@ -248,20 +248,7 @@ return [
                     ],
                     'extraPatterns' => [
                         'GET upgrade' => 'upgrade',
-                        'POST take-photo' => 'take-photo',
-                        'GET verse' => 'verse',
-                        'PUT verse-code' => 'verse-code',
-                        'PUT meta-code' => 'meta-code',
-                    ],
-                ],
-                [
-                    'class' => 'yii\rest\UrlRule',
-                    'pluralize' => false,
-                    'controller' => [
-                        'v1/snapshot',
-                    ],
-                    'extraPatterns' => [
-                        'POST take-photo' => 'take-photo',
+                      //  'GET verse' => 'verse',
                     ],
                 ],
                 [
@@ -364,13 +351,14 @@ return [
                         'DELETE {id}/public' => 'remove-public',
                         'POST {id}/tag' => 'add-tag',
                         'DELETE {id}/tag' => 'remove-tag',
+                        'POST {id}/take-photo' => 'take-photo',
                     ],
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/meta',
                     'extraPatterns' => [
-                        'PUT code' => 'update-code',
+                       // 'PUT code' => 'update-code',
                         'PUT {id}/code' => 'update-code',
                     ],
                 ],

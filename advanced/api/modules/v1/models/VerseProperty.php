@@ -34,6 +34,7 @@ class VerseProperty extends \yii\db\ActiveRecord
             [['verse_id', 'property_id'], 'integer'],
             [['property_id'], 'exist', 'skipOnError' => true, 'targetClass' => Property::className(), 'targetAttribute' => ['property_id' => 'id']],
             [['verse_id'], 'exist', 'skipOnError' => true, 'targetClass' => Verse::className(), 'targetAttribute' => ['verse_id' => 'id']],
+             [['verse_id', 'property_id'], 'unique', 'targetAttribute' => ['verse_id', 'property_id']],
         ];
     }
 

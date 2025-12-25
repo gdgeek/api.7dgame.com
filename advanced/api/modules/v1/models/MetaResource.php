@@ -34,6 +34,7 @@ class MetaResource extends \yii\db\ActiveRecord
             [['meta_id', 'resource_id'], 'integer'],
             [['meta_id'], 'exist', 'skipOnError' => true, 'targetClass' => Meta::className(), 'targetAttribute' => ['meta_id' => 'id']],
             [['resource_id'], 'exist', 'skipOnError' => true, 'targetClass' => Resource::className(), 'targetAttribute' => ['resource_id' => 'id']],
+            [['meta_id', 'resource_id'], 'unique', 'targetAttribute' => ['meta_id', 'resource_id']],
         ];
     }
 

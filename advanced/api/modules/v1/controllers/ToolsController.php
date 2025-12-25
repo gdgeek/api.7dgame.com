@@ -15,7 +15,6 @@ use yii\web\BadRequestHttpException;
 use api\modules\v1\models\User;
 
 class ToolsController extends \yii\rest\Controller
-
 {
 
     public function behaviors()

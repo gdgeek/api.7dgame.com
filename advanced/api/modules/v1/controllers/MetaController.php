@@ -107,6 +107,7 @@ class MetaController extends ActiveController
         $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id, 'prefab' => 0]);
         return $dataProvider;
     }
+    
     public function actionUpdateCode($id){
         
         
@@ -122,6 +123,8 @@ class MetaController extends ActiveController
             throw new Exception(json_encode($model->errors), 400);
         }
         return $model;
+
+        
     }
     
 }
