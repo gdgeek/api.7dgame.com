@@ -29,7 +29,7 @@ class VerseDeriveRule extends Rule
         if (!$verse) {
           throw new BadRequestHttpException("no verse");
         }
-        if ($verse->viewable()) {
+        if ($verse->viewable) {
           return true;
         }
         
@@ -43,7 +43,7 @@ class VerseDeriveRule extends Rule
         if (!$verse) {
           throw new BadRequestHttpException("no verse");
         }
-        if ($verse->editable()) {
+        if ($verse->editable) {
           return true;
         }
         return false;
@@ -62,10 +62,10 @@ class VerseDeriveRule extends Rule
             throw new BadRequestHttpException("no verse");
           }
 
-          if ($verse->editable()) {
+          if ($verse->editable) {
             return true;
           }
-          if ($request->isGet && $verse->viewable()) {
+          if ($request->isGet && $verse->viewable) {
             return true;
           }
 

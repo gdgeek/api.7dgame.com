@@ -7,7 +7,7 @@ use Yii;
 use yii\rbac\Rule;
 use yii\web\BadRequestHttpException;
 
-class VerseRule extends Rule
+class VerseReleaseRule extends Rule
 {
     public $name = 'verse_rule';
     

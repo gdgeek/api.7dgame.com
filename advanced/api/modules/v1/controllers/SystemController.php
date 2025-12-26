@@ -127,7 +127,11 @@ class SystemController extends Controller
         $tag = \api\modules\v1\models\Tags::findOne(['key' => $key]);
         
         if (!$tag) {
-            throw new Exception("Tag with key \"{$key}\" not found", 404);
+            return [
+                'status' => 'skipped',
+                'key' => $key,
+                'message' => "Tag with key \"{$key}\" not found",
+            ];
         }
         
         // 检查 Property 表是否有对应 key 的记录，如果没有则创建

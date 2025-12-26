@@ -453,16 +453,12 @@ class Verse extends \yii\db\ActiveRecord
 
     public function getEditable()
     {
-        return $this->editable();
-    }
-
-    public function editable()
-    {
-
+        
         if (
             isset(Yii::$app->user->identity)
             && (int) Yii::$app->user->id === (int) $this->author_id
         ) {
+           
             return true;
         }
 
@@ -516,17 +512,16 @@ class Verse extends \yii\db\ActiveRecord
 
         return (bool) $exists;
     }
+
+   
     public function getViewable()
     {
-        return $this->viewable();
-    }
-    public function viewable()
-    {
-        if ($this->public || $this->editable) {
+         if ($this->public || $this->editable) {
             return true;
         }
         return false;
     }
+  
     /**
      * Gets query for [[Author]].
      *
