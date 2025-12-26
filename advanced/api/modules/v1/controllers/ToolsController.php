@@ -49,7 +49,6 @@ class ToolsController extends \yii\rest\Controller
         if(!$linked){
             $linked = new UserLinked();
             $linked->user_id = $user->id;
-           
         }
         $token = $user->getRefreshToken()->one();
         if(!$token){
