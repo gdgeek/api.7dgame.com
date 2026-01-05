@@ -39,20 +39,35 @@ class PhototypeController extends ActiveController
             'authMethods' => [
                 JwtHttpBearerAuth::class,
             ],
-            'except' => ['options'],
+            'except' => ['options', 'by-type'],
         ];
-        $behaviors['access'] = [
-            'class' => AccessControl::class,
-        ];
+        if ($this->action->id !== 'by-type') {
+            $behaviors['access'] = [
+                'class' => AccessControl::class
+            ];
+        }
+
         return $behaviors;
     }
-   public function actions()
+    public function actions()
     {
         $actions = parent::actions();
         unset($actions['index']);
-      
+
         return $actions;
     }
+    public function actionByType(string $type)
+    {
+        $modelClass = $this->modelClass;
+        $model = $modelClass::findOne(['type' => $type]);
+
+        if ($model === null) {
+            throw new BadRequestHttpException("Phototype with type '{$type}' not found.");
+        }
+
+        return $model->toArray(['id', 'data', 'title'], ['resource']);
+    }
+
     public function actionIndex()
     {
         $searchModel = new PhototypeSearch();

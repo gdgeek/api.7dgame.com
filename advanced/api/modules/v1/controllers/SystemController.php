@@ -1,10 +1,12 @@
 <?php
 namespace api\modules\v1\controllers;
 
+use Faker\Extension\VersionExtension;
 use Yii;
 use yii\rest\Controller;
 use api\modules\v1\models\Snapshot;
 use api\modules\v1\models\Verse;
+use api\modules\v1\models\Version;
 use mdm\admin\components\AccessControl;
 use bizley\jwt\JwtHttpBearerAuth;
 use yii\filters\auth\CompositeAuth;
@@ -106,6 +108,8 @@ class SystemController extends Controller
     public function actionUpgrade()
     {
         set_time_limit(0);
+        Version::upgrade();
+       
         
         $publicResult = $this->migrateTagToProperty('public');
         $checkinResult = $this->migrateTagToProperty('checkin');

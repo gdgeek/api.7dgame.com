@@ -38,7 +38,7 @@ class MetaVersion extends \yii\db\ActiveRecord
     }
     public static function upgrade($meta){
         
-        $current = 1;
+        $current = Version::getCurrentVersionNumber();
         $number = isset($meta->version) ? $meta->version->number : 0;
 
         if ($number == $current) {

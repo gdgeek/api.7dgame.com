@@ -326,6 +326,7 @@ class Verse extends \yii\db\ActiveRecord
 
     public function afterSave($insert, $changedAttributes)
     {
+      
         parent::afterSave($insert, $changedAttributes);
 
         $newMetaIds = array_unique(array_filter($this->getMetaIds()));

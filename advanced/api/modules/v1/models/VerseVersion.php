@@ -64,18 +64,20 @@ class VerseVersion extends \yii\db\ActiveRecord
     public static function upgrade($verse)
     {
 
-        $current = 1;
+        $current = Version::getCurrentVersionNumber();
         $number = isset($verse->version) ? $verse->version->number : 0;
 
         if ($number == $current) {
             return;
         }
+       
         if (empty($verse->uuid)) {
             $verse->uuid = \Faker\Provider\Uuid::uuid();
         }
 
         $version = Version::findOne(['number' => $current]);
         if (!$version) {
+            
             return;
         }
 
@@ -85,6 +87,7 @@ class VerseVersion extends \yii\db\ActiveRecord
             $vv = new self();
             $vv->verse_id = $verse->id;
         }
+         
         $verse->save();
         $metas = $verse->metas;
         $vv->version_id = $version->id;

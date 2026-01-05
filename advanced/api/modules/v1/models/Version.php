@@ -18,6 +18,25 @@ use Yii;
  */
 class Version extends \yii\db\ActiveRecord
 {
+
+    public static function upgrade()
+    {
+        // 目前只有一个版本，后续版本升级逻辑在这里添加
+        $version = self::findOne(['number' => self::getCurrentVersionNumber()]);
+        if (!$version) {
+            $version = new self();
+            $version->name = 'Initial Version';
+            $version->number = self::getCurrentVersionNumber();
+            $version->created_at = date('Y-m-d H:i:s');
+            $version->info = 'The first version of the system.';
+            $version->save();
+        }
+        return $version;
+    }
+    public static function getCurrentVersionNumber()
+    {
+        return 1;
+    }
     /**
      * {@inheritdoc}
      */

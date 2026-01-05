@@ -110,7 +110,6 @@ class Meta extends \yii\db\ActiveRecord
         parent::afterFind();
 
 
-        parent::afterFind();
         MetaVersion::upgrade($this);
         
       

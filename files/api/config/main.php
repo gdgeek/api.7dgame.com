@@ -99,6 +99,9 @@ return [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/phototype',
                     'pluralize' => true,
+                    'extraPatterns' => [
+                        'GET by-type' => 'by-type',
+                    ],
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',
