@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  # 阶段1: 测试
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.0'
+          extensions: pdo, pdo_mysql, gd
+          
+      - name: Install Dependencies
+        working-directory: ./advanced
+        run: composer install --prefer-dist --no-progress
+        
+      - name: Run Unit Tests
+        working-directory: ./advanced
+        run: vendor/bin/codecept run unit
+
+  # 阶段2: 构建 Docker 镜像
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Login to Tencent Registry
+        uses: docker/login-action@v3
+        with:
+          registry: hkccr.ccs.tencentyun.com
+          username: ${{ secrets.TENCENT_DOCKER_USERNAME }}
+          password: ${{ secrets.TENCENT_DOCKER_PASSWORD }}
+          
+      - name: Build and Push Docker Image
+        run: |
+          docker build -t hkccr.ccs.tencentyun.com/gdgeek/api:${{ github.sha }} -f docker/Release .
+          docker tag hkccr.ccs.tencentyun.com/gdgeek/api:${{ github.sha }} hkccr.ccs.tencentyun.com/gdgeek/api:latest
+          docker push hkccr.ccs.tencentyun.com/gdgeek/api:${{ github.sha }}
+          docker push hkccr.ccs.tencentyun.com/gdgeek/api:latest
+
+  # 阶段3: 部署
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push'
+    steps:
+      - name: Deploy via Portainer Webhook
+        run: |
+          curl -X POST "${{ secrets.PORTAINER_WEBHOOK_URL }}"
