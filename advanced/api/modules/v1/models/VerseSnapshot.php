@@ -56,9 +56,11 @@ class VerseSnapshot extends Verse
             'resources',
             'description',
             'code',
-            'managers'
+            'managers',
+            'lua'
         ];
     }
+
 
     public function getCode()
     {

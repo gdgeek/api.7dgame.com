@@ -126,7 +126,7 @@ class Snapshot extends \yii\db\ActiveRecord
         return [
             'id',
             'name' => function (): string {
-                  return $this->verse->name ?? "";
+                return $this->verse->name ?? "";
             },
             'description' => function (): string {
 
@@ -164,7 +164,7 @@ class Snapshot extends \yii\db\ActiveRecord
         }
 
         $snapshot->uuid = $verse->uuid;
-        $snapshot->code = $verse->code;
+        $snapshot->code = $verse->lua;
         $snapshot->data = json_encode($verse->data);
         $snapshot->managers = $verse->managers;
 
@@ -176,9 +176,9 @@ class Snapshot extends \yii\db\ActiveRecord
                 'prefab' => $meta->prefab,
                 'title' => $meta->title,
                 'data' => json_encode($meta->data),
-                'code' => $meta->code,
+                'code' => $meta->lua,
                 'uuid' => $meta->uuid,
-                'events' => json_encode($meta->events),
+                'events' => json_encode(value: $meta->events),
                 'type' => $meta->prefab == 0 ? 'entity' : 'prefab',
             ];
         }, $verse->getMetas()->all());

@@ -120,10 +120,10 @@ class Meta extends \yii\db\ActiveRecord
         return [
             'image',
             'verseMetas',
-            'author' => function () {
-                return $this->author;
-            },
-            'metaCode'
+            'author',
+            'metaCode',
+            'lua',
+            'js',
 
         ];
     }
@@ -132,7 +132,6 @@ class Meta extends \yii\db\ActiveRecord
        
         return [
             'id',
-          //  'image_id',
             'uuid',
             'events',
             'title',
@@ -161,6 +160,14 @@ class Meta extends \yii\db\ActiveRecord
             'data' => 'Data',
             'uuid' => 'Uuid',
         ];
+    }
+   public function getLua(): string
+    {
+        return $this->verseCode->lua;
+    }
+    public function getJs(): string
+    {
+        return $this->verseCode->js;
     }
 
     public function getViewable()

@@ -4,8 +4,6 @@ namespace api\modules\v1\models\data;
 use api\modules\v1\models\Meta;
 use api\modules\v1\models\Code;
 
-use yii\web\BadRequestHttpException;
-use yii\base\Exception;
 
 use yii\base\Model;
 
@@ -35,6 +33,8 @@ class MetaCodeTool extends Model
         if(!$code){
             $code = new Code();
         }
+        $metaCode->lua = $this->lua;
+        $metaCode->js = $this->js;
         $code->lua = $this->lua;
         $code->js = $this->js;
         if($code->validate()){

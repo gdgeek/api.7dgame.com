@@ -371,12 +371,18 @@ class Verse extends \yii\db\ActiveRecord
             'verseTags',
             'tags',
             'version',
+            'js',
+            'lua',
         ];
-
-
-
     }
-   
+    public function getLua(): string
+    {
+        return $this->verseCode->lua;
+    }
+    public function getJs(): string
+    {
+        return $this->verseCode->js;
+    }
 
     public function getMetaIds()
     {
