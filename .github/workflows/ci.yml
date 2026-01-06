@@ -108,7 +108,7 @@ jobs:
                       'jwt' => [
                            'class' => 'bizley\jwt\Jwt', 
                            'signer' => 'HS256', 
-                           'signingKey' => 'testing-key', 
+                           'signingKey' => 'secure-signing-key-should-be-at-least-256-bits-long-for-hs256', 
                       ],
                   ],
               ]
