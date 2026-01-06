@@ -101,6 +101,15 @@ jobs:
                       'request' => [
                           'cookieValidationKey' => 'test-key-common',
                       ],
+                      'user' => [
+                          'class' => 'yii\web\User',
+                          'identityClass' => 'common\models\User',
+                      ],
+                      'jwt' => [
+                           'class' => 'bizley\jwt\Jwt', 
+                           'signer' => 'hmac', 
+                           'signingKey' => 'testing-key', 
+                      ],
                   ],
               ]
           );" > common/config/codeception-local.php
