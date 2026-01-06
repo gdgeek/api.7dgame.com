@@ -156,31 +156,11 @@ jobs:
           if [ -f "../docker/bujiaban.sql" ]; then
             echo "Importing initial SQL dump..."
             mysql -h 127.0.0.1 -u root -proot yii2_advanced_test < ../docker/bujiaban.sql
-
-            # Manually inject ALL migration history from the file system
-            # Because bujiaban.sql has tables but NO migration records for app migrations
-            # We need to trick Yii into thinking all these 297 migrations are already done.
-            
-            # This script lists all migration files, extracts the version ID (e.g., m130524_201442_init),
-            # and inserts them into the migration table.
-            
-            ls console/migrations/m*.php | awk -F/ '{print $NF}' | sed 's/\.php//' | while read migration; do
-              mysql -h 127.0.0.1 -u root -proot yii2_advanced_test -e "INSERT IGNORE INTO migration (version, apply_time) VALUES ('$migration', UNIX_TIMESTAMP());"
-            done
-            
-            # Also inject RBAC migrations explicitly just in case
-            mysql -h 127.0.0.1 -u root -proot yii2_advanced_test -e "
-              INSERT IGNORE INTO migration (version, apply_time) VALUES 
-              ('m140506_102106_rbac_init', UNIX_TIMESTAMP()),
-              ('m170907_052038_rbac_add_index_on_auth_assignment_user_id', UNIX_TIMESTAMP()),
-              ('m180523_151638_rbac_updates_indexes_without_prefix', UNIX_TIMESTAMP()),
-              ('m200409_110543_rbac_update_mssql_trigger', UNIX_TIMESTAMP());
-            "
           fi
 
-          # Apply any remaining RBAC migrations (just in case)
+          # Apply RBAC migrations explicitly first
           php yii migrate/up --migrationPath=@yii/rbac/migrations --interactive=0
-          # Apply App migrations (should ideally find nothing new now)
+          # Apply App migrations
           php yii migrate --interactive=0
 
       - name: Run Unit Tests
