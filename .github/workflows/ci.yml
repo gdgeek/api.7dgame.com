@@ -42,9 +42,9 @@ jobs:
       - name: Run Unit Tests
         working-directory: ./advanced
         run: |
-           vendor/bin/codecept run -c common unit
-           vendor/bin/codecept run -c api unit
-           vendor/bin/codecept run -c backend unit
+           vendor/bin/codecept run -c common unit --bootstrap ../test_bootstrap.php
+           vendor/bin/codecept run -c api unit --bootstrap ../test_bootstrap.php
+           vendor/bin/codecept run -c backend unit --bootstrap ../test_bootstrap.php
 
   # 阶段2: 构建 Docker 镜像
   build:

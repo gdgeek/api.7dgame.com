@@ -8,3 +8,4 @@ paths:
     output: console/runtime/logs
 settings:
     colors: true
+    bootstrap: test_bootstrap.php
