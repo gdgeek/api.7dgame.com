@@ -156,9 +156,13 @@ jobs:
           if [ -f "../docker/bujiaban.sql" ]; then
             echo "Importing initial SQL dump..."
             mysql -h 127.0.0.1 -u root -proot yii2_advanced_test < ../docker/bujiaban.sql
+
+            # Mark RBAC migrations as done because the tables already exist in the dump
+            # but the migration history records are missing
+            php yii migrate/mark --migrationPath=@yii/rbac/migrations --interactive=0
           fi
 
-          # Apply RBAC migrations explicitly first
+          # Apply any remaining RBAC migrations (just in case)
           php yii migrate/up --migrationPath=@yii/rbac/migrations --interactive=0
           # Apply App migrations
           php yii migrate --interactive=0
