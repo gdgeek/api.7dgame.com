@@ -12,15 +12,8 @@ class m190528_142525_add_fk_user_id extends Migration
      */
     public function safeUp()
     {
-		// add foreign key for table `user`
-        $this->addForeignKey(
-            'fk-polygon-user_id',
-            'polygon',
-            'user_id',
-            'user',
-            'id',
-            'CASCADE'
-        );
+        // This migration was erroneous as it tried to add a FK to table 'polygon' which didn't exist yet.
+        // The table 'polygen' is created later in m190626_094428_create_polygen_table.php and handles the FK there.
     }
 
     /**
@@ -28,26 +21,5 @@ class m190528_142525_add_fk_user_id extends Migration
      */
     public function safeDown()
     {
-       
-        $this->dropForeignKey(
-            'fk-polygon-user_id',
-            'polygon'
-        );
-
     }
-
-    /*
-    // Use up()/down() to run migration code without a transaction.
-    public function up()
-    {
-
-    }
-
-    public function down()
-    {
-        echo "m190528_142525_add_fk_user_id cannot be reverted.\n";
-
-        return false;
-    }
-    */
 }
