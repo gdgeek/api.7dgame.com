@@ -147,7 +147,7 @@ jobs:
           # API Test Local (functions as Codeception Config for API)
           echo "<?php
           return yii\helpers\ArrayHelper::merge(
-              require dirname(dirname(__DIR__)) . '/common/config/codeception-local.php',
+               require dirname(dirname(__DIR__)) . '/common/config/codeception-local.php',
               require __DIR__ . '/main.php',
               require __DIR__ . '/main-local.php',
               [
@@ -186,7 +186,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     needs: test
-    if: github.event_name == 'push'
+    # Allow build on PRs to verify Dockerfile, but logic below controls tag pushing
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
 
@@ -210,9 +211,17 @@ jobs:
       - name: Build and Push Docker Image
         run: |
           docker build -t hkccr.ccs.tencentyun.com/gdgeek/api:${{ github.sha }} -f docker/Release .
-          docker tag hkccr.ccs.tencentyun.com/gdgeek/api:${{ github.sha }} hkccr.ccs.tencentyun.com/gdgeek/api:latest
+          
+          # Always push the commit-specific tag
           docker push hkccr.ccs.tencentyun.com/gdgeek/api:${{ github.sha }}
-          docker push hkccr.ccs.tencentyun.com/gdgeek/api:latest
+
+          # Only update 'latest' tag on push events (merge to master/main)
+          if [ "${{ github.event_name }}" == "push" ]; then
+            docker tag hkccr.ccs.tencentyun.com/gdgeek/api:${{ github.sha }} hkccr.ccs.tencentyun.com/gdgeek/api:latest
+            docker push hkccr.ccs.tencentyun.com/gdgeek/api:latest
+          else
+            echo "Skipping 'latest' tag push for non-push event (PR)"
+          fi
 
   # 阶段3: 部署
   deploy:
