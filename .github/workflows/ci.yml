@@ -10,6 +10,19 @@ jobs:
   # 阶段1: 测试
   test:
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: yii2_advanced_test
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
     steps:
       - uses: actions/checkout@v4
       
@@ -28,9 +41,25 @@ jobs:
         run: |
           # Common Configs
           echo "<?php return ['vendorPath' => dirname(dirname(__DIR__)) . '/vendor'];" > common/config/main.php
-          echo "<?php return ['id' => 'app-common', 'basePath' => dirname(__DIR__)];" > common/config/main-local.php
+          echo "<?php return [
+              'id' => 'app-common',
+              'basePath' => dirname(__DIR__),
+              'components' => [
+                  'db' => [
+                      'class' => 'yii\db\Connection',
+                      'dsn' => 'mysql:host=127.0.0.1;dbname=yii2_advanced_test',
+                      'username' => 'root',
+                      'password' => 'root',
+                      'charset' => 'utf8',
+                  ],
+                  'mailer' => [
+                      'useFileTransport' => true,
+                  ],
+              ],
+          ];" > common/config/main-local.php
           echo "<?php return [];" > common/config/test.php
           echo "<?php return ['id' => 'app-common-tests', 'basePath' => dirname(__DIR__)];" > common/config/test-local.php
+          echo "<?php return [];" > console/config/main-local.php
           
           # Common Codeception Config (Merges all)
           echo "<?php
@@ -91,6 +120,11 @@ jobs:
                   ],
               ]
           );" > api/config/test-local.php
+
+      - name: Run Migrations
+        working-directory: ./advanced
+        run: |
+          php yii migrate --interactive=0
 
       - name: Run Unit Tests
         working-directory: ./advanced
