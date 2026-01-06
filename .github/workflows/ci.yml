@@ -98,6 +98,9 @@ jobs:
               require __DIR__ . '/test-local.php',
               [
                   'components' => [
+                      'cache' => [
+                          'class' => 'yii\caching\ArrayCache',
+                      ],
                       'request' => [
                           'cookieValidationKey' => 'test-key-common',
                       ],
