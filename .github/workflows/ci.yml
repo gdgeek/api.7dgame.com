@@ -82,6 +82,9 @@ jobs:
                           ],
                       ],
                   ],
+                  'authManager' => [
+                      'class' => 'yii\rbac\DbManager',
+                  ],
               ],
           ];" > console/config/main.php
           echo "<?php return [];" > console/config/main-local.php
@@ -149,6 +152,9 @@ jobs:
       - name: Run Migrations
         working-directory: ./advanced
         run: |
+          # Apply RBAC migrations explicitly first
+          php yii migrate/up --migrationPath=@yii/rbac/migrations --interactive=0
+          # Apply App migrations
           php yii migrate --interactive=0
 
       - name: Run Unit Tests
