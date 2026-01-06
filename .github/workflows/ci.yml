@@ -152,6 +152,12 @@ jobs:
       - name: Run Migrations
         working-directory: ./advanced
         run: |
+          # Try to import initial SQL if exists
+          if [ -f "../docker/bujiaban.sql" ]; then
+            echo "Importing initial SQL dump..."
+            mysql -h 127.0.0.1 -u root -proot yii2_advanced_test < ../docker/bujiaban.sql
+          fi
+
           # Apply RBAC migrations explicitly first
           php yii migrate/up --migrationPath=@yii/rbac/migrations --interactive=0
           # Apply App migrations
