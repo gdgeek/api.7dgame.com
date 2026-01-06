@@ -27,16 +27,16 @@ jobs:
         working-directory: ./advanced
         run: |
           # 创建必要的 local 配置文件以免测试报错
-          echo "<?php return [];" > common/config/main-local.php
-          echo "<?php return [];" > common/config/test-local.php
+          echo "<?php return ['id' => 'app-common-tests', 'basePath' => dirname(__DIR__)];" > common/config/main-local.php
+          echo "<?php return ['id' => 'app-common-tests', 'basePath' => dirname(__DIR__)];" > common/config/test-local.php
           echo "<?php return ['components' => ['request' => ['cookieValidationKey' => 'test-key']]];" > common/config/codeception-local.php
           
-          echo "<?php return [];" > backend/config/main-local.php
-          echo "<?php return [];" > backend/config/test-local.php
+          echo "<?php return ['id' => 'app-backend-tests', 'basePath' => dirname(__DIR__)];" > backend/config/main-local.php
+          echo "<?php return ['id' => 'app-backend-tests', 'basePath' => dirname(__DIR__)];" > backend/config/test-local.php
           echo "<?php return ['components' => ['request' => ['cookieValidationKey' => 'test-key']]];" > backend/config/codeception-local.php
 
-          echo "<?php return [];" > api/config/main-local.php
-          echo "<?php return [];" > api/config/test-local.php
+          echo "<?php return ['id' => 'app-api-tests', 'basePath' => dirname(__DIR__)];" > api/config/main-local.php
+          echo "<?php return ['id' => 'app-api-tests', 'basePath' => dirname(__DIR__)];" > api/config/test-local.php
           echo "<?php return ['components' => ['request' => ['cookieValidationKey' => 'test-key']]];" > api/config/test-local.php # API 这个特殊点，看之前的配置是指向 test-local
 
       - name: Run Unit Tests
