@@ -7,19 +7,16 @@ namespace Composer\Autoload;
 class ComposerStaticInite73fe84af754448fae2a30d48a02e214
 {
     public static $files = array (
-        '6124b4c8570aa390c21fafd04a26c69f' => __DIR__ . '/..' . '/myclabs/deep-copy/src/DeepCopy/deep_copy.php',
-        'ec07570ca5a812141189b1fa81503674' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/Assert/Functions.php',
         '6e3fae29631ef280660b3cdad06f25a8' => __DIR__ . '/..' . '/symfony/deprecation-contracts/function.php',
         '2cffec82183ee1cea088009cef9a6fc3' => __DIR__ . '/..' . '/ezyang/htmlpurifier/library/HTMLPurifier.composer.php',
-        '0e6d7bf4a5811bfa5cf40c5ccd6fae6a' => __DIR__ . '/..' . '/symfony/polyfill-mbstring/bootstrap.php',
         '7b11c4dc42b3b3023073cb14e519683c' => __DIR__ . '/..' . '/ralouphie/getallheaders/src/getallheaders.php',
-        'e69f7f6ee287b969198c3c9d6777bd38' => __DIR__ . '/..' . '/symfony/polyfill-intl-normalizer/bootstrap.php',
+        '0e6d7bf4a5811bfa5cf40c5ccd6fae6a' => __DIR__ . '/..' . '/symfony/polyfill-mbstring/bootstrap.php',
         '37a3dc5111fe8f707ab4c132ef1dbc62' => __DIR__ . '/..' . '/guzzlehttp/guzzle/src/functions_include.php',
-        'f598d06aa772fa33d905e87be6398fb1' => __DIR__ . '/..' . '/symfony/polyfill-intl-idn/bootstrap.php',
         '320cde22f66dd4f5d3fd621d3e88b98f' => __DIR__ . '/..' . '/symfony/polyfill-ctype/bootstrap.php',
         '662a729f963d39afe703c9d9b7ab4a8c' => __DIR__ . '/..' . '/symfony/polyfill-php83/bootstrap.php',
-        'a4a119a56e50fbb293281d9a48007e0e' => __DIR__ . '/..' . '/symfony/polyfill-php80/bootstrap.php',
-        '180092cfc969a12e06f2132a203a3184' => __DIR__ . '/..' . '/codeception/verify/src/Codeception/function.php',
+        'e69f7f6ee287b969198c3c9d6777bd38' => __DIR__ . '/..' . '/symfony/polyfill-intl-normalizer/bootstrap.php',
+        '6124b4c8570aa390c21fafd04a26c69f' => __DIR__ . '/..' . '/myclabs/deep-copy/src/DeepCopy/deep_copy.php',
+        'f598d06aa772fa33d905e87be6398fb1' => __DIR__ . '/..' . '/symfony/polyfill-intl-idn/bootstrap.php',
         'a9ed0d27b5a698798a89181429f162c5' => __DIR__ . '/..' . '/khanamiryan/qrcode-detector-decoder/lib/Common/customFunctions.php',
         '07d7f1a47144818725fd8d91a907ac57' => __DIR__ . '/..' . '/laminas/laminas-diactoros/src/functions/create_uploaded_file.php',
         'da94ac5d3ca7d2dbab84ce561ce72bfd' => __DIR__ . '/..' . '/laminas/laminas-diactoros/src/functions/marshal_headers_from_sapi.php',
@@ -40,10 +37,13 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
         'c5521cebe610a9bf42c44b3a5163adfd' => __DIR__ . '/..' . '/overtrue/socialite/src/Contracts/FactoryInterface.php',
         'ccd11c8e7dd9b33638b248681bdfba27' => __DIR__ . '/..' . '/overtrue/socialite/src/Contracts/UserInterface.php',
         '5649552725dea6ec47381627600e3ac1' => __DIR__ . '/..' . '/overtrue/socialite/src/Contracts/ProviderInterface.php',
+        'ec07570ca5a812141189b1fa81503674' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/Assert/Functions.php',
+        'a4a119a56e50fbb293281d9a48007e0e' => __DIR__ . '/..' . '/symfony/polyfill-php80/bootstrap.php',
+        '180092cfc969a12e06f2132a203a3184' => __DIR__ . '/..' . '/codeception/verify/src/Codeception/function.php',
     );
 
     public static $prefixLengthsPsr4 = array (
-        'y' => 
+        'y' =>
         array (
             'yii\\redis\\' => 10,
             'yii\\gii\\' => 8,
@@ -57,43 +57,43 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
             'yii2tech\\filestorage\\' => 21,
             'yidas\\yii2BowerAsset\\' => 21,
         ),
-        'r' => 
+        'r' =>
         array (
             'rmrevin\\yii\\fontawesome\\' => 24,
         ),
-        'm' => 
+        'm' =>
         array (
             'mdm\\admin\\' => 10,
         ),
-        'l' => 
+        'l' =>
         array (
             'linslin\\yii2\\curl\\' => 18,
         ),
-        'd' => 
+        'd' =>
         array (
             'dmstr\\' => 6,
         ),
-        'c' => 
+        'c' =>
         array (
             'cebe\\markdown\\' => 14,
         ),
-        'b' => 
+        'b' =>
         array (
             'bizley\\jwt\\' => 11,
         ),
-        'a' => 
+        'a' =>
         array (
             'antkaz\\vue\\' => 11,
         ),
-        'Z' => 
+        'Z' =>
         array (
             'Zxing\\' => 6,
         ),
-        'T' => 
+        'T' =>
         array (
             'TencentCloud\\' => 13,
         ),
-        'S' => 
+        'S' =>
         array (
             'Symfony\\Polyfill\\Php83\\' => 23,
             'Symfony\\Polyfill\\Php80\\' => 23,
@@ -115,11 +115,11 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
             'Symfony\\Component\\BrowserKit\\' => 29,
             'Symfony\\Bridge\\PsrHttpMessage\\' => 30,
         ),
-        'Q' => 
+        'Q' =>
         array (
             'QCloud\\COSSTS\\' => 14,
         ),
-        'P' => 
+        'P' =>
         array (
             'Psr\\SimpleCache\\' => 16,
             'Psr\\Log\\' => 8,
@@ -131,370 +131,370 @@ class ComposerStaticInite73fe84af754448fae2a30d48a02e214
             'Psr\\Cache\\' => 10,
             'PhpParser\\' => 10,
         ),
-        'O' => 
+        'O' =>
         array (
             'Overtrue\\Socialite\\' => 19,
             'OpenApi\\' => 8,
         ),
-        'N' => 
+        'N' =>
         array (
             'Nyholm\\Psr7\\' => 12,
             'Nyholm\\Psr7Server\\' => 18,
         ),
-        'M' => 
+        'M' =>
         array (
             'Monolog\\' => 8,
             'MathPHP\\' => 8,
             'Masterminds\\' => 12,
         ),
-        'L' => 
+        'L' =>
         array (
             'League\\OAuth2\\Client\\' => 21,
             'Lcobucci\\JWT\\' => 13,
             'Lcobucci\\Clock\\' => 15,
             'Laminas\\Diactoros\\' => 18,
         ),
-        'I' => 
+        'I' =>
         array (
             'Identicon\\' => 10,
         ),
-        'G' => 
+        'G' =>
         array (
             'GuzzleHttp\\Psr7\\' => 16,
             'GuzzleHttp\\Promise\\' => 19,
             'GuzzleHttp\\' => 11,
         ),
-        'F' => 
+        'F' =>
         array (
             'Firebase\\JWT\\' => 13,
             'Faker\\' => 6,
         ),
-        'E' => 
+        'E' =>
         array (
             'EasyWeChat\\' => 11,
         ),
-        'D' => 
+        'D' =>
         array (
             'DeepCopy\\' => 9,
             'Da\\QrCode\\' => 10,
         ),
-        'C' => 
+        'C' =>
         array (
             'Codeception\\' => 12,
         ),
     );
 
     public static $prefixDirsPsr4 = array (
-        'yii\\redis\\' => 
+        'yii\\redis\\' =>
         array (
             0 => __DIR__ . '/..' . '/yiisoft/yii2-redis/src',
         ),
-        'yii\\gii\\' => 
+        'yii\\gii\\' =>
         array (
             0 => __DIR__ . '/..' . '/yiisoft/yii2-gii/src',
         ),
-        'yii\\faker\\' => 
+        'yii\\faker\\' =>
         array (
             0 => __DIR__ . '/..' . '/yiisoft/yii2-faker/src',
         ),
-        'yii\\debug\\' => 
+        'yii\\debug\\' =>
         array (
             0 => __DIR__ . '/..' . '/yiisoft/yii2-debug/src',
         ),
-        'yii\\composer\\' => 
+        'yii\\composer\\' =>
         array (
             0 => __DIR__ . '/..' . '/yiisoft/yii2-composer',
         ),
-        'yii\\bootstrap\\' => 
+        'yii\\bootstrap\\' =>
         array (
             0 => __DIR__ . '/..' . '/yiisoft/yii2-bootstrap/src',
         ),
-        'yii\\bootstrap4\\' => 
+        'yii\\bootstrap4\\' =>
         array (
             0 => __DIR__ . '/..' . '/yiisoft/yii2-bootstrap4/src',
         ),
-        'yii\\Psr7\\' => 
+        'yii\\Psr7\\' =>
         array (
             0 => __DIR__ . '/..' . '/charlesportwoodii/yii2-psr7-bridge/src',
         ),
-        'yii\\' => 
+        'yii\\' =>
         array (
             0 => __DIR__ . '/..' . '/yiisoft/yii2',
         ),
-        'yii2tech\\filestorage\\' => 
+        'yii2tech\\filestorage\\' =>
         array (
             0 => __DIR__ . '/..' . '/yii2tech/file-storage/src',
         ),
-        'yidas\\yii2BowerAsset\\' => 
+        'yidas\\yii2BowerAsset\\' =>
         array (
             0 => __DIR__ . '/..' . '/yidas/yii2-bower-asset',
         ),
-        'rmrevin\\yii\\fontawesome\\' => 
+        'rmrevin\\yii\\fontawesome\\' =>
         array (
             0 => __DIR__ . '/..' . '/rmrevin/yii2-fontawesome',
         ),
-        'mdm\\admin\\' => 
+        'mdm\\admin\\' =>
         array (
             0 => __DIR__ . '/..' . '/mdmsoft/yii2-admin',
         ),
-        'linslin\\yii2\\curl\\' => 
+        'linslin\\yii2\\curl\\' =>
         array (
             0 => __DIR__ . '/..' . '/linslin/yii2-curl',
         ),
-        'dmstr\\' => 
+        'dmstr\\' =>
         array (
             0 => __DIR__ . '/..' . '/dmstr/yii2-adminlte-asset',
         ),
-        'cebe\\markdown\\' => 
+        'cebe\\markdown\\' =>
         array (
             0 => __DIR__ . '/..' . '/cebe/markdown',
         ),
-        'bizley\\jwt\\' => 
+        'bizley\\jwt\\' =>
         array (
             0 => __DIR__ . '/..' . '/bizley/jwt/src',
         ),
-        'antkaz\\vue\\' => 
+        'antkaz\\vue\\' =>
         array (
             0 => __DIR__ . '/..' . '/antkaz/yii2-vue/src',
         ),
-        'Zxing\\' => 
+        'Zxing\\' =>
         array (
             0 => __DIR__ . '/..' . '/khanamiryan/qrcode-detector-decoder/lib',
         ),
-        'TencentCloud\\' => 
+        'TencentCloud\\' =>
         array (
-            0 => __DIR__ . '/..' . '/tencentcloud/common/src/TencentCloud',
-            1 => __DIR__ . '/..' . '/tencentcloud/sts/src/TencentCloud',
+            0 => __DIR__ . '/..' . '/tencentcloud/sts/src/TencentCloud',
+            1 => __DIR__ . '/..' . '/tencentcloud/common/src/TencentCloud',
         ),
-        'Symfony\\Polyfill\\Php83\\' => 
+        'Symfony\\Polyfill\\Php83\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-php83',
         ),
-        'Symfony\\Polyfill\\Php80\\' => 
+        'Symfony\\Polyfill\\Php80\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-php80',
         ),
-        'Symfony\\Polyfill\\Mbstring\\' => 
+        'Symfony\\Polyfill\\Mbstring\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-mbstring',
         ),
-        'Symfony\\Polyfill\\Intl\\Normalizer\\' => 
+        'Symfony\\Polyfill\\Intl\\Normalizer\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-intl-normalizer',
         ),
-        'Symfony\\Polyfill\\Intl\\Idn\\' => 
+        'Symfony\\Polyfill\\Intl\\Idn\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-intl-idn',
         ),
-        'Symfony\\Polyfill\\Ctype\\' => 
+        'Symfony\\Polyfill\\Ctype\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-ctype',
         ),
-        'Symfony\\Contracts\\Service\\' => 
+        'Symfony\\Contracts\\Service\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/service-contracts',
         ),
-        'Symfony\\Contracts\\HttpClient\\' => 
+        'Symfony\\Contracts\\HttpClient\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/http-client-contracts',
         ),
-        'Symfony\\Contracts\\Cache\\' => 
+        'Symfony\\Contracts\\Cache\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/cache-contracts',
         ),
-        'Symfony\\Component\\Yaml\\' => 
+        'Symfony\\Component\\Yaml\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/yaml',
         ),
-        'Symfony\\Component\\VarExporter\\' => 
+        'Symfony\\Component\\VarExporter\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/var-exporter',
         ),
-        'Symfony\\Component\\Mime\\' => 
+        'Symfony\\Component\\Mime\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/mime',
         ),
-        'Symfony\\Component\\HttpFoundation\\' => 
+        'Symfony\\Component\\HttpFoundation\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/http-foundation',
         ),
-        'Symfony\\Component\\HttpClient\\' => 
+        'Symfony\\Component\\HttpClient\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/http-client',
         ),
-        'Symfony\\Component\\Finder\\' => 
+        'Symfony\\Component\\Finder\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/finder',
         ),
-        'Symfony\\Component\\DomCrawler\\' => 
+        'Symfony\\Component\\DomCrawler\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/dom-crawler',
         ),
-        'Symfony\\Component\\Cache\\' => 
+        'Symfony\\Component\\Cache\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/cache',
         ),
-        'Symfony\\Component\\BrowserKit\\' => 
+        'Symfony\\Component\\BrowserKit\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/browser-kit',
         ),
-        'Symfony\\Bridge\\PsrHttpMessage\\' => 
+        'Symfony\\Bridge\\PsrHttpMessage\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/psr-http-message-bridge',
         ),
-        'QCloud\\COSSTS\\' => 
+        'QCloud\\COSSTS\\' =>
         array (
             0 => __DIR__ . '/..' . '/qcloud_sts/qcloud-sts-sdk/src',
         ),
-        'Psr\\SimpleCache\\' => 
+        'Psr\\SimpleCache\\' =>
         array (
             0 => __DIR__ . '/..' . '/psr/simple-cache/src',
         ),
-        'Psr\\Log\\' => 
+        'Psr\\Log\\' =>
         array (
             0 => __DIR__ . '/..' . '/psr/log/src',
         ),
-        'Psr\\Http\\Server\\' => 
+        'Psr\\Http\\Server\\' =>
         array (
             0 => __DIR__ . '/..' . '/psr/http-server-handler/src',
         ),
-        'Psr\\Http\\Message\\' => 
+        'Psr\\Http\\Message\\' =>
         array (
             0 => __DIR__ . '/..' . '/psr/http-factory/src',
             1 => __DIR__ . '/..' . '/psr/http-message/src',
         ),
-        'Psr\\Http\\Client\\' => 
+        'Psr\\Http\\Client\\' =>
         array (
             0 => __DIR__ . '/..' . '/psr/http-client/src',
         ),
-        'Psr\\Container\\' => 
+        'Psr\\Container\\' =>
         array (
             0 => __DIR__ . '/..' . '/psr/container/src',
         ),
-        'Psr\\Clock\\' => 
+        'Psr\\Clock\\' =>
         array (
             0 => __DIR__ . '/..' . '/psr/clock/src',
         ),
-        'Psr\\Cache\\' => 
+        'Psr\\Cache\\' =>
         array (
             0 => __DIR__ . '/..' . '/psr/cache/src',
         ),
-        'PhpParser\\' => 
+        'PhpParser\\' =>
         array (
             0 => __DIR__ . '/..' . '/nikic/php-parser/lib/PhpParser',
         ),
-        'Overtrue\\Socialite\\' => 
+        'Overtrue\\Socialite\\' =>
         array (
             0 => __DIR__ . '/..' . '/overtrue/socialite/src',
         ),
-        'OpenApi\\' => 
+        'OpenApi\\' =>
         array (
             0 => __DIR__ . '/..' . '/zircote/swagger-php/src',
         ),
-        'Nyholm\\Psr7\\' => 
+        'Nyholm\\Psr7\\' =>
         array (
             0 => __DIR__ . '/..' . '/nyholm/psr7/src',
         ),
-        'Nyholm\\Psr7Server\\' => 
+        'Nyholm\\Psr7Server\\' =>
         array (
             0 => __DIR__ . '/..' . '/nyholm/psr7-server/src',
         ),
-        'Monolog\\' => 
+        'Monolog\\' =>
         array (
             0 => __DIR__ . '/..' . '/monolog/monolog/src/Monolog',
         ),
-        'MathPHP\\' => 
+        'MathPHP\\' =>
         array (
             0 => __DIR__ . '/..' . '/markrogoyski/math-php/src',
         ),
-        'Masterminds\\' => 
+        'Masterminds\\' =>
         array (
             0 => __DIR__ . '/..' . '/masterminds/html5/src',
         ),
-        'League\\OAuth2\\Client\\' => 
+        'League\\OAuth2\\Client\\' =>
         array (
-            0 => __DIR__ . '/..' . '/league/oauth2-client/src',
-            1 => __DIR__ . '/..' . '/patrickbussmann/oauth2-apple/src',
+            0 => __DIR__ . '/..' . '/patrickbussmann/oauth2-apple/src',
+            1 => __DIR__ . '/..' . '/league/oauth2-client/src',
         ),
-        'Lcobucci\\JWT\\' => 
+        'Lcobucci\\JWT\\' =>
         array (
             0 => __DIR__ . '/..' . '/lcobucci/jwt/src',
         ),
-        'Lcobucci\\Clock\\' => 
+        'Lcobucci\\Clock\\' =>
         array (
             0 => __DIR__ . '/..' . '/lcobucci/clock/src',
         ),
-        'Laminas\\Diactoros\\' => 
+        'Laminas\\Diactoros\\' =>
         array (
             0 => __DIR__ . '/..' . '/laminas/laminas-diactoros/src',
         ),
-        'Identicon\\' => 
+        'Identicon\\' =>
         array (
             0 => __DIR__ . '/..' . '/yzalis/identicon/src/Identicon',
         ),
-        'GuzzleHttp\\Psr7\\' => 
+        'GuzzleHttp\\Psr7\\' =>
         array (
             0 => __DIR__ . '/..' . '/guzzlehttp/psr7/src',
         ),
-        'GuzzleHttp\\Promise\\' => 
+        'GuzzleHttp\\Promise\\' =>
         array (
             0 => __DIR__ . '/..' . '/guzzlehttp/promises/src',
         ),
-        'GuzzleHttp\\' => 
+        'GuzzleHttp\\' =>
         array (
             0 => __DIR__ . '/..' . '/guzzlehttp/guzzle/src',
         ),
-        'Firebase\\JWT\\' => 
+        'Firebase\\JWT\\' =>
         array (
             0 => __DIR__ . '/..' . '/firebase/php-jwt/src',
         ),
-        'Faker\\' => 
+        'Faker\\' =>
         array (
             0 => __DIR__ . '/..' . '/fakerphp/faker/src/Faker',
         ),
-        'EasyWeChat\\' => 
+        'EasyWeChat\\' =>
         array (
             0 => __DIR__ . '/..' . '/w7corp/easywechat/src',
         ),
-        'DeepCopy\\' => 
+        'DeepCopy\\' =>
         array (
             0 => __DIR__ . '/..' . '/myclabs/deep-copy/src/DeepCopy',
         ),
-        'Da\\QrCode\\' => 
+        'Da\\QrCode\\' =>
         array (
             0 => __DIR__ . '/..' . '/2amigos/qrcode-library/src',
         ),
-        'Codeception\\' => 
+        'Codeception\\' =>
         array (
             0 => __DIR__ . '/..' . '/codeception/verify/src/Codeception',
         ),
     );
 
     public static $prefixesPsr0 = array (
-        'c' => 
+        'c' =>
         array (
-            'cebe\\gravatar\\' => 
+            'cebe\\gravatar\\' =>
             array (
                 0 => __DIR__ . '/..' . '/cebe/yii2-gravatar',
             ),
         ),
-        'H' => 
+        'H' =>
         array (
-            'HTMLPurifier' => 
+            'HTMLPurifier' =>
             array (
                 0 => __DIR__ . '/..' . '/ezyang/htmlpurifier/library',
             ),
         ),
-        'D' => 
+        'D' =>
         array (
-            'Diff' => 
+            'Diff' =>
             array (
                 0 => __DIR__ . '/..' . '/phpspec/php-diff/lib',
             ),
         ),
-        'B' => 
+        'B' =>
         array (
-            'BaconQrCode' => 
+            'BaconQrCode' =>
             array (
                 0 => __DIR__ . '/..' . '/bacon/bacon-qr-code/src',
             ),

@@ -1,8 +1,8 @@
 <?php
 /**
- * @link https://www.yiiframework.com/
+ * @link http://www.yiiframework.com/
  * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
+ * @license http://www.yiiframework.com/license/
  */
 
 namespace yii\redis;
@@ -49,7 +49,7 @@ use yii\di\Instance;
  * ]
  * ~~~
  *
- * @property-read bool $useCustomStorage Whether to use custom storage.
+ * @property-read bool $useCustomStorage Whether to use custom storage. This property is read-only.
  *
  * @author Carsten Brandt <mail@cebe.cc>
  * @since 2.0

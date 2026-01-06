@@ -30,15 +30,6 @@ return array (
       '@dmstr' => $vendorDir . '/dmstr/yii2-adminlte-asset',
     ),
   ),
-  'yii2tech/file-storage' => 
-  array (
-    'name' => 'yii2tech/file-storage',
-    'version' => '1.1.4.0',
-    'alias' => 
-    array (
-      '@yii2tech/filestorage' => $vendorDir . '/yii2tech/file-storage/src',
-    ),
-  ),
   '2amigos/qrcode-library' => 
   array (
     'name' => '2amigos/qrcode-library',
@@ -46,15 +37,6 @@ return array (
     'alias' => 
     array (
       '@Da/QrCode' => $vendorDir . '/2amigos/qrcode-library/src',
-    ),
-  ),
-  'yiisoft/yii2-gii' => 
-  array (
-    'name' => 'yiisoft/yii2-gii',
-    'version' => '2.1.4.0',
-    'alias' => 
-    array (
-      '@yii/gii' => $vendorDir . '/yiisoft/yii2-gii/src',
     ),
   ),
   'mdmsoft/yii2-admin' => 
@@ -129,15 +111,6 @@ return array (
       '@yii/debug' => $vendorDir . '/yiisoft/yii2-debug/src',
     ),
   ),
-  'yiisoft/yii2-redis' => 
-  array (
-    'name' => 'yiisoft/yii2-redis',
-    'version' => '2.0.18.0',
-    'alias' => 
-    array (
-      '@yii/redis' => $vendorDir . '/yiisoft/yii2-redis/src',
-    ),
-  ),
   'bizley/jwt' => 
   array (
     'name' => 'bizley/jwt',
@@ -145,6 +118,33 @@ return array (
     'alias' => 
     array (
       '@bizley/jwt' => $vendorDir . '/bizley/jwt/src',
+    ),
+  ),
+  'yiisoft/yii2-redis' => 
+  array (
+    'name' => 'yiisoft/yii2-redis',
+    'version' => 'dev-master',
+    'alias' => 
+    array (
+      '@yii/redis' => $vendorDir . '/yiisoft/yii2-redis/src',
+    ),
+  ),
+  'yii2tech/file-storage' => 
+  array (
+    'name' => 'yii2tech/file-storage',
+    'version' => '1.1.4.0',
+    'alias' => 
+    array (
+      '@yii2tech/filestorage' => $vendorDir . '/yii2tech/file-storage/src',
+    ),
+  ),
+  'yiisoft/yii2-gii' => 
+  array (
+    'name' => 'yiisoft/yii2-gii',
+    'version' => '2.2.7.0',
+    'alias' => 
+    array (
+      '@yii/gii' => $vendorDir . '/yiisoft/yii2-gii/src',
     ),
   ),
 );

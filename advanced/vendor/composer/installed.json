@@ -2174,65 +2174,6 @@
             "install-path": "../overtrue/socialite"
         },
         {
-            "name": "paragonie/random_compat",
-            "version": "v9.99.100",
-            "version_normalized": "9.99.100.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/paragonie/random_compat.git",
-                "reference": "996434e5492cb4c3edcb9168db6fbb1359ef965a"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/paragonie/random_compat/zipball/996434e5492cb4c3edcb9168db6fbb1359ef965a",
-                "reference": "996434e5492cb4c3edcb9168db6fbb1359ef965a",
-                "shasum": "",
-                "mirrors": [
-                    {
-                        "url": "https://mirrors.aliyun.com/composer/dists/%package%/%reference%.%type%",
-                        "preferred": true
-                    }
-                ]
-            },
-            "require": {
-                "php": ">= 7"
-            },
-            "require-dev": {
-                "phpunit/phpunit": "4.*|5.*",
-                "vimeo/psalm": "^1"
-            },
-            "suggest": {
-                "ext-libsodium": "Provides a modern crypto API that can be used to generate random bytes."
-            },
-            "time": "2020-10-15T08:29:30+00:00",
-            "type": "library",
-            "installation-source": "dist",
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Paragon Initiative Enterprises",
-                    "email": "security@paragonie.com",
-                    "homepage": "https://paragonie.com"
-                }
-            ],
-            "description": "PHP 5.x polyfill for random_bytes() and random_int() from PHP 7",
-            "keywords": [
-                "csprng",
-                "polyfill",
-                "pseudorandom",
-                "random"
-            ],
-            "support": {
-                "email": "info@paragonie.com",
-                "issues": "https://github.com/paragonie/random_compat/issues",
-                "source": "https://github.com/paragonie/random_compat"
-            },
-            "install-path": "../paragonie/random_compat"
-        },
-        {
             "name": "patrickbussmann/oauth2-apple",
             "version": "0.3.0",
             "version_normalized": "0.3.0.0",
@@ -5058,8 +4999,8 @@
         },
         {
             "name": "symfony/http-foundation",
-            "version": "v6.4.18",
-            "version_normalized": "6.4.18.0",
+            "version": "6.4.x-dev",
+            "version_normalized": "6.4.9999999.9999999-dev",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/http-foundation.git",
@@ -5067,7 +5008,7 @@
             },
             "dist": {
                 "type": "zip",
-                "url": "https://mirrors.huaweicloud.com/repository/php/symfony/http-foundation/v6.4.18/symfony-http-foundation-v6.4.18.zip",
+                "url": "https://mirrors.huaweicloud.com/repository/php/symfony/http-foundation/6.4.x-dev/symfony-http-foundation-6.4.x-dev.zip",
                 "reference": "d0492d6217e5ab48f51fca76f64cf8e78919d0db",
                 "shasum": ""
             },
@@ -6284,15 +6225,9 @@
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/yii2tech/file-storage/zipball/3a8af76a30346e27f4c4d1ec37268d1771b6fd7c",
+                "url": "https://mirrors.huaweicloud.com/repository/php/yii2tech/file-storage/1.1.4/yii2tech-file-storage-1.1.4.zip",
                 "reference": "3a8af76a30346e27f4c4d1ec37268d1771b6fd7c",
-                "shasum": "",
-                "mirrors": [
-                    {
-                        "url": "https://mirrors.aliyun.com/composer/dists/%package%/%reference%.%type%",
-                        "preferred": true
-                    }
-                ]
+                "shasum": ""
             },
             "require": {
                 "yiisoft/yii2": "~2.0.13"
@@ -6310,7 +6245,6 @@
                     "yii2tech\\filestorage\\": "src"
                 }
             },
-            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "BSD-3-Clause"
             ],
@@ -6333,38 +6267,38 @@
                 "storage",
                 "yii2"
             ],
+            "abandoned": true,
             "install-path": "../yii2tech/file-storage"
         },
         {
             "name": "yiisoft/yii2",
-            "version": "2.0.51",
-            "version_normalized": "2.0.51.0",
+            "version": "2.0.53",
+            "version_normalized": "2.0.53.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/yiisoft/yii2-framework.git",
-                "reference": "ea1f112f4dc9a9824e77b788019e2d53325d823c"
+                "reference": "6c622fb8243181d7912b62ad80821cc0e1c745db"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://mirrors.huaweicloud.com/repository/php/yiisoft/yii2/2.0.51/yiisoft-yii2-2.0.51.zip",
-                "reference": "ea1f112f4dc9a9824e77b788019e2d53325d823c",
+                "url": "https://api.github.com/repos/yiisoft/yii2-framework/zipball/6c622fb8243181d7912b62ad80821cc0e1c745db",
+                "reference": "6c622fb8243181d7912b62ad80821cc0e1c745db",
                 "shasum": ""
             },
             "require": {
                 "bower-asset/inputmask": "^5.0.8 ",
                 "bower-asset/jquery": "3.7.*@stable | 3.6.*@stable | 3.5.*@stable | 3.4.*@stable | 3.3.*@stable | 3.2.*@stable | 3.1.*@stable | 2.2.*@stable | 2.1.*@stable | 1.11.*@stable | 1.12.*@stable",
-                "bower-asset/punycode": "^2.2",
+                "bower-asset/punycode": "^1.4",
                 "bower-asset/yii2-pjax": "~2.0.1",
                 "cebe/markdown": "~1.0.0 | ~1.1.0 | ~1.2.0",
                 "ext-ctype": "*",
                 "ext-mbstring": "*",
                 "ezyang/htmlpurifier": "^4.17",
                 "lib-pcre": "*",
-                "paragonie/random_compat": ">=1",
                 "php": ">=7.3.0",
                 "yiisoft/yii2-composer": "~2.0.4"
             },
-            "time": "2024-07-18T19:50:00+00:00",
+            "time": "2025-06-27T07:42:53+00:00",
             "bin": [
                 "yii"
             ],
@@ -6380,6 +6314,7 @@
                     "yii\\": ""
                 }
             },
+            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "BSD-3-Clause"
             ],
@@ -6436,6 +6371,13 @@
                 "framework",
                 "yii2"
             ],
+            "support": {
+                "forum": "https://forum.yiiframework.com/",
+                "irc": "ircs://irc.libera.chat:6697/yii",
+                "issues": "https://github.com/yiisoft/yii2/issues?state=open",
+                "source": "https://github.com/yiisoft/yii2",
+                "wiki": "https://www.yiiframework.com/wiki"
+            },
             "funding": [
                 {
                     "url": "https://github.com/yiisoft",
@@ -6871,39 +6813,48 @@
         },
         {
             "name": "yiisoft/yii2-gii",
-            "version": "2.1.4",
-            "version_normalized": "2.1.4.0",
+            "version": "2.2.7",
+            "version_normalized": "2.2.7.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/yiisoft/yii2-gii.git",
-                "reference": "d879cb186361fbc6f71a2d994d580b5a071a5642"
+                "reference": "f17c7ef7ef3081213f612b37ad0ceaa8e8cd3d3b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/yiisoft/yii2-gii/zipball/d879cb186361fbc6f71a2d994d580b5a071a5642",
-                "reference": "d879cb186361fbc6f71a2d994d580b5a071a5642",
-                "shasum": "",
-                "mirrors": [
-                    {
-                        "url": "https://mirrors.aliyun.com/composer/dists/%package%/%reference%.%type%",
-                        "preferred": true
-                    }
-                ]
+                "url": "https://api.github.com/repos/yiisoft/yii2-gii/zipball/f17c7ef7ef3081213f612b37ad0ceaa8e8cd3d3b",
+                "reference": "f17c7ef7ef3081213f612b37ad0ceaa8e8cd3d3b",
+                "shasum": ""
             },
             "require": {
                 "phpspec/php-diff": "^1.1.0",
-                "yiisoft/yii2": "~2.0.14"
+                "yiisoft/yii2": "~2.0.46"
             },
             "require-dev": {
-                "phpunit/phpunit": "<7",
+                "cweagans/composer-patches": "^1.7",
+                "phpunit/phpunit": "4.8.34",
                 "yiisoft/yii2-coding-standards": "~2.0"
             },
-            "time": "2020-01-17T13:33:30+00:00",
+            "time": "2025-02-13T21:21:17+00:00",
             "type": "yii2-extension",
             "extra": {
+                "patches": {
+                    "phpunit/phpunit": {
+                        "Fix PHP 7 compatibility": "https://yiisoft.github.io/phpunit-patches/phpunit_php7.patch",
+                        "Fix PHP 8 compatibility": "https://yiisoft.github.io/phpunit-patches/phpunit_php8.patch",
+                        "Fix PHP 8.1 compatibility": "https://yiisoft.github.io/phpunit-patches/phpunit_php81.patch"
+                    },
+                    "phpunit/php-file-iterator": {
+                        "Fix PHP 8.1 compatibility": "https://yiisoft.github.io/phpunit-patches/phpunit_path_file_iterator.patch"
+                    },
+                    "phpunit/phpunit-mock-objects": {
+                        "Fix PHP 7 and 8 compatibility": "https://yiisoft.github.io/phpunit-patches/phpunit_mock_objects.patch"
+                    }
+                },
                 "branch-alias": {
                     "dev-master": "2.0.x-dev"
-                }
+                },
+                "composer-exit-on-patch-failure": true
             },
             "installation-source": "dist",
             "autoload": {
@@ -6911,7 +6862,7 @@
                     "yii\\gii\\": "src"
                 }
             },
-            "notification-url": "https://repo.packagist.org/downloads/",
+            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "BSD-3-Clause"
             ],
@@ -6924,24 +6875,46 @@
             "description": "The Gii extension for the Yii framework",
             "keywords": [
                 "code generator",
+                "dev",
                 "gii",
                 "yii2"
+            ],
+            "support": {
+                "forum": "https://www.yiiframework.com/forum/",
+                "irc": "ircs://irc.libera.chat:6697/yii",
+                "issues": "https://github.com/yiisoft/yii2-gii/issues",
+                "source": "https://github.com/yiisoft/yii2-gii",
+                "wiki": "https://www.yiiframework.com/wiki/"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/yiisoft",
+                    "type": "github"
+                },
+                {
+                    "url": "https://opencollective.com/yiisoft",
+                    "type": "open_collective"
+                },
+                {
+                    "url": "https://tidelift.com/funding/github/packagist/yiisoft/yii2-gii",
+                    "type": "tidelift"
+                }
             ],
             "install-path": "../yiisoft/yii2-gii"
         },
         {
             "name": "yiisoft/yii2-redis",
-            "version": "2.0.18",
-            "version_normalized": "2.0.18.0",
+            "version": "dev-master",
+            "version_normalized": "dev-master",
             "source": {
                 "type": "git",
                 "url": "https://github.com/yiisoft/yii2-redis.git",
-                "reference": "08aecdf44e091c5fae3411e719ac0fdb803ef594"
+                "reference": "b083ad48327f68c0eae2c64c658ac55a2d442430"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://mirrors.huaweicloud.com/repository/php/yiisoft/yii2-redis/2.0.18/yiisoft-yii2-redis-2.0.18.zip",
-                "reference": "08aecdf44e091c5fae3411e719ac0fdb803ef594",
+                "url": "https://mirrors.huaweicloud.com/repository/php/yiisoft/yii2-redis/dev-master/yiisoft-yii2-redis-dev-master.zip",
+                "reference": "b083ad48327f68c0eae2c64c658ac55a2d442430",
                 "shasum": ""
             },
             "require": {
@@ -6952,7 +6925,8 @@
                 "phpunit/phpunit": "<7",
                 "yiisoft/yii2-dev": "~2.0.39"
             },
-            "time": "2022-09-04T10:34:42+00:00",
+            "time": "2024-07-05T21:33:29+00:00",
+            "default-branch": true,
             "type": "yii2-extension",
             "extra": {
                 "branch-alias": {

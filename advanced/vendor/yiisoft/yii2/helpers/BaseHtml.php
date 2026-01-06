@@ -115,12 +115,7 @@ class BaseHtml
      */
     public static function encode($content, $doubleEncode = true)
     {
-        if (is_array($content)) {
-            $string_version = implode(',', $content);
-        } else {
-            $string_version = (string)$content;
-        }
-        return htmlspecialchars($string_version, ENT_QUOTES | ENT_SUBSTITUTE, Yii::$app ? Yii::$app->charset : 'UTF-8', $doubleEncode);
+        return htmlspecialchars((string)$content, ENT_QUOTES | ENT_SUBSTITUTE, Yii::$app ? Yii::$app->charset : 'UTF-8', $doubleEncode);
     }
 
     /**
@@ -210,6 +205,11 @@ class BaseHtml
      */
     public static function style($content, $options = [])
     {
+        $view = Yii::$app->getView();
+        if ($view instanceof \yii\web\View && !empty($view->styleOptions)) {
+            $options = array_merge($view->styleOptions, $options);
+        }
+
         return static::tag('style', $content, $options);
     }
 

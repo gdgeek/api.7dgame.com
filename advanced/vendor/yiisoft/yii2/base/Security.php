@@ -88,7 +88,7 @@ class Security extends Component
      * @see generatePasswordHash()
      * @since 2.0.6
      */
-    public $passwordHashCost = 10;
+    public $passwordHashCost = 13;
 
     /**
      * @var boolean if LibreSSL should be used.

@@ -145,7 +145,9 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
 
         $this->registerSessionHandler();
 
-        $this->setCookieParamsInternal();
+        if ($this->getUseCookies() !== false) {
+            $this->setCookieParamsInternal();
+        }
 
         YII_DEBUG ? session_start() : @session_start();
 
@@ -175,34 +177,23 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
             static::$_originalSessionModule = $sessionModuleName;
         }
 
+        if ($this->handler === null && $this->getUseCustomStorage()) {
+            $this->handler = Yii::createObject(
+                [
+                    '__class' => SessionHandler::class,
+                    '__construct()' => [$this],
+                ]
+            );
+        }
+
         if ($this->handler !== null) {
-            if (!is_object($this->handler)) {
+            if (is_array($this->handler)) {
                 $this->handler = Yii::createObject($this->handler);
             }
             if (!$this->handler instanceof \SessionHandlerInterface) {
                 throw new InvalidConfigException('"' . get_class($this) . '::handler" must implement the SessionHandlerInterface.');
             }
             YII_DEBUG ? session_set_save_handler($this->handler, false) : @session_set_save_handler($this->handler, false);
-        } elseif ($this->getUseCustomStorage()) {
-            if (YII_DEBUG) {
-                session_set_save_handler(
-                    [$this, 'openSession'],
-                    [$this, 'closeSession'],
-                    [$this, 'readSession'],
-                    [$this, 'writeSession'],
-                    [$this, 'destroySession'],
-                    [$this, 'gcSession']
-                );
-            } else {
-                @session_set_save_handler(
-                    [$this, 'openSession'],
-                    [$this, 'closeSession'],
-                    [$this, 'readSession'],
-                    [$this, 'writeSession'],
-                    [$this, 'destroySession'],
-                    [$this, 'gcSession']
-                );
-            }
         } elseif (
             $sessionModuleName !== static::$_originalSessionModule
             && static::$_originalSessionModule !== null
@@ -269,7 +260,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
             $request = Yii::$app->getRequest();
             if (!empty($_COOKIE[$name]) && ini_get('session.use_cookies')) {
                 $this->_hasSessionId = true;
-            } elseif (!ini_get('session.use_only_cookies') && ini_get('session.use_trans_sid')) {
+            } elseif (PHP_VERSION_ID < 80400 && !ini_get('session.use_only_cookies') && ini_get('session.use_trans_sid')) {
                 $this->_hasSessionId = $request->get($name) != '';
             } else {
                 $this->_hasSessionId = false;
@@ -448,7 +439,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
     {
         if (ini_get('session.use_cookies') === '0') {
             return false;
-        } elseif (ini_get('session.use_only_cookies') === '1') {
+        } elseif (PHP_VERSION_ID >= 80400 || ini_get('session.use_only_cookies') === '1') {
             return true;
         }
 
@@ -471,13 +462,19 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
         $this->freeze();
         if ($value === false) {
             ini_set('session.use_cookies', '0');
-            ini_set('session.use_only_cookies', '0');
+            if (PHP_VERSION_ID < 80400) {
+                ini_set('session.use_only_cookies', '0');
+            }
         } elseif ($value === true) {
             ini_set('session.use_cookies', '1');
-            ini_set('session.use_only_cookies', '1');
+            if (PHP_VERSION_ID < 80400) {
+                ini_set('session.use_only_cookies', '1');
+            }
         } else {
             ini_set('session.use_cookies', '1');
-            ini_set('session.use_only_cookies', '0');
+            if (PHP_VERSION_ID < 80400) {
+                ini_set('session.use_only_cookies', '0');
+            }
         }
         $this->unfreeze();
     }
@@ -512,7 +509,10 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      */
     public function getUseTransparentSessionID()
     {
-        return ini_get('session.use_trans_sid') == 1;
+        if (PHP_VERSION_ID < 80400) {
+            return ini_get('session.use_trans_sid') == 1;
+        }
+        return false;
     }
 
     /**
@@ -521,7 +521,9 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
     public function setUseTransparentSessionID($value)
     {
         $this->freeze();
-        ini_set('session.use_trans_sid', $value ? '1' : '0');
+        if (PHP_VERSION_ID < 80400) {
+            ini_set('session.use_trans_sid', $value ? '1' : '0');
+        }
         $this->unfreeze();
     }
 
@@ -610,7 +612,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      * This method should be overridden if [[useCustomStorage]] returns true.
      * @internal Do not call this method directly.
      * @param string $id session ID
-     * @return string the session data
+     * @return string|false the session data, or false on failure
      */
     public function readSession($id)
     {
@@ -647,11 +649,11 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      * This method should be overridden if [[useCustomStorage]] returns true.
      * @internal Do not call this method directly.
      * @param int $maxLifetime the number of seconds after which data will be seen as 'garbage' and cleaned up.
-     * @return bool whether session is GCed successfully
+     * @return int|false the number of deleted sessions on success, or false on failure
      */
     public function gcSession($maxLifetime)
     {
-        return true;
+        return 0;
     }
 
     /**
