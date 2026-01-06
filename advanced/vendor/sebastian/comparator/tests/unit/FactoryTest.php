@@ -9,7 +9,9 @@
  */
 namespace SebastianBergmann\Comparator;
 
+use function class_exists;
 use function tmpfile;
+use BcMath\Number;
 use DateTime;
 use DOMDocument;
 use Exception;
@@ -32,7 +34,7 @@ final class FactoryTest extends TestCase
     {
         $tmpfile = tmpfile();
 
-        return [
+        $instances = [
             [null, null, ScalarComparator::class],
             [null, true, ScalarComparator::class],
             [true, null, ScalarComparator::class],
@@ -72,7 +74,21 @@ final class FactoryTest extends TestCase
             [new stdClass, 1.0, TypeComparator::class],
             [1.0, [1], TypeComparator::class],
             [[1], 1.0, TypeComparator::class],
+            [Example::Foo, Example::Bar, EnumerationComparator::class],
+            [ExampleString::Foo, ExampleString::Bar, EnumerationComparator::class],
+            [ExampleInt::Foo, ExampleInt::Bar, EnumerationComparator::class],
         ];
+
+        if (class_exists(Number::class)) {
+            $instances[] = [new Number('13.37'), new Number('47.11'), NumberComparator::class];
+            $instances[] = ['13.37', new Number('47.11'), NumberComparator::class];
+            $instances[] = [13, new Number('47.11'), NumberComparator::class];
+            $instances[] = [new Number('13.37'), new Number('47.11'), NumberComparator::class];
+            $instances[] = [new Number('13.37'), '47.11', NumberComparator::class];
+            $instances[] = [new Number('13.37'), 47, NumberComparator::class];
+        }
+
+        return $instances;
     }
 
     /**

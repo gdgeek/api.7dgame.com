@@ -15,7 +15,6 @@ use yii\web\BadRequestHttpException;
 use api\modules\v1\models\User;
 
 class ToolsController extends \yii\rest\Controller
-
 {
 
     public function behaviors()
@@ -50,11 +49,12 @@ class ToolsController extends \yii\rest\Controller
         if(!$linked){
             $linked = new UserLinked();
             $linked->user_id = $user->id;
-           
         }
-        
-       // $token = $user->token();
-        $linked->key = $user->getRefreshToken()->one()->key;
+        $token = $user->getRefreshToken()->one();
+        if(!$token){
+            $token = $user->token();
+        }
+        $linked->key = $token->key;
         if(!$linked->validate()){
             throw new BadRequestHttpException("validate error");
         }
@@ -62,7 +62,7 @@ class ToolsController extends \yii\rest\Controller
             throw new BadRequestHttpException("save error");
         }
       
-        return ['success' => true, 'message' => "user-linked",'key'=> $linked->key];
+        return ['success' => true, 'message' => "user-linked", 'key'=> $linked->key];
        
     }
 }

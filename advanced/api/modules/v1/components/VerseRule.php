@@ -16,22 +16,15 @@ class VerseRule extends Rule
         
         $request = Yii::$app->request;
         
-        $post = \Yii::$app->request->post();
+       // $post = \Yii::$app->request->post();
         $controller = Yii::$app->controller->id;
-        
-    
      
-        
-     
-        if ($controller == 'verse') {
-            if (($request->isGet || $request->isPut || $request->isDelete) && isset($params['id'])) {
-                
-                $verse = Verse::findOne($params['id']);
-                return $verse;
-            }
+        if ($controller == 'verse' && isset($params['id'])) {
+            $verse = Verse::findOne($params['id']);
+            return $verse;
         }
         
-        throw new BadRequestHttpException($controller . '$request->isGet!!!!');
+        throw new BadRequestHttpException($controller . json_encode($params));
         
     }
     
@@ -39,17 +32,17 @@ class VerseRule extends Rule
     {
         
         $verse = $this->getVerse($params);
-        
         if (!$verse) {
             throw new BadRequestHttpException("no verse");
         }
-        
-        if ($verse->editable()) {
+
+        if ($verse->editable) {
             return true;
         }
         
         $request = Yii::$app->request;
-        if ($request->isGet && $verse->viewable()) {
+        
+        if ($request->isGet && $verse->viewable) {
             return true;
         }
         

@@ -13,6 +13,7 @@ use function array_flip;
 use function array_key_exists;
 use function array_unique;
 use function assert;
+use function ltrim;
 use function strtolower;
 use function trim;
 use PHPUnit\Framework\TestSize\TestSize;
@@ -21,6 +22,7 @@ use PHPUnit\Metadata\CoversClass;
 use PHPUnit\Metadata\CoversFunction;
 use PHPUnit\Metadata\Group;
 use PHPUnit\Metadata\Parser\Registry;
+use PHPUnit\Metadata\RequiresPhpExtension;
 use PHPUnit\Metadata\Uses;
 use PHPUnit\Metadata\UsesClass;
 use PHPUnit\Metadata\UsesFunction;
@@ -33,7 +35,7 @@ use PHPUnit\Metadata\UsesFunction;
 final class Groups
 {
     /**
-     * @var array<string, array<int, string>>
+     * @var array<string, list<non-empty-string>>
      */
     private static array $groupCache = [];
 
@@ -41,7 +43,7 @@ final class Groups
      * @param class-string     $className
      * @param non-empty-string $methodName
      *
-     * @return array<int, string>
+     * @return list<non-empty-string>
      */
     public function groups(string $className, string $methodName, bool $includeVirtual = true): array
     {
@@ -59,10 +61,6 @@ final class Groups
             $groups[] = $group->groupName();
         }
 
-        if ($groups === []) {
-            $groups[] = 'default';
-        }
-
         if (!$includeVirtual) {
             return self::$groupCache[$key] = array_unique($groups);
         }
@@ -72,7 +70,7 @@ final class Groups
                 /** @phpstan-ignore booleanOr.alwaysTrue */
                 assert($metadata instanceof CoversClass || $metadata instanceof CoversFunction);
 
-                $groups[] = '__phpunit_covers_' . $this->canonicalizeName($metadata->asStringForCodeUnitMapper());
+                $groups[] = '__phpunit_covers_' . $this->canonicalizeName(ltrim($metadata->asStringForCodeUnitMapper(), ':'));
 
                 continue;
             }
@@ -89,7 +87,7 @@ final class Groups
                 /** @phpstan-ignore booleanOr.alwaysTrue */
                 assert($metadata instanceof UsesClass || $metadata instanceof UsesFunction);
 
-                $groups[] = '__phpunit_uses_' . $this->canonicalizeName($metadata->asStringForCodeUnitMapper());
+                $groups[] = '__phpunit_uses_' . $this->canonicalizeName(ltrim($metadata->asStringForCodeUnitMapper(), ':'));
 
                 continue;
             }
@@ -99,9 +97,17 @@ final class Groups
 
                 $groups[] = '__phpunit_uses_' . $this->canonicalizeName($metadata->target());
             }
+
+            if ($metadata->isRequiresPhpExtension()) {
+                assert($metadata instanceof RequiresPhpExtension);
+
+                $groups[] = '__phpunit_requires_php_extension' . $this->canonicalizeName($metadata->extension());
+            }
         }
 
-        return self::$groupCache[$key] = array_unique($groups);
+        self::$groupCache[$key] = array_unique($groups);
+
+        return self::$groupCache[$key];
     }
 
     /**

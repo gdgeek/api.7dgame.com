@@ -7,7 +7,7 @@ class Meta2Resources
     public static function HandleAddon($addon, &$resources)
     {
         $resource = null;
-        if (isset($node['parameters']['resource'])) {
+        if (!empty($addon['parameters']['resource'])) {
             $resource = $addon['parameters']['resource'];
         } else {
             switch ($addon['type']) {
@@ -18,7 +18,7 @@ class Meta2Resources
         }
 
 
-        if ($resource && !in_array($resource, $resources)) {
+        if (!empty($resource) && !in_array($resource, $resources)) {
             array_push($resources, $resource);
         }
 
@@ -70,9 +70,9 @@ class Meta2Resources
             array_push($resources, $resource);
         }
 
-        if (isset($node['children']) && isset($node['children']['entities'])) {
+        if (!empty($node['children']['entities'])) {
             foreach ($node['children']['entities'] as $entity) {
-                Meta2Resources::HandleNode($entity, $resources);
+                self::HandleNode($entity, $resources);
             }
         }
         return $resources;
@@ -82,12 +82,11 @@ class Meta2Resources
 
         $resources = [];
 
-        Meta2Resources::HandleNode($data, $resources);
+        self::HandleNode($data, $resources);
 
-        if (isset($data['children']) && isset($data['children']['addons'])) {
-
+        if (!empty($data['children']['addons'])){
             foreach ($data['children']['addons'] as $addon) {
-                Meta2Resources::HandleAddon($addon, $resources);
+                self::HandleAddon($addon, $resources);
             }
         }
         return $resources;

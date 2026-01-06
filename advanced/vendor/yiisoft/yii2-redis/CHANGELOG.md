@@ -1,23 +1,10 @@
 Yii Framework 2 redis extension Change Log
 ==========================================
 
-2.0.18 September 04, 2022
--------------------------
+2.0.16 under development
+------------------------
 
-- Enh #249 Added support to set the redis scheme to tls. Add to configuration: `'scheme' => 'tls'` (tychovbh)
-- Bug #247: `Cache::getValue()` now returns `false` in case of missing key (rhertogh)
-
-
-2.0.17 January 11, 2022
------------------------
-
-- Enh #176: Fix reconnect logic bug, add `protected function sendRawCommand()` (ilyaplot)
-
-
-2.0.16 October 04, 2021
------------------------
-
-- Enh #223: Add `Connection::$username` for using username for authentication (samdark, rvkulikov)
+- no changes in this release.
 
 
 2.0.15 May 05, 2021

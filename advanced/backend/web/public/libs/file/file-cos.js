@@ -33,7 +33,6 @@ let cos = new COS({
 });
 
 function file_url(filename) {
-    alert(12345);
     let url = cos.getObjectUrl({
         Bucket: config.Bucket, // Bucket 格式：test-1250000000
         Region: config.Region,
@@ -57,21 +56,16 @@ function file_has(filename, end){
 		if(data){
 			end(true);
 		}else{
-			//alert('no');
 			end(false);
 		}
     });
 }
 function file_upload(filename, md5, file, progress, end){
-		alert(filename);
+	alert(filename);
 	if (file) {
-		//$('#upload').text('正在上传');
-		//$("#upload").attr("disabled",true);
-		//if(1024 * 1024 * 50 <= file.size){
-		//	alert('超过50M的模型，在某些设备上可能会无法运行。')
-		//}
+	
         if (file.size > 1024 * 1024) {
-		//alert(1);
+	
             cos.sliceUploadFile({
                 Bucket: config.Bucket, // Bucket 格式：test-1250000000
                 Region: config.Region,

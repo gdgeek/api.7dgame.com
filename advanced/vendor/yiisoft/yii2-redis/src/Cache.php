@@ -1,8 +1,8 @@
 <?php
 /**
- * @link https://www.yiiframework.com/
+ * @link http://www.yiiframework.com/
  * @copyright Copyright (c) 2008 Yii Software LLC
- * @license https://www.yiiframework.com/license/
+ * @license http://www.yiiframework.com/license/
  */
 
 namespace yii\redis;
@@ -93,7 +93,7 @@ use yii\di\Instance;
  * ]);
  * ~~~
  *
- * @property-read bool $isCluster Whether redis is running in cluster mode or not.
+ * @property-read bool $isCluster Whether redis is running in cluster mode or not. This property is read-only.
  *
  * @author Carsten Brandt <mail@cebe.cc>
  * @since 2.0
@@ -195,12 +195,7 @@ class Cache extends \yii\caching\Cache
      */
     protected function getValue($key)
     {
-        $value = $this->getReplica()->executeCommand('GET', [$key]);
-        if ($value === null) {
-            return false; // Key is not in the cache or expired
-        }
-
-        return $value;
+        return $this->getReplica()->executeCommand('GET', [$key]);
     }
 
     /**

@@ -50,8 +50,10 @@ class SiteController extends \yii\rest\Controller
     {
         $login = new Login();
         if ($login->load(Yii::$app->getRequest()->getBodyParams(), '')) {
-            if ($login->login()) {
-                return $login->user->toArray([],['auth']);
+            if ($token = $login->login()) {
+                $data = $login->user->toArray([],['auth']);
+                $data['token'] = $token;
+                return $data;
             } else {
                 throw new Exception("Login Error", 400);
             }

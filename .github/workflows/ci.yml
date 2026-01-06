@@ -1,0 +1,234 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  # 阶段1: 测试
+  test:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: yii2_advanced_test
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo, pdo_mysql, gd
+          
+      - name: Install Dependencies
+        working-directory: ./advanced
+        run: composer install --prefer-dist --no-progress --optimize-autoloader --ignore-platform-req=php
+
+      - name: Prepare Test Configs
+        working-directory: ./advanced
+        run: |
+          # Common Configs
+          echo "<?php return ['vendorPath' => dirname(dirname(__DIR__)) . '/vendor'];" > common/config/main.php
+          echo "<?php return [];" > common/config/params.php
+          echo "<?php
+          Yii::setAlias('@common', dirname(__DIR__));
+          Yii::setAlias('@frontend', dirname(dirname(__DIR__)) . '/frontend');
+          Yii::setAlias('@backend', dirname(dirname(__DIR__)) . '/backend');
+          Yii::setAlias('@console', dirname(dirname(__DIR__)) . '/console');
+          Yii::setAlias('@api', dirname(dirname(__DIR__)) . '/api');
+          " > common/config/bootstrap.php
+          
+          echo "<?php return [
+              'id' => 'app-common',
+              'basePath' => dirname(__DIR__),
+              'components' => [
+                  'db' => [
+                      'class' => 'yii\db\Connection',
+                      'dsn' => 'mysql:host=127.0.0.1;dbname=yii2_advanced_test',
+                      'username' => 'root',
+                      'password' => 'root',
+                      'charset' => 'utf8',
+                  ],
+              ],
+          ];" > common/config/main-local.php
+          echo "<?php return [];" > common/config/test.php
+          echo "<?php return ['id' => 'app-common-tests', 'basePath' => dirname(__DIR__)];" > common/config/test-local.php
+          
+          # Console Configs (Needed for Migrations)
+          echo "<?php return [];" > console/config/bootstrap.php
+          echo "<?php return [];" > console/config/params.php
+          echo "<?php return [
+              'id' => 'app-console',
+              'basePath' => dirname(__DIR__),
+              'controllerNamespace' => 'console\controllers',
+              'components' => [
+                  'log' => [
+                      'targets' => [
+                          [
+                              'class' => 'yii\log\FileTarget',
+                              'levels' => ['error', 'warning'],
+                          ],
+                      ],
+                  ],
+                  'authManager' => [
+                      'class' => 'yii\rbac\DbManager',
+                  ],
+              ],
+          ];" > console/config/main.php
+          echo "<?php return [];" > console/config/main-local.php
+          
+          # Common Codeception Config (Merges all)
+          echo "<?php
+          return yii\helpers\ArrayHelper::merge(
+              require __DIR__ . '/main.php',
+              require __DIR__ . '/main-local.php',
+              require __DIR__ . '/test.php',
+              require __DIR__ . '/test-local.php',
+              [
+                  'components' => [
+                      'cache' => [
+                          'class' => 'yii\caching\ArrayCache',
+                      ],
+                      'request' => [
+                          'cookieValidationKey' => 'test-key-common',
+                      ],
+                      'user' => [
+                          'class' => 'yii\web\User',
+                          'identityClass' => 'common\models\User',
+                      ],
+                      'jwt' => [
+                           'class' => 'bizley\jwt\Jwt', 
+                           'signer' => 'HS256', 
+                           'signingKey' => 'secure-signing-key-should-be-at-least-256-bits-long-for-hs256', 
+                      ],
+                  ],
+              ]
+          );" > common/config/codeception-local.php
+
+          # Backend Configs
+          echo "<?php return [];" > backend/config/main.php
+          echo "<?php return ['id' => 'app-backend', 'basePath' => dirname(__DIR__)];" > backend/config/main-local.php
+          echo "<?php return [];" > backend/config/test.php
+          echo "<?php return ['id' => 'app-backend-tests', 'basePath' => dirname(__DIR__)];" > backend/config/test-local.php
+          
+          # Backend Codeception Config
+          echo "<?php
+          return yii\helpers\ArrayHelper::merge(
+              require dirname(dirname(__DIR__)) . '/common/config/codeception-local.php',
+              require __DIR__ . '/main.php',
+              require __DIR__ . '/main-local.php',
+              require __DIR__ . '/test.php',
+              require __DIR__ . '/test-local.php',
+              [
+                  'components' => [
+                      'request' => [
+                          'cookieValidationKey' => 'test-key-backend',
+                      ],
+                  ],
+              ]
+          );" > backend/config/codeception-local.php
+
+          # API Configs
+          echo "<?php return [];" > api/config/main.php
+          echo "<?php return ['id' => 'app-api', 'basePath' => dirname(__DIR__)];" > api/config/main-local.php
+          
+          # API Test Local (functions as Codeception Config for API)
+          echo "<?php
+          return yii\helpers\ArrayHelper::merge(
+               require dirname(dirname(__DIR__)) . '/common/config/codeception-local.php',
+              require __DIR__ . '/main.php',
+              require __DIR__ . '/main-local.php',
+              [
+                  'id' => 'app-api-tests',
+                  'basePath' => dirname(__DIR__),
+                  'components' => [
+                      'request' => [
+                          'cookieValidationKey' => 'test-key-api',
+                      ],
+                  ],
+              ]
+          );" > api/config/test-local.php
+
+      - name: Run Migrations
+        working-directory: ./advanced
+        run: |
+          # Try to import initial SQL if exists
+          if [ -f "../docker/bujiaban.sql" ]; then
+            echo "Importing initial SQL dump..."
+            mysql -h 127.0.0.1 -u root -proot yii2_advanced_test < ../docker/bujiaban.sql
+          fi
+
+          # Apply RBAC migrations explicitly first
+          php yii migrate/up --migrationPath=@yii/rbac/migrations --interactive=0
+          # Apply App migrations
+          php yii migrate --interactive=0
+
+      - name: Run Unit Tests
+        working-directory: ./advanced
+        run: |
+           vendor/bin/codecept run -c common unit --bootstrap test_bootstrap.php
+           vendor/bin/codecept run -c api unit --bootstrap test_bootstrap.php
+           vendor/bin/codecept run -c backend unit --bootstrap test_bootstrap.php
+
+  # 阶段2: 构建 Docker 镜像
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+    # Allow build on PRs to verify Dockerfile, but logic below controls tag pushing
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo, pdo_mysql, gd
+
+      - name: Install Dependencies
+        working-directory: ./advanced
+        run: composer install --prefer-dist --no-progress --optimize-autoloader --ignore-platform-req=php
+      
+      - name: Login to Tencent Registry
+        uses: docker/login-action@v3
+        with:
+          registry: hkccr.ccs.tencentyun.com
+          username: ${{ secrets.TENCENT_DOCKER_USERNAME }}
+          password: ${{ secrets.TENCENT_DOCKER_PASSWORD }}
+          
+      - name: Build and Push Docker Image
+        run: |
+          docker build -t hkccr.ccs.tencentyun.com/gdgeek/api:${{ github.sha }} -f docker/Release .
+          
+          # Always push the commit-specific tag
+          docker push hkccr.ccs.tencentyun.com/gdgeek/api:${{ github.sha }}
+
+          # Only update 'latest' tag on push events (merge to master/main)
+          if [ "${{ github.event_name }}" == "push" ]; then
+            docker tag hkccr.ccs.tencentyun.com/gdgeek/api:${{ github.sha }} hkccr.ccs.tencentyun.com/gdgeek/api:latest
+            docker push hkccr.ccs.tencentyun.com/gdgeek/api:latest
+          else
+            echo "Skipping 'latest' tag push for non-push event (PR)"
+          fi
+
+  # 阶段3: 部署
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push'
+    steps:
+      - name: Deploy via Portainer Webhook
+        run: |
+          curl -X POST "${{ secrets.PORTAINER_WEBHOOK_URL }}"

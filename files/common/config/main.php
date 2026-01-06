@@ -1,7 +1,7 @@
 <?php
 return [
     'language' => 'zh-CN',
-    'sourceLanguage' => 'en-US',
+    'sourceLanguage' => 'zh-CN',
     'aliases' => [
         '@bower' => '@vendor/yidas/yii2-bower-asset/bower',
         '@npm' => '@vendor/npm-asset',
@@ -12,7 +12,13 @@ return [
     
     'components' => [
         'cache' => [
-            'class' => 'yii\caching\FileCache',
+            'class' => 'yii\redis\Cache',
+            'redis' => [
+                'hostname' => getenv('REDIS_HOST') ?: 'localhost',
+                'port' => getenv('REDIS_PORT') ?: 6379,
+                'database' => getenv('REDIS_DB') ?: 0,
+                'password' => getenv('REDIS_PASSWORD') ?: null,
+            ],
         ],
         'urlManager' => [
             'enablePrettyUrl' => true,
@@ -22,16 +28,10 @@ return [
         'i18n' => [
             'translations' => [
                 'app*' => [
-                    'class' => 'yii\i18n\PhpMessageSource',
-                    'basePath' => '@common/messages',
-                    'sourceLanguage' => 'en-US',
-                    'fileMap' => [
-                        'app' => 'app.php',
-                        'app/editor' => 'editor.php',
-                        'app/system' => 'system.php',
-                        'app/error' => 'error.php',
-                        'app/site' => 'site.php',
-                    ],
+                    'class' => 'yii\i18n\DbMessageSource',
+                    'sourceLanguage' => 'zh-CN',
+                    'enableCaching' => true,
+                    'cachingDuration' => 3600,
                 ],
             ],
         ],

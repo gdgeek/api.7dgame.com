@@ -40,12 +40,12 @@ class VerseIdRule extends Rule
 
         $verse = $this->getVerse($params);
 
-        if ($verse->editable()) {
+        if ($verse->editable) {
             return true;
         }
 
         //  $request = Yii::$app->request;
-        if (Yii::$app->request->isGet && $verse->viewable()) {
+        if (Yii::$app->request->isGet && $verse->viewable) {
             return true;
         }
 

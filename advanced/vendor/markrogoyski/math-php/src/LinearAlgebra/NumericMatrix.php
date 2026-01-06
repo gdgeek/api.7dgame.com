@@ -1283,13 +1283,11 @@ class NumericMatrix extends Matrix
             $R[$i] = \array_fill(0, $B->n, 0);
             foreach ($Bᵀ as $j => $Bᶜᵒˡ⟦j⟧) {
                 foreach ($Aʳᵒʷ⟦i⟧ as $k => $A⟦i⟧⟦k⟧) {
-                    // @phpstan-ignore-next-line (Remove in PHP 8.0, no longer returns false)
                     $R[$i][$j] += $A⟦i⟧⟦k⟧ * $Bᶜᵒˡ⟦j⟧[$k];
                 }
             }
         }
 
-        // @phpstan-ignore-next-line (Due to above false from array_fill)
         return MatrixFactory::createNumeric($R, $this->ε);
     }
 
@@ -3029,7 +3027,7 @@ class NumericMatrix extends Matrix
      * @throws Exception\MatrixException if method is not a valid eigenvalue method
      * @throws Exception\MathException
      */
-    public function eigenvalues(string $method = null): array
+    public function eigenvalues(?string $method = null): array
     {
         if (!$this->isSquare()) {
             throw new Exception\MatrixException('Eigenvalues can only be calculated on square matrices');
@@ -3068,7 +3066,7 @@ class NumericMatrix extends Matrix
      * @throws Exception\MatrixException if method is not a valid eigenvalue method
      * @throws Exception\MathException
      */
-    public function eigenvectors(string $method = null): NumericMatrix
+    public function eigenvectors(?string $method = null): NumericMatrix
     {
         if ($method === null) {
             return Eigenvector::eigenvectors($this, $this->eigenvalues());

@@ -43,4 +43,9 @@ return [
     "Sharing"=>"公開",
     "Title"=>"見出し",
     'Picture Manager'=>"写真管理",
+    'BuJiaBan AR Creation Platform' => 'BuJiaBan AR クリエーションプラットフォーム',
+    'Let everyone happily create their own world' => '誰もが幸せに自分の世界を創造できるように',
+    'AR, User-Generated Content, Education, Teaching, No Overtime' => 'AR, ユーザー生成コンテンツ, 教育, 授業, 残業なし',
+    'Shanghai No-Overtime Network Technology Co., Ltd.' => '上海不加班网络科技有限公司',
+    'BuJiaBan AR Creation' => '沪ICP备15039333号',
 ];

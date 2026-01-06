@@ -3,42 +3,47 @@
 namespace api\modules\v1\components;
 
 use api\modules\v1\models\Verse;
-use api\modules\v1\models\VerseRelease;
-use yii\rbac\Rule;
 use Yii;
+use yii\rbac\Rule;
+use yii\web\BadRequestHttpException;
 
 class VerseReleaseRule extends Rule
 {
-    public $name = 'verse_release_rule';
+    public $name = 'verse_rule';
+    
+    private function getVerse($params)
+    {
+        
+        $request = Yii::$app->request;
+        
+       // $post = \Yii::$app->request->post();
+        $controller = Yii::$app->controller->id;
+     
+        if ($controller == 'verse' && isset($params['id'])) {
+            $verse = Verse::findOne($params['id']);
+            return $verse;
+        }
+        
+        throw new BadRequestHttpException($controller . json_encode($params));
+        
+    }
+    
     public function execute($user, $item, $params)
     {
+        
+        $verse = $this->getVerse($params);
+        if (!$verse) {
+            throw new BadRequestHttpException("no verse");
+        }
+
+        if ($verse->editable) {
+            return true;
+        }
+        
         $request = Yii::$app->request;
-        $userid = Yii::$app->user->identity->id;
-        if($request->isPost){
-            
-            $post = \Yii::$app->request->post();
-            $verse = Verse::findOne($post['verse_id']);
-            if(!$verse){
-                throw new \yii\web\ForbiddenHttpException('Verse not found');
-            }
-            if($verse->author_id == $userid){
-                return true;
-            }
-        }else if($request->isDelete){
-            $id = isset($params['id']) ? $params['id'] : null;
-            $open = VerseRelease::findOne(['id' => $id]);
-            if($open->verse->author_id == $userid){
-                return true;
-            }
-        }else if($request->isPut){
-            $id = isset($params['id']) ? $params['id'] : null;
-            $release = VerseRelease::findOne(['id' => $id]);
-            if(!$release){
-                throw new \yii\web\ForbiddenHttpException('VerseRelease not found');
-            }
-            if($release->verse->author_id == $userid){
-                return true;
-            }
+        
+        if ($request->isGet && $verse->viewable) {
+            return true;
         }
         
         return false;

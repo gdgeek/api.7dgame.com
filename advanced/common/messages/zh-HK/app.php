@@ -28,5 +28,10 @@ return [
     'Info Configuration'=>"信息配置",
     'Is Public'=>"公開",
     'QR Code'=>"二維碼",
-    'Operating'=>"操作"
+    'Operating'=>"操作",
+    'BuJiaBan AR Creation Platform' => '不加班AR創造平台',
+    'Let everyone happily create their own world' => '讓每個人都可以快樂地創造世界',
+    'AR,用户生成内容,教育,教学,不加班' => 'AR,用戶生成內容,教育,教學,不加班',
+    'Shanghai No-Overtime Network Technology Co., Ltd.' => '上海不加班網絡科技有限公司',
+    'Shanghai ICP Filing No. 15039333' => '滬ICP備15039333號',
 ];

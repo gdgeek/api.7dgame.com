@@ -14,10 +14,17 @@ $finder = PhpCsFixer\Finder::create()
     ->in(__DIR__ . '/tests/_files')
     ->in(__DIR__ . '/tests/end-to-end')
     ->in(__DIR__ . '/tests/unit')
+    // *WithPropertyWith*Hook.php use PHP 8.4 syntax that currently leads to PHP-CS-Fixer errors
+    ->notName('ExtendableClassWithPropertyWithGetHook.php')
+    ->notName('ExtendableClassWithPropertyWithSetHook.php')
+    ->notName('InterfaceWithPropertyWithGetHook.php')
+    ->notName('InterfaceWithPropertyWithSetHook.php')
+    // DeprecatedPhpFeatureTest.php must not use declare(strict_types=1);
     ->notName('DeprecatedPhpFeatureTest.php')
-    // don't mangle whitespaces in this test, which are required for the error reproduce
+    // UseBaselineTest.php must not use declare(strict_types=1);
+    ->notName('UseBaselineTest.php')
+    // Issue5795Test.php contains required whitespace that would be cleaned up
     ->notName('Issue5795Test.php')
-    ->notName('ReadonlyClass.php')
     ->notName('*.phpt');
 
 $config = new PhpCsFixer\Config;
@@ -164,7 +171,23 @@ $config->setFinder($finder)
         'no_empty_comment' => true,
         'no_empty_phpdoc' => true,
         'no_empty_statement' => true,
-        'no_extra_blank_lines' => true,
+        'no_extra_blank_lines' => [
+            'tokens' => [
+                'attribute',
+                'break',
+                'case',
+                'continue',
+                'curly_brace_block',
+                'default',
+                'extra',
+                'parenthesis_brace_block',
+                'return',
+                'square_brace_block',
+                'switch',
+                'throw',
+                'use',
+            ],
+        ],
         'no_homoglyph_names' => true,
         'no_leading_import_slash' => true,
         'no_leading_namespace_whitespace' => true,

@@ -2,7 +2,7 @@
 namespace api\modules\a1\controllers;
 use api\modules\a1\models\VerseSearch;
 use yii\web\BadRequestHttpException;
-use api\modules\v1\models\VerseReleaseSearch;
+
 use yii\helpers\HtmlPurifier;
 use yii\rest\ActiveController;
 use Yii;

@@ -5,6 +5,7 @@ use api\modules\v1\models\User;
 use api\modules\v1\models\PersonRegister;
 use mdm\admin\components\AccessControl;
 use mdm\admin\models\Assignment;
+use api\modules\v1\models\PersonSearch;
 use bizley\jwt\JwtHttpBearerAuth;
 use Yii;
 use yii\base\Exception;
@@ -55,35 +56,43 @@ class PersonController extends ActiveController
         unset($actions['update']);
         unset($actions['options']);
         unset($actions['delete']);
+        unset($actions['index']);
         return $actions;
+    }
+    public function actionIndex()
+    {
+        $searchModel = new PersonSearch();
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+
+        return $dataProvider;
     }
     public function actionDelete($id)
     {
-       
+
         $user = User::findOne($id);
-        if($user == null ){
+        if ($user == null) {
             throw new BadRequestHttpException('没有user');
         }
-        $roles =  Yii::$app->user->identity->roles;
+        $roles = Yii::$app->user->identity->roles;
 
-   
-        if( Yii::$app->user->identity->id == $user->id){
+
+        if (Yii::$app->user->identity->id == $user->id) {
             throw new BadRequestHttpException('不能删除自己');
         }
-        if(in_array('root', $user->roles)){
+        if (in_array('root', $user->roles)) {
             throw new BadRequestHttpException('root用户不可删除');
         }
 
-        if(in_array('root', $roles)){
+        if (in_array('root', $roles)) {
             $user->delete();
             return ['success' => true];
-        }else if(in_array('admin', $roles) && !in_array('admin', $user->roles)){
+        } else if (in_array('admin', $roles) && !in_array('admin', $user->roles)) {
             $user->delete();
             return ['success' => true];
-        }else{
+        } else {
             throw new BadRequestHttpException('权限不足');
         }
-       
+
     }
     public function actionCreate()
     {
@@ -111,16 +120,16 @@ class PersonController extends ActiveController
             }
         }
 
-       
+
 
     }
 
     public function actionAuth()
-    { 
+    {
 
         $post = Yii::$app->request->post();
-        
-        $roles =  Yii::$app->user->identity->roles;
+
+        $roles = Yii::$app->user->identity->roles;
 
         if (!isset($post['id'])) {
             throw new BadRequestHttpException('缺乏 id 数据');
@@ -133,42 +142,42 @@ class PersonController extends ActiveController
         $auth = $post['auth'];
 
         $user = User::findOne($id);
-        if($user == null ){
+        if ($user == null) {
             throw new BadRequestHttpException('没有user');
         }
 
-        if(in_array('root', $user->roles)){
+        if (in_array('root', $user->roles)) {
             throw new BadRequestHttpException('root用户不可修改');
         }
 
-        if(in_array('admin', $roles) && ($auth == 'root' || $auth == 'admin')){
+        if (in_array('admin', $roles) && ($auth == 'root' || $auth == 'admin')) {
             throw new BadRequestHttpException('权限不足');
         }
-        
+
         $model = new Assignment($user->id);
-      
+
         switch ($auth) {
             case 'manager':
 
-                $success = $model->revoke( [ 'admin']);
+                $success = $model->revoke(['admin']);
                 $success = $model->assign(['manager', 'user']);
                 break;
             case 'admin':
-                $success = $model->revoke( [ 'manager']);
+                $success = $model->revoke(['manager']);
                 $success = $model->assign(['admin', 'user']);
                 break;
             case 'user':
 
-                $success = $model->revoke( ['admin', 'manager']);
-                $success = $model->assign( ['user']);
-                
+                $success = $model->revoke(['admin', 'manager']);
+                $success = $model->assign(['user']);
+
                 break;
             default:
                 throw new Exception("无效的权限", 400);
                 break;
         }
         return array_merge($model->getItems(), ['success' => $success]);
-      
+
 
     }
 }

@@ -79,7 +79,7 @@ final class Facade
     /**
      * @param ?array<string, TestResultCollection> $testDoxResult
      */
-    public static function printResult(TestResult $result, ?array $testDoxResult, Duration $duration): void
+    public static function printResult(TestResult $result, ?array $testDoxResult, Duration $duration, bool $stackTraceForDeprecations): void
     {
         assert(self::$printer !== null);
 
@@ -96,7 +96,7 @@ final class Facade
         }
 
         if (self::$defaultResultPrinter !== null) {
-            self::$defaultResultPrinter->print($result);
+            self::$defaultResultPrinter->print($result, $stackTraceForDeprecations);
         }
 
         if (self::$summaryPrinter !== null) {
@@ -206,7 +206,7 @@ final class Facade
                 self::$printer,
                 true,
                 true,
-                true,
+                $configuration->displayDetailsOnPhpunitDeprecations(),
                 false,
                 false,
                 true,
@@ -241,7 +241,7 @@ final class Facade
             self::$printer,
             true,
             true,
-            true,
+            $configuration->displayDetailsOnPhpunitDeprecations(),
             true,
             true,
             true,

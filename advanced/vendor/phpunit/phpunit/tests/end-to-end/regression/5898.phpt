@@ -13,14 +13,16 @@ require_once __DIR__ . '/../../bootstrap.php';
 --EXPECTF--
 PHPUnit Started (%s)
 Test Runner Configured
-Test Suite Loaded (1 test)
 Event Facade Sealed
+Test Suite Loaded (1 test)
 Test Runner Started
 Test Suite Sorted
 Test Runner Execution Started (1 test)
 Test Suite Started (%s5898.phpt, 1 test)
 Test Preparation Started (%s5898.phpt)
 Test Prepared (%s5898.phpt)
+Child Process Started
+Child Process Finished
 Test Passed (%s5898.phpt)
 Test Finished (%s5898.phpt)
 Test Suite Finished (%s5898.phpt, 1 test)

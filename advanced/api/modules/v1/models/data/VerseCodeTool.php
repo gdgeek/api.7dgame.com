@@ -30,6 +30,8 @@ class VerseCodeTool extends Model
         if (!$code) {
             $code = new Code();
         }
+        $verseCode->lua = $this->lua;
+        $verseCode->js = $this->js;
         $code->lua = $this->lua;
         $code->js = $this->js;
         if ($code->validate()) {

@@ -17,7 +17,8 @@ return [
             ],
         ],
         'db' => [
-            'class' => 'yii\db\Connection',
+            'class' => 'common\components\CynosDbConnection',
+            //'class' => 'yii\db\Connection',
             'dsn' => 'mysql:host=' . getenv('MYSQL_HOST') . ';dbname=' . getenv('MYSQL_DB'),
             'username' => getenv('MYSQL_USERNAME'),
             'password' => getenv(name: 'MYSQL_PASSWORD'),

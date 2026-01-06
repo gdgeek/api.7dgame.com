@@ -7,7 +7,7 @@ on:
 name: "CI"
 
 env:
-  COMPOSER_ROOT_VERSION: "3.0-dev"
+  COMPOSER_ROOT_VERSION: "3.0.x-dev"
 
 permissions:
   contents: read
@@ -67,6 +67,7 @@ jobs:
           - "8.2"
           - "8.3"
           - "8.4"
+          - "8.5"
 
     steps:
       - name: Checkout
@@ -76,18 +77,24 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php-version }}
-          coverage: pcov
+          coverage: xdebug
 
       - name: Install dependencies with Composer
         run: php ./tools/composer update --no-ansi --no-interaction --no-progress
 
       - name: Run tests with PHPUnit
-        run: php vendor/bin/phpunit --coverage-clover=coverage.xml
+        run: php vendor/bin/phpunit --log-junit junit.xml --coverage-clover=coverage.xml
 
-      - name: Send code coverage report to Codecov.io
-        env:
-          CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}"
-        run: "bash <(curl -s https://codecov.io/bash) || true"
+      - name: Upload test results to Codecov.io
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload code coverage data to Codecov.io
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   mutation-tests:
     name: Mutation Tests
@@ -106,7 +113,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: 8.3
-          coverage: pcov
+          coverage: xdebug
 
       - name: Install dependencies with Composer
         run: php ./tools/composer update --no-ansi --no-interaction --no-progress
