@@ -22,7 +22,23 @@ jobs:
       - name: Install Dependencies
         working-directory: ./advanced
         run: composer install --prefer-dist --no-progress --optimize-autoloader --ignore-platform-req=php
-        
+
+      - name: Prepare Test Configs
+        working-directory: ./advanced
+        run: |
+          # 创建必要的 local 配置文件以免测试报错
+          echo "<?php return [];" > common/config/main-local.php
+          echo "<?php return [];" > common/config/test-local.php
+          echo "<?php return ['components' => ['request' => ['cookieValidationKey' => 'test-key']]];" > common/config/codeception-local.php
+          
+          echo "<?php return [];" > backend/config/main-local.php
+          echo "<?php return [];" > backend/config/test-local.php
+          echo "<?php return ['components' => ['request' => ['cookieValidationKey' => 'test-key']]];" > backend/config/codeception-local.php
+
+          echo "<?php return [];" > api/config/main-local.php
+          echo "<?php return [];" > api/config/test-local.php
+          echo "<?php return ['components' => ['request' => ['cookieValidationKey' => 'test-key']]];" > api/config/test-local.php # API 这个特殊点，看之前的配置是指向 test-local
+
       - name: Run Unit Tests
         working-directory: ./advanced
         run: |
