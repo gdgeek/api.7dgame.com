@@ -61,9 +61,6 @@ jobs:
                       'password' => 'root',
                       'charset' => 'utf8',
                   ],
-                  'mailer' => [
-                      'useFileTransport' => true,
-                  ],
               ],
           ];" > common/config/main-local.php
           echo "<?php return [];" > common/config/test.php
