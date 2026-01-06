@@ -107,7 +107,7 @@ jobs:
                       ],
                       'jwt' => [
                            'class' => 'bizley\jwt\Jwt', 
-                           'signer' => 'hmac', 
+                           'signer' => 'HS256', 
                            'signingKey' => 'testing-key', 
                       ],
                   ],
