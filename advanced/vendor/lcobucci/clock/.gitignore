@@ -1,8 +1,0 @@
-/vendor
-/phpunit.xml
-/phpcs.xml
-/.phpcs.cache
-/infection-log.txt
-/phpstan.neon
-/.phpunit.cache
-/build
