@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: ['*']  # 所有分支 push 都触发 test
   pull_request:
     branches: [main, master]
 
@@ -186,8 +186,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     needs: test
-    # Allow build on PRs to verify Dockerfile, but logic below controls tag pushing
-    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    # 只在合并到主干时构建
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     steps:
       - uses: actions/checkout@v4
 
@@ -197,9 +197,9 @@ jobs:
           php-version: '8.4'
           extensions: pdo, pdo_mysql, gd
 
-      - name: Install Dependencies
+      - name: Install Dependencies (Production)
         working-directory: ./advanced
-        run: composer install --prefer-dist --no-progress --optimize-autoloader --ignore-platform-req=php
+        run: composer install --prefer-dist --no-progress --no-dev --optimize-autoloader --ignore-platform-req=php
       
       - name: Login to Tencent Registry
         uses: docker/login-action@v3

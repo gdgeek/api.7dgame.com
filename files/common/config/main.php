@@ -3,7 +3,7 @@ return [
     'language' => 'zh-CN',
     'sourceLanguage' => 'zh-CN',
     'aliases' => [
-        '@bower' => '@vendor/yidas/yii2-bower-asset/bower',
+        '@bower' => '@vendor/bower-asset',
         '@npm' => '@vendor/npm-asset',
     ],
     'vendorPath' => dirname(dirname(__DIR__)) . '/vendor',
@@ -11,14 +11,16 @@ return [
     'name' => '元宇宙实景编程平台（MrPP.com）',
     
     'components' => [
+        'redis' => [
+            'class' => 'yii\\redis\\Connection',
+            'hostname' => getenv('REDIS_HOST') ?: 'localhost',
+            'port' => getenv('REDIS_PORT') ?: 6379,
+            'database' => getenv('REDIS_DB') ?: 0,
+            'password' => getenv('REDIS_PASSWORD') ?: null,
+        ],
         'cache' => [
-            'class' => 'yii\redis\Cache',
-            'redis' => [
-                'hostname' => getenv('REDIS_HOST') ?: 'localhost',
-                'port' => getenv('REDIS_PORT') ?: 6379,
-                'database' => getenv('REDIS_DB') ?: 0,
-                'password' => getenv('REDIS_PASSWORD') ?: null,
-            ],
+            'class' => 'yii\\redis\\Cache',
+            'redis' => 'redis',
         ],
         'urlManager' => [
             'enablePrettyUrl' => true,

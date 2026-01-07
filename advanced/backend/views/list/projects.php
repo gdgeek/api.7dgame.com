@@ -68,7 +68,7 @@ $this->registerCss($css);
 				<a class="loading btn btn-info btn-large btn-block" project_id="123" onclick='load_project(<?=$proj->id?>);' style="height:280px" href="#">
 			
 				<h3 class="tile-title"><b><?=$proj->title?></b></h3>
-				<img class="tile-image " style='' alt="Generic placeholder image" src="<?=Yii::$app->params['identicon']->getImageDataUri($proj->id.Yii::$app->user->id, 64); ?>">
+				<img class="tile-image " style='' alt="Generic placeholder image" src="<?=Yii::$app->request->baseUrl?>/public/image/default-avatar.png">
 				<p><?=$proj->introduce?></p>
 				</a>
 				</div>

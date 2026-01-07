@@ -9,7 +9,7 @@ use mdm\admin\components\MenuHelper;
         <!-- Sidebar user panel -->
         <div class="user-panel">
             <div class="pull-left image">
-				 <img src="<?=Yii::$app->params['identicon']->getImageDataUri(Yii::$app->user->identity->username); ?>" class="img-cube" alt="User Image"/>  
+				 <img src="<?=Yii::$app->request->baseUrl?>/public/image/default-avatar.png" class="img-cube" alt="User Image"/>  
             </div>
             <div class="pull-left info">
                 <p><?=Yii::$app->user->identity->username?></p>
