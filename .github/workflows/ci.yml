@@ -210,11 +210,21 @@ jobs:
           
       - name: Build and Push Docker Image
         run: |
-          docker build -t hkccr.ccs.tencentyun.com/gdgeek/api:${{ github.sha }} -f docker/Release .
-          docker push hkccr.ccs.tencentyun.com/gdgeek/api:${{ github.sha }}
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          BRANCH_NAME=$(echo "${{ github.ref }}" | sed 's|refs/heads/||')
           
-          # Tag and push latest
-          docker tag hkccr.ccs.tencentyun.com/gdgeek/api:${{ github.sha }} hkccr.ccs.tencentyun.com/gdgeek/api:latest
+          # Build image
+          docker build -t hkccr.ccs.tencentyun.com/gdgeek/api:${SHORT_SHA} -f docker/Release .
+          
+          # Push 7-char hash tag
+          docker push hkccr.ccs.tencentyun.com/gdgeek/api:${SHORT_SHA}
+          
+          # Push branch tag (master or main)
+          docker tag hkccr.ccs.tencentyun.com/gdgeek/api:${SHORT_SHA} hkccr.ccs.tencentyun.com/gdgeek/api:${BRANCH_NAME}
+          docker push hkccr.ccs.tencentyun.com/gdgeek/api:${BRANCH_NAME}
+          
+          # Push latest tag
+          docker tag hkccr.ccs.tencentyun.com/gdgeek/api:${SHORT_SHA} hkccr.ccs.tencentyun.com/gdgeek/api:latest
           docker push hkccr.ccs.tencentyun.com/gdgeek/api:latest
 
   # 阶段3: 部署
