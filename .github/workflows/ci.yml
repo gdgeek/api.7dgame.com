@@ -211,17 +211,11 @@ jobs:
       - name: Build and Push Docker Image
         run: |
           docker build -t hkccr.ccs.tencentyun.com/gdgeek/api:${{ github.sha }} -f docker/Release .
-          
-          # Always push the commit-specific tag
           docker push hkccr.ccs.tencentyun.com/gdgeek/api:${{ github.sha }}
-
-          # Only update 'latest' tag on push events (merge to master/main)
-          if [ "${{ github.event_name }}" == "push" ]; then
-            docker tag hkccr.ccs.tencentyun.com/gdgeek/api:${{ github.sha }} hkccr.ccs.tencentyun.com/gdgeek/api:latest
-            docker push hkccr.ccs.tencentyun.com/gdgeek/api:latest
-          else
-            echo "Skipping 'latest' tag push for non-push event (PR)"
-          fi
+          
+          # Tag and push latest
+          docker tag hkccr.ccs.tencentyun.com/gdgeek/api:${{ github.sha }} hkccr.ccs.tencentyun.com/gdgeek/api:latest
+          docker push hkccr.ccs.tencentyun.com/gdgeek/api:latest
 
   # 阶段3: 部署
   deploy:
