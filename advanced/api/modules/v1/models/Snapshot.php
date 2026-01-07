@@ -164,7 +164,7 @@ class Snapshot extends \yii\db\ActiveRecord
         }
 
         $snapshot->uuid = $verse->uuid;
-        $snapshot->code = $verse->lua;
+        $snapshot->code = $verse->code;
         $snapshot->data = json_encode($verse->data);
         $snapshot->managers = $verse->managers;
 
@@ -176,7 +176,7 @@ class Snapshot extends \yii\db\ActiveRecord
                 'prefab' => $meta->prefab,
                 'title' => $meta->title,
                 'data' => json_encode($meta->data),
-                'code' => $meta->lua,
+                'code' => $meta->code,
                 'uuid' => $meta->uuid,
                 'events' => json_encode(value: $meta->events),
                 'type' => $meta->prefab == 0 ? 'entity' : 'prefab',

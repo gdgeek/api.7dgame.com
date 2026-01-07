@@ -345,10 +345,10 @@ BlocklyAsset::register($this);
             $data = json_decode($blockly->block);
             if(is_null($data)){
                 $this->registerJs(
-<<<JS
+
 	Blockly.Blocks['$blockly->title'] = $blockly->block;
 	Blockly.Lua['$blockly->title'] = $blockly->lua;
-JS
+
                 , $this::POS_READY
                 );
 
@@ -357,7 +357,7 @@ JS
                 $data->colour = $color[$blockly->type];
                 $block = json_encode($data);
                 $this->registerJs(
-<<<JS
+
 	Blockly.Blocks['$blockly->title'] = {
       init: function() {
         this.jsonInit(
@@ -366,7 +366,7 @@ JS
       }
     }
 	Blockly.Lua['$blockly->title'] = $blockly->lua;
-JS
+
                 , $this::POS_READY
                 );
 
