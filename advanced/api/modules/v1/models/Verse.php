@@ -377,11 +377,11 @@ class Verse extends \yii\db\ActiveRecord
     }
     public function getLua(): string
     {
-        return $this->verseCode->lua;
+        return $this->verseCode->lua ?? '';
     }
     public function getJs(): string
     {
-        return $this->verseCode->js;
+        return $this->verseCode->js ?? '';
     }
 
     public function getMetaIds()
