@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "dcb27bb76b6e3c723c722a6f4026ed12",
+    "content-hash": "28c67c34915fd40c3d7c7c80459224ea",
     "packages": [
         {
             "name": "2amigos/qrcode-library",
@@ -3580,6 +3580,93 @@
                 }
             ],
             "time": "2025-12-04T18:17:06+00:00"
+        },
+        {
+            "name": "tencentcloud/common",
+            "version": "3.0.1443",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/tencentcloud-sdk-php/common.git",
+                "reference": "6afcabe59ec75ea42100cab7e03c6870cefc5e73"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/tencentcloud-sdk-php/common/zipball/6afcabe59ec75ea42100cab7e03c6870cefc5e73",
+                "reference": "6afcabe59ec75ea42100cab7e03c6870cefc5e73",
+                "shasum": ""
+            },
+            "require": {
+                "guzzlehttp/guzzle": "^6.3||^7.0",
+                "php": ">=5.6.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "TencentCloud\\": "./src/TencentCloud"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "authors": [
+                {
+                    "name": "tencentcloudapi",
+                    "email": "tencentcloudapi@tencent.com",
+                    "homepage": "https://cloud.tencent.com/document/sdk/PHP",
+                    "role": "Developer"
+                }
+            ],
+            "description": "TencentCloudApi php sdk",
+            "homepage": "https://github.com/tencentcloud-sdk-php/common",
+            "support": {
+                "issues": "https://github.com/tencentcloud-sdk-php/common/issues",
+                "source": "https://github.com/tencentcloud-sdk-php/common/tree/3.0.1443"
+            },
+            "time": "2025-08-14T20:10:01+00:00"
+        },
+        {
+            "name": "tencentcloud/sts",
+            "version": "3.0.1443",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/tencentcloud-sdk-php/sts.git",
+                "reference": "b7a84d345a63b4617a56f75faf7875c68e10c929"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/tencentcloud-sdk-php/sts/zipball/b7a84d345a63b4617a56f75faf7875c68e10c929",
+                "reference": "b7a84d345a63b4617a56f75faf7875c68e10c929",
+                "shasum": ""
+            },
+            "require": {
+                "tencentcloud/common": "3.0.1443"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "TencentCloud\\": "./src/TencentCloud"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "authors": [
+                {
+                    "name": "tencentcloudapi",
+                    "email": "tencentcloudapi@tencent.com",
+                    "homepage": "https://github.com/tencentcloud-sdk-php/sts",
+                    "role": "Developer"
+                }
+            ],
+            "description": "TencentCloudApi php sdk sts",
+            "homepage": "https://github.com/tencentcloud-sdk-php/sts",
+            "support": {
+                "issues": "https://github.com/tencentcloud-sdk-php/sts/issues",
+                "source": "https://github.com/tencentcloud-sdk-php/sts/tree/3.0.1443"
+            },
+            "time": "2025-08-14T20:12:36+00:00"
         },
         {
             "name": "w7corp/easywechat",
