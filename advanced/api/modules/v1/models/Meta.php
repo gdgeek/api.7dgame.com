@@ -132,6 +132,7 @@ class Meta extends \yii\db\ActiveRecord
        
         return [
             'id',
+            'image_id',
             'uuid',
             'events',
             'title',
