@@ -1,5 +1,6 @@
 {
   "name": "yiisoft/yii2-app-advanced",
+  "version": "1.0.0",
   "description": "Yii 2 Advanced Project Template",
   "keywords": [
     "yii2",

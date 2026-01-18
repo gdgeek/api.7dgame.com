@@ -218,6 +218,72 @@ class SiteController extends \yii\rest\Controller
         return Yii::$app->errorHandler->exception;
     }
     
+    /**
+     * 健康检查接口
+     * @return array
+     */
+    public function actionHealth()
+    {
+        $health = [
+            'status' => 'ok',
+            'timestamp' => time(),
+            'datetime' => date('Y-m-d H:i:s'),
+        ];
+        
+        // 检查数据库连接
+        try {
+            Yii::$app->db->open();
+            $health['database'] = 'connected';
+        } catch (\Exception $e) {
+            $health['database'] = 'disconnected';
+            $health['status'] = 'error';
+        }
+        
+        // 检查缓存
+        try {
+            if (Yii::$app->has('cache')) {
+                Yii::$app->cache->set('health_check', true, 10);
+                $health['cache'] = Yii::$app->cache->get('health_check') ? 'ok' : 'error';
+            } else {
+                $health['cache'] = 'not_configured';
+            }
+        } catch (\Exception $e) {
+            $health['cache'] = 'error';
+        }
+        
+        return $health;
+    }
+    
+    /**
+     * 版本号查询接口
+     * @return array
+     */
+    public function actionVersion()
+    {
+        $composerFile = Yii::getAlias('@app/../composer.json');
+        $version = '1.0.0'; // 默认版本号
+        $appName = 'API Application';
+        
+        if (file_exists($composerFile)) {
+            $composer = json_decode(file_get_contents($composerFile), true);
+            if (isset($composer['name'])) {
+                $appName = $composer['name'];
+            }
+            if (isset($composer['version'])) {
+                $version = $composer['version'];
+            }
+        }
+        
+        return [
+            'app_name' => $appName,
+            'version' => $version,
+            'yii_version' => Yii::getVersion(),
+            'php_version' => PHP_VERSION,
+            'environment' => YII_ENV,
+            'debug' => YII_DEBUG,
+        ];
+    }
+    
     public function actionMenu()
     {
         $callback = function ($menu) {
