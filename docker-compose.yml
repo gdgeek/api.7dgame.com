@@ -1,0 +1,109 @@
+version: '3.8'
+
+services:
+  # Backend Application Service
+  app:
+    build:
+      context: .
+      dockerfile: ./docker/Local_App
+    restart: always
+    environment:
+      - MYSQL_HOST=db
+      - MYSQL_DB=bujiaban
+      - MYSQL_USERNAME=bujiaban
+      - MYSQL_PASSWORD=local_dev_password
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+      - JWT_KEY=/var/www/.ssh/jwt-key.pem
+    ports:
+      - "8082:80"
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./advanced:/var/www/html/advanced
+      - ./files/backend/config/:/var/www/html/advanced/backend/config/
+      - ./files/common/config/:/var/www/html/advanced/common/config/
+      - ./files/console/config/:/var/www/html/advanced/console/config/
+      - jwt_keys:/var/www/.ssh/
+
+  # API Service
+  api:
+    build:
+      context: .
+      dockerfile: ./docker/Local_Api
+    restart: always
+    environment:
+      - MYSQL_HOST=db
+      - MYSQL_DB=bujiaban
+      - MYSQL_USERNAME=bujiaban
+      - MYSQL_PASSWORD=local_dev_password
+      - JWT_KEY=/var/www/.ssh/jwt-key.pem
+      - SECRET_ID=your_secret_id_here
+      - SECRET_KEY=your_secret_key_here
+      - COS_BUCKETS_PUBLIC_BUCKET=your-bucket-name
+      - COS_BUCKETS_PUBLIC_REGION=ap-nanjing
+      - COS_BUCKETS_PRIVATE_BUCKET=your-private-bucket
+      - COS_BUCKETS_PRIVATE_REGION=ap-nanjing
+      - MAILER_USERNAME=your_email@example.com
+      - MAILER_PASSWORD=your_email_password
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+    ports:
+      - "8081:80"
+    security_opt:
+      - seccomp:unconfined
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./advanced:/var/www/html/advanced
+      - ./files/api/config/:/var/www/html/advanced/api/config/
+      - ./files/common/config/:/var/www/html/advanced/common/config/
+      - ./files/console/config/:/var/www/html/advanced/console/config/
+      - jwt_keys:/var/www/.ssh/
+
+  # MySQL Database
+  db:
+    image: mysql:8.0
+    command: --sql-mode="NO_ENGINE_SUBSTITUTION" --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: bujiaban
+      MYSQL_USER: bujiaban
+      MYSQL_PASSWORD: local_dev_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # phpMyAdmin for database management
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    restart: always
+    environment:
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: rootpassword
+      UPLOAD_LIMIT: 50M
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+
+  # Redis Cache
+  redis:
+    image: redis:alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  db_data:
+  redis_data:
+  jwt_keys:
