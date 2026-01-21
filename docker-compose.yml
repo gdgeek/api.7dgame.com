@@ -46,8 +46,8 @@ services:
       - COS_BUCKETS_PUBLIC_REGION=ap-nanjing
       - COS_BUCKETS_PRIVATE_BUCKET=your-private-bucket
       - COS_BUCKETS_PRIVATE_REGION=ap-nanjing
-      - MAILER_USERNAME=your_email@example.com
-      - MAILER_PASSWORD=your_email_password
+      - MAILER_USERNAME=dev@bujiaban.com
+      - MAILER_PASSWORD=RGewSjMs9m8V9EP6
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_DB=0

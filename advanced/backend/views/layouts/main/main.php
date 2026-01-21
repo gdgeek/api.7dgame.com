@@ -136,7 +136,7 @@ NavBar::end();
 
                     <div class="list-group ">
                         <a href="<?=Url::toRoute("site/index", true)?>" class="list-group-item active">
-                            <h4 class="list-group-item-heading">登录元宇宙实景编程平台</h4>
+                            <h4 class="list-group-item-heading">登录AR创作平台</h4>
                             <p class="list-group-item-text">最棒的混合现实/增强现实程序开发平台，帮助您快速生成HoloLens/iPad上面的MR/AR程序，不需要任何编程经验就可以把脑中的想法呈现出来。</p>
                         </a>
 
