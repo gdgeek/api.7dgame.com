@@ -102,8 +102,15 @@ class PasswordResetService extends Component
         ]);
         $this->redis->executeCommand('SETEX', [$tokenKey, self::TOKEN_TTL, $data]);
         
-        // 发送邮件（TODO: 集成邮件服务）
-        // $this->sendResetEmail($email, $token);
+        // 发送邮件
+        $emailService = new EmailService();
+        $emailSent = $emailService->sendPasswordResetLink($email, $token);
+        
+        if (!$emailSent) {
+            Yii::warning("Failed to send password reset email to {$email}, but token was stored in Redis", __METHOD__);
+            // 即使邮件发送失败，也返回成功，因为令牌已经存储
+            // 这样可以避免因邮件服务问题导致整个功能不可用
+        }
         
         // 记录速率限制
         $this->rateLimiter->hit($rateLimitKey, self::RATE_LIMIT_TTL);

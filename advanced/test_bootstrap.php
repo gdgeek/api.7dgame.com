@@ -47,5 +47,16 @@ new \yii\console\Application([
             'signer' => 'HS256',
             'signingKey' => 'secure-signing-key-should-be-at-least-256-bits-long-for-hs256',
         ],
+        'redis' => [
+            'class' => 'yii\redis\Connection',
+            'hostname' => 'localhost',
+            'port' => 6379,
+            'database' => 1, // Use database 1 for testing
+        ],
+        'mailer' => [
+            'class' => 'yii\swiftmailer\Mailer',
+            'viewPath' => '@common/mail',
+            'useFileTransport' => true,
+        ],
     ],
 ]);
