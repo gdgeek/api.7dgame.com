@@ -1,11 +1,11 @@
 <?php
 use yii\helpers\Html;
-use yii\helpers\Url;
 
 /* @var $this yii\web\View */
 /* @var $user api\modules\v1\models\User */
 
-$verifyLink = Url::to('@mrpp/site/verify-email?token='.$user->verification_token);
+// 生成验证链接（使用完整URL）
+$verifyLink = 'https://bujiaban.com/site/verify-email?token=' . $user->verification_token;
 ?>
 <div class="verify-email">
     <p>您好 <?= Html::encode($user->username) ?>,</p>

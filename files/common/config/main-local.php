@@ -32,20 +32,16 @@ return [
             'database' => getenv('REDIS_DB'),
         ],
         'mailer' => [
-            'class' => 'yii\swiftmailer\Mailer',
+            'class' => \yii\symfonymailer\Mailer::class,
             'viewPath' => '@common/mail',
             'useFileTransport' => false,
             'transport' => [
-                'class' => 'Swift_SmtpTransport',
+                'scheme' => 'smtp',
                 'host' => 'smtp.exmail.qq.com',
                 'username' => getenv('MAILER_USERNAME'),
-                'password' => getenv('MAILER_PASSWORD'),
-                'port' => '25',
-                'encryption' => 'tls',
-            ],
-            'messageConfig' => [
-                'charset' => 'UTF-8',
-                'from' => [getenv('MAILER_USERNAME') => getenv('MAILER_USERNAME')],
+                'password' => getenv('MAILER_PASSWORD'), // 注意：这里需要使用授权码，不是邮箱密码
+                'port' => 465,
+                'encryption' => 'ssl',
             ],
         ],
     ],

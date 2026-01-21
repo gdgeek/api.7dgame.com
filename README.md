@@ -33,6 +33,7 @@
 - 💬 **微信集成** - 微信登录和支付功能
 - 📁 **文件管理** - 文件上传、存储和管理
 - 🏷️ **标签系统** - 灵活的标签分类管理
+- 📧 **邮件系统** - 完整的邮件发送功能（验证码、密码重置、邮箱验证）
 
 ### 业务模块
 - 📚 **教育管理** - 学校、班级、教师、学生管理
@@ -61,6 +62,7 @@
 ```json
 {
   "yiisoft/yii2": "~2.0.51",
+  "yiisoft/yii2-symfonymailer": "^4.0",
   "bizley/jwt": "^4.0",
   "lcobucci/jwt": "^5.0",
   "zircote/swagger-php": "^4.0",
@@ -463,6 +465,39 @@ vendor/bin/codecept run unit
 vendor/bin/codecept run functional
 ```
 
+### 邮件功能测试
+
+项目集成了完整的邮件发送功能，支持验证码、密码重置、邮箱验证等场景。
+
+**测试所有邮件类型**:
+```bash
+docker exec -it api7dgamecom-api-1 php yii email-test/all your@email.com
+```
+
+**测试单个邮件类型**:
+```bash
+# 验证码邮件
+docker exec -it api7dgamecom-api-1 php yii email-test/verification-code your@email.com
+
+# 密码重置邮件
+docker exec -it api7dgamecom-api-1 php yii email-test/password-reset your@email.com
+
+# 邮箱验证邮件
+docker exec -it api7dgamecom-api-1 php yii email-test/email-verify your@email.com
+
+# 简单测试邮件
+docker exec -it api7dgamecom-api-1 php yii email-test/simple your@email.com
+```
+
+**邮件功能特性**:
+- ✅ 使用 Symfony Mailer 4.0（最新版本）
+- ✅ 支持腾讯企业邮箱
+- ✅ HTML 和纯文本双格式
+- ✅ 响应式邮件模板
+- ✅ 安全的 SMTP 授权码认证
+
+📖 **详细文档**: [邮件功能使用指南](EMAIL_FUNCTIONALITY_GUIDE.md)
+
 ### 代码规范
 
 项目遵循 PSR-12 编码规范。
@@ -527,6 +562,10 @@ export SWAGGER_ENABLED=false
 - [部署文档](docs/SWAGGER_DEPLOYMENT.md)
 - [API 健康检查](docs/API_HEALTH_VERSION.md)
 - [OpenAPI 控制器状态](docs/OPENAPI_CONTROLLERS_STATUS.md)
+- [邮件功能使用指南](EMAIL_FUNCTIONALITY_GUIDE.md) ⭐
+- [邮件测试结果](EMAIL_TEST_RESULTS.md)
+- [获取 SMTP 授权码](GET_SMTP_AUTH_CODE.md)
+- [邮件配置指南](EMAIL_CONFIG_GUIDE.md)
 
 ## 🤝 贡献
 
