@@ -10,6 +10,17 @@
 - **请求格式**: `application/json`
 - **响应格式**: `application/json`
 - **字符编码**: `UTF-8`
+- **认证要求**: 需要 Bearer Token 认证（用户必须已登录）
+
+## 认证说明
+
+所有邮箱验证接口都需要用户登录认证。请在请求头中携带 JWT Token：
+
+```
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+如果未提供 Token 或 Token 无效，将返回 401 Unauthorized 错误。
 
 ## API 接口
 
@@ -127,7 +138,20 @@ const sendVerificationCode = async (email) => {
 
 **说明**: 同一邮箱 60 秒内只能发送一次验证码
 
-##### 3. 服务器错误 (500 Internal Server Error)
+##### 3. 未认证 (401 Unauthorized)
+
+```json
+{
+  "name": "Unauthorized",
+  "message": "Your request was made with invalid credentials.",
+  "code": 0,
+  "status": 401
+}
+```
+
+**说明**: 用户未登录或 Token 无效/过期
+
+##### 4. 服务器错误 (500 Internal Server Error)
 
 ```json
 {
@@ -180,6 +204,9 @@ const verifyEmail = async (email, code) => {
 verifyEmail('user@example.com', '123456')
   .then(data => {
     console.log('验证成功:', data.message);
+    console.log('用户信息:', data.data.user);
+    // 可以更新前端的用户状态
+    // updateUserState(data.data.user);
   })
   .catch(error => {
     console.error('验证失败:', error.error.message);
@@ -214,9 +241,23 @@ const verifyEmail = async (email, code) => {
 ```json
 {
   "success": true,
-  "message": "邮箱验证成功"
+  "message": "邮箱验证并绑定成功",
+  "data": {
+    "user": {
+      "id": 123,
+      "username": "testuser",
+      "email": "user@example.com",
+      "email_verified_at": 1737484800
+    }
+  }
 }
 ```
+
+**响应字段说明**：
+- `user.id`: 用户 ID
+- `user.username`: 用户名
+- `user.email`: 已绑定并验证的邮箱地址
+- `user.email_verified_at`: 邮箱验证时间戳（Unix 时间戳）
 
 #### 错误响应
 
@@ -285,7 +326,20 @@ const verifyEmail = async (email, code) => {
 
 **说明**: 验证码输入错误 5 次后，账户将被锁定 15 分钟
 
-##### 4. 服务器错误 (500 Internal Server Error)
+##### 4. 未认证 (401 Unauthorized)
+
+```json
+{
+  "name": "Unauthorized",
+  "message": "Your request was made with invalid credentials.",
+  "code": 0,
+  "status": 401
+}
+```
+
+**说明**: 用户未登录或 Token 无效/过期
+
+##### 5. 服务器错误 (500 Internal Server Error)
 
 ```json
 {
@@ -308,6 +362,14 @@ const verifyEmail = async (email, code) => {
 3. **发送频率**: 同一邮箱 60 秒内只能发送一次
 4. **验证次数**: 最多允许验证失败 5 次
 5. **锁定时间**: 失败 5 次后锁定 15 分钟
+6. **绑定机制**: 验证成功后自动绑定邮箱到当前登录用户
+
+### 邮箱绑定规则
+
+1. **唯一性**: 同一邮箱只能绑定到一个用户账户
+2. **覆盖更新**: 验证成功后会更新用户的邮箱地址（如果之前已有邮箱）
+3. **验证状态**: 绑定成功后 `email_verified_at` 字段会记录验证时间
+4. **认证要求**: 必须登录后才能绑定邮箱
 
 ### 安全机制
 
@@ -336,12 +398,33 @@ const apiClient = axios.create({
   }
 });
 
+// 请求拦截器 - 添加 Token
+apiClient.interceptors.request.use(
+  config => {
+    // 从 localStorage 或 Vuex/Pinia 获取 token
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  error => {
+    return Promise.reject(error);
+  }
+);
+
 // 响应拦截器
 apiClient.interceptors.response.use(
   response => response,
   error => {
     // 统一错误处理
     if (error.response) {
+      // 处理 401 未认证错误
+      if (error.response.status === 401) {
+        // 清除 token 并跳转到登录页
+        localStorage.removeItem('access_token');
+        // router.push('/login');
+      }
       return Promise.reject(error.response.data);
     }
     return Promise.reject({
@@ -493,7 +576,7 @@ export function useEmailVerification() {
    * 验证验证码
    * @param {string} email - 邮箱地址
    * @param {string} code - 验证码
-   * @returns {Promise<boolean>} 是否成功
+   * @returns {Promise<Object>} 验证结果，包含用户信息
    */
   const verifyCode = async (email, code) => {
     if (!canVerify.value) {
@@ -513,7 +596,9 @@ export function useEmailVerification() {
           countdownTimer = null;
         }
         countdown.value = 0;
-        return true;
+        
+        // 返回完整结果，包含用户信息
+        return result;
       }
       
       return false;
@@ -691,8 +776,9 @@ const handleSubmit = async () => {
   
   if (success) {
     // 验证成功，执行后续操作
-    console.log('邮箱验证成功');
-    // 例如：跳转到其他页面、显示成功提示等
+    console.log('邮箱验证并绑定成功');
+    // 例如：更新用户状态、显示成功提示、跳转到其他页面等
+    // emit('verified', success.data.user);
   }
 };
 

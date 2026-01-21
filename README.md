@@ -15,7 +15,8 @@
   <a href="#api-文档">API 文档</a> •
   <a href="#项目结构">项目结构</a> •
   <a href="#开发指南">开发指南</a> •
-  <a href="#docker-部署">Docker</a>
+  <a href="#docker-部署">Docker</a> •
+  <a href="QUICK_REFERENCE.md">快速参考 ⭐</a>
 </p>
 
 ---
@@ -102,7 +103,7 @@ cd api.7dgame.com
 
 2. **一键启动**
 ```bash
-./start-docker.sh
+./scripts/docker/start-docker.sh
 ```
 
 脚本会自动完成：
@@ -245,10 +246,12 @@ make migrate        # 运行数据库迁移
 make test           # 运行测试
 make db-backup      # 备份数据库
 
-# 使用脚本
-./start-docker.sh   # 一键启动（自动初始化）
-./stop-docker.sh    # 停止服务
-./check-env.sh      # 检查环境配置
+# 使用脚本（推荐）
+./scripts/docker/start-docker.sh   # 一键启动（自动初始化）
+./scripts/docker/stop-docker.sh    # 停止服务
+./scripts/docker/check-env.sh      # 检查环境配置
+./scripts/email/configure-email.sh # 配置邮件服务
+./scripts/ci/check-ci-status.sh    # 检查 CI 状态
 
 # 使用 docker-compose
 docker-compose up -d              # 启动服务
@@ -257,6 +260,8 @@ docker-compose logs -f api        # 查看 API 日志
 docker-compose exec api bash      # 进入 API 容器
 docker-compose restart            # 重启服务
 ```
+
+📖 **脚本文档**: [脚本使用指南](scripts/README.md)
 
 ### 环境配置
 
@@ -277,7 +282,7 @@ openssl ecparam -genkey -name prime256v1 -noout -out jwt_keys/jwt-key.pem
 或者直接运行一键启动脚本，它会自动处理这些步骤：
 
 ```bash
-./start-docker.sh
+./scripts/docker/start-docker.sh
 ```
 
 ## 📖 API 文档
@@ -558,14 +563,35 @@ export SWAGGER_ENABLED=false
 
 ## 📚 文档
 
-- [Swagger 配置指南](docs/SWAGGER_CONFIG.md)
-- [部署文档](docs/SWAGGER_DEPLOYMENT.md)
-- [API 健康检查](docs/API_HEALTH_VERSION.md)
-- [OpenAPI 控制器状态](docs/OPENAPI_CONTROLLERS_STATUS.md)
-- [邮件功能使用指南](EMAIL_FUNCTIONALITY_GUIDE.md) ⭐
-- [邮件测试结果](EMAIL_TEST_RESULTS.md)
-- [获取 SMTP 授权码](GET_SMTP_AUTH_CODE.md)
-- [邮件配置指南](EMAIL_CONFIG_GUIDE.md)
+### 📖 完整文档索引
+- [📁 文档中心](docs/README.md) - 所有文档的索引和导航 ⭐
+
+### 🔒 安全文档
+- [安全审查总结](docs/security/SECURITY_AUDIT_SUMMARY.md) - 后端安全审查报告
+- [安全加固规范](.kiro/specs/backend-security-hardening/) - 详细的安全加固实施计划
+
+### 🐳 Docker 文档
+- [Docker 快速启动](docs/docker/DOCKER_QUICK_START.md) - 最常用的命令和操作
+- [Docker 完整指南](docker/README.zh-CN.md) - 详细的使用说明和故障排查
+- [Docker 设置完成](docs/docker/DOCKER_SETUP_COMPLETE.md) - 环境配置详情
+
+### 📧 邮件功能文档
+- [邮件功能快速指南](docs/email/邮件功能快速指南.md) - 中文快速指南 ⭐
+- [邮件功能使用指南](docs/email/EMAIL_FUNCTIONALITY_GUIDE.md) - 详细使用说明
+- [邮件配置指南](docs/email/EMAIL_CONFIG_GUIDE.md) - 配置步骤
+- [邮件测试结果](docs/email/EMAIL_TEST_RESULTS.md) - 测试报告
+- [获取 SMTP 授权码](docs/email/GET_SMTP_AUTH_CODE.md) - 授权码获取
+
+### 📖 API 文档
+- [Swagger 配置指南](docs/SWAGGER_CONFIG.md) - Swagger UI 配置
+- [Swagger 部署文档](docs/SWAGGER_DEPLOYMENT.md) - 部署说明
+- [API 健康检查](docs/API_HEALTH_VERSION.md) - 健康检查端点
+- [OpenAPI 控制器状态](docs/OPENAPI_CONTROLLERS_STATUS.md) - 注解状态
+
+### 📝 规范文档
+- [邮箱验证和密码重置](.kiro/specs/email-verification-and-password-reset/) - 功能规范
+- [后端安全加固](.kiro/specs/backend-security-hardening/) - 安全规范
+- [OpenAPI 3 实施](.kiro/specs/openapi-3-implementation/) - API 文档规范
 
 ## 🤝 贡献
 

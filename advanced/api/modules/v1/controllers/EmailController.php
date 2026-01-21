@@ -45,6 +45,11 @@ class EmailController extends Controller
             'application/json' => Response::FORMAT_JSON,
         ];
         
+        // 配置认证
+        $behaviors['authenticator'] = [
+            'class' => \yii\filters\auth\HttpBearerAuth::class,
+        ];
+        
         return $behaviors;
     }
     
@@ -103,7 +108,7 @@ class EmailController extends Controller
     }
     
     /**
-     * 验证邮箱验证码
+     * 验证邮箱验证码并绑定邮箱
      * 
      * POST /v1/email/verify
      * 
@@ -127,11 +132,35 @@ class EmailController extends Controller
         }
         
         try {
-            $this->emailService->verifyCode($form->email, $form->code);
+            // 验证验证码并绑定邮箱
+            $result = $this->emailService->verifyCode($form->email, $form->code);
+            
+            if (!$result) {
+                Yii::$app->response->statusCode = 500;
+                return [
+                    'success' => false,
+                    'error' => [
+                        'code' => 'BIND_FAILED',
+                        'message' => '邮箱绑定失败，请稍后重试',
+                    ],
+                ];
+            }
+            
+            // 获取更新后的用户信息
+            $user = Yii::$app->user->identity;
+            $user->refresh(); // 刷新用户数据
             
             return [
                 'success' => true,
-                'message' => '邮箱验证成功',
+                'message' => '邮箱验证并绑定成功',
+                'data' => [
+                    'user' => [
+                        'id' => $user->id,
+                        'username' => $user->username,
+                        'email' => $user->email,
+                        'email_verified_at' => $user->email_verified_at,
+                    ],
+                ],
             ];
         } catch (\yii\web\TooManyRequestsHttpException $e) {
             Yii::$app->response->statusCode = 429;
