@@ -177,8 +177,7 @@ jobs:
 
       - name: Run Unit Tests
         working-directory: ./advanced
-        run: |
-           vendor/bin/codecept run unit --no-exit
+        run: php vendor/bin/phpunit --testdox
 
   # 阶段2: 构建 Docker 镜像
   build:

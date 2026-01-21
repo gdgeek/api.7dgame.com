@@ -4,4 +4,4 @@ modules:
         - Asserts
         - Yii2:
             part: [orm, fixtures, email]
-            configFile: '../test_bootstrap.php'
+            configFile: '../common/config/codeception-local.php'

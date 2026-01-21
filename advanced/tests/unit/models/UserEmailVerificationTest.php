@@ -3,7 +3,7 @@
 namespace tests\unit\models;
 
 use api\modules\v1\models\User;
-use Codeception\Test\Unit;
+use PHPUnit\Framework\TestCase;
 
 /**
  * 测试 User 模型的邮箱验证相关方法
@@ -13,7 +13,7 @@ use Codeception\Test\Unit;
  * - markEmailAsVerified() 方法
  * - findByEmail() 静态方法
  */
-class UserEmailVerificationTest extends Unit
+class UserEmailVerificationTest extends TestCase
 {
     /**
      * 测试 isEmailVerified() 方法 - 未验证的情况
