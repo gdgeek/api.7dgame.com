@@ -31,6 +31,9 @@ new \yii\console\Application([
             'password' => 'root',
             'charset' => 'utf8',
         ],
+        'cache' => [
+            'class' => 'yii\caching\ArrayCache',
+        ],
         'authManager' => [
             'class' => 'yii\rbac\DbManager',
         ],

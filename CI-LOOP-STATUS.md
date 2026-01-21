@@ -2,19 +2,28 @@
 
 ## 📊 当前状态
 
-**最新提交**: bd08a7dc - "Fix CI: add phpunit.xml to git (was ignored by .gitignore)"
+**最新提交**: 6555589b - "Fix database connection: use 127.0.0.1 instead of localhost for CI"
 
 **CI 状态**: 运行中 🔄
 
 **查看详情**: https://github.com/gdgeek/api.7dgame.com/actions
+
+## 🎉 重大进展！
+
+✅ **UserMethodsTest**: 7/7 测试通过！
+✅ **UserEmailVerificationTest**: 部分测试通过！
+❌ **数据库测试**: 14 个错误（数据库连接问题）
 
 ## 🐛 最近修复
 
 - ❌ 问题 1: PHPUnit 不认识 `--verbose` 选项
 - ✅ 修复 1: 移除了 `--verbose` 选项 (bc7ae0be)
 
-- ❌ 问题 2: `phpunit.xml` 文件被 `.gitignore` 忽略，没有提交到 git
-- ✅ 修复 2: 更新 `.gitignore`，添加 `phpunit.xml` 到 git (bd08a7dc)
+- ❌ 问题 2: `phpunit.xml` 文件被 `.gitignore` 忽略
+- ✅ 修复 2: 更新 `.gitignore`，添加 `phpunit.xml` (bd08a7dc)
+
+- ❌ 问题 3: 数据库连接使用 `localhost` 在 CI 中失败
+- ✅ 修复 3: 改用 `127.0.0.1` (6555589b) ⬅️ 当前
 
 ## ✅ 已完成的工作
 
