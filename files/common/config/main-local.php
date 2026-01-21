@@ -45,7 +45,7 @@ return [
             ],
             'messageConfig' => [
                 'charset' => 'UTF-8',
-                'from' => ['dirui@mrpp.com' => 'dirui'],
+                'from' => [getenv('MAILER_USERNAME') => getenv('MAILER_USERNAME')],
             ],
         ],
     ],

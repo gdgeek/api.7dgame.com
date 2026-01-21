@@ -32,7 +32,7 @@ echo ""
 
 # 读取邮箱地址
 echo -e "${YELLOW}请输入你的企业邮箱地址：${NC}"
-read -p "邮箱地址 (例如: dirui@mrpp.com): " EMAIL_ADDRESS
+read -p "邮箱地址 (例如: your_email@your_company.com): " EMAIL_ADDRESS
 
 if [ -z "$EMAIL_ADDRESS" ]; then
     echo -e "${RED}错误: 邮箱地址不能为空${NC}"
@@ -53,7 +53,7 @@ fi
 # 读取测试收件人
 echo ""
 echo -e "${YELLOW}请输入测试邮件的收件人地址：${NC}"
-read -p "收件人 (例如: test@qq.com): " TEST_EMAIL
+read -p "收件人 (例如: test@example.com): " TEST_EMAIL
 
 if [ -z "$TEST_EMAIL" ]; then
     echo -e "${RED}错误: 收件人地址不能为空${NC}"

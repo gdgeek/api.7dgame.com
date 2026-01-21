@@ -6,13 +6,13 @@
 
 ```bash
 # Email Configuration (for password reset, verification)
-MAILER_USERNAME=你的企业邮箱@mrpp.com
+MAILER_USERNAME=your_email@your_company.com
 MAILER_PASSWORD=你的邮箱密码
 ```
 
 例如：
 ```bash
-MAILER_USERNAME=dirui@mrpp.com
+MAILER_USERNAME=your_email@your_company.com
 MAILER_PASSWORD=your_password_here
 ```
 
@@ -35,7 +35,7 @@ docker-compose exec api php test-email.php 你的测试邮箱@example.com
 
 例如：
 ```bash
-docker-compose exec api php test-email.php test@qq.com
+docker-compose exec api php test-email.php test@example.com
 ```
 
 ## 腾讯企业邮箱 SMTP 配置说明
@@ -44,7 +44,7 @@ docker-compose exec api php test-email.php test@qq.com
 - **SMTP 服务器**: smtp.exmail.qq.com
 - **SMTP 端口**: 25
 - **加密方式**: TLS
-- **发件人**: dirui@mrpp.com
+- **发件人**: your_email@your_company.com
 
 如果端口 25 被封禁，可以尝试：
 - 端口 465（SSL）
