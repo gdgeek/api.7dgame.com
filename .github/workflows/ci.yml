@@ -106,7 +106,7 @@ jobs:
                       ],
                       'user' => [
                           'class' => 'yii\web\User',
-                          'identityClass' => 'common\models\User',
+                          'identityClass' => 'api\modules\v1\models\User',
                       ],
                       'jwt' => [
                            'class' => 'bizley\jwt\Jwt', 

@@ -14,39 +14,11 @@ class UserTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->mockApplication();
     }
 
     protected function tearDown(): void
     {
-        $this->destroyApplication();
         parent::tearDown();
-    }
-
-    protected function mockApplication()
-    {
-        new \yii\console\Application([
-            'id' => 'testapp',
-            'basePath' => dirname(dirname(__DIR__)),
-            'vendorPath' => dirname(dirname(__DIR__)) . '/vendor',
-            'components' => [
-                'db' => [
-                    'class' => 'yii\db\Connection',
-                    'dsn' => 'mysql:host=localhost;dbname=yii2_advanced_test',
-                    'username' => 'root',
-                    'password' => 'root',
-                    'charset' => 'utf8',
-                ],
-                'authManager' => [
-                    'class' => 'yii\rbac\DbManager',
-                ],
-            ],
-        ]);
-    }
-
-    protected function destroyApplication()
-    {
-        \Yii::$app = null;
     }
 
     /**

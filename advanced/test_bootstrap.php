@@ -17,3 +17,27 @@ Yii::setAlias('@backend', __DIR__ . '/backend');
 Yii::setAlias('@console', __DIR__ . '/console');
 Yii::setAlias('@api', __DIR__ . '/api');
 Yii::setAlias('@tests', __DIR__ . '/tests');
+
+// Create a minimal application for tests
+new \yii\console\Application([
+    'id' => 'testapp',
+    'basePath' => __DIR__,
+    'vendorPath' => __DIR__ . '/vendor',
+    'components' => [
+        'db' => [
+            'class' => 'yii\db\Connection',
+            'dsn' => 'mysql:host=localhost;dbname=yii2_advanced_test',
+            'username' => 'root',
+            'password' => 'root',
+            'charset' => 'utf8',
+        ],
+        'authManager' => [
+            'class' => 'yii\rbac\DbManager',
+        ],
+        'jwt' => [
+            'class' => 'bizley\jwt\Jwt',
+            'signer' => 'HS256',
+            'signingKey' => 'secure-signing-key-should-be-at-least-256-bits-long-for-hs256',
+        ],
+    ],
+]);
