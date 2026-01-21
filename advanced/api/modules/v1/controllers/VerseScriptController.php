@@ -1,14 +1,15 @@
 <?php
 namespace api\modules\v1\controllers;
 
-use api\modules\v1\models\VerseScriptSearch;
+//use api\modules\v1\models\VerseScriptSearch;
 use mdm\admin\components\AccessControl;
 use bizley\jwt\JwtHttpBearerAuth;
 use Yii;
+use yii\web\BadRequestHttpException;
 use yii\filters\auth\CompositeAuth;
 use yii\helpers\HtmlPurifier;
 use yii\rest\ActiveController;
-
+/*
 class VerseScriptController extends ActiveController
 {
     
@@ -71,3 +72,4 @@ class VerseScriptController extends ActiveController
     }
     
 }
+*/

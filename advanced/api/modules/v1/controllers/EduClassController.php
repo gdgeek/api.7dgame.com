@@ -110,6 +110,23 @@ class EduClassController extends ActiveController
     /**
      * Get all classes where current user is a teacher
      * @return array
+     * 
+     * @OA\Get(
+     *     path="/v1/edu-class/by-teacher",
+     *     summary="按教师查询班级",
+     *     description="获取当前用户作为教师的所有班级",
+     *     tags={"EduClass"},
+     *     security={{"Bearer": {}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="班级列表",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(ref="#/components/schemas/EduClass")
+     *         )
+     *     ),
+     *     @OA\Response(response=401, description="未授权")
+     * )
      */
     public function actionByTeacher()
     {
@@ -128,6 +145,37 @@ class EduClassController extends ActiveController
      * GET /v1/edu-class/teacher-me
      *
      * @return ActiveDataProvider
+     * 
+     * @OA\Get(
+     *     path="/v1/edu-class/teacher-me",
+     *     summary="我的教师班级",
+     *     description="获取当前用户作为教师的班级列表（分页）",
+     *     tags={"EduClass"},
+     *     security={{"Bearer": {}}},
+     *     @OA\Parameter(
+     *         name="school_id",
+     *         in="query",
+     *         description="学校ID（可选）",
+     *         required=false,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="expand",
+     *         in="query",
+     *         description="扩展字段（逗号分隔，如：school,image）",
+     *         required=false,
+     *         @OA\Schema(type="string", example="school,image")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="班级列表",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(ref="#/components/schemas/EduClass")
+     *         )
+     *     ),
+     *     @OA\Response(response=401, description="未授权")
+     * )
      */
     public function actionTeacherMe()
     {
@@ -180,6 +228,40 @@ class EduClassController extends ActiveController
      *
      * @param int $id Class ID
      * @return EduTeacher
+     * 
+     * @OA\Post(
+     *     path="/v1/edu-class/{id}/teacher",
+     *     summary="添加教师",
+     *     description="为班级添加教师",
+     *     tags={"EduClass"},
+     *     security={{"Bearer": {}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="班级ID",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=false,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="user_id", type="integer", description="教师用户ID（可选，默认当前用户）", example=123)
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="添加成功",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="id", type="integer", description="关联ID"),
+     *             @OA\Property(property="class_id", type="integer", description="班级ID"),
+     *             @OA\Property(property="user_id", type="integer", description="教师用户ID")
+     *         )
+     *     ),
+     *     @OA\Response(response=400, description="请求错误"),
+     *     @OA\Response(response=401, description="未授权"),
+     *     @OA\Response(response=404, description="班级不存在"),
+     *     @OA\Response(response=409, description="教师已存在")
+     * )
      */
     public function actionTeacher($id)
     {
@@ -221,6 +303,32 @@ class EduClassController extends ActiveController
      *
      * @param int $id Class ID
      * @return null
+     * 
+     * @OA\Delete(
+     *     path="/v1/edu-class/{id}/teacher",
+     *     summary="移除教师",
+     *     description="从班级移除教师",
+     *     tags={"EduClass"},
+     *     security={{"Bearer": {}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="班级ID",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="user_id",
+     *         in="query",
+     *         description="教师用户ID（可选，默认当前用户）",
+     *         required=false,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(response=204, description="移除成功"),
+     *     @OA\Response(response=400, description="请求错误"),
+     *     @OA\Response(response=401, description="未授权"),
+     *     @OA\Response(response=404, description="班级或教师不存在")
+     * )
      */
     public function actionRemoveTeacher($id)
     {
@@ -253,6 +361,23 @@ class EduClassController extends ActiveController
     /**
      * Get all classes where current user is a student
      * @return array
+     * 
+     * @OA\Get(
+     *     path="/v1/edu-class/by-student",
+     *     summary="按学生查询班级",
+     *     description="获取当前用户作为学生的所有班级",
+     *     tags={"EduClass"},
+     *     security={{"Bearer": {}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="班级列表",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(ref="#/components/schemas/EduClass")
+     *         )
+     *     ),
+     *     @OA\Response(response=401, description="未授权")
+     * )
      */
     public function actionByStudent()
     {
@@ -270,6 +395,34 @@ class EduClassController extends ActiveController
      * Get groups for a class
      * @param int $id Class ID
      * @return \yii\data\ActiveDataProvider
+     * 
+     * @OA\Get(
+     *     path="/v1/edu-class/{id}/groups",
+     *     summary="获取班级群组",
+     *     description="获取指定班级的所有群组",
+     *     tags={"EduClass"},
+     *     security={{"Bearer": {}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="班级ID",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="群组列表",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(
+     *                 @OA\Property(property="id", type="integer", description="群组ID"),
+     *                 @OA\Property(property="name", type="string", description="群组名称"),
+     *                 @OA\Property(property="description", type="string", description="群组描述")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=401, description="未授权")
+     * )
      */
     public function actionGetGroups($id)
     {
@@ -295,6 +448,41 @@ class EduClassController extends ActiveController
      * Create a group for a class
      * @param int $id Class ID
      * @return \api\modules\v1\models\Group
+     * 
+     * @OA\Post(
+     *     path="/v1/edu-class/{id}/group",
+     *     summary="创建班级群组",
+     *     description="为班级创建新的群组",
+     *     tags={"EduClass"},
+     *     security={{"Bearer": {}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="班级ID",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"name"},
+     *             @OA\Property(property="name", type="string", description="群组名称", example="小组1"),
+     *             @OA\Property(property="description", type="string", description="群组描述")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="创建成功",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="id", type="integer", description="群组ID"),
+     *             @OA\Property(property="name", type="string", description="群组名称"),
+     *             @OA\Property(property="user_id", type="integer", description="创建者ID")
+     *         )
+     *     ),
+     *     @OA\Response(response=400, description="请求错误"),
+     *     @OA\Response(response=401, description="未授权"),
+     *     @OA\Response(response=404, description="班级不存在")
+     * )
      */
     public function actionCreateGroup($id)
     {

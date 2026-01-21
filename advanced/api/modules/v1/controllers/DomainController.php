@@ -10,7 +10,14 @@ use yii\filters\auth\CompositeAuth;
 use bizley\jwt\JwtHttpBearerAuth;
 use yii\rest\ActiveController;
 use Yii;
+use OpenApi\Annotations as OA;
 
+/**
+ * @OA\Tag(
+ *     name="Domain",
+ *     description="域名管理接口"
+ * )
+ */
 class DomainController extends ActiveController
 {
 
@@ -59,6 +66,44 @@ class DomainController extends ActiveController
         // unset($actions['delete'], $actions['create'], $actions['update'], $actions['view'], $actions['index']);
         return [];
     }
+
+    /**
+     * @OA\Get(
+     *     path="/v1/domain/info",
+     *     summary="获取域名信息",
+     *     description="根据请求来源获取域名的 SEO 信息和配置",
+     *     tags={"Domain"},
+     *     @OA\Parameter(
+     *         name="url",
+     *         in="query",
+     *         description="域名 URL（可选，默认从请求头获取）",
+     *         required=false,
+     *         @OA\Schema(type="string", example="https://example.com")
+     *     ),
+     *     @OA\Parameter(
+     *         name="lang",
+     *         in="query",
+     *         description="语言代码",
+     *         required=false,
+     *         @OA\Schema(type="string", example="zh-CN")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="域名信息",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="domain", type="string", description="域名", example="example.com"),
+     *             @OA\Property(property="title", type="string", description="网站标题"),
+     *             @OA\Property(property="description", type="string", description="网站描述"),
+     *             @OA\Property(property="keywords", type="string", description="关键词"),
+     *             @OA\Property(property="author", type="string", description="作者"),
+     *             @OA\Property(property="links", type="array", description="相关链接", @OA\Items(
+     *                 @OA\Property(property="name", type="string", description="链接名称"),
+     *                 @OA\Property(property="url", type="string", description="链接地址")
+     *             ))
+     *         )
+     *     )
+     * )
+     */
     public function actionInfo($url = null)
     {
 

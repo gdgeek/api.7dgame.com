@@ -10,7 +10,14 @@ use yii\filters\auth\CompositeAuth;
 use bizley\jwt\JwtHttpBearerAuth;
 use yii\rest\ActiveController;
 use Yii;
+use OpenApi\Annotations as OA;
 
+/**
+ * @OA\Tag(
+ *     name="EduTeacher",
+ *     description="教师管理接口"
+ * )
+ */
 class EduTeacherController extends ActiveController
 {
     

@@ -12,7 +12,14 @@ use yii\base\Exception;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
 use yii\web\BadRequestHttpException;
+use OpenApi\Annotations as OA;
 
+/**
+ * @OA\Tag(
+ *     name="Person",
+ *     description="人员管理接口"
+ * )
+ */
 class PersonController extends ActiveController
 {
     public $modelClass = 'api\modules\v1\models\Person';

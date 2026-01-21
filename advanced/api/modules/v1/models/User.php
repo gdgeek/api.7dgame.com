@@ -10,9 +10,24 @@ use mdm\admin\components\Configs;
 use Yii;
 use yii\behaviors\TimestampBehavior;
 use yii\web\IdentityInterface;
+use OpenApi\Annotations as OA;
+
 //清理干净的 user 模型
 /**
  * This is the model class for table "user".
+ *
+ * @OA\Schema(
+ *     schema="User",
+ *     title="用户",
+ *     description="用户模型",
+ *     @OA\Property(property="id", type="integer", description="用户ID", example=1),
+ *     @OA\Property(property="username", type="string", description="用户名", example="admin"),
+ *     @OA\Property(property="nickname", type="string", description="昵称", example="管理员"),
+ *     @OA\Property(property="email", type="string", format="email", description="邮箱", example="admin@example.com"),
+ *     @OA\Property(property="created_at", type="integer", description="创建时间戳", example=1642694400),
+ *     @OA\Property(property="updated_at", type="integer", description="更新时间戳", example=1642694400),
+ *     @OA\Property(property="roles", type="array", description="用户角色", @OA\Items(type="string", example="admin"))
+ * )
  *
  * @property int $id
  * @property string|null $username

@@ -13,7 +13,14 @@ use yii\helpers\Url;
 use yii\base\Exception;
 use yii\base\InvalidArgumentException;
 use yii\web\BadRequestHttpException;
+use OpenApi\Annotations as OA;
 
+/**
+ * @OA\Tag(
+ *     name="V1Site",
+ *     description="V1 站点接口"
+ * )
+ */
 class SiteController extends \yii\rest\Controller
 {
 
@@ -64,6 +71,34 @@ class SiteController extends \yii\rest\Controller
 
     }
 
+    /**
+     * @OA\Post(
+     *     path="/v1/site/apple-id",
+     *     summary="Apple ID 认证",
+     *     description="使用 Apple ID 进行认证",
+     *     tags={"V1Site"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"data", "url", "key"},
+     *             @OA\Property(property="data", type="object", description="Apple 认证数据"),
+     *             @OA\Property(property="url", type="string", description="回调 URL"),
+     *             @OA\Property(property="key", type="string", description="密钥标识")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="认证成功",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="apple_id", type="string", description="Apple ID"),
+     *             @OA\Property(property="email", type="string", description="邮箱"),
+     *             @OA\Property(property="user_id", type="integer", description="关联的用户ID")
+     *         )
+     *     ),
+     *     @OA\Response(response=400, description="请求错误"),
+     *     @OA\Response(response=404, description="参数缺失")
+     * )
+     */
     public function actionAppleId()
     {
 
@@ -152,6 +187,23 @@ class SiteController extends \yii\rest\Controller
         }
 
     }
+    /**
+     * @OA\Get(
+     *     path="/v1/site/test",
+     *     summary="测试接口",
+     *     description="用于测试的接口",
+     *     tags={"V1Site"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="测试结果",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="id", type="integer", description="快照ID"),
+     *             @OA\Property(property="uuid", type="string", description="快照UUID"),
+     *             @OA\Property(property="name", type="string", description="快照名称")
+     *         )
+     *     )
+     * )
+     */
     public function actionTest()
     {
         $id = 408;
@@ -164,6 +216,33 @@ class SiteController extends \yii\rest\Controller
       
     }
 
+    /**
+     * @OA\Post(
+     *     path="/v1/site/apple-id-create",
+     *     summary="创建 Apple ID 账号",
+     *     description="使用 Apple ID 创建新账号",
+     *     tags={"V1Site"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"apple_id", "token", "username", "password"},
+     *             @OA\Property(property="apple_id", type="string", description="Apple ID"),
+     *             @OA\Property(property="token", type="string", description="临时 Token"),
+     *             @OA\Property(property="username", type="string", description="用户名"),
+     *             @OA\Property(property="password", type="string", description="密码")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="创建成功",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="apple_id", type="string", description="Apple ID"),
+     *             @OA\Property(property="user_id", type="integer", description="用户ID")
+     *         )
+     *     ),
+     *     @OA\Response(response=400, description="请求错误")
+     * )
+     */
     public function actionAppleIdCreate()
     {
         $register = new Register();
@@ -229,6 +308,33 @@ class SiteController extends \yii\rest\Controller
     }
 
 
+    /**
+     * @OA\Post(
+     *     path="/v1/site/apple-id-link",
+     *     summary="关联 Apple ID",
+     *     description="将 Apple ID 关联到现有账号",
+     *     tags={"V1Site"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"apple_id", "token", "username", "password"},
+     *             @OA\Property(property="apple_id", type="string", description="Apple ID"),
+     *             @OA\Property(property="token", type="string", description="临时 Token"),
+     *             @OA\Property(property="username", type="string", description="用户名"),
+     *             @OA\Property(property="password", type="string", description="密码")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="关联成功",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="apple_id", type="string", description="Apple ID"),
+     *             @OA\Property(property="user_id", type="integer", description="用户ID")
+     *         )
+     *     ),
+     *     @OA\Response(response=400, description="请求错误")
+     * )
+     */
     public function actionAppleIdLink()
     {
         $link = new Link();
@@ -273,6 +379,30 @@ class SiteController extends \yii\rest\Controller
         }
     }
     /**
+     * @OA\Post(
+     *     path="/v1/site/login",
+     *     summary="用户登录",
+     *     description="使用用户名和密码登录",
+     *     tags={"V1Site"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"username", "password"},
+     *             @OA\Property(property="username", type="string", description="用户名", example="admin"),
+     *             @OA\Property(property="password", type="string", description="密码", example="password123")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="登录成功",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="id", type="integer", description="用户ID"),
+     *             @OA\Property(property="username", type="string", description="用户名"),
+     *             @OA\Property(property="auth", type="object", description="认证信息")
+     *         )
+     *     ),
+     *     @OA\Response(response=400, description="登录失败")
+     * )
      * @return array
      * @throws \yii\base\Exception
      * @throws \yii\base\InvalidConfigException

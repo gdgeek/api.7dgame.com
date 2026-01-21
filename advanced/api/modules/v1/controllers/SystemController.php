@@ -1,20 +1,22 @@
 <?php
 namespace api\modules\v1\controllers;
 
-use Faker\Extension\VersionExtension;
 use Yii;
 use yii\rest\Controller;
 use api\modules\v1\models\Snapshot;
 use api\modules\v1\models\Verse;
 use api\modules\v1\models\Version;
-use mdm\admin\components\AccessControl;
-use bizley\jwt\JwtHttpBearerAuth;
-use yii\filters\auth\CompositeAuth;
+use OpenApi\Annotations as OA;
 
 use yii\base\Exception;
 
-use api\modules\v1\models\data\VerseCodeTool;
-use api\modules\v1\models\data\MetaCodeTool;
+
+/**
+ * @OA\Tag(
+ *     name="System",
+ *     description="系统管理接口"
+ * )
+ */
 class SystemController extends Controller
 {
     public function behaviors()
@@ -79,7 +81,7 @@ class SystemController extends Controller
             throw new Exception(json_encode($model->errors), 400);
         }
         return $model;
-    }*/
+    }
     public function actionVerse($verse_id, $test = true)
     {
         $verse = \api\modules\private\models\Verse::findOne($verse_id);
@@ -93,7 +95,7 @@ class SystemController extends Controller
             return $verse->toArray([], ['code', 'id', 'name', 'data', 'description', 'metas', 'resources', 'uuid', 'image', 'managers']);
         }
 
-    }
+    }*/
 
     public function actionTakePhoto($verse_id)
     {
@@ -105,6 +107,23 @@ class SystemController extends Controller
         }
         return $snapshot->toArray([], ['code', 'id', 'name', 'data', 'description', 'metas', 'resources', 'uuid', 'image']);
     }
+
+    /**
+     * @OA\Get(
+     *     path="/v1/system/upgrade",
+     *     summary="系统升级",
+     *     description="执行系统数据迁移和升级操作",
+     *     tags={"System"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="升级结果",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="public", type="object", description="public 标签迁移结果"),
+     *             @OA\Property(property="checkin", type="object", description="checkin 标签迁移结果")
+     *         )
+     *     )
+     * )
+     */
     public function actionUpgrade()
     {
         set_time_limit(0);

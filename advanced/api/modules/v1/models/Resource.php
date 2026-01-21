@@ -5,11 +5,27 @@ namespace api\modules\v1\models;
 use api\modules\v1\models\User;
 use Yii;
 use yii\behaviors\BlameableBehavior;
+use OpenApi\Annotations as OA;
 
 use yii\caching\TagDependency;
 
 /**
  * This is the model class for table "resource".
+ *
+ * @OA\Schema(
+ *     schema="Resource",
+ *     title="资源",
+ *     description="资源模型",
+ *     @OA\Property(property="id", type="integer", description="资源ID", example=1),
+ *     @OA\Property(property="name", type="string", description="资源名称", example="My Resource"),
+ *     @OA\Property(property="type", type="string", description="资源类型", example="image"),
+ *     @OA\Property(property="uuid", type="string", description="资源UUID", example="550e8400-e29b-41d4-a716-446655440000"),
+ *     @OA\Property(property="info", type="string", description="资源信息（JSON）", example="{}"),
+ *     @OA\Property(property="image_id", type="integer", description="预览图片ID", example=10),
+ *     @OA\Property(property="created_at", type="string", format="date-time", description="创建时间"),
+ *     @OA\Property(property="file", ref="#/components/schemas/File", description="文件对象"),
+ *     @OA\Property(property="image", ref="#/components/schemas/File", description="预览图片对象")
+ * )
  *
  * @property int $id
  * @property string $name

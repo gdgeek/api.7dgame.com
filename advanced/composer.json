@@ -42,6 +42,7 @@
     "lcobucci/clock": "^3.2",
     "yiisoft/yii2-redis": "^2.0",
     "zircote/swagger-php": "^4.0",
+    "doctrine/annotations": "^2.0",
     "tencentcloud/sts": "^3.0"
   },
   "replace": {

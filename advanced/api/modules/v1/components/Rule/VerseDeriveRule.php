@@ -6,6 +6,7 @@ use Yii;
 use yii\rbac\Rule;
 use yii\web\BadRequestHttpException;
 
+use yii\base\InvalidConfigException;
 class VerseDeriveRule extends Rule
 {
     public $modelType;

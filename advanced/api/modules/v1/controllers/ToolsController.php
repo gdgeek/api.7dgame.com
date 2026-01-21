@@ -1,7 +1,6 @@
 <?php
 
 namespace api\modules\v1\controllers;
-
 use api\modules\v1\models\UserCreation;
 use mdm\admin\components\AccessControl;
 use bizley\jwt\JwtHttpBearerAuth;
@@ -13,7 +12,14 @@ use Yii;
 use api\modules\v1\models\UserLinked;
 use yii\web\BadRequestHttpException;
 use api\modules\v1\models\User;
+use OpenApi\Annotations as OA;
 
+/**
+ * @OA\Tag(
+ *     name="Tools",
+ *     description="工具类接口"
+ * )
+ */
 class ToolsController extends \yii\rest\Controller
 {
 
@@ -38,9 +44,38 @@ class ToolsController extends \yii\rest\Controller
 
         return $behaviors;
     }
+
+   /**
+     * @OA\Get(
+     *     path="/v1/tools/user-linked",
+     *     summary="用户关联",
+     *     description="生成用户关联密钥",
+     *     tags={"Tools"},
+     *     security={{"Bearer": {}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="关联成功",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="user-linked"),
+     *             @OA\Property(property="key", type="string", description="关联密钥")
+     *         )
+     *     ),
+     *     @OA\Response(response=400, description="请求错误"),
+     *     @OA\Response(response=401, description="未授权")
+     * )
+     */
    public function actionUserLinked(){
 
-        $user = Yii::$app->user->identity;
+    //把 Yii::$app->user->identity 转换成 User 类型
+
+        $identity = Yii::$app->user->identity;
+        if ($identity instanceof User) {
+            $user = $identity;
+            // 现在 $user 是 User 类型
+        } else {
+            throw new \yii\web\UnauthorizedHttpException('Invalid user identity');
+        }
         if(!$user){
             throw new BadRequestHttpException("no user");
         }

@@ -8,7 +8,14 @@ use yii\filters\auth\CompositeAuth;
 use bizley\jwt\JwtHttpBearerAuth;
 use yii\rest\ActiveController;
 use Yii;
+use OpenApi\Annotations as OA;
 
+/**
+ * @OA\Tag(
+ *     name="Group",
+ *     description="群组管理接口"
+ * )
+ */
 class GroupController extends ActiveController
 {
     public $modelClass = 'api\modules\v1\models\Group';
@@ -54,11 +61,39 @@ class GroupController extends ActiveController
      * Join a group
      * @param int|null $id Group ID (from URL path, e.g., /group/22/join)
      * @return \api\modules\v1\models\GroupUser
+     * 
+     * @OA\Post(
+     *     path="/v1/group/{id}/join",
+     *     summary="加入群组",
+     *     description="加入指定的群组",
+     *     tags={"Group"},
+     *     security={{"Bearer": {}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="群组ID",
+     *         required=true,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="加入成功",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="id", type="integer", description="关联ID"),
+     *             @OA\Property(property="user_id", type="integer", description="用户ID"),
+     *             @OA\Property(property="group_id", type="integer", description="群组ID")
+     *         )
+     *     ),
+     *     @OA\Response(response=400, description="请求错误"),
+     *     @OA\Response(response=401, description="未授权"),
+     *     @OA\Response(response=404, description="群组不存在"),
+     *     @OA\Response(response=409, description="已经加入该群组")
+     * )
      */
     public function actionJoin($id = null)
     {
         $userId = Yii::$app->user->id;
-        
+
         // 优先使用 URL 路径中的 id，其次使用 POST body 中的 group_id
         $groupId = $id ?? Yii::$app->request->post('group_id');
 
@@ -94,6 +129,25 @@ class GroupController extends ActiveController
      * Leave a group
      * @param int $id Group ID
      * @return array
+     * 
+     * @OA\Post(
+     *     path="/v1/group/{id}/leave",
+     *     summary="离开群组",
+     *     description="离开指定的群组（创建者不能离开）",
+     *     tags={"Group"},
+     *     security={{"Bearer": {}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="群组ID",
+     *         required=true,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Response(response=204, description="离开成功"),
+     *     @OA\Response(response=401, description="未授权"),
+     *     @OA\Response(response=403, description="创建者不能离开群组"),
+     *     @OA\Response(response=404, description="群组不存在或未加入该群组")
+     * )
      */
     public function actionLeave($id)
     {
@@ -129,6 +183,49 @@ class GroupController extends ActiveController
      * Get verses for a group
      * @param int $id Group ID
      * @return array
+     * 
+     * @OA\Get(
+     *     path="/v1/group/{id}/verses",
+     *     summary="获取群组的 Verses",
+     *     description="获取指定群组下的所有 Verse 列表",
+     *     tags={"Group"},
+     *     security={{"Bearer": {}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="群组ID",
+     *         required=true,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="page",
+     *         in="query",
+     *         description="页码",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="per-page",
+     *         in="query",
+     *         description="每页数量",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=20)
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Verse 列表",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(
+     *                 @OA\Property(property="id", type="integer", description="Verse ID"),
+     *                 @OA\Property(property="name", type="string", description="Verse 名称"),
+     *                 @OA\Property(property="uuid", type="string", description="Verse UUID")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=401, description="未授权"),
+     *     @OA\Response(response=404, description="群组不存在")
+     * )
      */
     public function actionGetVerses($id)
     {
@@ -150,10 +247,14 @@ class GroupController extends ActiveController
         // 使用 leftJoin 手动关联 group_verse 表
         // 这样 Verse 模型不需要定义任何与 Group 相关的关联
         // Group 单向依赖 Verse
-        $dataProvider->query
-            ->select('verse.*')
-            ->leftJoin('group_verse', 'group_verse.verse_id = verse.id')
-            ->andWhere(['group_verse.group_id' => $id]);
+
+        if ($dataProvider->query instanceof \yii\db\ActiveQuery) {
+            $dataProvider->query
+                ->select('verse.*')
+                ->leftJoin('group_verse', 'group_verse.verse_id = verse.id')
+                ->andWhere(['group_verse.group_id' => $id]);
+        }
+
 
         return $dataProvider;
     }
@@ -166,6 +267,41 @@ class GroupController extends ActiveController
      * @return \api\modules\v1\models\Verse
      * @throws \yii\web\NotFoundHttpException
      * @throws \yii\web\ServerErrorHttpException
+     * 
+     * @OA\Post(
+     *     path="/v1/group/{id}/verse",
+     *     summary="创建 Verse",
+     *     description="在群组下创建新的 Verse",
+     *     tags={"Group"},
+     *     security={{"Bearer": {}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="群组ID",
+     *         required=true,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="name", type="string", description="Verse 名称", example="My Verse"),
+     *             @OA\Property(property="description", type="string", description="描述"),
+     *             @OA\Property(property="data", type="string", description="Verse 数据（JSON）")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="创建成功",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="id", type="integer", description="Verse ID"),
+     *             @OA\Property(property="name", type="string", description="Verse 名称"),
+     *             @OA\Property(property="uuid", type="string", description="Verse UUID")
+     *         )
+     *     ),
+     *     @OA\Response(response=400, description="请求错误"),
+     *     @OA\Response(response=401, description="未授权"),
+     *     @OA\Response(response=404, description="群组不存在")
+     * )
      */
     public function actionCreateVerse($id)
     {
@@ -210,6 +346,31 @@ class GroupController extends ActiveController
      * @param int $verseId Verse ID
      * @throws \yii\web\NotFoundHttpException
      * @throws \yii\web\ServerErrorHttpException
+     * 
+     * @OA\Delete(
+     *     path="/v1/group/{id}/verse/{verseId}",
+     *     summary="删除 Verse",
+     *     description="从群组中删除 Verse（如果没有其他群组引用，则删除 Verse 本身）",
+     *     tags={"Group"},
+     *     security={{"Bearer": {}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="群组ID",
+     *         required=true,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="verseId",
+     *         in="path",
+     *         description="Verse ID",
+     *         required=true,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Response(response=204, description="删除成功"),
+     *     @OA\Response(response=401, description="未授权"),
+     *     @OA\Response(response=404, description="群组或 Verse 不存在")
+     * )
      */
     public function actionDeleteVerse($id, $verseId)
     {
