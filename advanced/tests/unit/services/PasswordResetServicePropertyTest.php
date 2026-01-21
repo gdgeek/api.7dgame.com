@@ -300,9 +300,10 @@ class PasswordResetServicePropertyTest extends TestCase
         ];
         
         foreach ($validPasswords as $password) {
-            // 清除频率限制以避免测试失败
-            $rateLimitKey = RedisKeyManager::getRateLimitKey($user->email, 'password_reset');
-            $this->redis->executeCommand('DEL', [$rateLimitKey]);
+            // 清除所有相关的频率限制键以避免测试失败
+            $requestResetKey = RedisKeyManager::getRateLimitKey($user->email, 'request_reset');
+            $passwordResetKey = RedisKeyManager::getRateLimitKey($user->email, 'password_reset');
+            $this->redis->executeCommand('DEL', [$requestResetKey, $passwordResetKey]);
             
             // 重新生成令牌（因为每次重置后令牌会被删除）
             $newToken = $this->service->sendResetToken($user->email);
