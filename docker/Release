@@ -24,11 +24,17 @@ RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
 
 COPY ./advanced/ /var/www/html/advanced
 
-RUN chmod -R 777 /var/www/html/advanced/backend/runtime
-RUN chmod -R 777 /var/www/html/advanced/backend/web/assets
-RUN chmod -R 777 /var/www/html/advanced/console/runtime
-RUN chmod -R 777 /var/www/html/advanced/api/runtime
-RUN chmod -R 777 /var/www/html/advanced/api/web/assets
+# Create necessary directories and set permissions
+RUN mkdir -p /var/www/html/advanced/backend/runtime \
+    /var/www/html/advanced/backend/web/assets \
+    /var/www/html/advanced/console/runtime \
+    /var/www/html/advanced/api/runtime \
+    /var/www/html/advanced/api/web/assets \
+    && chmod -R 777 /var/www/html/advanced/backend/runtime \
+    && chmod -R 777 /var/www/html/advanced/backend/web/assets \
+    && chmod -R 777 /var/www/html/advanced/console/runtime \
+    && chmod -R 777 /var/www/html/advanced/api/runtime \
+    && chmod -R 777 /var/www/html/advanced/api/web/assets
 
 COPY files/api/config/main-local.php /var/www/html/advanced/api/config/
 COPY files/api/config/params-local.php /var/www/html/advanced/api/config/
