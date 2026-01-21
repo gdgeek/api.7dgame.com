@@ -2,7 +2,7 @@
 
 ## 📊 当前状态
 
-**最新提交**: 6555589b - "Fix database connection: use 127.0.0.1 instead of localhost for CI"
+**最新提交**: 0f486bbc - "Fix cache component: add ArrayCache to test bootstrap"
 
 **CI 状态**: 运行中 🔄
 
@@ -11,8 +11,9 @@
 ## 🎉 重大进展！
 
 ✅ **UserMethodsTest**: 7/7 测试通过！
-✅ **UserEmailVerificationTest**: 部分测试通过！
-❌ **数据库测试**: 14 个错误（数据库连接问题）
+✅ **UserEmailVerificationTest**: 6/6 测试通过！
+✅ **UserTest**: 2/10 测试通过（用户名验证、密码强度验证）
+❌ **UserTest**: 8 个错误（缓存组件问题）
 
 ## 🐛 最近修复
 
@@ -23,7 +24,10 @@
 - ✅ 修复 2: 更新 `.gitignore`，添加 `phpunit.xml` (bd08a7dc)
 
 - ❌ 问题 3: 数据库连接使用 `localhost` 在 CI 中失败
-- ✅ 修复 3: 改用 `127.0.0.1` (6555589b) ⬅️ 当前
+- ✅ 修复 3: 改用 `127.0.0.1` (6555589b)
+
+- ❌ 问题 4: `Yii::$app->cache` 为 null，导致 TagDependency 错误
+- ✅ 修复 4: 添加 ArrayCache 组件 (0f486bbc) ⬅️ 当前
 
 ## ✅ 已完成的工作
 
@@ -67,7 +71,9 @@
 5. **571b1cd6** - Add verbose output to CI tests and ignore PHPUnit cache
 6. **bc7ae0be** - Fix CI: remove invalid --verbose option from PHPUnit
 7. **0b04d0fa** - Fix CI: explicitly specify phpunit.xml configuration file
-8. **bd08a7dc** - Fix CI: add phpunit.xml to git (was ignored by .gitignore) ⬅️ 当前
+8. **bd08a7dc** - Fix CI: add phpunit.xml to git (was ignored by .gitignore)
+9. **6555589b** - Fix database connection: use 127.0.0.1 instead of localhost for CI
+10. **0f486bbc** - Fix cache component: add ArrayCache to test bootstrap ⬅️ 当前
 
 ## 🧪 测试覆盖
 

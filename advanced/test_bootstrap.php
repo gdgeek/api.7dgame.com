@@ -34,6 +34,11 @@ new \yii\console\Application([
         'cache' => [
             'class' => 'yii\caching\ArrayCache',
         ],
+        'request' => [
+            'class' => 'yii\web\Request',
+            'hostInfo' => 'http://localhost',
+            'scriptUrl' => '',
+        ],
         'authManager' => [
             'class' => 'yii\rbac\DbManager',
         ],
