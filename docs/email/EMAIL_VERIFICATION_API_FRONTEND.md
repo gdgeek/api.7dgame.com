@@ -24,7 +24,134 @@ Authorization: Bearer YOUR_JWT_TOKEN
 
 ## API 接口
 
-### 1. 发送邮箱验证码
+### 1. 查询邮箱验证状态
+
+查询当前登录用户的邮箱验证状态。
+
+#### 请求信息
+
+- **接口路径**: `/v1/email/status`
+- **请求方法**: `GET`
+- **认证要求**: 需要认证
+
+#### 请求参数
+
+无需参数
+
+#### 请求示例
+
+```javascript
+// 使用 axios
+import axios from 'axios';
+
+const checkEmailStatus = async () => {
+  try {
+    const response = await axios.get('/v1/email/status', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response.data;
+  }
+};
+
+// 调用示例
+checkEmailStatus()
+  .then(data => {
+    console.log('邮箱状态:', data.data);
+    if (data.data.email_verified) {
+      console.log('邮箱已验证:', data.data.email);
+    } else {
+      console.log('邮箱未验证');
+    }
+  })
+  .catch(error => {
+    console.error('查询失败:', error.error.message);
+  });
+```
+
+```javascript
+// 使用 fetch
+const checkEmailStatus = async () => {
+  const token = localStorage.getItem('access_token');
+  const response = await fetch('/v1/email/status', {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json',
+    }
+  });
+  
+  const data = await response.json();
+  
+  if (!response.ok) {
+    throw data;
+  }
+  
+  return data;
+};
+```
+
+#### 成功响应
+
+**HTTP 状态码**: `200 OK`
+
+**邮箱已验证**：
+```json
+{
+  "success": true,
+  "data": {
+    "user_id": 3,
+    "username": "testuser",
+    "email": "user@example.com",
+    "email_verified": true,
+    "email_verified_at": 1737484800,
+    "email_verified_at_formatted": "2026-01-21 22:20:00"
+  }
+}
+```
+
+**邮箱未验证**：
+```json
+{
+  "success": true,
+  "data": {
+    "user_id": 3,
+    "username": "testuser",
+    "email": null,
+    "email_verified": false,
+    "email_verified_at": null,
+    "email_verified_at_formatted": null
+  }
+}
+```
+
+**响应字段说明**：
+- `user_id`: 用户 ID
+- `username`: 用户名
+- `email`: 邮箱地址（未绑定时为 null）
+- `email_verified`: 邮箱是否已验证（boolean）
+- `email_verified_at`: 验证时间戳（Unix 时间戳）
+- `email_verified_at_formatted`: 格式化的验证时间
+
+#### 错误响应
+
+##### 未认证 (401 Unauthorized)
+
+```json
+{
+  "name": "Unauthorized",
+  "message": "Your request was made with invalid credentials.",
+  "code": 0,
+  "status": 401
+}
+```
+
+---
+
+### 2. 发送邮箱验证码
 
 发送 6 位数字验证码到指定邮箱，用于邮箱验证。
 
@@ -32,13 +159,13 @@ Authorization: Bearer YOUR_JWT_TOKEN
 
 - **接口路径**: `/v1/email/send-verification`
 - **请求方法**: `POST`
-- **认证要求**: 无需认证
+- **认证要求**: 需要认证
 
 #### 请求参数
 
 | 参数名 | 类型 | 必填 | 说明 | 示例 |
 |--------|------|------|------|------|
-| email | string | 是 | 邮箱地址，必须是已注册的邮箱 | `user@example.com` |
+| email | string | 是 | 邮箱地址 | `user@example.com` |
 
 #### 请求示例
 
@@ -165,9 +292,9 @@ const sendVerificationCode = async (email) => {
 
 ---
 
-### 2. 验证邮箱验证码
+### 3. 验证邮箱验证码
 
-验证用户输入的验证码是否正确。
+验证用户输入的验证码是否正确，并绑定邮箱到当前用户。
 
 #### 请求信息
 
@@ -438,6 +565,15 @@ apiClient.interceptors.response.use(
 );
 
 /**
+ * 查询邮箱验证状态
+ * @returns {Promise<Object>} 响应数据
+ */
+export const checkEmailStatus = async () => {
+  const response = await apiClient.get('/v1/email/status');
+  return response.data;
+};
+
+/**
  * 发送邮箱验证码
  * @param {string} email - 邮箱地址
  * @returns {Promise<Object>} 响应数据
@@ -470,7 +606,7 @@ export const verifyEmailCode = async (email, code) => {
 
 ```javascript
 import { ref, computed } from 'vue';
-import { sendVerificationCode, verifyEmailCode } from '@/api/email';
+import { checkEmailStatus, sendVerificationCode, verifyEmailCode } from '@/api/email';
 
 export function useEmailVerification() {
   // 状态
@@ -479,6 +615,7 @@ export function useEmailVerification() {
   const countdown = ref(0);
   const isLocked = ref(false);
   const lockTime = ref(0);
+  const emailStatus = ref(null);
   
   // 计算属性
   const canSendCode = computed(() => {
@@ -487,6 +624,10 @@ export function useEmailVerification() {
   
   const canVerify = computed(() => {
     return !loading.value && !isLocked.value;
+  });
+  
+  const isEmailVerified = computed(() => {
+    return emailStatus.value?.email_verified || false;
   });
   
   // 倒计时定时器
@@ -617,6 +758,31 @@ export function useEmailVerification() {
   };
   
   /**
+   * 查询邮箱验证状态
+   * @returns {Promise<Object|null>} 状态信息
+   */
+  const checkStatus = async () => {
+    loading.value = true;
+    error.value = null;
+    
+    try {
+      const result = await checkEmailStatus();
+      
+      if (result.success) {
+        emailStatus.value = result.data;
+        return result.data;
+      }
+      
+      return null;
+    } catch (err) {
+      error.value = err.error?.message || '查询状态失败';
+      return null;
+    } finally {
+      loading.value = false;
+    }
+  };
+  
+  /**
    * 清理定时器
    */
   const cleanup = () => {
@@ -637,12 +803,15 @@ export function useEmailVerification() {
     countdown,
     isLocked,
     lockTime,
+    emailStatus,
     
     // 计算属性
     canSendCode,
     canVerify,
+    isEmailVerified,
     
     // 方法
+    checkStatus,
     sendCode,
     verifyCode,
     cleanup
@@ -658,6 +827,19 @@ export function useEmailVerification() {
 <template>
   <div class="email-verification">
     <h2>邮箱验证</h2>
+    
+    <!-- 验证状态显示 -->
+    <div v-if="emailStatus" class="status-banner">
+      <div v-if="isEmailVerified" class="verified-banner">
+        <span class="icon">✓</span>
+        <span>邮箱已验证: {{ emailStatus.email }}</span>
+        <span class="time">{{ emailStatus.email_verified_at_formatted }}</span>
+      </div>
+      <div v-else class="unverified-banner">
+        <span class="icon">⚠</span>
+        <span>邮箱未验证，请完成验证</span>
+      </div>
+    </div>
     
     <!-- 错误提示 -->
     <div v-if="error" class="error-message">
@@ -721,7 +903,7 @@ export function useEmailVerification() {
 </template>
 
 <script setup>
-import { ref, computed, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useEmailVerification } from '@/composables/useEmailVerification';
 
 // 表单数据
@@ -737,12 +919,20 @@ const {
   countdown,
   isLocked,
   lockTime,
+  emailStatus,
   canSendCode,
   canVerify,
+  isEmailVerified,
+  checkStatus,
   sendCode,
   verifyCode,
   cleanup
 } = useEmailVerification();
+
+// 组件挂载时查询状态
+onMounted(() => {
+  checkStatus();
+});
 
 // 发送验证码按钮文本
 const sendCodeButtonText = computed(() => {
@@ -772,13 +962,14 @@ const handleSubmit = async () => {
     return;
   }
   
-  const success = await verifyCode(formData.value.email, formData.value.code);
+  const result = await verifyCode(formData.value.email, formData.value.code);
   
-  if (success) {
-    // 验证成功，执行后续操作
+  if (result && result.success) {
+    // 验证成功，重新查询状态
+    await checkStatus();
     console.log('邮箱验证并绑定成功');
     // 例如：更新用户状态、显示成功提示、跳转到其他页面等
-    // emit('verified', success.data.user);
+    // emit('verified', result.data.user);
   }
 };
 
@@ -793,6 +984,42 @@ onUnmounted(() => {
   max-width: 400px;
   margin: 0 auto;
   padding: 20px;
+}
+
+.status-banner {
+  margin-bottom: 20px;
+}
+
+.verified-banner {
+  padding: 12px;
+  background-color: #f0f9ff;
+  border: 1px solid #67c23a;
+  border-radius: 4px;
+  color: #67c23a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.unverified-banner {
+  padding: 12px;
+  background-color: #fef0f0;
+  border: 1px solid #e6a23c;
+  border-radius: 4px;
+  color: #e6a23c;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-banner .icon {
+  font-size: 20px;
+}
+
+.status-banner .time {
+  margin-left: auto;
+  font-size: 12px;
+  opacity: 0.8;
 }
 
 .error-message {
