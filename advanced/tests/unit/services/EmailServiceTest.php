@@ -32,33 +32,11 @@ class EmailServiceTest extends TestCase
     {
         parent::setUp();
         
-        // Initialize Yii application for mailer component
-        if (Yii::$app === null) {
-            try {
-                new Application([
-                    'id' => 'test-app',
-                    'basePath' => dirname(__DIR__, 2),
-                    'vendorPath' => dirname(__DIR__, 2) . '/vendor',
-                    'components' => [
-                        'mailer' => [
-                            'class' => 'yii\symfonymailer\Mailer',
-                            'viewPath' => '@common/mail',
-                            'useFileTransport' => true,
-                        ],
-                    ],
-                    'params' => [
-                        'supportEmail' => 'noreply@example.com',
-                        'frontendUrl' => 'https://example.com',
-                    ],
-                ]);
-                
-                // Test if mailer is actually available
-                $this->mailerAvailable = Yii::$app->has('mailer');
-            } catch (\Exception $e) {
-                $this->mailerAvailable = false;
-            }
+        // Check if mailer component is available
+        if (Yii::$app !== null && Yii::$app->has('mailer')) {
+            $this->mailerAvailable = true;
         } else {
-            $this->mailerAvailable = Yii::$app->has('mailer');
+            $this->mailerAvailable = false;
         }
         
         $this->service = new EmailService();

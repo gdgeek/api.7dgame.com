@@ -42,6 +42,11 @@ class ResponseFormatPropertyTest extends TestCase
     {
         parent::setUp();
         
+        // 检查是否在 web 环境中
+        if (!Yii::$app instanceof \yii\web\Application) {
+            $this->markTestSkipped('This test requires web application context');
+        }
+        
         // 检查 Redis 是否可用
         try {
             $this->redis = Yii::$app->redis;

@@ -177,8 +177,8 @@ class EmailVerificationServicePropertyTest extends TestCase
             $this->assertTrue($result, "Result must be true");
             
             // 验证返回值不是数组或对象（不包含验证码）
-            $this->assertNotIsArray($result, "Result must not be an array");
-            $this->assertNotIsObject($result, "Result must not be an object");
+            $this->assertIsNotArray($result, "Result must not be an array");
+            $this->assertIsNotObject($result, "Result must not be an object");
             
             // 清理
             $codeKey = RedisKeyManager::getVerificationCodeKey($email);
