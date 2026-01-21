@@ -9,6 +9,14 @@ use yii\data\ActiveDataProvider;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
 use api\modules\v1\models\PhototypeSearch;
+use OpenApi\Annotations as OA;
+
+/**
+ * @OA\Tag(
+ *     name="Phototype",
+ *     description="照片类型管理接口"
+ * )
+ */
 class PhototypeController extends ActiveController
 {
     public $modelClass = 'api\modules\v1\models\Phototype';

@@ -10,10 +10,29 @@ use api\modules\v1\models\MetaCode;
 use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
 use yii\db\Expression;
+use OpenApi\Annotations as OA;
 
 use api\modules\v1\components\Validator\JsonValidator;
+
 /**
  * This is the model class for table "meta".
+ *
+ * @OA\Schema(
+ *     schema="Meta",
+ *     title="Meta 元数据",
+ *     description="Meta 元数据模型",
+ *     @OA\Property(property="id", type="integer", description="Meta ID", example=1),
+ *     @OA\Property(property="uuid", type="string", description="Meta UUID", example="550e8400-e29b-41d4-a716-446655440000"),
+ *     @OA\Property(property="title", type="string", description="Meta 标题", example="My Meta"),
+ *     @OA\Property(property="info", type="string", description="Meta 信息（JSON）", example="{}"),
+ *     @OA\Property(property="data", type="string", description="Meta 数据（JSON）", example="{}"),
+ *     @OA\Property(property="events", type="string", description="事件配置（JSON）", example="{}"),
+ *     @OA\Property(property="image_id", type="integer", description="预览图片ID", example=10),
+ *     @OA\Property(property="prefab", type="integer", description="是否为预制件（0=否，1=是）", example=0),
+ *     @OA\Property(property="created_at", type="string", format="date-time", description="创建时间"),
+ *     @OA\Property(property="updated_at", type="string", format="date-time", description="更新时间"),
+ *     @OA\Property(property="image", ref="#/components/schemas/File", description="预览图片对象")
+ * )
  *
  * @property int $id
  * @property int $author_id
@@ -132,6 +151,7 @@ class Meta extends \yii\db\ActiveRecord
        
         return [
             'id',
+            'image_id',
             'uuid',
             'events',
             'title',

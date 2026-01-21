@@ -1,5 +1,6 @@
 {
   "name": "yiisoft/yii2-app-advanced",
+  "version": "1.0.0",
   "description": "Yii 2 Advanced Project Template",
   "keywords": [
     "yii2",
@@ -41,6 +42,7 @@
     "lcobucci/clock": "^3.2",
     "yiisoft/yii2-redis": "^2.0",
     "zircote/swagger-php": "^4.0",
+    "doctrine/annotations": "^2.0",
     "tencentcloud/sts": "^3.0"
   },
   "replace": {

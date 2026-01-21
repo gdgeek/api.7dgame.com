@@ -8,8 +8,16 @@ use Yii;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
 use api\modules\v1\models\data\VerseCodeTool;
+use OpenApi\Annotations as OA;
 
 use yii\base\Exception;
+
+/**
+ * @OA\Tag(
+ *     name="VerseTags",
+ *     description="Verse 标签管理接口"
+ * )
+ */
 class VerseTagsController extends ActiveController
 {
 
@@ -56,6 +64,34 @@ class VerseTagsController extends ActiveController
         return [];
     }
 
+    /**
+     * @OA\Post(
+     *     path="/v1/verse-tags",
+     *     summary="添加 Verse 标签",
+     *     description="为 Verse 添加标签",
+     *     tags={"VerseTags"},
+     *     security={{"Bearer": {}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"verse_id", "tags_id"},
+     *             @OA\Property(property="verse_id", type="integer", description="Verse ID", example=1),
+     *             @OA\Property(property="tags_id", type="integer", description="标签ID", example=1)
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="添加成功",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="success")
+     *         )
+     *     ),
+     *     @OA\Response(response=400, description="请求错误"),
+     *     @OA\Response(response=401, description="未授权"),
+     *     @OA\Response(response=403, description="无权限添加此标签")
+     * )
+     */
     //添加标签
     public function actionCreate(){
         $verse_id = Yii::$app->request->post('verse_id');
@@ -83,6 +119,35 @@ class VerseTagsController extends ActiveController
             throw new Exception(json_encode($model->getErrors()));
         }
     }
+
+    /**
+     * @OA\Post(
+     *     path="/v1/verse-tags/remove",
+     *     summary="移除 Verse 标签",
+     *     description="从 Verse 移除标签",
+     *     tags={"VerseTags"},
+     *     security={{"Bearer": {}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"verse_id", "tags_id"},
+     *             @OA\Property(property="verse_id", type="integer", description="Verse ID", example=1),
+     *             @OA\Property(property="tags_id", type="integer", description="标签ID", example=1)
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="移除成功",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="success")
+     *         )
+     *     ),
+     *     @OA\Response(response=400, description="请求错误"),
+     *     @OA\Response(response=401, description="未授权"),
+     *     @OA\Response(response=404, description="标签关联不存在")
+     * )
+     */
     public function actionRemove(){
         $verse_id = Yii::$app->request->post('verse_id');
         $tags_id = Yii::$app->request->post('tags_id');

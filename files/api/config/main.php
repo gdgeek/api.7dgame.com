@@ -70,6 +70,10 @@ return [
             'enableStrictParsing' => true,
             'showScriptName' => false,
             'rules' => [
+                // Swagger API 文档路由
+                'GET swagger' => 'swagger/index',
+                'GET swagger/json-schema' => 'swagger/json-schema',
+                
                 [
                     'pattern' => 'apple-app-site-association',
                     'route' => 'site/apple-app-site-association',
@@ -94,7 +98,7 @@ return [
                         'GET info' => 'info',
                         'GET creation' => 'creation',
                     ],
-                ], 
+                ],
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/phototype',
@@ -121,7 +125,7 @@ return [
                         'POST refresh' => 'refresh',
                     ],
                 ],
-
+                /*
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'site',
@@ -143,6 +147,7 @@ return [
                         'OPTIONS reset-password' => 'reset-password',
                     ],
                 ],
+                
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'server',
@@ -155,7 +160,7 @@ return [
                         'POST reset-password' => 'reset-password',
                         'POST bind-email' => 'bind-email',
                     ],
-                ],
+                ],*/
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/upload',
@@ -172,10 +177,11 @@ return [
                         'GET user-linked' => 'user-linked',
                     ],
                 ],
+                /*
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => ['project', 'user', 'resource'],
-                ],
+                ],*/
                 [
                     'class' => 'yii\rest\UrlRule',
                     'pluralize' => false,
@@ -195,7 +201,7 @@ return [
                     ],
                     'extraPatterns' => [
                         'GET upgrade' => 'upgrade',
-                      //  'GET verse' => 'verse',
+                        //  'GET verse' => 'verse',
                     ],
                 ],
                 [
@@ -207,14 +213,15 @@ return [
                         'v1/resource',
                         'v1/tags',
                         'v1/token',
-                        'v1/edu-school',
-                        'v1/edu-teacher',
-                        'v1/edu-class',
-                        'v1/edu-student',
-                        'v1/group',
+                        // 'v1/edu-school',
+                        // 'v1/edu-teacher',
+                        //  'v1/edu-class',
+                        //  'v1/edu-student',
+                      //  'v1/group',
                         'v1/group-verse',
                     ],
                 ],
+                /*
                 [
                     'class' => 'yii\rest\UrlRule',
                     'pluralize' => false,
@@ -226,7 +233,7 @@ return [
                         'v1/group',
                         'v1/group-verse',
                     ],
-                ],
+                ],*/
                 [
                     'class' => 'yii\rest\UrlRule',
                     'pluralize' => false,
@@ -305,7 +312,7 @@ return [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/meta',
                     'extraPatterns' => [
-                       // 'PUT code' => 'update-code',
+                        // 'PUT code' => 'update-code',
                         'PUT {id}/code' => 'update-code',
                     ],
                 ],
@@ -317,7 +324,7 @@ return [
                         'PUT auth' => 'auth',
                     ],
                 ],
-
+/*
                 [
                     'class' => 'yii\rest\UrlRule',
                     'pluralize' => false,
@@ -330,7 +337,7 @@ return [
                         'POST apple-id-link' => 'apple-id-link',
                         'POST apple-id-create' => 'apple-id-create',
                     ],
-                ],
+                ],*/
             ],
 
         ],

@@ -11,8 +11,23 @@ use yii\db\Expression;
 use yii\helpers\ArrayHelper;
 use yii\db\ActiveRecord;
 use yii\caching\TagDependency;
+use OpenApi\Annotations as OA;
+
 /**
  * This is the model class for table "file".
+ *
+ * @OA\Schema(
+ *     schema="File",
+ *     title="文件",
+ *     description="文件模型",
+ *     @OA\Property(property="id", type="integer", description="文件ID", example=1),
+ *     @OA\Property(property="md5", type="string", description="文件MD5值", example="5d41402abc4b2a76b9719d911017c592"),
+ *     @OA\Property(property="type", type="string", description="文件MIME类型", example="image/jpeg"),
+ *     @OA\Property(property="url", type="string", description="文件URL", example="https://example.com/files/image.jpg"),
+ *     @OA\Property(property="filename", type="string", description="文件名", example="image.jpg"),
+ *     @OA\Property(property="size", type="integer", description="文件大小（字节）", example=1048576),
+ *     @OA\Property(property="key", type="string", description="存储键", example="uploads/2024/file123")
+ * )
  *
  * @property int $id
  * @property string $md5

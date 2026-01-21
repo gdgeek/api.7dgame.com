@@ -15,7 +15,14 @@ use Yii;
 use yii\base\Exception;
 use yii\base\InvalidArgumentException;
 use yii\web\BadRequestHttpException;
+use OpenApi\Annotations as OA;
 
+/**
+ * @OA\Tag(
+ *     name="Authentication",
+ *     description="认证相关接口"
+ * )
+ */
 class SiteController extends \yii\rest\Controller
 {
     
@@ -42,10 +49,36 @@ class SiteController extends \yii\rest\Controller
     
     
     /**
-    * @return array
-    * @throws \yii\base\Exception
-    * @throws \yii\base\InvalidConfigException
-    */
+     * 用户登录
+     * 
+     * @OA\Post(
+     *     path="/site/login",
+     *     summary="用户登录",
+     *     tags={"Authentication"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"username", "password"},
+     *             @OA\Property(property="username", type="string", description="用户名", example="admin"),
+     *             @OA\Property(property="password", type="string", description="密码", example="password123")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="登录成功",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="token", type="string", description="JWT Token"),
+     *             @OA\Property(property="id", type="integer", description="用户ID"),
+     *             @OA\Property(property="username", type="string", description="用户名")
+     *         )
+     *     ),
+     *     @OA\Response(response=400, description="登录失败"),
+     *     @OA\Response(response=401, description="认证失败")
+     * )
+     * @return array
+     * @throws \yii\base\Exception
+     * @throws \yii\base\InvalidConfigException
+     */
     public function actionLogin()
     {
         $login = new Login();
@@ -216,6 +249,107 @@ class SiteController extends \yii\rest\Controller
     public function actionError()
     {
         return Yii::$app->errorHandler->exception;
+    }
+    
+    /**
+     * 健康检查接口
+     * 
+     * @OA\Get(
+     *     path="/site/health",
+     *     summary="健康检查",
+     *     tags={"Authentication"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="系统健康状态",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="string", example="ok"),
+     *             @OA\Property(property="timestamp", type="integer", example=1642694400),
+     *             @OA\Property(property="datetime", type="string", example="2022-01-20 12:00:00"),
+     *             @OA\Property(property="database", type="string", example="connected"),
+     *             @OA\Property(property="cache", type="string", example="ok")
+     *         )
+     *     )
+     * )
+     * @return array
+     */
+    public function actionHealth()
+    {
+        $health = [
+            'status' => 'ok',
+            'timestamp' => time(),
+            'datetime' => date('Y-m-d H:i:s'),
+        ];
+        
+        // 检查数据库连接
+        try {
+            Yii::$app->db->open();
+            $health['database'] = 'connected';
+        } catch (\Exception $e) {
+            $health['database'] = 'disconnected';
+            $health['status'] = 'error';
+        }
+        
+        // 检查缓存
+        try {
+            if (Yii::$app->has('cache')) {
+                Yii::$app->cache->set('health_check', true, 10);
+                $health['cache'] = Yii::$app->cache->get('health_check') ? 'ok' : 'error';
+            } else {
+                $health['cache'] = 'not_configured';
+            }
+        } catch (\Exception $e) {
+            $health['cache'] = 'error';
+        }
+        
+        return $health;
+    }
+    
+    /**
+     * 版本号查询接口
+     * 
+     * @OA\Get(
+     *     path="/site/version",
+     *     summary="获取应用版本信息",
+     *     tags={"Authentication"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="版本信息",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="app_name", type="string", example="yiisoft/yii2-app-advanced"),
+     *             @OA\Property(property="version", type="string", example="1.0.0"),
+     *             @OA\Property(property="yii_version", type="string", example="2.0.51"),
+     *             @OA\Property(property="php_version", type="string", example="8.4.0"),
+     *             @OA\Property(property="environment", type="string", example="dev"),
+     *             @OA\Property(property="debug", type="boolean", example=true)
+     *         )
+     *     )
+     * )
+     * @return array
+     */
+    public function actionVersion()
+    {
+        $composerFile = Yii::getAlias('@app/../composer.json');
+        $version = '1.0.0'; // 默认版本号
+        $appName = 'API Application';
+        
+        if (file_exists($composerFile)) {
+            $composer = json_decode(file_get_contents($composerFile), true);
+            if (isset($composer['name'])) {
+                $appName = $composer['name'];
+            }
+            if (isset($composer['version'])) {
+                $version = $composer['version'];
+            }
+        }
+        
+        return [
+            'app_name' => $appName,
+            'version' => $version,
+            'yii_version' => Yii::getVersion(),
+            'php_version' => PHP_VERSION,
+            'environment' => YII_ENV,
+            'debug' => YII_DEBUG,
+        ];
     }
     
     public function actionMenu()

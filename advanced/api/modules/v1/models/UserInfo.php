@@ -7,9 +7,22 @@ use api\modules\v1\models\File;
 use yii\caching\TagDependency;
 use api\modules\v1\components\Validator\JsonValidator;
 use Yii;
+use OpenApi\Annotations as OA;
 
 /**
  * This is the model class for table "user_info".
+ *
+ * @OA\Schema(
+ *     schema="UserInfo",
+ *     title="用户信息",
+ *     description="用户详细信息模型",
+ *     @OA\Property(property="id", type="integer", description="用户信息ID", example=1),
+ *     @OA\Property(property="user_id", type="integer", description="用户ID", example=1),
+ *     @OA\Property(property="info", type="string", description="用户信息JSON", example="{}"),
+ *     @OA\Property(property="avatar_id", type="integer", description="头像文件ID", example=100),
+ *     @OA\Property(property="gold", type="integer", description="金币数量", example=1000),
+ *     @OA\Property(property="points", type="integer", description="积分数量", example=500)
+ * )
  *
  * @property int $id
  * @property int $user_id

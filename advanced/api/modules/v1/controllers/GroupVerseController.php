@@ -8,7 +8,14 @@ use yii\filters\auth\CompositeAuth;
 use bizley\jwt\JwtHttpBearerAuth;
 use yii\rest\ActiveController;
 use Yii;
+use OpenApi\Annotations as OA;
 
+/**
+ * @OA\Tag(
+ *     name="GroupVerse",
+ *     description="群组 Verse 管理接口"
+ * )
+ */
 class GroupVerseController extends ActiveController
 {
     public $modelClass = 'api\modules\v1\models\GroupVerse';

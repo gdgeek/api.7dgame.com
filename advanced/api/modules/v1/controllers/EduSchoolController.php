@@ -12,7 +12,14 @@ use bizley\jwt\JwtHttpBearerAuth;
 use yii\rest\ActiveController;
 use yii\data\ActiveDataProvider;
 use Yii;
+use OpenApi\Annotations as OA;
 
+/**
+ * @OA\Tag(
+ *     name="EduSchool",
+ *     description="学校管理接口"
+ * )
+ */
 class EduSchoolController extends ActiveController
 {
     
@@ -55,6 +62,58 @@ class EduSchoolController extends ActiveController
         return $behaviors;
     }
 
+    /**
+     * @OA\Get(
+     *     path="/v1/edu-school/principal",
+     *     summary="获取校长的学校列表",
+     *     description="获取当前用户作为校长的学校列表",
+     *     tags={"EduSchool"},
+     *     security={{"Bearer": {}}},
+     *     @OA\Parameter(
+     *         name="search",
+     *         in="query",
+     *         description="搜索关键词",
+     *         required=false,
+     *         @OA\Schema(type="string", example="实验小学")
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort",
+     *         in="query",
+     *         description="排序字段（-表示降序）",
+     *         required=false,
+     *         @OA\Schema(type="string", example="-created_at")
+     *     ),
+     *     @OA\Parameter(
+     *         name="page",
+     *         in="query",
+     *         description="页码",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="per-page",
+     *         in="query",
+     *         description="每页数量",
+     *         required=false,
+     *         @OA\Schema(type="integer", example=20)
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="学校列表",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(
+     *                 @OA\Property(property="id", type="integer", description="学校ID", example=1),
+     *                 @OA\Property(property="name", type="string", description="学校名称", example="实验小学"),
+     *                 @OA\Property(property="principal_id", type="integer", description="校长用户ID", example=1),
+     *                 @OA\Property(property="created_at", type="string", format="date-time", description="创建时间"),
+     *                 @OA\Property(property="updated_at", type="string", format="date-time", description="更新时间")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=401, description="未授权")
+     * )
+     */
     /**
      * 获取当前用户作为校长的学校列表
      * GET /edu-school/principal

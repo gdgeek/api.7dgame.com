@@ -10,7 +10,14 @@ use TencentCloud\Sts\V20180813\Models\GetFederationTokenRequest;
 use TencentCloud\Sts\V20180813\StsClient;
 use Yii;
 use yii\rest\ActiveController;
+use OpenApi\Annotations as OA;
 
+/**
+ * @OA\Tag(
+ *     name="TencentCloud",
+ *     description="腾讯云服务接口"
+ * )
+ */
 class TencentCloudController extends ActiveController
 {
     
@@ -43,11 +50,60 @@ class TencentCloudController extends ActiveController
     {
         return [];
     }
+    /**
+     * @OA\Get(
+     *     path="/v1/tencent-cloud/cloud",
+     *     summary="获取云配置",
+     *     description="获取腾讯云配置信息",
+     *     tags={"TencentCloud"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="云配置信息",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="region", type="string", description="区域", example="ap-nanjing"),
+     *             @OA\Property(property="bucket", type="string", description="存储桶名称")
+     *         )
+     *     )
+     * )
+     */
     public function actionCloud()
     {
         $cloud = Yii::$app->secret->cloud;
         return $cloud;
     }
+
+    /**
+     * @OA\Get(
+     *     path="/v1/tencent-cloud/token",
+     *     summary="获取临时密钥",
+     *     description="获取腾讯云 COS 临时访问密钥（STS Token）",
+     *     tags={"TencentCloud"},
+     *     @OA\Parameter(
+     *         name="bucket",
+     *         in="query",
+     *         description="存储桶名称",
+     *         required=true,
+     *         @OA\Schema(type="string", example="my-bucket-1234567890")
+     *     ),
+     *     @OA\Parameter(
+     *         name="region",
+     *         in="query",
+     *         description="区域",
+     *         required=false,
+     *         @OA\Schema(type="string", example="ap-nanjing", default="ap-nanjing")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="临时密钥信息",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="TmpSecretId", type="string", description="临时密钥ID"),
+     *             @OA\Property(property="TmpSecretKey", type="string", description="临时密钥Key"),
+     *             @OA\Property(property="Token", type="string", description="临时Token"),
+     *             @OA\Property(property="ExpiredTime", type="integer", description="过期时间戳")
+     *         )
+     *     )
+     * )
+     */
     public function actionToken($bucket, $region = 'ap-nanjing')
     {
         

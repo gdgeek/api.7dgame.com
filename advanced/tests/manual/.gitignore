@@ -1,0 +1,8 @@
+# 忽略测试输出文件
+*.log
+*.txt
+output/
+temp/
+
+# 但保留 README
+!README.md
