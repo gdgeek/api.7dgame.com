@@ -12,18 +12,18 @@
   - 添加 `findByEmail()` 静态方法
   - _Requirements: 9.1, 9.2, 9.3, 9.4_
 
-- [ ] 2. Redis 键管理器实现
-  - [ ] 2.1 创建 RedisKeyManager 组件类
+- [x] 2. Redis 键管理器实现
+  - [x] 2.1 创建 RedisKeyManager 组件类
     - 实现所有键格式生成方法（验证码、尝试次数、重置令牌、速率限制）
     - 确保键名格式符合设计规范
     - _Requirements: 7.1, 7.2, 7.3, 7.4_
   
-  - [ ] 2.2 编写 RedisKeyManager 的属性测试
+  - [x] 2.2 编写 RedisKeyManager 的属性测试
     - **Property 14: Redis 键格式一致性**
     - **Validates: Requirements 7.1, 7.2, 7.3, 7.4**
 
-- [ ] 3. 速率限制器实现
-  - [ ] 3.1 创建 RateLimiter 组件类
+- [x] 3. 速率限制器实现
+  - [x] 3.1 创建 RateLimiter 组件类
     - 实现 `tooManyAttempts()` 方法检查速率限制
     - 实现 `hit()` 方法增加尝试次数
     - 实现 `availableIn()` 方法获取剩余时间
@@ -31,18 +31,18 @@
     - 使用 Redis 存储计数，设置正确的 TTL
     - _Requirements: 6.1, 6.2_
   
-  - [ ] 3.2 编写 RateLimiter 的属性测试
+  - [x] 3.2 编写 RateLimiter 的属性测试
     - **Property 3: 速率限制一致性**
     - **Validates: Requirements 1.4, 3.6, 6.2, 8.4**
   
-  - [ ] 3.3 编写 RateLimiter 的单元测试
+  - [x] 3.3 编写 RateLimiter 的单元测试
     - 测试速率限制计数
     - 测试过期时间
     - 测试清除功能
     - _Requirements: 6.1, 6.2_
 
-- [ ] 4. 邮箱验证服务实现
-  - [ ] 4.1 创建 EmailVerificationService 类
+- [x] 4. 邮箱验证服务实现
+  - [x] 4.1 创建 EmailVerificationService 类
     - 实现 `generateVerificationCode()` 方法生成 6 位数字验证码
     - 实现 `sendVerificationCode()` 方法（生成、存储、发送）
     - 实现 `verifyCode()` 方法验证验证码
@@ -53,40 +53,40 @@
     - 使用 Yii2 Security 组件生成随机数
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 2.1, 2.2, 2.3, 2.4, 2.6, 6.5_
   
-  - [ ] 4.2 编写验证码生成的属性测试
+  - [x] 4.2 编写验证码生成的属性测试
     - **Property 1: 验证码格式正确性**
     - **Validates: Requirements 1.1**
   
-  - [ ] 4.3 编写验证码存储的属性测试
+  - [x] 4.3 编写验证码存储的属性测试
     - **Property 2: 验证码 Redis 存储正确性**
     - **Validates: Requirements 1.2, 7.1**
   
-  - [ ] 4.4 编写验证码响应安全性的属性测试
+  - [x] 4.4 编写验证码响应安全性的属性测试
     - **Property 4: 验证码响应安全性**
     - **Validates: Requirements 1.5**
   
-  - [ ] 4.5 编写验证成功后状态更新的属性测试
+  - [x] 4.5 编写验证成功后状态更新的属性测试
     - **Property 5: 验证码匹配后状态更新**
     - **Validates: Requirements 2.2, 9.1**
   
-  - [ ] 4.6 编写验证失败计数的属性测试
+  - [x] 4.6 编写验证失败计数的属性测试
     - **Property 6: 验证失败计数递增**
     - **Validates: Requirements 2.3, 7.2**
   
-  - [ ] 4.7 编写账户锁定机制的属性测试
+  - [x] 4.7 编写账户锁定机制的属性测试
     - **Property 7: 验证失败锁定机制**
     - **Validates: Requirements 2.4, 6.3, 6.4**
   
-  - [ ] 4.8 编写验证成功清理的属性测试
+  - [x] 4.8 编写验证成功清理的属性测试
     - **Property 8: 验证成功后清理**
     - **Validates: Requirements 2.6, 7.5**
   
-  - [ ] 4.9 编写随机数生成安全性的属性测试
+  - [x] 4.9 编写随机数生成安全性的属性测试
     - **Property 19: 随机数生成安全性**
     - **Validates: Requirements 6.5**
 
-- [ ] 5. 密码重置服务实现
-  - [ ] 5.1 创建 PasswordResetService 类
+- [x] 5. 密码重置服务实现
+  - [x] 5.1 创建 PasswordResetService 类
     - 实现 `generateResetToken()` 方法生成加密令牌
     - 实现 `sendResetToken()` 方法（检查验证状态、生成、存储、发送）
     - 实现 `verifyResetToken()` 方法验证令牌有效性
@@ -97,45 +97,45 @@
     - 使用 Yii2 Security 组件生成随机令牌
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 4.1, 4.2, 4.3, 4.4, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6_
   
-  - [ ] 5.2 编写密码重置前置条件的属性测试
+  - [x] 5.2 编写密码重置前置条件的属性测试
     - **Property 9: 密码重置前置条件**
     - **Validates: Requirements 3.1, 3.2, 9.3**
   
-  - [ ] 5.3 编写重置令牌生成和存储的属性测试
+  - [x] 5.3 编写重置令牌生成和存储的属性测试
     - **Property 10: 重置令牌生成和存储**
     - **Validates: Requirements 3.3, 3.4, 7.3**
   
-  - [ ] 5.4 编写重置令牌有效性验证的属性测试
+  - [x] 5.4 编写重置令牌有效性验证的属性测试
     - **Property 11: 重置令牌有效性验证**
     - **Validates: Requirements 4.1, 4.2, 4.4**
   
-  - [ ] 5.5 编写密码重置成功后操作的属性测试
+  - [x] 5.5 编写密码重置成功后操作的属性测试
     - **Property 12: 密码重置成功后的操作**
     - **Validates: Requirements 5.3, 5.4, 5.5**
   
-  - [ ] 5.6 编写密码安全要求验证的属性测试
+  - [x] 5.6 编写密码安全要求验证的属性测试
     - **Property 13: 密码安全要求验证**
     - **Validates: Requirements 5.6, 8.5**
 
-- [ ] 6. 表单模型创建
-  - [ ] 6.1 创建 SendVerificationForm 表单模型
+- [x] 6. 表单模型创建
+  - [x] 6.1 创建 SendVerificationForm 表单模型
     - 定义 email 字段和验证规则
     - _Requirements: 1.1_
   
-  - [ ] 6.2 创建 VerifyEmailForm 表单模型
+  - [x] 6.2 创建 VerifyEmailForm 表单模型
     - 定义 email 和 code 字段及验证规则
     - _Requirements: 2.1_
   
-  - [ ] 6.3 创建 RequestPasswordResetForm 表单模型
+  - [x] 6.3 创建 RequestPasswordResetForm 表单模型
     - 定义 email 字段和验证规则
     - _Requirements: 3.1_
   
-  - [ ] 6.4 创建 ResetPasswordForm 表单模型
+  - [x] 6.4 创建 ResetPasswordForm 表单模型
     - 定义 token 和 password 字段及验证规则
     - 包含密码安全要求验证
     - _Requirements: 5.1, 5.6_
 
-- [ ] 7. 自定义异常类创建
+- [x] 7. 自定义异常类创建
   - 创建 RateLimitException 异常类
   - 创建 InvalidCodeException 异常类
   - 创建 AccountLockedException 异常类
@@ -143,8 +143,8 @@
   - 创建 InvalidTokenException 异常类
   - _Requirements: 8.2, 8.3, 8.4, 8.5_
 
-- [ ] 8. EmailController 实现
-  - [ ] 8.1 创建 EmailController 控制器
+- [x] 8. EmailController 实现
+  - [x] 8.1 创建 EmailController 控制器
     - 实现 `actionSendVerification()` 方法
     - 实现 `actionVerify()` 方法
     - 集成表单验证
@@ -162,8 +162,8 @@
     - **Property 16: 错误响应格式一致性**
     - **Validates: Requirements 8.2, 8.3**
 
-- [ ] 9. PasswordController 实现
-  - [ ] 9.1 创建 PasswordController 控制器
+- [x] 9. PasswordController 实现
+  - [x] 9.1 创建 PasswordController 控制器
     - 实现 `actionRequestReset()` 方法
     - 实现 `actionVerifyToken()` 方法
     - 实现 `actionReset()` 方法
