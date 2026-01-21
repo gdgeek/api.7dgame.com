@@ -594,10 +594,10 @@ export SWAGGER_ENABLED=false
 如有问题或建议，请通过以下方式联系：
 
 - 提交 [Issue](../../issues)
-- 发送邮件至: your-email@example.com
+- 发送邮件至: dev@bujiaban.com
 
 ---
 
 <p align="center">
-  Made with ❤️ by Your Team
+  Made with ❤️ by 永远的不加班
 </p>
