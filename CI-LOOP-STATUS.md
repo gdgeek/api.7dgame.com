@@ -2,7 +2,7 @@
 
 ## 📊 当前状态
 
-**最新提交**: bc7ae0be - "Fix CI: remove invalid --verbose option from PHPUnit"
+**最新提交**: bd08a7dc - "Fix CI: add phpunit.xml to git (was ignored by .gitignore)"
 
 **CI 状态**: 运行中 🔄
 
@@ -10,9 +10,11 @@
 
 ## 🐛 最近修复
 
-- ❌ 问题: PHPUnit 不认识 `--verbose` 选项
-- ✅ 修复: 移除了 `--verbose` 选项
-- 📝 提交: bc7ae0be
+- ❌ 问题 1: PHPUnit 不认识 `--verbose` 选项
+- ✅ 修复 1: 移除了 `--verbose` 选项 (bc7ae0be)
+
+- ❌ 问题 2: `phpunit.xml` 文件被 `.gitignore` 忽略，没有提交到 git
+- ✅ 修复 2: 更新 `.gitignore`，添加 `phpunit.xml` 到 git (bd08a7dc)
 
 ## ✅ 已完成的工作
 
@@ -54,7 +56,9 @@
 3. **21317077** - Add JWT configuration to test bootstrap and fix CI config
 4. **53ff736c** - Add method signature tests that don't require database connection
 5. **571b1cd6** - Add verbose output to CI tests and ignore PHPUnit cache
-6. **bc7ae0be** - Fix CI: remove invalid --verbose option from PHPUnit ⬅️ 当前
+6. **bc7ae0be** - Fix CI: remove invalid --verbose option from PHPUnit
+7. **0b04d0fa** - Fix CI: explicitly specify phpunit.xml configuration file
+8. **bd08a7dc** - Fix CI: add phpunit.xml to git (was ignored by .gitignore) ⬅️ 当前
 
 ## 🧪 测试覆盖
 

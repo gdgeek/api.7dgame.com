@@ -26,7 +26,7 @@ new \yii\console\Application([
     'components' => [
         'db' => [
             'class' => 'yii\db\Connection',
-            'dsn' => 'mysql:host=localhost;dbname=yii2_advanced_test',
+            'dsn' => 'mysql:host=127.0.0.1;dbname=yii2_advanced_test',
             'username' => 'root',
             'password' => 'root',
             'charset' => 'utf8',
