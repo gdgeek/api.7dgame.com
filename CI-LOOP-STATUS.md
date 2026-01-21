@@ -2,11 +2,17 @@
 
 ## 📊 当前状态
 
-**最新提交**: 571b1cd6 - "Add verbose output to CI tests and ignore PHPUnit cache"
+**最新提交**: bc7ae0be - "Fix CI: remove invalid --verbose option from PHPUnit"
 
 **CI 状态**: 运行中 🔄
 
 **查看详情**: https://github.com/gdgeek/api.7dgame.com/actions
+
+## 🐛 最近修复
+
+- ❌ 问题: PHPUnit 不认识 `--verbose` 选项
+- ✅ 修复: 移除了 `--verbose` 选项
+- 📝 提交: bc7ae0be
 
 ## ✅ 已完成的工作
 
@@ -48,6 +54,7 @@
 3. **21317077** - Add JWT configuration to test bootstrap and fix CI config
 4. **53ff736c** - Add method signature tests that don't require database connection
 5. **571b1cd6** - Add verbose output to CI tests and ignore PHPUnit cache
+6. **bc7ae0be** - Fix CI: remove invalid --verbose option from PHPUnit ⬅️ 当前
 
 ## 🧪 测试覆盖
 

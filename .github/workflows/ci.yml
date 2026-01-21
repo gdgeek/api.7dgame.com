@@ -180,7 +180,10 @@ jobs:
         run: |
           echo "Running PHPUnit tests..."
           ls -la tests/unit/models/
-          php vendor/bin/phpunit --testdox
+          echo "Checking phpunit.xml..."
+          ls -la phpunit.xml
+          echo "Running tests..."
+          php vendor/bin/phpunit -c phpunit.xml --testdox
 
   # 阶段2: 构建 Docker 镜像
   build:
