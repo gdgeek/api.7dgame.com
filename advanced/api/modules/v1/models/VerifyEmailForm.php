@@ -35,7 +35,7 @@ class VerifyEmailForm extends Model
             ['code', 'trim'],
             ['email', 'email', 'message' => '邮箱格式不正确'],
             ['email', 'string', 'max' => 255],
-            ['code', 'string', 'length' => 6, 'tooShort' => '验证码必须是 6 位', 'tooLong' => '验证码必须是 6 位'],
+            ['code', 'string', 'min' => 6, 'max' => 6, 'tooShort' => '验证码必须是 6 位', 'tooLong' => '验证码必须是 6 位'],
             [
                 'code', 
                 'match', 

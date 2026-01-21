@@ -33,7 +33,7 @@ class ResetPasswordForm extends Model
             [['token', 'password'], 'required', 'message' => '{attribute}不能为空'],
             ['token', 'trim'],
             ['password', 'trim'],
-            ['token', 'string', 'min' => 32, 'message' => '令牌格式不正确'],
+            ['token', 'string', 'min' => 32, 'tooShort' => '令牌格式不正确'],
             [
                 'password', 
                 'string', 
