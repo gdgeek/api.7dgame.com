@@ -35,6 +35,7 @@ use OpenApi\Annotations as OA;
  * @property string|null $password_hash
  * @property string|null $password_reset_token
  * @property string|null $email
+ * @property int|null $email_verified_at
  * @property int|null $created_at
  * @property int|null $updated_at
  * @property string|null $nickname
@@ -304,7 +305,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
     public function rules()
     {
         $rules = [
-            [[/*'status',*/ 'created_at', 'updated_at'], 'integer'],
+            [[/*'status',*/ 'created_at', 'updated_at', 'email_verified_at'], 'integer'],
             [['username', 'password_hash', 'password_reset_token', /*'verification_token', 'access_token',*/ 'nickname'], 'string', 'max' => 255],
             [['auth_key'], 'string', 'max' => 32],
             [['username'], 'required'],
@@ -340,8 +341,36 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
             //  'access_token' => 'Access Token',// 保留
             //'wx_openid' => 'Wx Openid',//微信openid 下次取消
             'nickname' => 'Nickname',//昵称 保留
+            'email_verified_at' => 'Email Verified At',//邮箱验证时间
         ];
     }
 
+    /**
+     * 检查邮箱是否已验证
+     * @return bool
+     */
+    public function isEmailVerified(): bool
+    {
+        return $this->email_verified_at !== null;
+    }
 
+    /**
+     * 标记邮箱为已验证
+     * @return bool
+     */
+    public function markEmailAsVerified(): bool
+    {
+        $this->email_verified_at = time();
+        return $this->save(false, ['email_verified_at']);
+    }
+
+    /**
+     * 通过邮箱查找用户
+     * @param string $email
+     * @return User|null
+     */
+    public static function findByEmail(string $email): ?User
+    {
+        return static::findOne(['email' => $email]);
+    }
 }

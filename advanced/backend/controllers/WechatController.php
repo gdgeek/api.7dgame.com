@@ -162,7 +162,7 @@ class WechatController extends Controller
             $openid = $message['FromUserName'];
             $user = $this->getUserByWXOpenid($openid);
             $this->saveTokenAndOpenID($token, $openid, $user);
-            return '欢迎登入【元宇宙实景编程平台】';
+            return '欢迎登入【AR创作平台】';
 
         }
         return '扫描二维码';

@@ -125,6 +125,25 @@ return [
                         'POST refresh' => 'refresh',
                     ],
                 ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/email',
+                    'pluralize' => false,
+                    'extraPatterns' => [
+                        'POST send-verification' => 'send-verification',
+                        'POST verify' => 'verify',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/password',
+                    'pluralize' => false,
+                    'extraPatterns' => [
+                        'POST request-reset' => 'request-reset',
+                        'POST verify-token' => 'verify-token',
+                        'POST reset' => 'reset',
+                    ],
+                ],
                 /*
                 [
                     'class' => 'yii\rest\UrlRule',

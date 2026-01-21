@@ -69,8 +69,8 @@ use OpenApi\Annotations as OA;
 /**
  * @OA\Info(
  *     version="1.0.0",
- *     title="你的 API 标题",
- *     description="API 文档描述"
+ *     title="AR创作平台 API",
+ *     description="AR创作平台后端 API 文档"
  * )
  * @OA\Server(url="/", description="API Server")
  * @OA\SecurityScheme(

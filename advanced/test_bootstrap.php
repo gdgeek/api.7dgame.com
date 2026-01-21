@@ -17,3 +17,46 @@ Yii::setAlias('@backend', __DIR__ . '/backend');
 Yii::setAlias('@console', __DIR__ . '/console');
 Yii::setAlias('@api', __DIR__ . '/api');
 Yii::setAlias('@tests', __DIR__ . '/tests');
+
+// Create a minimal application for tests
+new \yii\console\Application([
+    'id' => 'testapp',
+    'basePath' => __DIR__,
+    'vendorPath' => __DIR__ . '/vendor',
+    'components' => [
+        'db' => [
+            'class' => 'yii\db\Connection',
+            'dsn' => 'mysql:host=127.0.0.1;dbname=yii2_advanced_test',
+            'username' => 'root',
+            'password' => 'root',
+            'charset' => 'utf8',
+        ],
+        'cache' => [
+            'class' => 'yii\caching\ArrayCache',
+        ],
+        'request' => [
+            'class' => 'yii\web\Request',
+            'hostInfo' => 'http://localhost',
+            'scriptUrl' => '',
+        ],
+        'authManager' => [
+            'class' => 'yii\rbac\DbManager',
+        ],
+        'jwt' => [
+            'class' => 'bizley\jwt\Jwt',
+            'signer' => 'HS256',
+            'signingKey' => 'secure-signing-key-should-be-at-least-256-bits-long-for-hs256',
+        ],
+        'redis' => [
+            'class' => 'yii\redis\Connection',
+            'hostname' => 'localhost',
+            'port' => 6379,
+            'database' => 1, // Use database 1 for testing
+        ],
+        'mailer' => [
+            'class' => 'yii\swiftmailer\Mailer',
+            'viewPath' => '@common/mail',
+            'useFileTransport' => true,
+        ],
+    ],
+]);

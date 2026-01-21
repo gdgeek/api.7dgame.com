@@ -1,10 +1,9 @@
 <?php
-use yii\helpers\Url;
 /* @var $this yii\web\View */
 /* @var $user api\modules\v1\models\User */
-//api.mrpp.com/site/verify-email?token=xxxxxx
-//mrpp.com/#/site/verify-email?token=xxxxxx
-$verifyLink = Url::to('@mrpp/site/verify-email?token='.$user->verification_token); //Yii::$app->urlManager->createAbsoluteUrl(['site/verify-email', 'token' => $user->verification_token]);
+
+// 生成验证链接（使用完整URL）
+$verifyLink = 'https://bujiaban.com/site/verify-email?token=' . $user->verification_token;
 ?>
 您好 <?= $user->username ?>,
 

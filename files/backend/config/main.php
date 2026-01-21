@@ -8,7 +8,7 @@ $params = array_merge(
 
 return [
     'id' => 'manager',
-    'name'=>'MrPP.com',
+    'name'=>'AR创作平台',
     'basePath' => dirname(__DIR__),
     'controllerNamespace' => 'backend\controllers',
     'bootstrap' => ['log'],

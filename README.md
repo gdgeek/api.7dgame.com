@@ -1,4 +1,4 @@
-# Yii2 Advanced API Backend
+# AR创作平台后端
 
 <p align="center">
   <img src="https://avatars0.githubusercontent.com/u/993323" height="100px" alt="Yii Framework">
@@ -14,14 +14,15 @@
   <a href="#快速开始">快速开始</a> •
   <a href="#api-文档">API 文档</a> •
   <a href="#项目结构">项目结构</a> •
-  <a href="#开发指南">开发指南</a>
+  <a href="#开发指南">开发指南</a> •
+  <a href="#docker-部署">Docker</a>
 </p>
 
 ---
 
 ## 📋 项目简介
 
-这是一个基于 Yii2 Advanced 模板构建的企业级 RESTful API 后端系统，提供完整的用户认证、资源管理、教育管理等功能模块。项目采用模块化设计，支持多版本 API，集成了完整的 OpenAPI 3.0 文档系统。
+这是一个基于 Yii2 Advanced 模板构建的 AR 创作平台后端系统，提供完整的用户认证、资源管理、教育管理等功能模块。项目采用模块化设计，支持多版本 API，集成了完整的 OpenAPI 3.0 文档系统，并提供开箱即用的 Docker 容器化部署方案。
 
 ## ✨ 主要特性
 
@@ -32,6 +33,7 @@
 - 💬 **微信集成** - 微信登录和支付功能
 - 📁 **文件管理** - 文件上传、存储和管理
 - 🏷️ **标签系统** - 灵活的标签分类管理
+- 📧 **邮件系统** - 完整的邮件发送功能（验证码、密码重置、邮箱验证）
 
 ### 业务模块
 - 📚 **教育管理** - 学校、班级、教师、学生管理
@@ -60,6 +62,7 @@
 ```json
 {
   "yiisoft/yii2": "~2.0.51",
+  "yiisoft/yii2-symfonymailer": "^4.0",
   "bizley/jwt": "^4.0",
   "lcobucci/jwt": "^5.0",
   "zircote/swagger-php": "^4.0",
@@ -82,49 +85,93 @@
 ### 环境要求
 
 - PHP >= 8.4
-- MySQL >= 5.7
-- Redis (可选)
+- MySQL >= 8.0
+- Redis (推荐)
 - Composer
 - Docker & Docker Compose (推荐)
 
-### 使用 Docker 部署（推荐）
+### 方式一：使用 Docker 一键启动（推荐）⭐
+
+这是最简单快速的方式，适合本地开发和测试。
 
 1. **克隆项目**
 ```bash
 git clone <repository-url>
-cd yii2-backend
+cd api.7dgame.com
 ```
 
-2. **配置环境变量**
+2. **一键启动**
 ```bash
-cp advanced/.env.example advanced/.env
-# 编辑 .env 文件，配置数据库和其他服务
+./start-docker.sh
 ```
 
-3. **启动 Docker 容器**
+脚本会自动完成：
+- ✅ 创建环境配置文件
+- ✅ 生成 JWT 密钥
+- ✅ 构建 Docker 镜像
+- ✅ 启动所有服务（API、数据库、Redis、phpMyAdmin）
+- ✅ 运行数据库迁移
+- ✅ 初始化 RBAC 权限系统
+- ✅ 设置文件权限
+
+3. **访问应用**
+- **API 服务**: http://localhost:8081
+- **后台应用**: http://localhost:8082
+- **Swagger 文档**: http://localhost:8081/swagger
+- **phpMyAdmin**: http://localhost:8080
+
+4. **常用命令**
+```bash
+# 使用 Makefile 简化操作
+make help           # 查看所有可用命令
+make logs           # 查看日志
+make shell          # 进入容器
+make migrate        # 运行迁移
+make test           # 运行测试
+make stop           # 停止服务
+
+# 或使用 docker-compose
+docker-compose logs -f api      # 查看 API 日志
+docker-compose exec api bash    # 进入 API 容器
+docker-compose restart          # 重启服务
+```
+
+📖 **详细文档**: [Docker 使用指南](docker/README.zh-CN.md)
+
+### 方式二：使用 Docker Compose 手动部署
+
+如果你想更精细地控制部署过程：
+
+1. **配置环境变量**
+```bash
+cp .env.docker.example .env.docker
+# 编辑 .env.docker 文件，填入你的配置
+```
+
+2. **生成 JWT 密钥**
+```bash
+mkdir -p jwt_keys
+openssl ecparam -genkey -name prime256v1 -noout -out jwt_keys/jwt-key.pem
+```
+
+3. **启动服务**
 ```bash
 docker-compose up -d
 ```
 
-4. **安装依赖**
+4. **等待数据库启动（约 30 秒）**
 ```bash
-docker-compose exec php composer install
+docker-compose logs -f db
+# 看到 "ready for connections" 后按 Ctrl+C
 ```
 
-5. **初始化应用**
+5. **运行迁移和初始化**
 ```bash
-docker-compose exec php php init
-# 选择开发环境 (0) 或生产环境 (1)
+docker-compose exec api php yii migrate --interactive=0
+docker-compose exec api php yii rbac/init
 ```
 
-6. **运行数据库迁移**
-```bash
-docker-compose exec php php yii migrate
-```
-
-7. **访问应用**
-- API 地址: `http://localhost:81`
-- Swagger 文档: `http://localhost:81/swagger`
+### 方式三：手动部署（不使用 Docker）
 
 ### 手动部署
 
@@ -137,6 +184,7 @@ composer install
 2. **初始化应用**
 ```bash
 php init
+# 选择开发环境 (0) 或生产环境 (1)
 ```
 
 3. **配置数据库**
@@ -155,9 +203,82 @@ php init
 php yii migrate
 ```
 
-5. **配置 Web 服务器**
+5. **初始化 RBAC**
+```bash
+php yii rbac/init
+```
+
+6. **配置 Web 服务器**
 
 参考 `docker/api-default.conf` 配置 Nginx 或 Apache。
+
+## 🐳 Docker 部署
+
+### 快速参考
+
+| 文档 | 说明 |
+|------|------|
+| [快速启动指南](DOCKER_QUICK_START.md) | 最常用的命令和操作 ⭐ |
+| [完整中文文档](docker/README.zh-CN.md) | 详细的使用说明和故障排查 |
+| [配置完成说明](DOCKER_SETUP_COMPLETE.md) | Docker 环境配置详情 |
+
+### 服务端口
+
+| 服务 | 端口 | 说明 |
+|------|------|------|
+| API 服务 | 8081 | 主 API 接口 |
+| 后台应用 | 8082 | 后台管理系统 |
+| phpMyAdmin | 8080 | 数据库管理工具 |
+| MySQL | 3306 | 数据库服务 |
+| Redis | 6379 | 缓存服务 |
+
+### 常用命令
+
+```bash
+# 使用 Makefile（推荐）
+make help           # 查看所有可用命令
+make start          # 启动所有服务
+make stop           # 停止服务
+make logs           # 查看日志
+make shell          # 进入 API 容器
+make migrate        # 运行数据库迁移
+make test           # 运行测试
+make db-backup      # 备份数据库
+
+# 使用脚本
+./start-docker.sh   # 一键启动（自动初始化）
+./stop-docker.sh    # 停止服务
+./check-env.sh      # 检查环境配置
+
+# 使用 docker-compose
+docker-compose up -d              # 启动服务
+docker-compose down               # 停止服务
+docker-compose logs -f api        # 查看 API 日志
+docker-compose exec api bash      # 进入 API 容器
+docker-compose restart            # 重启服务
+```
+
+### 环境配置
+
+首次使用需要配置环境变量：
+
+```bash
+# 1. 复制环境配置模板
+cp .env.docker.example .env.docker
+
+# 2. 编辑配置文件
+# 填入数据库密码、邮箱配置、云服务密钥等
+
+# 3. 生成 JWT 密钥
+mkdir -p jwt_keys
+openssl ecparam -genkey -name prime256v1 -noout -out jwt_keys/jwt-key.pem
+```
+
+或者直接运行一键启动脚本，它会自动处理这些步骤：
+
+```bash
+./start-docker.sh
+```
 
 ## 📖 API 文档
 
@@ -344,6 +465,39 @@ vendor/bin/codecept run unit
 vendor/bin/codecept run functional
 ```
 
+### 邮件功能测试
+
+项目集成了完整的邮件发送功能，支持验证码、密码重置、邮箱验证等场景。
+
+**测试所有邮件类型**:
+```bash
+docker exec -it api7dgamecom-api-1 php yii email-test/all your@email.com
+```
+
+**测试单个邮件类型**:
+```bash
+# 验证码邮件
+docker exec -it api7dgamecom-api-1 php yii email-test/verification-code your@email.com
+
+# 密码重置邮件
+docker exec -it api7dgamecom-api-1 php yii email-test/password-reset your@email.com
+
+# 邮箱验证邮件
+docker exec -it api7dgamecom-api-1 php yii email-test/email-verify your@email.com
+
+# 简单测试邮件
+docker exec -it api7dgamecom-api-1 php yii email-test/simple your@email.com
+```
+
+**邮件功能特性**:
+- ✅ 使用 Symfony Mailer 4.0（最新版本）
+- ✅ 支持腾讯企业邮箱
+- ✅ HTML 和纯文本双格式
+- ✅ 响应式邮件模板
+- ✅ 安全的 SMTP 授权码认证
+
+📖 **详细文档**: [邮件功能使用指南](EMAIL_FUNCTIONALITY_GUIDE.md)
+
 ### 代码规范
 
 项目遵循 PSR-12 编码规范。
@@ -408,6 +562,10 @@ export SWAGGER_ENABLED=false
 - [部署文档](docs/SWAGGER_DEPLOYMENT.md)
 - [API 健康检查](docs/API_HEALTH_VERSION.md)
 - [OpenAPI 控制器状态](docs/OPENAPI_CONTROLLERS_STATUS.md)
+- [邮件功能使用指南](EMAIL_FUNCTIONALITY_GUIDE.md) ⭐
+- [邮件测试结果](EMAIL_TEST_RESULTS.md)
+- [获取 SMTP 授权码](GET_SMTP_AUTH_CODE.md)
+- [邮件配置指南](EMAIL_CONFIG_GUIDE.md)
 
 ## 🤝 贡献
 
@@ -423,7 +581,7 @@ export SWAGGER_ENABLED=false
 
 ## 📄 许可证
 
-本项目采用 BSD-3-Clause 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
+本项目采用 GPL-2.0 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
 
 ## 🙏 致谢
 
@@ -436,10 +594,10 @@ export SWAGGER_ENABLED=false
 如有问题或建议，请通过以下方式联系：
 
 - 提交 [Issue](../../issues)
-- 发送邮件至: your-email@example.com
+- 发送邮件至: dev@bujiaban.com
 
 ---
 
 <p align="center">
-  Made with ❤️ by Your Team
+  Made with ❤️ by 永远的不加班
 </p>

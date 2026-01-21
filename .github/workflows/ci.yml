@@ -106,7 +106,7 @@ jobs:
                       ],
                       'user' => [
                           'class' => 'yii\web\User',
-                          'identityClass' => 'common\models\User',
+                          'identityClass' => 'api\modules\v1\models\User',
                       ],
                       'jwt' => [
                            'class' => 'bizley\jwt\Jwt', 
@@ -175,12 +175,15 @@ jobs:
           # Apply App migrations
           php yii migrate --interactive=0
 
-      # - name: Run Unit Tests
-      #   working-directory: ./advanced
-      #   run: |
-      #      vendor/bin/codecept run -c common unit
-      #      vendor/bin/codecept run -c api unit
-      #      vendor/bin/codecept run -c backend unit
+      - name: Run Unit Tests
+        working-directory: ./advanced
+        run: |
+          echo "Running PHPUnit tests..."
+          ls -la tests/unit/models/
+          echo "Checking phpunit.xml..."
+          ls -la phpunit.xml
+          echo "Running tests..."
+          php vendor/bin/phpunit -c phpunit.xml --testdox
 
   # 阶段2: 构建 Docker 镜像
   build:

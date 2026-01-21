@@ -63,7 +63,7 @@ if (!Yii::$app->params['information']['local']) {
       <div class="col-xs-12">
         <h2 class="page-header">
           <i class="fa fa-globe"></i>
-          <mrpp id="title">元宇宙实景编程平台</mrpp>
+          <mrpp id="title">AR创作平台</mrpp>
           <small class="pull-right" id="date">Date: 2/10/2014</small>
         </h2>
       </div>
@@ -72,7 +72,7 @@ if (!Yii::$app->params['information']['local']) {
     <!-- info row -->
     <div class="row invoice-info">
       <p class="text-muted well well-sm no-shadow" id="content" style="margin: 20px;">
-      元宇宙实景编程平台
+      AR创作平台
       </p>
     </div>
     <!-- /.row -->
