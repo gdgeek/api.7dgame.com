@@ -45,3 +45,4 @@ phpunit.phar
 /api/web/index.php
 /api/web/index-test.php
 /api/web/robots.txt
+.phpunit.cache/
