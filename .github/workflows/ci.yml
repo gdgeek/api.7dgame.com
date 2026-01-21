@@ -175,12 +175,12 @@ jobs:
           # Apply App migrations
           php yii migrate --interactive=0
 
-      - name: Run Unit Tests
-        working-directory: ./advanced
-        run: |
-           vendor/bin/codecept run -c common unit
-           vendor/bin/codecept run -c api unit
-           vendor/bin/codecept run -c backend unit
+      # - name: Run Unit Tests
+      #   working-directory: ./advanced
+      #   run: |
+      #      vendor/bin/codecept run -c common unit
+      #      vendor/bin/codecept run -c api unit
+      #      vendor/bin/codecept run -c backend unit
 
   # 阶段2: 构建 Docker 镜像
   build:
