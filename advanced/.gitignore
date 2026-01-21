@@ -28,8 +28,8 @@ composer.phar
 
 # phpunit itself is not needed
 phpunit.phar
-# local phpunit config
-/phpunit.xml
+# phpunit cache
+.phpunit.cache/
 
 # vagrant runtime
 /.vagrant
@@ -45,4 +45,3 @@ phpunit.phar
 /api/web/index.php
 /api/web/index-test.php
 /api/web/robots.txt
-.phpunit.cache/
