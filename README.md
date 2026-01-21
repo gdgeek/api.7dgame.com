@@ -1,4 +1,4 @@
-# Yii2 Advanced API Backend
+# AR创作平台后端
 
 <p align="center">
   <img src="https://avatars0.githubusercontent.com/u/993323" height="100px" alt="Yii Framework">
@@ -22,7 +22,7 @@
 
 ## 📋 项目简介
 
-这是一个基于 Yii2 Advanced 模板构建的企业级 RESTful API 后端系统，提供完整的用户认证、资源管理、教育管理等功能模块。项目采用模块化设计，支持多版本 API，集成了完整的 OpenAPI 3.0 文档系统，并提供开箱即用的 Docker 容器化部署方案。
+这是一个基于 Yii2 Advanced 模板构建的 AR 创作平台后端系统，提供完整的用户认证、资源管理、教育管理等功能模块。项目采用模块化设计，支持多版本 API，集成了完整的 OpenAPI 3.0 文档系统，并提供开箱即用的 Docker 容器化部署方案。
 
 ## ✨ 主要特性
 
