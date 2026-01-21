@@ -1,0 +1,85 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.idea
+.vscode
+.DS_Store
+*.swp
+*.swo
+*~
+
+# Documentation
+*.md
+docs/
+README*
+LICENSE
+
+# Docker
+docker-compose*.yml
+Dockerfile*
+.dockerignore
+
+# Environment
+.env
+.env.*
+.env.docker
+.env.docker.example
+
+# Keys and certificates
+*.pem
+*.key
+*.p8
+.ssh/
+jwt_keys/
+
+# Logs
+*.log
+advanced/*/runtime/logs/
+advanced/*/runtime/debug/
+
+# Cache
+advanced/*/runtime/cache/
+advanced/*/web/assets/
+
+# Tests
+advanced/tests/
+advanced/*/tests/
+codeception.yml
+phpunit.xml
+
+# Vendor (will be installed in container)
+advanced/vendor/
+
+# Node modules (if any)
+node_modules/
+npm-debug.log
+
+# Backup files
+*.sql
+*.bak
+backups/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Kiro specs
+.kiro/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Scripts
+start-docker.sh
+stop-docker.sh
+Makefile

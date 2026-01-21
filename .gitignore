@@ -1,9 +1,18 @@
 .lh
 .ssh
 
-# .dockerignore 示例
+# Docker sensitive files
 *.p8
 *.key
 *.pem
-docker-compose.yml
+.env.docker
+jwt_keys/
 storage
+
+# Backup files
+backups/
+*.sql
+*.bak
+
+# Keep docker-compose.yml template in repo
+# docker-compose.yml
