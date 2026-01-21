@@ -11,8 +11,8 @@ use OpenApi\Annotations as OA;
 /**
  * @OA\Info(
  *     version="1.0.0",
- *     title="Yii2 Advanced API",
- *     description="API 文档 - Yii2 Advanced 应用程序接口"
+ *     title="AR创作平台 API",
+ *     description="AR创作平台后端 API 文档 - 提供完整的用户认证、资源管理、教育管理等功能接口"
  * )
  * @OA\Server(url="/", description="API Server")
  * @OA\SecurityScheme(
