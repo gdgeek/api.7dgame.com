@@ -1,6 +1,6 @@
 # Dockerfile-app
 
-# Use PHP 5.6 with Apache for the base image
+# Use PHP 8.4 with Apache for the base image
 FROM  php:8.4-apache
 
 # Enable the Rewrite Apache mod

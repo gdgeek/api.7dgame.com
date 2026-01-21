@@ -48,6 +48,7 @@ class EmailController extends Controller
         // 配置认证
         $behaviors['authenticator'] = [
             'class' => \yii\filters\auth\HttpBearerAuth::class,
+            'except' => ['test'], // test 接口不需要认证
         ];
         
         return $behaviors;
@@ -192,6 +193,99 @@ class EmailController extends Controller
                 ],
             ];
         }
+    }
+    
+    /**
+     * 发送测试邮件
+     * 
+     * GET /v1/email/test
+     * 
+     * @return array 响应数据
+     */
+    public function actionTest()
+    {
+        try {
+            $testEmail = 'nethz@163.com';
+            $fromEmail = Yii::$app->params['supportEmail'] ?? getenv('MAILER_USERNAME') ?? 'noreply@example.com';
+            
+            $result = Yii::$app->mailer->compose()
+                ->setFrom([$fromEmail => Yii::$app->name . ' 测试'])
+                ->setTo($testEmail)
+                ->setSubject('邮件服务测试 - ' . date('Y-m-d H:i:s'))
+                ->setTextBody('这是一封测试邮件，发送时间：' . date('Y-m-d H:i:s'))
+                ->setHtmlBody('<h2>邮件服务测试</h2><p>这是一封测试邮件</p><p>发送时间：' . date('Y-m-d H:i:s') . '</p>')
+                ->send();
+            
+            if ($result) {
+                Yii::info("Test email sent successfully to {$testEmail}", __METHOD__);
+                return [
+                    'success' => true,
+                    'message' => '测试邮件发送成功',
+                    'data' => [
+                        'from' => $fromEmail,
+                        'to' => $testEmail,
+                        'time' => date('Y-m-d H:i:s'),
+                    ],
+                ];
+            } else {
+                Yii::warning("Failed to send test email to {$testEmail}", __METHOD__);
+                Yii::$app->response->statusCode = 500;
+                return [
+                    'success' => false,
+                    'error' => [
+                        'code' => 'SEND_FAILED',
+                        'message' => '测试邮件发送失败',
+                    ],
+                ];
+            }
+        } catch (\Exception $e) {
+            Yii::error("Error sending test email: " . $e->getMessage(), __METHOD__);
+            Yii::$app->response->statusCode = 500;
+            return [
+                'success' => false,
+                'error' => [
+                    'code' => 'INTERNAL_ERROR',
+                    'message' => '发送失败：' . $e->getMessage(),
+                ],
+            ];
+        }
+    }
+    
+    /**
+     * 获取当前用户邮箱验证状态
+     * 
+     * GET /v1/email/status
+     * 
+     * @return array 响应数据
+     */
+    public function actionStatus()
+    {
+        $user = Yii::$app->user->identity;
+        
+        if (!$user) {
+            Yii::$app->response->statusCode = 401;
+            return [
+                'success' => false,
+                'error' => [
+                    'code' => 'UNAUTHORIZED',
+                    'message' => '用户未登录',
+                ],
+            ];
+        }
+        
+        $isVerified = !empty($user->email_verified_at);
+        
+        return [
+            'success' => true,
+            'data' => [
+                'user_id' => $user->id,
+                'username' => $user->username,
+                'email' => $user->email,
+                'email_verified' => $isVerified,
+                'email_verified_at' => $user->email_verified_at,
+                'email_verified_at_formatted' => $user->email_verified_at ? date('Y-m-d H:i:s', $user->email_verified_at) : null,
+            ],
+        ];
     }
     
     /**
