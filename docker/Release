@@ -26,11 +26,19 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
 
-COPY ./advanced/ /var/www/html/advanced
-
-# Install Composer dependencies
 WORKDIR /var/www/html/advanced
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+
+# Copy composer files first for caching
+COPY ./advanced/composer.json ./advanced/composer.lock ./
+
+# Install Composer dependencies (this layer will be cached if composer files don't change)
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
+
+# Copy the rest of the application
+COPY ./advanced/ /var/www/html/advanced/
+
+# Run post-install scripts
+RUN composer run-script post-install-cmd --no-interaction || true
 
 # Create necessary directories and set permissions
 RUN mkdir -p /var/www/html/advanced/backend/runtime \
