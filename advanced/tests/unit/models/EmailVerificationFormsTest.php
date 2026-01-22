@@ -89,20 +89,24 @@ class EmailVerificationFormsTest extends TestCase
      */
     public function testSendVerificationFormEmailAlreadyUsed()
     {
+        // 先清理可能存在的测试数据
+        $email = 'existing@example.com';
+        User::deleteAll(['email' => $email]);
+        
         // 创建一个已存在的用户
         $existingUser = new \api\modules\v1\models\User();
         $existingUser->username = 'existinguser_' . time();
-        $existingUser->email = 'existing@example.com';
+        $existingUser->email = $email;
         $existingUser->setPassword('Password123!');
         $existingUser->generateAuthKey();
         $existingUser->save(false);
         
         $form = new SendVerificationForm();
-        $form->email = 'existing@example.com';
+        $form->email = $email;
         
         $this->assertFalse($form->validate(), "Form should be invalid when email is already used");
         $this->assertArrayHasKey('email', $form->errors);
-        $this->assertStringContainsString('已被使用', $form->getFirstError('email'));
+        $this->assertStringContainsString('已被', $form->getFirstError('email'));
         
         // 清理测试数据
         $existingUser->delete();

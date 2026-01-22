@@ -26,9 +26,9 @@ new \yii\console\Application([
     'components' => [
         'db' => [
             'class' => 'yii\db\Connection',
-            'dsn' => 'mysql:host=127.0.0.1;dbname=yii2_advanced_test',
-            'username' => 'root',
-            'password' => 'root',
+            'dsn' => 'mysql:host=db;dbname=bujiaban',
+            'username' => 'bujiaban',
+            'password' => 'local_dev_password',
             'charset' => 'utf8',
         ],
         'cache' => [
@@ -49,7 +49,7 @@ new \yii\console\Application([
         ],
         'redis' => [
             'class' => 'yii\redis\Connection',
-            'hostname' => 'localhost',
+            'hostname' => 'redis',
             'port' => 6379,
             'database' => 1, // Use database 1 for testing
         ],
