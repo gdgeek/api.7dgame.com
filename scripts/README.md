@@ -17,7 +17,8 @@ scripts/
 └── ci/                 # CI/CD 相关脚本
     ├── check-ci-status.sh
     ├── check-ci.sh
-    └── monitor-ci.sh
+    ├── monitor-ci.sh
+    └── check-build-status.sh
 ```
 
 ## 🐳 Docker 脚本
@@ -156,6 +157,26 @@ scripts/
 - 发送通知
 
 **相关文档**: [CI 循环状态](../docs/CI-LOOP-STATUS.md)
+
+---
+
+### check-build-status.sh
+**功能**: 检查 GitHub Actions 构建状态
+
+**用法**:
+```bash
+./scripts/ci/check-build-status.sh
+```
+
+**功能说明**:
+- 显示最新提交信息
+- 检查本地与远程同步状态
+- 提供 GitHub Actions 监控链接
+- 显示相关文档路径
+
+**相关文档**: 
+- [CI 构建状态](../CI_BUILD_STATUS.md)
+- [CI 监控指南](../docs/docker/CI_MONITORING_GUIDE.md)
 
 ---
 
