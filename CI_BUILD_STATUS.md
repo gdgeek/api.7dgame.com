@@ -13,7 +13,7 @@
 ### 2. 推送触发
 - ✅ 推送到 `origin/master`
 - ✅ CI 构建自动触发
-- 提交哈希：`6dbe020d`
+- 提交哈希：`3988cb3e`
 
 ### 3. 分支同步
 - ✅ 将 `master` 更新合并回 `develop`
@@ -94,6 +94,7 @@ RUN cd /var/www/html/advanced && \
 ## Git 提交记录
 
 ```
+3988cb3e - docs: 添加 CI 构建监控指南
 6dbe020d - docs: 添加 CI 构建触发总结文档
 06c83a1c - Merge branch 'develop' into master
 1b9ac18f - fix: 修复 CI Docker 镜像缺少 Composer 依赖的问题
