@@ -25,6 +25,8 @@ class EmailService extends Component
     public function sendVerificationCode(string $email, string $code): bool
     {
         try {
+            $fromEmail = Yii::$app->params['supportEmail'] ?? getenv('MAILER_USERNAME') ?? 'noreply@example.com';
+            
             $result = Yii::$app->mailer->compose(
                 ['html' => 'verificationCode-html', 'text' => 'verificationCode-text'],
                 [
@@ -32,7 +34,7 @@ class EmailService extends Component
                     'expiryMinutes' => 15,
                 ]
             )
-            ->setFrom([Yii::$app->params['supportEmail'] ?? 'noreply@example.com' => Yii::$app->name . ' 团队'])
+            ->setFrom([$fromEmail => Yii::$app->name . ' 团队'])
             ->setTo($email)
             ->setSubject('邮箱验证码 - ' . Yii::$app->name)
             ->send();

@@ -29,12 +29,19 @@ class SendVerificationForm extends Model
             ['email', 'trim'],
             ['email', 'email', 'message' => '邮箱格式不正确'],
             ['email', 'string', 'max' => 255],
+            // 检查邮箱是否已被其他用户使用
             [
-                'email', 
-                'exist', 
-                'targetClass' => User::class, 
+                'email',
+                'unique',
+                'targetClass' => User::class,
                 'targetAttribute' => 'email',
-                'message' => '该邮箱未注册'
+                'message' => '该邮箱已被其他用户使用',
+                'filter' => function ($query) {
+                    // 排除当前登录用户
+                    if (!\Yii::$app->user->isGuest) {
+                        $query->andWhere(['!=', 'id', \Yii::$app->user->id]);
+                    }
+                }
             ],
         ];
     }

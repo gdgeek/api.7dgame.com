@@ -132,6 +132,8 @@ return [
                     'extraPatterns' => [
                         'POST send-verification' => 'send-verification',
                         'POST verify' => 'verify',
+                        'GET test' => 'test',
+                        'GET status' => 'status',
                     ],
                 ],
                 [

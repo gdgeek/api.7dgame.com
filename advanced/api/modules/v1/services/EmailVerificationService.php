@@ -212,20 +212,37 @@ class EmailVerificationService extends Component
     }
     
     /**
-     * 标记邮箱为已验证
+     * 标记邮箱为已验证并更新当前用户邮箱
      * 
      * @param string $email 邮箱地址
      * @return bool 是否成功
      */
     protected function markEmailAsVerified(string $email): bool
     {
-        $user = User::findByEmail($email);
-        if ($user === null) {
-            Yii::error("User not found for email: {$email}", __METHOD__);
+        // 获取当前登录用户
+        $userId = Yii::$app->user->id;
+        if (!$userId) {
+            Yii::error("User not logged in", __METHOD__);
             return false;
         }
         
-        return $user->markEmailAsVerified();
+        $user = User::findOne($userId);
+        if ($user === null) {
+            Yii::error("User not found: {$userId}", __METHOD__);
+            return false;
+        }
+        
+        // 更新用户邮箱和验证状态
+        $user->email = $email;
+        $user->email_verified_at = time();
+        
+        if (!$user->save(false)) {
+            Yii::error("Failed to update user email: " . json_encode($user->errors), __METHOD__);
+            return false;
+        }
+        
+        Yii::info("Email verified and updated for user {$userId}: {$email}", __METHOD__);
+        return true;
     }
     
     /**
