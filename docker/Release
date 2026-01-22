@@ -1,6 +1,6 @@
 # Dockerfile-app
 
-# Use PHP 5.6 with Apache for the base image
+# Use PHP 8.4 with Apache for the base image
 FROM  php:8.4-apache
 
 # Enable the Rewrite Apache mod
@@ -8,21 +8,29 @@ RUN cd /etc/apache2/mods-enabled && \
     ln -s ../mods-available/rewrite.load && \
     ln -s ../mods-available/headers.load 
 
-# Install required PHP extensions
-# -- GD
+# Install required PHP extensions and tools
+# -- GD, Composer, unzip
 RUN apt-get update && apt-get install -y \
     libfreetype6-dev \
     libjpeg62-turbo-dev \
     libpng-dev \
     git \
+    unzip \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) gd
 
 RUN docker-php-ext-install -j$(nproc) mysqli pdo pdo_mysql
 
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
 RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
 
 COPY ./advanced/ /var/www/html/advanced
+
+# Install Composer dependencies
+WORKDIR /var/www/html/advanced
+RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 # Create necessary directories and set permissions
 RUN mkdir -p /var/www/html/advanced/backend/runtime \
