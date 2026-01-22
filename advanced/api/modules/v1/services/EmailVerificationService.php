@@ -219,6 +219,12 @@ class EmailVerificationService extends Component
      */
     protected function markEmailAsVerified(string $email): bool
     {
+        // 检查是否是控制台应用或用户组件不存在
+        if (Yii::$app instanceof \yii\console\Application || !isset(Yii::$app->user)) {
+            Yii::warning("Cannot mark email as verified: not in web application context", __METHOD__);
+            return false;
+        }
+        
         // 获取当前登录用户
         $userId = Yii::$app->user->id;
         if (!$userId) {

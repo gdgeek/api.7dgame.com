@@ -2,6 +2,7 @@
 
 namespace api\modules\v1\models;
 
+use Yii;
 use yii\base\Model;
 
 /**
@@ -37,9 +38,11 @@ class SendVerificationForm extends Model
                 'targetAttribute' => 'email',
                 'message' => '该邮箱已被其他用户使用',
                 'filter' => function ($query) {
-                    // 排除当前登录用户
-                    if (!\Yii::$app->user->isGuest) {
-                        $query->andWhere(['!=', 'id', \Yii::$app->user->id]);
+                    // 排除当前登录用户（如果存在且不是控制台应用）
+                    if (!Yii::$app instanceof \yii\console\Application && 
+                        isset(Yii::$app->user) && 
+                        !Yii::$app->user->isGuest) {
+                        $query->andWhere(['!=', 'id', Yii::$app->user->id]);
                     }
                 }
             ],
