@@ -18,6 +18,18 @@ Yii::setAlias('@console', __DIR__ . '/console');
 Yii::setAlias('@api', __DIR__ . '/api');
 Yii::setAlias('@tests', __DIR__ . '/tests');
 
+// Detect environment: Docker (local) vs CI (GitHub Actions)
+$isDocker = getenv('DOCKER_ENV') === 'true' || file_exists('/.dockerenv');
+
+// Database configuration
+$dbHost = $isDocker ? 'db' : '127.0.0.1';
+$dbName = $isDocker ? 'bujiaban' : 'yii2_advanced_test';
+$dbUser = $isDocker ? 'bujiaban' : 'root';
+$dbPass = $isDocker ? 'local_dev_password' : 'root';
+
+// Redis configuration
+$redisHost = $isDocker ? 'redis' : '127.0.0.1';
+
 // Create a minimal application for tests
 new \yii\console\Application([
     'id' => 'testapp',
@@ -26,9 +38,9 @@ new \yii\console\Application([
     'components' => [
         'db' => [
             'class' => 'yii\db\Connection',
-            'dsn' => 'mysql:host=db;dbname=bujiaban',
-            'username' => 'bujiaban',
-            'password' => 'local_dev_password',
+            'dsn' => "mysql:host={$dbHost};dbname={$dbName}",
+            'username' => $dbUser,
+            'password' => $dbPass,
             'charset' => 'utf8',
         ],
         'cache' => [
@@ -49,7 +61,7 @@ new \yii\console\Application([
         ],
         'redis' => [
             'class' => 'yii\redis\Connection',
-            'hostname' => 'redis',
+            'hostname' => $redisHost,
             'port' => 6379,
             'database' => 1, // Use database 1 for testing
         ],
