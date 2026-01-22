@@ -47,12 +47,12 @@ class EmailVerificationFormsTest extends TestCase
     }
     
     /**
-     * 测试 SendVerificationForm - 有效数据
+     * 测试 SendVerificationForm - 有效数据（邮箱未被使用）
      */
     public function testSendVerificationFormValid()
     {
         $form = new SendVerificationForm();
-        $form->email = 'test@example.com';
+        $form->email = 'newuser@example.com'; // 使用一个不存在的邮箱
         
         $this->assertTrue($form->validate(), "Form should be valid");
         $this->assertEmpty($form->errors, "Should have no errors");
@@ -85,16 +85,27 @@ class EmailVerificationFormsTest extends TestCase
     }
     
     /**
-     * 测试 SendVerificationForm - 邮箱未注册
+     * 测试 SendVerificationForm - 邮箱已被其他用户使用
      */
-    public function testSendVerificationFormEmailNotExists()
+    public function testSendVerificationFormEmailAlreadyUsed()
     {
-        $form = new SendVerificationForm();
-        $form->email = 'nonexistent@example.com';
+        // 创建一个已存在的用户
+        $existingUser = new \api\modules\v1\models\User();
+        $existingUser->username = 'existinguser_' . time();
+        $existingUser->email = 'existing@example.com';
+        $existingUser->setPassword('Password123!');
+        $existingUser->generateAuthKey();
+        $existingUser->save(false);
         
-        $this->assertFalse($form->validate(), "Form should be invalid");
+        $form = new SendVerificationForm();
+        $form->email = 'existing@example.com';
+        
+        $this->assertFalse($form->validate(), "Form should be invalid when email is already used");
         $this->assertArrayHasKey('email', $form->errors);
-        $this->assertStringContainsString('未注册', $form->getFirstError('email'));
+        $this->assertStringContainsString('已被使用', $form->getFirstError('email'));
+        
+        // 清理测试数据
+        $existingUser->delete();
     }
     
     /**
@@ -103,10 +114,10 @@ class EmailVerificationFormsTest extends TestCase
     public function testSendVerificationFormEmailTrimming()
     {
         $form = new SendVerificationForm();
-        $form->email = '  test@example.com  ';
+        $form->email = '  newuser2@example.com  '; // 使用一个不存在的邮箱
         
         $this->assertTrue($form->validate(), "Form should be valid after trimming");
-        $this->assertEquals('test@example.com', $form->email, "Email should be trimmed");
+        $this->assertEquals('newuser2@example.com', $form->email, "Email should be trimmed");
     }
     
     /**
