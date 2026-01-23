@@ -373,6 +373,10 @@ class Verse extends \yii\db\ActiveRecord
     public function getMetaIds()
     {
         $data = $this->data;
+        // 如果 data 是 JSON 字符串，解码为数组
+        if (is_string($data)) {
+            $data = json_decode($data, true);
+        }
         if (!isset($data['children']) || !isset($data['children']['modules'])) {
             return [];
         }

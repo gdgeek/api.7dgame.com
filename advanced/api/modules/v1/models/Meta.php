@@ -247,7 +247,12 @@ class Meta extends \yii\db\ActiveRecord
     }
     public function getResourceIds()
     {
-        return \api\modules\v1\helper\Meta2Resources::Handle($this->data);
+        $data = $this->data;
+        // 如果 data 是 JSON 字符串，解码为数组
+        if (is_string($data)) {
+            $data = json_decode($data, true);
+        }
+        return \api\modules\v1\helper\Meta2Resources::Handle($data);
     }
 
     public function getResources()

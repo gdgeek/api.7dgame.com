@@ -110,7 +110,14 @@ class SystemUpgradeTest extends TestCase
         $meta->updater_id = $this->testUser->id;
         $meta->created_at = date('Y-m-d H:i:s');
         $meta->updated_at = date('Y-m-d H:i:s');
-        foreach ($attrs as $k => $v) $meta->$k = $v;
+        foreach ($attrs as $k => $v) {
+            // 将数组字段转换为 JSON 字符串
+            if (in_array($k, ['data', 'info', 'events']) && is_array($v)) {
+                $meta->$k = json_encode($v);
+            } else {
+                $meta->$k = $v;
+            }
+        }
         $meta->save(false);
         $this->createdIds['metas'][] = $meta->id;
         return $meta;
@@ -124,7 +131,14 @@ class SystemUpgradeTest extends TestCase
         $verse->updater_id = $this->testUser->id;
         $verse->name = $attrs['name'] ?? 'Test Verse ' . uniqid();
         $verse->created_at = date('Y-m-d H:i:s');
-        foreach ($attrs as $k => $v) $verse->$k = $v;
+        foreach ($attrs as $k => $v) {
+            // 将数组字段转换为 JSON 字符串
+            if (in_array($k, ['data', 'info']) && is_array($v)) {
+                $verse->$k = json_encode($v);
+            } else {
+                $verse->$k = $v;
+            }
+        }
         $verse->save(false);
         $this->createdIds['verses'][] = $verse->id;
         return $verse;
@@ -452,7 +466,7 @@ class SystemUpgradeTest extends TestCase
         $tag = new Tags();
         $tag->name = 'Test Tag';
         $tag->key = $uniqueKey;
-        $tag->type = 'verse';
+        // 不设置 type 字段，让数据库使用默认值
         $tag->save(false);
         $this->createdIds['tags'][] = $tag->id;
 
@@ -477,7 +491,7 @@ class SystemUpgradeTest extends TestCase
         $tag = new Tags();
         $tag->name = 'Test Tag VP';
         $tag->key = $uniqueKey;
-        $tag->type = 'verse';
+        // 不设置 type 字段，让数据库使用默认值
         $tag->save(false);
         $this->createdIds['tags'][] = $tag->id;
 
