@@ -263,7 +263,7 @@ class SystemUpgradeTest extends TestCase
         $mr->save(false);
 
         // 更新 data 只包含 resource2
-        $meta->data = ['type' => 'polygen', 'parameters' => ['resource' => $resource2->id]];
+        $meta->data = json_encode(['type' => 'polygen', 'parameters' => ['resource' => $resource2->id]]);
         $meta->save(false);
         $meta->refreshResources();
 
@@ -326,7 +326,7 @@ class SystemUpgradeTest extends TestCase
         $vm->save(false);
 
         // 更新 data 只包含 meta2
-        $verse->data = ['children' => ['modules' => [['parameters' => ['meta_id' => $meta2->id]]]]];
+        $verse->data = json_encode(['children' => ['modules' => [['parameters' => ['meta_id' => $meta2->id]]]]]);
         $verse->save(false);
         $verse->refreshMetas();
 
@@ -497,10 +497,10 @@ class SystemUpgradeTest extends TestCase
 
         $verse = $this->createVerse(['uuid' => \Faker\Provider\Uuid::uuid()]);
 
-        // 使用正确的列名 tag_id（数据库中的实际列名）
+        // 使用正确的列名 tags_id（数据库中的实际列名）
         $verseTags = new VerseTags();
         $verseTags->verse_id = $verse->id;
-        $verseTags->tag_id = $tag->id;
+        $verseTags->tags_id = $tag->id;
         $verseTags->save(false);
         $this->createdIds['verse_tags'][] = $verseTags->id;
 

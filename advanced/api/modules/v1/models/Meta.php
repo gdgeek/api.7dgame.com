@@ -243,7 +243,7 @@ class Meta extends \yii\db\ActiveRecord
      */
     public function getUpdater()
     {
-        return $this->hasOne(User::className(), ['id' => 'updater_id']);
+        return $this->hasOne(User::class, ['id' => 'updater_id']);
     }
     public function getResourceIds()
     {
