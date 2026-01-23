@@ -3,22 +3,176 @@ namespace api\modules\v1\controllers;
 
 use Yii;
 use yii\rest\Controller;
+use yii\filters\AccessControl;
+use bizley\jwt\JwtHttpBearerAuth;
+use yii\filters\auth\CompositeAuth;
 use api\modules\v1\models\Snapshot;
 use api\modules\v1\models\Verse;
+use api\modules\v1\models\Meta;
 use api\modules\v1\models\Version;
 use OpenApi\Annotations as OA;
-
 use yii\base\Exception;
 
 
 /**
  * @OA\Tag(
  *     name="System",
- *     description="系统管理接口"
+ *     description="系统升级接口"
  * )
  */
 class SystemController extends Controller
 {
+    /**
+     * @OA\Post(
+     *     path="/v1/system/upgrade",
+     *     tags={"System"},
+     *     summary="系统升级工具",
+     *     description="将 Code 表数据迁移到 MetaCode 和 VerseCode",
+     *     @OA\Response(
+     *         response=200,
+     *         description="升级结果",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="meta", type="object",
+     *                 @OA\Property(property="total", type="integer"),
+     *                 @OA\Property(property="success", type="integer"),
+     *                 @OA\Property(property="errors", type="array", @OA\Items(type="string"))
+     *             ),
+     *             @OA\Property(property="verse", type="object",
+     *                 @OA\Property(property="total", type="integer"),
+     *                 @OA\Property(property="success", type="integer"),
+     *                 @OA\Property(property="errors", type="array", @OA\Items(type="string"))
+     *             )
+     *         )
+     *     )
+     * )
+     */
+    public function actionUpgrade()
+    {
+        // 防止执行超时
+        set_time_limit(0);
+        ignore_user_abort(true);
+
+        
+        // 增加内存限制，防止大量数据处理导致内存溢出
+        ini_set('memory_limit', '512M');
+        
+        Version::upgrade();
+
+         
+        $this->migrateTagToProperty('public');
+        $this->migrateTagToProperty('checkin');
+        
+
+        $result = [
+            'meta' => ['total' => 0, 'success' => 0, 'fail' => 0, 'errors' => []],
+            'verse' => ['total' => 0, 'success' => 0, 'fail' => 0, 'errors' => []],
+        ];
+
+        // 批量处理 Meta，使用 batch/each 减少内存占用
+        // 每次处理 100 条
+        foreach (Meta::find()->each(100) as $meta) {
+            $result['meta']['total']++;
+            try {
+                $this->upgradeMeta($meta);
+                $result['meta']['success']++;
+            } catch (\Exception $e) {
+                $result['meta']['fail']++;
+                // 记录错误但不中断流程
+                $result['meta']['errors'][] = "Meta ID {$meta->id}: " . $e->getMessage();
+                Yii::error("Meta Upgrade Error ID {$meta->id}: " . $e->getMessage(), 'upgrade');
+            }
+        }
+
+        // 批量处理 Verse
+        foreach (Verse::find()->each(100) as $verse) {
+            $result['verse']['total']++;
+            try {
+                $this->upgradeVerse($verse);
+                $result['verse']['success']++;
+            } catch (\Exception $e) {
+                $result['verse']['fail']++;
+                $result['verse']['errors'][] = "Verse ID {$verse->id}: " . $e->getMessage();
+                Yii::error("Verse Upgrade Error ID {$verse->id}: " . $e->getMessage(), 'upgrade');
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * 升级 Meta 数据
+     * code里面的内容要放在metacode 里面的 lua 和js
+     * @param Meta $meta
+     */
+    private function upgradeMeta($meta)
+    {
+        // 1. 确保 UUID 存在
+        if (empty($meta->uuid)) {
+            $meta->uuid = \Faker\Provider\Uuid::uuid();
+            $meta->save();
+        }
+
+        // 2. 刷新资源关联
+        $meta->refreshResources();
+
+        // 3. 迁移 Code 数据到 MetaCode (Lua/JS)
+        $metaCode = $meta->metaCode;
+        if ($metaCode && $metaCode->code) {
+            $code = $metaCode->code;
+            $changed = false;
+
+            if (!empty($code->lua) && $metaCode->lua !== $code->lua) {
+                $metaCode->lua = $code->lua;
+                $changed = true;
+            }
+            if (!empty($code->js) && $metaCode->js !== $code->js) {
+                $metaCode->js = $code->js;
+                $changed = true;
+            }
+
+            if ($changed && !$metaCode->save()) {
+                throw new Exception("MetaCode Save Failed: " . json_encode($metaCode->errors));
+            }
+        }
+    }
+
+    /**
+     * 升级 Verse 数据
+     * code里面的内容要放在versecode 里面的 lua 和js
+     * @param Verse $verse
+     */
+    private function upgradeVerse($verse)
+    {
+        // 1. 确保 UUID 存在
+        if (empty($verse->uuid)) {
+            $verse->uuid = \Faker\Provider\Uuid::uuid();
+            $verse->save();
+        }
+
+        // 2. 刷新 Meta 关联
+        $verse->refreshMetas();
+
+        // 3. 迁移 Code 数据到 VerseCode (Lua/JS)
+        $verseCode = $verse->verseCode;
+        if ($verseCode && $verseCode->code) {
+            $code = $verseCode->code;
+            $changed = false;
+
+            if (!empty($code->lua) && $verseCode->lua !== $code->lua) {
+                $verseCode->lua = $code->lua;
+                $changed = true;
+            }
+            if (!empty($code->js) && $verseCode->js !== $code->js) {
+                $verseCode->js = $code->js;
+                $changed = true;
+            }
+
+            if ($changed && !$verseCode->save()) {
+                throw new Exception("VerseCode Save Failed: " . json_encode($verseCode->errors));
+            }
+        }
+    }
+
     public function behaviors()
     {
         $behaviors = parent::behaviors();
@@ -40,62 +194,34 @@ class SystemController extends Controller
                 ],
             ],
         ];
-        /*
-                $behaviors['authenticator'] = [
-                    'class' => CompositeAuth::class,
-                    'authMethods' => [
-                        JwtHttpBearerAuth::class,
-                    ],
-                    'except' => ['options'],
-                ];
 
-                $behaviors['access'] = [
-                    'class' => AccessControl::class,
-                ];*/
+        // JWT 认证 - 升级接口需要管理员权限
+        $behaviors['authenticator'] = [
+            'class' => CompositeAuth::class,
+            'authMethods' => [
+                JwtHttpBearerAuth::class,
+            ],
+            'except' => ['options'],
+        ];
+
+        $behaviors['access'] = [
+            'class' => AccessControl::class,
+            'rules' => [
+                [
+                    'allow' => true,
+                    'actions' => ['options'],
+                ],
+                [
+                    'allow' => true,
+                    'actions' => ['upgrade', 'take-photo'],
+                    'roles' => ['@'], // 需要登录用户
+                ],
+            ],
+        ];
+
         return $behaviors;
     }
-/*
-    public function actionVerseCode($verse_id)
-    {
-        $post = Yii::$app->request->post();
-        $model = new VerseCodeTool($verse_id);
-        $model->load($post, '');
-        if ($model->validate()) {
-            $model->save();
-        } else {
-            throw new Exception(json_encode($model->errors), 400);
-        }
-        return $model;
-    }
 
-    public function actionMetaCode($meta_id)
-    {
-       
-        $model = new MetaCodeTool($meta_id);
-        $post = Yii::$app->request->post();
-        $model->load($post, '');
-        
-        if ($model->validate()) {
-            $model->save();
-        } else {
-            throw new Exception(json_encode($model->errors), 400);
-        }
-        return $model;
-    }
-    public function actionVerse($verse_id, $test = true)
-    {
-        $verse = \api\modules\private\models\Verse::findOne($verse_id);
-        $verse2 = \api\modules\v1\models\VerseSnapshot::findOne($verse_id);
-        if (!$verse2) {
-            throw new Exception("Verse not found", 404);
-        }
-        if ($test) {
-            return $verse2->toArray([], ['code', 'id', 'name', 'data', 'description', 'metas', 'resources', 'uuid', 'image', 'managers']);
-        } else {
-            return $verse->toArray([], ['code', 'id', 'name', 'data', 'description', 'metas', 'resources', 'uuid', 'image', 'managers']);
-        }
-
-    }*/
 
     public function actionTakePhoto($verse_id)
     {
@@ -108,37 +234,6 @@ class SystemController extends Controller
         return $snapshot->toArray([], ['code', 'id', 'name', 'data', 'description', 'metas', 'resources', 'uuid', 'image']);
     }
 
-    /**
-     * @OA\Get(
-     *     path="/v1/system/upgrade",
-     *     summary="系统升级",
-     *     description="执行系统数据迁移和升级操作",
-     *     tags={"System"},
-     *     @OA\Response(
-     *         response=200,
-     *         description="升级结果",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="public", type="object", description="public 标签迁移结果"),
-     *             @OA\Property(property="checkin", type="object", description="checkin 标签迁移结果")
-     *         )
-     *     )
-     * )
-     */
-    public function actionUpgrade()
-    {
-        set_time_limit(0);
-        Version::upgrade();
-       
-        
-        $publicResult = $this->migrateTagToProperty('public');
-        $checkinResult = $this->migrateTagToProperty('checkin');
-        
-        return [
-            'public' => $publicResult,
-            'checkin' => $checkinResult,
-        ];
-    }
-    
     /**
      * 将指定 key 的 tag 迁移到 property，并为对应的 verse 创建 verse_property 关联
      * @param string $key 标签的 key

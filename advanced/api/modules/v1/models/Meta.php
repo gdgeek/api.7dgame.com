@@ -61,10 +61,10 @@ class Meta extends \yii\db\ActiveRecord
             [
                 'class' => TimestampBehavior::class,
                 'attributes' => [
-                        \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => ['created_at', 'updated_at'],
-                        \yii\db\ActiveRecord::EVENT_BEFORE_UPDATE => ['updated_at'],
+                    \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => ['created_at', 'updated_at'],
+                    \yii\db\ActiveRecord::EVENT_BEFORE_UPDATE => ['updated_at'],
 
-                    ],
+                ],
                 'value' => new Expression('NOW()'),
             ],
             [
@@ -98,16 +98,13 @@ class Meta extends \yii\db\ActiveRecord
             [['updater_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updater_id' => 'id']],
         ];
     }
-    public function afterSave($insert, $changedAttributes)
+    public function refreshResources()
     {
-        parent::afterSave($insert, $changedAttributes);
-
         $newResourceIds = array_unique(array_filter($this->getResourceIds()));
         $oldResourceIds = MetaResource::find()
             ->select('resource_id')
             ->where(['meta_id' => $this->id])
             ->column();
-
         $toAdd = array_diff($newResourceIds, $oldResourceIds);
         $toDelete = array_diff($oldResourceIds, $newResourceIds);
 
@@ -122,17 +119,17 @@ class Meta extends \yii\db\ActiveRecord
             $metaResource->save();
         }
     }
-
+    public function afterSave($insert, $changedAttributes)
+    {
+        parent::afterSave($insert, $changedAttributes);
+        $this->refreshResources();
+    }
+/*
     public function afterFind()
     {
 
         parent::afterFind();
-
-
-        MetaVersion::upgrade($this);
-        
-      
-    }
+    }*/
 
     public function extraFields()
     {
@@ -141,14 +138,15 @@ class Meta extends \yii\db\ActiveRecord
             'verseMetas',
             'author',
             'metaCode',
+            'code' => 'metaCode',
             'lua',
             'js',
-
+            'blockly',
         ];
     }
     public function fields()
     {
-       
+
         return [
             'id',
             'image_id',
@@ -181,13 +179,17 @@ class Meta extends \yii\db\ActiveRecord
             'uuid' => 'Uuid',
         ];
     }
-   public function getLua(): string
+    public function getBlockly(): string
     {
-        return $this->verseCode->lua;
+        return $this->mateCode->blockly;
+    }
+    public function getLua(): string
+    {
+        return $this->mateCode->lua;
     }
     public function getJs(): string
     {
-        return $this->verseCode->js;
+        return $this->mateCode->js;
     }
 
     public function getViewable()
@@ -247,7 +249,7 @@ class Meta extends \yii\db\ActiveRecord
     {
         return \api\modules\v1\helper\Meta2Resources::Handle($this->data);
     }
-  
+
     public function getResources()
     {
         return Resource::find()
@@ -270,31 +272,15 @@ class Meta extends \yii\db\ActiveRecord
     }
 
     /**
-      * Gets query for [[MetaCode]].
-      *
-      * @return \yii\db\ActiveQuery
-      */
+     * Gets query for [[MetaCode]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
     public function getMetaCode()
     {
-
-
-        $quest = $this->hasOne(MetaCode::className(), ['meta_id' => 'id']);
-        $code = $quest->one();
-        if ($code == null) {
-            $code = new MetaCode();
-            $code->meta_id = $this->id;
-            $code->save();
-        }
-        $code = $quest->one();
-        return $quest;
+        return  $this->hasOne(MetaCode::class, ['meta_id' => 'id']);
     }
 
-    public function getVersion(){
-
-        return $this->hasOne(Version::className(), ['id' => 'version_id'])
-            ->viaTable('meta_version', ['meta_id' => 'id']);
-        
-    }
     /**
      * Gets query for [[VerseMeta]].
      *
@@ -302,7 +288,7 @@ class Meta extends \yii\db\ActiveRecord
      */
     public function getVerseMetas()
     {
-        return $this->hasMany(VerseMeta::className(), ['meta_id' => 'id']);
+        return $this->hasMany(VerseMeta::class, ['meta_id' => 'id']);
     }
 
     /**
@@ -313,5 +299,4 @@ class Meta extends \yii\db\ActiveRecord
     {
         return new MetaQuery(get_called_class());
     }
-
 }

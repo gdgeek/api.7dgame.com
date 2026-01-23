@@ -221,8 +221,7 @@ return [
                         'v1/system',
                     ],
                     'extraPatterns' => [
-                        'GET upgrade' => 'upgrade',
-                        //  'GET verse' => 'verse',
+                        'POST upgrade' => 'upgrade',
                     ],
                 ],
                 [

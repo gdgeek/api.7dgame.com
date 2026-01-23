@@ -73,10 +73,6 @@ class MetaCode extends \yii\db\ActiveRecord
         unset($fields['id']);
         unset($fields['meta_id']);
         unset($fields['code_id']);
-        unset($fields['lua']);
-        unset($fields['js']);
-        
-
         return $fields;
     }
     public function extraFields()
@@ -90,7 +86,7 @@ class MetaCode extends \yii\db\ActiveRecord
      */
     public function getCode()
     {
-        return $this->hasOne(Code::className(), ['id' => 'code_id']);
+        return $this->hasOne(Code::class, ['id' => 'code_id']);
     }
 
     /**
@@ -100,6 +96,6 @@ class MetaCode extends \yii\db\ActiveRecord
      */
     public function getMeta()
     {
-        return $this->hasOne(Meta::className(), ['id' => 'meta_id']);
+        return $this->hasOne(Meta::class, ['id' => 'meta_id']);
     }
 }

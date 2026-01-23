@@ -281,17 +281,6 @@ class Verse extends \yii\db\ActiveRecord
         ];
     }
     /**
-     * Gets query for [[Version]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getVersion()
-    {
-        return $this->hasOne(Version::className(), ['id' => 'version_id'])
-            ->viaTable('verse_version', ['verse_id' => 'id']);
-    }
-
-    /**
      * Gets query for [[VerseCode]].
      *
      * @return \yii\db\ActiveQuery
@@ -324,10 +313,7 @@ class Verse extends \yii\db\ActiveRecord
             ->all();
     }
 
-    public function afterSave($insert, $changedAttributes)
-    {
-      
-        parent::afterSave($insert, $changedAttributes);
+    public function refreshMetas(){
 
         $newMetaIds = array_unique(array_filter($this->getMetaIds()));
         $oldMetaIds = VerseMeta::find()
@@ -349,13 +335,14 @@ class Verse extends \yii\db\ActiveRecord
             $verseMeta->save();
         }
     }
-    
-    public function afterFind()
+    public function afterSave($insert, $changedAttributes)
     {
-        parent::afterFind();
-        VerseVersion::upgrade($this);
-        
+      
+        parent::afterSave($insert, $changedAttributes);
+        $this->refreshMetas();
     }
+    
+   
 
     public function extraFields()
     {
@@ -370,7 +357,6 @@ class Verse extends \yii\db\ActiveRecord
             'verseCode',
             'verseTags',
             'tags',
-            'version',
             'js',
             'lua',
         ];
@@ -406,7 +392,7 @@ class Verse extends \yii\db\ActiveRecord
     public function getMetas(): ActiveQuery
     {
         
-        return $this->hasMany(Meta::className(), ['id' => 'meta_id'])
+        return $this->hasMany(Meta::class, ['id' => 'meta_id'])
             ->viaTable('verse_meta', ['verse_id' => 'id']);
     }
 
@@ -418,7 +404,7 @@ class Verse extends \yii\db\ActiveRecord
      */
     public function getVerseTags()
     {
-        return $this->hasMany(VerseTags::className(), ['verse_id' => 'id']);
+        return $this->hasMany(VerseTags::class, ['verse_id' => 'id']);
     }
 
     /**
@@ -429,7 +415,7 @@ class Verse extends \yii\db\ActiveRecord
     public function getTags()
     {
         // 方法一：如果 VerseTags 有关联到 Tag 模型
-        return $this->hasMany(Tags::className(), ['id' => 'tags_id'])
+        return $this->hasMany(Tags::class, ['id' => 'tags_id'])
             ->viaTable('verse_tags', ['verse_id' => 'id']);
     }
 
@@ -450,11 +436,11 @@ class Verse extends \yii\db\ActiveRecord
      */
     public function getVerseProperties()
     {
-        return $this->hasMany(VerseProperty::className(), ['verse_id' => 'id']);
+        return $this->hasMany(VerseProperty::class, ['verse_id' => 'id']);
     }
     public function getProperties()
     {
-        return $this->hasMany(Property::className(), ['id' => 'property_id'])
+        return $this->hasMany(Property::class, ['id' => 'property_id'])
             ->viaTable('verse_property', ['verse_id' => 'id']);
     }
 
@@ -536,7 +522,7 @@ class Verse extends \yii\db\ActiveRecord
      */
     public function getAuthor()
     {
-        return $this->hasOne(User::className(), ['id' => 'author_id']);
+        return $this->hasOne(User::class, ['id' => 'author_id']);
     }
 
     /**
@@ -546,7 +532,7 @@ class Verse extends \yii\db\ActiveRecord
      */
     public function getImage()
     {
-        return $this->hasOne(File::className(), ['id' => 'image_id']);
+        return $this->hasOne(File::class, ['id' => 'image_id']);
     }
 
     /**
@@ -556,7 +542,7 @@ class Verse extends \yii\db\ActiveRecord
      */
     public function getUpdater()
     {
-        return $this->hasOne(User::className(), ['id' => 'updater_id']);
+        return $this->hasOne(User::class, ['id' => 'updater_id']);
     }
 
     /**

@@ -301,7 +301,10 @@ class MetaController extends ActiveController
         $post = Yii::$app->request->post();
         
         
+         $post = Yii::$app->request->post();
         $model->load($post, '');
+
+       // throw new Exception(json_encode($model));
         if ($model->validate()) {
             $model->save();
         }else{

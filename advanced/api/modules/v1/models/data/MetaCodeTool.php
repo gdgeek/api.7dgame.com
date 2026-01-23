@@ -1,26 +1,33 @@
 <?php
 
 namespace api\modules\v1\models\data;
+
 use api\modules\v1\models\Meta;
 use api\modules\v1\models\Code;
 
+use api\modules\v1\models\MetaCode;
 
 use yii\base\Model;
 
 
 class MetaCodeTool extends Model
 {
-    private $meta;
+    private $_meta;
     public $blockly;
     public $js;
     public $lua;
-    public function __construct($id, array $config = [])
+
+
+    public function getMeta()
     {
-        
-        
-        $this->meta = Meta::find()->where(['id' => $id])->one();
-        
-        if(!$this->meta){
+        return $this->_meta;
+    }
+    public function __construct($meta_id, array $config = [])
+    {
+
+        $this->_meta = Meta::find()->where(['id' => $meta_id])->one();
+
+        if (! $this->_meta) {
             throw new \yii\web\NotFoundHttpException("Meta not found");
         }
         parent::__construct($config);
@@ -28,40 +35,30 @@ class MetaCodeTool extends Model
     public function save()
     {
         $metaCode = $this->meta->metaCode;
-        $metaCode->blockly = $this->blockly;
-        $code = $metaCode->code;
-        if(!$code){
-            $code = new Code();
+        if ($metaCode === null) {
+            $metaCode = new MetaCode();
+            $metaCode->meta_id = $this->meta->id;
         }
+
+
+        $metaCode->blockly = $this->blockly;
         $metaCode->lua = $this->lua;
         $metaCode->js = $this->js;
-        $code->lua = $this->lua;
-        $code->js = $this->js;
-        if($code->validate()){
-            $code->save();
-            if(!$metaCode->code){
-                $metaCode->code_id = $code->id;
-            }
-        }else{
-            throw new \yii\web\ServerErrorHttpException(json_encode($code->errors));
-        }
-        if($metaCode->validate()){
+
+        if ($metaCode->validate()) {
             $metaCode->save();
-        }else{
-            $code->delete();
-            throw new \yii\web\ServerErrorHttpException(json_encode($metaCode->errors));
+        } else {
+            throw new \yii\web\BadRequestHttpException("MetaCode validation failed: " . json_encode($metaCode->errors));
         }
     }
     /**
-    * {@inheritdoc}
-    */
+     * {@inheritdoc}
+     */
     public function rules()
     {
         return [
             [['blockly'], 'string'],
-            // [['blockly'], 'required'],
-            [['js','lua'], 'string'],
+            [['js', 'lua'], 'string'],
         ];
     }
-    
 }

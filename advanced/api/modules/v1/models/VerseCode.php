@@ -37,8 +37,8 @@ class VerseCode extends \yii\db\ActiveRecord
             [['verse_id', 'code_id'], 'integer'],
             [['verse_id'], 'unique'],
             [['code_id'], 'unique'],
-            [['code_id'], 'exist', 'skipOnError' => true, 'targetClass' => Code::className(), 'targetAttribute' => ['code_id' => 'id']],
-            [['verse_id'], 'exist', 'skipOnError' => true, 'targetClass' => Verse::className(), 'targetAttribute' => ['verse_id' => 'id']],
+            [['code_id'], 'exist', 'skipOnError' => true, 'targetClass' => Code::class, 'targetAttribute' => ['code_id' => 'id']],
+            [['verse_id'], 'exist', 'skipOnError' => true, 'targetClass' => Verse::class, 'targetAttribute' => ['verse_id' => 'id']],
         ];
     }
 
@@ -48,10 +48,6 @@ class VerseCode extends \yii\db\ActiveRecord
         unset($fields['id']);
         unset($fields['verse_id']);
         unset($fields['code_id']);
-        unset($fields['lua']);
-        unset($fields['js']);
-
-
         return $fields;
     }
     /**

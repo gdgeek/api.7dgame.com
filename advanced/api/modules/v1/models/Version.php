@@ -12,9 +12,6 @@ use Yii;
  * @property int $number
  * @property string $created_at
  * @property string|null $info
- *
- * @property MetaVersion[] $metaVersions
- * @property VerseVersion[] $verseVersions
  */
 class Version extends \yii\db\ActiveRecord
 {
@@ -73,23 +70,4 @@ class Version extends \yii\db\ActiveRecord
         ];
     }
 
-    /**
-     * Gets query for [[MetaVersions]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getMetaVersions()
-    {
-        return $this->hasMany(MetaVersion::className(), ['version_id' => 'id']);
-    }
-
-    /**
-     * Gets query for [[VerseVersions]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getVerseVersions()
-    {
-        return $this->hasMany(VerseVersion::className(), ['version_id' => 'id']);
-    }
 }
