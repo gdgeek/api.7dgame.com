@@ -16,7 +16,8 @@ class VerseCodeTool extends Model
 
 
 
-    public function getMeta()
+
+    public function getVerse()
     {
         return $this->_verse;
     }
@@ -40,7 +41,7 @@ class VerseCodeTool extends Model
 
         $verseCode = $this->verse->verseCode;
 
-         if ($verseCode === null) {
+        if ($verseCode === null) {
             $verseCode = new VerseCode();
             $verseCode->verse_id = $this->verse->id;
         }
