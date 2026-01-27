@@ -14,27 +14,27 @@ use yii\behaviors\TimestampBehavior;
 use yii\db\Expression;
 
 /**
-* This is the model class for table "verse".
-*
-* @property int $id
-* @property int $author_id
-* @property int|null $updater_id
-* @property string $created_at
-* @property string $updated_at
-* @property string $name
-* @property string|null $info
-* @property int|null $image_id
-* @property string|null $data
-* @property int|null $version
-* @property string|null $description
-*
-* @property Manager[] $managers
-* @property Meta[] $metas
-* @property User $author
-* @property File $image_id0
-* @property User $updater
+ * This is the model class for table "verse".
+ *
+ * @property int $id
+ * @property int $author_id
+ * @property int|null $updater_id
+ * @property string $created_at
+ * @property string $updated_at
+ * @property string $name
+ * @property string|null $info
+ * @property int|null $image_id
+ * @property string|null $data
+ * @property int|null $version
+ * @property string|null $description
+ *
+ * @property Manager[] $managers
+ * @property Meta[] $metas
+ * @property User $author
+ * @property File $image_id0
+ * @property User $updater
 
-*/
+ */
 class VerseSnapshot extends Verse
 {
     public function fields(): array
@@ -42,7 +42,7 @@ class VerseSnapshot extends Verse
         return [];
     }
 
-   public function extraFields()
+    public function extraFields()
     {
 
 
@@ -64,16 +64,22 @@ class VerseSnapshot extends Verse
 
     public function getCode()
     {
-        $code = $this->getVerseCode()->one();
         $cl = Yii::$app->request->get('cl');
-
         $substring = "";
-        if (!$cl || $cl != 'js') {
+        if (!$cl) {
             $cl = 'lua';
             $substring = "local verse = {}\n local is_playing = false\n";
         }
-        if ($code && $code->code) {
-            $script = $code->code->$cl;
+
+        $code = $this->verseCode;
+        if ($code === null) {
+            return $substring;
+        }
+        $script = null;
+        if ($cl === 'lua') {
+            $script = $code->lua;
+        } else if ($cl === 'js') {
+            $script = $code->js;
         }
 
         if (isset($script)) {
@@ -88,15 +94,14 @@ class VerseSnapshot extends Verse
     }
     public function getMetas(): ActiveQuery
     {
-        
+
         $query = MetaSnapshot::find()->where(['id' => $this->getMetaIds()]);
         $query->multiple = true;
         return $query;
-
     }
 
 
-       /** 
+    /** 
      * Gets query for [[Managers]]. 
      * 
      * @return \yii\db\ActiveQuery 

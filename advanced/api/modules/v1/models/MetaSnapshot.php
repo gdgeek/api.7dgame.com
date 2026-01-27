@@ -12,6 +12,7 @@ use yii\behaviors\TimestampBehavior;
 use yii\db\Expression;
 
 use api\modules\v1\components\Validator\JsonValidator;
+
 /**
  * This is the model class for table "meta".
  *
@@ -49,7 +50,8 @@ class MetaSnapshot extends Meta
         };
 
         $fields['code'] = function () {
-            return $this->getCode(); };
+            return $this->getCode();
+        };
 
         unset($fields['prefab']);
         unset($fields['resources']);
@@ -59,6 +61,38 @@ class MetaSnapshot extends Meta
         return $fields;
     }
 
+    public function getCode()
+    {
+
+        $cl = Yii::$app->request->get('cl');
+        $substring = "";
+        if (!$cl) {
+            $cl = 'lua';
+            $substring = "local meta = {}\nlocal index = ''\n";
+        }
+
+        $code = $this->metaCode;
+        if ($code === null) {
+            return $substring;
+        }
+        $script = null;
+        if ($cl === 'lua') {
+            $script = $code->lua;
+        } else if ($cl === 'js') {
+            $script = $code->js;
+        }
+
+        if (isset($script)) {
+            if (strpos($script, $substring) !== false) {
+                return $script;
+            } else {
+                return $substring . $script;
+            }
+        } else {
+            return $substring;
+        }
+    }
+    /*
     public function getCode()
     {
 
@@ -87,7 +121,5 @@ class MetaSnapshot extends Meta
         } else {
             return $substring;
         }
-
-    }
-
+    }*/
 }

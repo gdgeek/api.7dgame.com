@@ -93,9 +93,9 @@ class Meta extends \yii\db\ActiveRecord
             [['info', 'data', 'events'], 'safe'],
             [['uuid', 'title'], 'string', 'max' => 255],
             [['uuid'], 'unique'],
-            [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['author_id' => 'id']],
-            [['image_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::className(), 'targetAttribute' => ['image_id' => 'id']],
-            [['updater_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updater_id' => 'id']],
+            [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::class, 'targetAttribute' => ['author_id' => 'id']],
+            [['image_id'], 'exist', 'skipOnError' => true, 'targetClass' => File::class, 'targetAttribute' => ['image_id' => 'id']],
+            [['updater_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::class, 'targetAttribute' => ['updater_id' => 'id']],
         ];
     }
     public function refreshResources()
@@ -124,12 +124,6 @@ class Meta extends \yii\db\ActiveRecord
         parent::afterSave($insert, $changedAttributes);
         $this->refreshResources();
     }
-/*
-    public function afterFind()
-    {
-
-        parent::afterFind();
-    }*/
 
     public function extraFields()
     {

@@ -15,26 +15,26 @@ use yii\behaviors\TimestampBehavior;
 use yii\db\Expression;
 
 /**
-* This is the model class for table "verse".
-*
-* @property int $id
-* @property int $author_id
-* @property int|null $updater_id
-* @property string $created_at
-* @property string $updated_at
-* @property string $name
-* @property string|null $info
-* @property int|null $image_id
-* @property string|null $data
-* @property string|null $description
-*
-* @property Manager[] $managers
-* @property Meta[] $metas
-* @property User $author
-* @property File $image_id0
-* @property User $updater
+ * This is the model class for table "verse".
+ *
+ * @property int $id
+ * @property int $author_id
+ * @property int|null $updater_id
+ * @property string $created_at
+ * @property string $updated_at
+ * @property string $name
+ * @property string|null $info
+ * @property int|null $image_id
+ * @property string|null $data
+ * @property string|null $description
+ *
+ * @property Manager[] $managers
+ * @property Meta[] $metas
+ * @property User $author
+ * @property File $image_id0
+ * @property User $updater
 
-*/
+ */
 class Verse extends \yii\db\ActiveRecord
 {
     private const GROUP_EDITABLE_PREFETCH_THRESHOLD = 20;
@@ -285,19 +285,10 @@ class Verse extends \yii\db\ActiveRecord
      *
      * @return \yii\db\ActiveQuery
      */
+
     public function getVerseCode()
     {
-
-        $quest = $this->hasOne(VerseCode::className(), ['verse_id' => 'id']);
-        $code = $quest->one();
-        if ($code == null) {
-
-            $code = new VerseCode();
-            $code->verse_id = $this->id;
-            $code->save();
-        }
-
-        return $quest;
+        return  $this->hasOne(VerseCode::class, ['verse_id' => 'id']);
     }
 
 
@@ -313,7 +304,8 @@ class Verse extends \yii\db\ActiveRecord
             ->all();
     }
 
-    public function refreshMetas(){
+    public function refreshMetas()
+    {
 
         $newMetaIds = array_unique(array_filter($this->getMetaIds()));
         $oldMetaIds = VerseMeta::find()
@@ -327,7 +319,7 @@ class Verse extends \yii\db\ActiveRecord
         if (!empty($toDelete)) {
             VerseMeta::deleteAll(['verse_id' => $this->id, 'meta_id' => $toDelete]);
         }
-       // throw new \Exception('toAdd: ' . json_encode($toAdd));
+        // throw new \Exception('toAdd: ' . json_encode($toAdd));
         foreach ($toAdd as $metaId) {
             $verseMeta = new VerseMeta();
             $verseMeta->verse_id = $this->id;
@@ -337,12 +329,12 @@ class Verse extends \yii\db\ActiveRecord
     }
     public function afterSave($insert, $changedAttributes)
     {
-      
+
         parent::afterSave($insert, $changedAttributes);
         $this->refreshMetas();
     }
-    
-   
+
+
 
     public function extraFields()
     {
@@ -395,7 +387,7 @@ class Verse extends \yii\db\ActiveRecord
 
     public function getMetas(): ActiveQuery
     {
-        
+
         return $this->hasMany(Meta::class, ['id' => 'meta_id'])
             ->viaTable('verse_meta', ['verse_id' => 'id']);
     }
@@ -450,12 +442,12 @@ class Verse extends \yii\db\ActiveRecord
 
     public function getEditable()
     {
-        
+
         if (
             isset(Yii::$app->user->identity)
             && (int) Yii::$app->user->id === (int) $this->author_id
         ) {
-           
+
             return true;
         }
 
@@ -510,15 +502,15 @@ class Verse extends \yii\db\ActiveRecord
         return (bool) $exists;
     }
 
-   
+
     public function getViewable()
     {
-         if ($this->public || $this->editable) {
+        if ($this->public || $this->editable) {
             return true;
         }
         return false;
     }
-  
+
     /**
      * Gets query for [[Author]].
      *
@@ -557,5 +549,4 @@ class Verse extends \yii\db\ActiveRecord
     {
         return new VerseQuery(get_called_class());
     }
-
 }
