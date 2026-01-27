@@ -104,9 +104,9 @@ class SystemController extends Controller
 
         // 4. 检查 Faker 依赖
         $checks['dependencies'] = [
-            'faker' => [
-                'class_exists' => class_exists('\common\components\UuidHelper::uuid'),
-                'status' => class_exists('\common\components\UuidHelper::uuid') ? 'ok' : 'missing',
+            'uuid_helper' => [
+                'class_exists' => class_exists('\common\components\UuidHelper'),
+                'status' => class_exists('\common\components\UuidHelper') ? 'ok' : 'missing',
             ],
             'yii_string_helper' => [
                 'class_exists' => class_exists('\yii\helpers\StringHelper'),
@@ -114,9 +114,9 @@ class SystemController extends Controller
             ],
         ];
 
-        if (!class_exists('\common\components\UuidHelper::uuid')) {
-            $checks['dependencies']['faker']['message'] = 'Faker 未安装，建议使用 Yii2 自带的 UUID 生成方法';
-            $checks['dependencies']['faker']['suggestion'] = 'composer require fzaninotto/faker 或使用 \yii\helpers\StringHelper::uuid()';
+        if (!class_exists('\common\components\UuidHelper')) {
+            $checks['dependencies']['uuid_helper']['message'] = 'UuidHelper 未找到';
+            $checks['dependencies']['uuid_helper']['suggestion'] = '请确保 common\components\UuidHelper 类存在';
         }
 
         // 5. 检查模型类

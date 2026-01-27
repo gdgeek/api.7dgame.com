@@ -207,7 +207,7 @@ class SystemUpgradeTest extends TestCase
         $this->assertNull($verse->uuid);
 
         if (empty($verse->uuid)) {
-            $verse->uuid = \common\components\UuidHelper::uuid::uuid();
+            $verse->uuid = \common\components\UuidHelper::uuid();
             $verse->save(false);
         }
 
@@ -217,11 +217,11 @@ class SystemUpgradeTest extends TestCase
 
     public function testVerseUuidNotOverwrittenWhenExists(): void
     {
-        $existingUuid = \common\components\UuidHelper::uuid::uuid();
+        $existingUuid = \common\components\UuidHelper::uuid();
         $verse = $this->createVerse(['uuid' => $existingUuid]);
 
         if (empty($verse->uuid)) {
-            $verse->uuid = \common\components\UuidHelper::uuid::uuid();
+            $verse->uuid = \common\components\UuidHelper::uuid();
             $verse->save(false);
         }
 
@@ -236,7 +236,7 @@ class SystemUpgradeTest extends TestCase
         $resource = $this->createResource($file->id);
 
         $meta = $this->createMeta([
-            'uuid' => \common\components\UuidHelper::uuid::uuid(),
+            'uuid' => \common\components\UuidHelper::uuid(),
             'data' => ['type' => 'polygen', 'parameters' => ['resource' => $resource->id]]
         ]);
 
@@ -254,7 +254,7 @@ class SystemUpgradeTest extends TestCase
         $file2 = $this->createFile();
         $resource2 = $this->createResource($file2->id);
 
-        $meta = $this->createMeta(['uuid' => \common\components\UuidHelper::uuid::uuid(), 'data' => []]);
+        $meta = $this->createMeta(['uuid' => \common\components\UuidHelper::uuid(), 'data' => []]);
 
         // 手动创建旧关联
         $mr = new MetaResource();
@@ -279,7 +279,7 @@ class SystemUpgradeTest extends TestCase
         $resource = $this->createResource($file->id);
 
         $meta = $this->createMeta([
-            'uuid' => \common\components\UuidHelper::uuid::uuid(),
+            'uuid' => \common\components\UuidHelper::uuid(),
             'data' => ['type' => 'polygen', 'parameters' => ['resource' => $resource->id]]
         ]);
 
@@ -298,10 +298,10 @@ class SystemUpgradeTest extends TestCase
 
     public function testVerseRefreshMetasAddsNewMetas(): void
     {
-        $meta = $this->createMeta(['uuid' => \common\components\UuidHelper::uuid::uuid()]);
+        $meta = $this->createMeta(['uuid' => \common\components\UuidHelper::uuid()]);
 
         $verse = $this->createVerse([
-            'uuid' => \common\components\UuidHelper::uuid::uuid(),
+            'uuid' => \common\components\UuidHelper::uuid(),
             'data' => ['children' => ['modules' => [['parameters' => ['meta_id' => $meta->id]]]]]
         ]);
 
@@ -317,7 +317,7 @@ class SystemUpgradeTest extends TestCase
         $meta1 = $this->createMeta(['uuid' => \common\components\UuidHelper::uuid()]);
         $meta2 = $this->createMeta(['uuid' => \common\components\UuidHelper::uuid()]);
 
-        $verse = $this->createVerse(['uuid' =>\common\components\UuidHelper::uuid(), 'data' => []]);
+        $verse = $this->createVerse(['uuid' => \common\components\UuidHelper::uuid(), 'data' => []]);
 
         // 手动创建旧关联
         $vm = new VerseMeta();
@@ -338,10 +338,10 @@ class SystemUpgradeTest extends TestCase
 
     public function testVerseRefreshMetasIsIdempotent(): void
     {
-        $meta = $this->createMeta(['uuid' => \common\components\UuidHelper::uuid::uuid()]);
+        $meta = $this->createMeta(['uuid' => \common\components\UuidHelper::uuid()]);
 
         $verse = $this->createVerse([
-            'uuid' => \common\components\UuidHelper::uuid::uuid(),
+            'uuid' => \common\components\UuidHelper::uuid(),
             'data' => ['children' => ['modules' => [['parameters' => ['meta_id' => $meta->id]]]]]
         ]);
 
@@ -360,12 +360,12 @@ class SystemUpgradeTest extends TestCase
     {
         $metas = [];
         for ($i = 0; $i < 3; $i++) {
-            $metas[] = $this->createMeta(['uuid' => \common\components\UuidHelper::uuid::uuid()]);
+            $metas[] = $this->createMeta(['uuid' => \common\components\UuidHelper::uuid()]);
         }
 
         $modules = array_map(fn($m) => ['parameters' => ['meta_id' => $m->id]], $metas);
         $verse = $this->createVerse([
-            'uuid' => \common\components\UuidHelper::uuid::uuid(),
+            'uuid' => \common\components\UuidHelper::uuid(),
             'data' => ['children' => ['modules' => $modules]]
         ]);
 
@@ -391,7 +391,7 @@ class SystemUpgradeTest extends TestCase
         $code->save(false);
         $this->createdIds['codes'][] = $code->id;
 
-        $meta = $this->createMeta(['uuid' => \common\components\UuidHelper::uuid::uuid()]);
+        $meta = $this->createMeta(['uuid' => \common\components\UuidHelper::uuid()]);
 
         $metaCode = new MetaCode();
         $metaCode->meta_id = $meta->id;
@@ -428,7 +428,7 @@ class SystemUpgradeTest extends TestCase
         $code->save(false);
         $this->createdIds['codes'][] = $code->id;
 
-        $verse = $this->createVerse(['uuid' => \common\components\UuidHelper::uuid::uuid()]);
+        $verse = $this->createVerse(['uuid' => \common\components\UuidHelper::uuid()]);
 
         $verseCode = new VerseCode();
         $verseCode->verse_id = $verse->id;
@@ -495,7 +495,7 @@ class SystemUpgradeTest extends TestCase
         $tag->save(false);
         $this->createdIds['tags'][] = $tag->id;
 
-        $verse = $this->createVerse(['uuid' => \common\components\UuidHelper::uuid::uuid()]);
+        $verse = $this->createVerse(['uuid' => \common\components\UuidHelper::uuid()]);
 
         // 使用正确的列名 tags_id（数据库中的实际列名）
         $verseTags = new VerseTags();
@@ -531,7 +531,7 @@ class SystemUpgradeTest extends TestCase
 
     public function testMetaRefreshResourcesWithEmptyData(): void
     {
-        $meta = $this->createMeta(['uuid' => \common\components\UuidHelper::uuid::uuid(), 'data' => null]);
+        $meta = $this->createMeta(['uuid' => \common\components\UuidHelper::uuid(), 'data' => null]);
         $meta->refreshResources();
 
         $count = MetaResource::find()->where(['meta_id' => $meta->id])->count();
@@ -540,7 +540,7 @@ class SystemUpgradeTest extends TestCase
 
     public function testVerseRefreshMetasWithEmptyData(): void
     {
-        $verse = $this->createVerse(['uuid' => \common\components\UuidHelper::uuid::uuid(), 'data' => null]);
+        $verse = $this->createVerse(['uuid' => \common\components\UuidHelper::uuid(), 'data' => null]);
         $verse->refreshMetas();
 
         $count = VerseMeta::find()->where(['verse_id' => $verse->id])->count();
@@ -550,7 +550,7 @@ class SystemUpgradeTest extends TestCase
     public function testVerseRefreshMetasWithIncompleteData(): void
     {
         $verse = $this->createVerse([
-            'uuid' => \common\components\UuidHelper::uuid::uuid(),
+            'uuid' => \common\components\UuidHelper::uuid(),
             'data' => ['children' => []] // 缺少 modules
         ]);
         $verse->refreshMetas();
@@ -561,7 +561,7 @@ class SystemUpgradeTest extends TestCase
 
     public function testMetaCodeUpgradeWithoutCode(): void
     {
-        $meta = $this->createMeta(['uuid' => \common\components\UuidHelper::uuid::uuid()]);
+        $meta = $this->createMeta(['uuid' => \common\components\UuidHelper::uuid()]);
 
         $metaCode = new MetaCode();
         $metaCode->meta_id = $meta->id;
@@ -583,7 +583,7 @@ class SystemUpgradeTest extends TestCase
 
     public function testVerseCodeUpgradeWithoutCode(): void
     {
-        $verse = $this->createVerse(['uuid' => \common\components\UuidHelper::uuid::uuid()]);
+        $verse = $this->createVerse(['uuid' => \common\components\UuidHelper::uuid()]);
 
         $verseCode = new VerseCode();
         $verseCode->verse_id = $verse->id;
