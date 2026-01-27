@@ -56,12 +56,8 @@ return [
         ],
         'jwt' => [
             'class' => \bizley\jwt\Jwt::class,
-            'signer' => \bizley\jwt\Jwt::HS256,
-            'signingKey' => [
-                'key' =>  getenv('JWT_KEY'), // path to your PRIVATE key, you can start the path with @ to indicate this is a Yii alias
-                'passphrase' => '', // omit it if you are not adding any passphrase
-                'method' => \bizley\jwt\Jwt::METHOD_FILE,
-            ],
+            'signer' => \bizley\jwt\Jwt::HS256,  // 使用 HS256 (HMAC 对称加密)
+            'signingKey' => getenv('JWT_SECRET') ?: 'default-secret-key-at-least-32-bytes-long-please-change-in-production-immediately',
             'validationConstraints'=> static function (\bizley\jwt\Jwt $jwt) {
                 $config = $jwt->getConfiguration();
                 return [

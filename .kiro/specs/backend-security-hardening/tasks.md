@@ -15,17 +15,17 @@
   - _Requirements: 1.4, 4.1, 8.4_
 
 - [ ] 2. 实施凭证管理器
-  - [-] 2.1 创建 CredentialManager 组件
+  - [x] 2.1 创建 CredentialManager 组件
     - 实现从环境变量加载配置的方法
     - 实现配置验证方法
     - 实现 JWT 密钥管理和轮换
     - _Requirements: 1.1, 1.2, 1.4, 1.6_
   
-  - [~] 2.2 为凭证管理器编写属性测试
+  - [x] 2.2 为凭证管理器编写属性测试
     - **Property 1: 环境变量验证完整性**
     - **Validates: Requirements 1.2**
   
-  - [~] 2.3 为凭证管理器编写属性测试
+  - [x] 2.3 为凭证管理器编写属性测试
     - **Property 3: JWT 密钥轮换保持向后兼容**
     - **Validates: Requirements 1.6**
 
