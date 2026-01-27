@@ -102,7 +102,7 @@ class SystemController extends Controller
             'can_set_memory_limit' => function_exists('ini_set'),
         ];
 
-        // 4. 检查 Faker 依赖
+        // 4. 检查 UUID 依赖
         $checks['dependencies'] = [
             'uuid_helper' => [
                 'class_exists' => class_exists('\common\components\UuidHelper'),
@@ -217,91 +217,160 @@ class SystemController extends Controller
      */
     public function actionUpgrade()
     {
-        // 防止执行超时
-        set_time_limit(0);
-        ignore_user_abort(true);
+        try {
+            // 防止执行超时
+            set_time_limit(0);
+            ignore_user_abort(true);
 
+            // 增加内存限制，防止大量数据处理导致内存溢出
+            ini_set('memory_limit', '512M');
 
-        // 增加内存限制，防止大量数据处理导致内存溢出
-        ini_set('memory_limit', '512M');
+            $result = [
+                'meta' => ['total' => 0, 'success' => 0, 'fail' => 0, 'errors' => []],
+                'verse' => ['total' => 0, 'success' => 0, 'fail' => 0, 'errors' => []],
+                'version' => ['status' => 'pending'],
+                'tags' => ['public' => ['status' => 'pending'], 'checkin' => ['status' => 'pending']],
+            ];
 
-        Version::upgrade();
-
-
-        $this->migrateTagToProperty('public');
-        $this->migrateTagToProperty('checkin');
-
-
-        $result = [
-            'meta' => ['total' => 0, 'success' => 0, 'fail' => 0, 'errors' => []],
-            'verse' => ['total' => 0, 'success' => 0, 'fail' => 0, 'errors' => []],
-        ];
-
-        // 批量处理 Meta，使用 batch/each 减少内存占用
-        // 每次处理 100 条
-        foreach (Meta::find()->each(100) as $meta) {
-            $result['meta']['total']++;
+            // 1. Version 升级
             try {
-                $this->upgradeMeta($meta);
-                $result['meta']['success']++;
+                Version::upgrade();
+                $result['version']['status'] = 'success';
             } catch (\Exception $e) {
-                $result['meta']['fail']++;
-                // 记录错误但不中断流程
-                $result['meta']['errors'][] = "Meta ID {$meta->id}: " . $e->getMessage();
-                Yii::error("Meta Upgrade Error ID {$meta->id}: " . $e->getMessage(), 'upgrade');
+                $result['version']['status'] = 'error';
+                $result['version']['error'] = $e->getMessage();
+                $result['version']['trace'] = $e->getTraceAsString();
+                Yii::error("Version Upgrade Error: " . $e->getMessage() . "\n" . $e->getTraceAsString(), 'upgrade');
+                throw new Exception("Version upgrade failed: " . $e->getMessage(), 500);
             }
-        }
 
-        // 批量处理 Verse
-        foreach (Verse::find()->each(100) as $verse) {
-            $result['verse']['total']++;
+            // 2. Tag 迁移
             try {
-                $this->upgradeVerse($verse);
-                $result['verse']['success']++;
+                $result['tags']['public'] = $this->migrateTagToProperty('public');
             } catch (\Exception $e) {
-                $result['verse']['fail']++;
-                $result['verse']['errors'][] = "Verse ID {$verse->id}: " . $e->getMessage();
-                Yii::error("Verse Upgrade Error ID {$verse->id}: " . $e->getMessage(), 'upgrade');
+                $result['tags']['public']['status'] = 'error';
+                $result['tags']['public']['error'] = $e->getMessage();
+                $result['tags']['public']['trace'] = $e->getTraceAsString();
+                Yii::error("Tag 'public' Migration Error: " . $e->getMessage() . "\n" . $e->getTraceAsString(), 'upgrade');
+                throw new Exception("Tag 'public' migration failed: " . $e->getMessage(), 500);
             }
-        }
 
-        return $result;
+            try {
+                $result['tags']['checkin'] = $this->migrateTagToProperty('checkin');
+            } catch (\Exception $e) {
+                $result['tags']['checkin']['status'] = 'error';
+                $result['tags']['checkin']['error'] = $e->getMessage();
+                $result['tags']['checkin']['trace'] = $e->getTraceAsString();
+                Yii::error("Tag 'checkin' Migration Error: " . $e->getMessage() . "\n" . $e->getTraceAsString(), 'upgrade');
+                throw new Exception("Tag 'checkin' migration failed: " . $e->getMessage(), 500);
+            }
+
+            // 3. 批量处理 Meta，使用 batch/each 减少内存占用
+            // 每次处理 100 条
+            foreach (Meta::find()->each(100) as $meta) {
+                $result['meta']['total']++;
+                try {
+                    $this->upgradeMeta($meta);
+                    $result['meta']['success']++;
+                } catch (\Exception $e) {
+                    $result['meta']['fail']++;
+                    // 记录详细错误信息
+                    $errorDetail = [
+                        'id' => $meta->id,
+                        'message' => $e->getMessage(),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                        'trace' => $e->getTraceAsString(),
+                    ];
+                    $result['meta']['errors'][] = $errorDetail;
+                    Yii::error("Meta Upgrade Error ID {$meta->id}: " . json_encode($errorDetail), 'upgrade');
+                }
+            }
+
+            // 4. 批量处理 Verse
+            foreach (Verse::find()->each(100) as $verse) {
+                $result['verse']['total']++;
+                try {
+                    $this->upgradeVerse($verse);
+                    $result['verse']['success']++;
+                } catch (\Exception $e) {
+                    $result['verse']['fail']++;
+                    // 记录详细错误信息
+                    $errorDetail = [
+                        'id' => $verse->id,
+                        'message' => $e->getMessage(),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                        'trace' => $e->getTraceAsString(),
+                    ];
+                    $result['verse']['errors'][] = $errorDetail;
+                    Yii::error("Verse Upgrade Error ID {$verse->id}: " . json_encode($errorDetail), 'upgrade');
+                }
+            }
+
+            return $result;
+
+        } catch (\Exception $e) {
+            // 捕获所有未处理的异常
+            Yii::error("Upgrade Fatal Error: " . $e->getMessage() . "\n" . $e->getTraceAsString(), 'upgrade');
+            throw new Exception(
+                "Upgrade process failed: " . $e->getMessage() . 
+                " (File: " . $e->getFile() . ", Line: " . $e->getLine() . ")",
+                500
+            );
+        }
     }
 
     /**
      * 升级 Meta 数据
      * code里面的内容要放在metacode 里面的 lua 和js
      * @param Meta $meta
+     * @throws Exception
      */
     private function upgradeMeta($meta)
     {
-        // 1. 确保 UUID 存在
-        if (empty($meta->uuid)) {
-            $meta->uuid = \common\components\UuidHelper::uuid();
-            $meta->save();
-        }
-
-        // 2. 刷新资源关联
-        $meta->refreshResources();
-
-        // 3. 迁移 Code 数据到 MetaCode (Lua/JS)
-        $metaCode = $meta->metaCode;
-        if ($metaCode && $metaCode->code) {
-            $code = $metaCode->code;
-            $changed = false;
-
-            if (!empty($code->lua) && $metaCode->lua !== $code->lua) {
-                $metaCode->lua = $code->lua;
-                $changed = true;
-            }
-            if (!empty($code->js) && $metaCode->js !== $code->js) {
-                $metaCode->js = $code->js;
-                $changed = true;
+        try {
+            // 1. 确保 UUID 存在
+            if (empty($meta->uuid)) {
+                $meta->uuid = \common\components\UuidHelper::uuid();
+                if (!$meta->save()) {
+                    throw new Exception("Failed to save Meta UUID: " . json_encode($meta->errors));
+                }
             }
 
-            if ($changed && !$metaCode->save()) {
-                throw new Exception("MetaCode Save Failed: " . json_encode($metaCode->errors));
+            // 2. 刷新资源关联
+            try {
+                $meta->refreshResources();
+            } catch (\Exception $e) {
+                throw new Exception("Failed to refresh Meta resources: " . $e->getMessage(), 0, $e);
             }
+
+            // 3. 迁移 Code 数据到 MetaCode (Lua/JS)
+            $metaCode = $meta->metaCode;
+            if ($metaCode && $metaCode->code) {
+                $code = $metaCode->code;
+                $changed = false;
+
+                if (!empty($code->lua) && $metaCode->lua !== $code->lua) {
+                    $metaCode->lua = $code->lua;
+                    $changed = true;
+                }
+                if (!empty($code->js) && $metaCode->js !== $code->js) {
+                    $metaCode->js = $code->js;
+                    $changed = true;
+                }
+
+                if ($changed && !$metaCode->save()) {
+                    throw new Exception("MetaCode Save Failed: " . json_encode($metaCode->errors));
+                }
+            }
+        } catch (\Exception $e) {
+            throw new Exception(
+                "Meta upgrade failed (ID: {$meta->id}): " . $e->getMessage() . 
+                " [File: " . $e->getFile() . ", Line: " . $e->getLine() . "]",
+                0,
+                $e
+            );
         }
     }
 
@@ -309,36 +378,52 @@ class SystemController extends Controller
      * 升级 Verse 数据
      * code里面的内容要放在versecode 里面的 lua 和js
      * @param Verse $verse
+     * @throws Exception
      */
     private function upgradeVerse($verse)
     {
-        // 1. 确保 UUID 存在
-        if (empty($verse->uuid)) {
-            $verse->uuid = \common\components\UuidHelper::uuid();
-            $verse->save();
-        }
-
-        // 2. 刷新 Meta 关联
-        $verse->refreshMetas();
-
-        // 3. 迁移 Code 数据到 VerseCode (Lua/JS)
-        $verseCode = $verse->verseCode;
-        if ($verseCode && $verseCode->code) {
-            $code = $verseCode->code;
-            $changed = false;
-
-            if (!empty($code->lua) && $verseCode->lua !== $code->lua) {
-                $verseCode->lua = $code->lua;
-                $changed = true;
-            }
-            if (!empty($code->js) && $verseCode->js !== $code->js) {
-                $verseCode->js = $code->js;
-                $changed = true;
+        try {
+            // 1. 确保 UUID 存在
+            if (empty($verse->uuid)) {
+                $verse->uuid = \common\components\UuidHelper::uuid();
+                if (!$verse->save()) {
+                    throw new Exception("Failed to save Verse UUID: " . json_encode($verse->errors));
+                }
             }
 
-            if ($changed && !$verseCode->save()) {
-                throw new Exception("VerseCode Save Failed: " . json_encode($verseCode->errors));
+            // 2. 刷新 Meta 关联
+            try {
+                $verse->refreshMetas();
+            } catch (\Exception $e) {
+                throw new Exception("Failed to refresh Verse metas: " . $e->getMessage(), 0, $e);
             }
+
+            // 3. 迁移 Code 数据到 VerseCode (Lua/JS)
+            $verseCode = $verse->verseCode;
+            if ($verseCode && $verseCode->code) {
+                $code = $verseCode->code;
+                $changed = false;
+
+                if (!empty($code->lua) && $verseCode->lua !== $code->lua) {
+                    $verseCode->lua = $code->lua;
+                    $changed = true;
+                }
+                if (!empty($code->js) && $verseCode->js !== $code->js) {
+                    $verseCode->js = $code->js;
+                    $changed = true;
+                }
+
+                if ($changed && !$verseCode->save()) {
+                    throw new Exception("VerseCode Save Failed: " . json_encode($verseCode->errors));
+                }
+            }
+        } catch (\Exception $e) {
+            throw new Exception(
+                "Verse upgrade failed (ID: {$verse->id}): " . $e->getMessage() . 
+                " [File: " . $e->getFile() . ", Line: " . $e->getLine() . "]",
+                0,
+                $e
+            );
         }
     }
 
@@ -407,70 +492,94 @@ class SystemController extends Controller
      * 将指定 key 的 tag 迁移到 property，并为对应的 verse 创建 verse_property 关联
      * @param string $key 标签的 key
      * @return array 迁移结果
+     * @throws Exception
      */
     private function migrateTagToProperty($key)
     {
-        // 查找指定 key 的 tag
-        $tag = \api\modules\v1\models\Tags::findOne(['key' => $key]);
+        try {
+            // 查找指定 key 的 tag
+            $tag = \api\modules\v1\models\Tags::findOne(['key' => $key]);
 
-        if (!$tag) {
-            return [
-                'status' => 'skipped',
-                'key' => $key,
-                'message' => "Tag with key \"{$key}\" not found",
-            ];
-        }
-
-        // 检查 Property 表是否有对应 key 的记录，如果没有则创建
-        $property = \api\modules\v1\models\Property::findOne(['key' => $key]);
-        $propertyCreated = false;
-
-        if (!$property) {
-            $property = new \api\modules\v1\models\Property();
-            $property->key = $key;
-            $property->info = $tag->name;
-            $property->save();
-            $propertyCreated = true;
-        }
-
-        // 通过 verse_tags 表查找所有带有该标签的 verse
-        $verses = Verse::find()
-            ->innerJoin('verse_tags', 'verse_tags.verse_id = verse.id')
-            ->where(['verse_tags.tags_id' => $tag->id])
-            ->all();
-
-        $verseList = [];
-        $versePropertiesCreated = 0;
-
-        foreach ($verses as $verse) {
-            // 检查该 verse 是否已有对应的 verse_property
-            $existingVerseProperty = \api\modules\v1\models\VerseProperty::findOne([
-                'verse_id' => $verse->id,
-                'property_id' => $property->id,
-            ]);
-
-            if (!$existingVerseProperty) {
-                // 创建新的 verse_property 记录
-                $verseProperty = new \api\modules\v1\models\VerseProperty();
-                $verseProperty->verse_id = $verse->id;
-                $verseProperty->property_id = $property->id;
-                $verseProperty->save();
-                $versePropertiesCreated++;
+            if (!$tag) {
+                return [
+                    'status' => 'skipped',
+                    'key' => $key,
+                    'message' => "Tag with key \"{$key}\" not found",
+                ];
             }
 
-            $verseList[] = [
-                'id' => $verse->id,
-                'name' => $verse->name,
-            ];
-        }
+            // 检查 Property 表是否有对应 key 的记录，如果没有则创建
+            $property = \api\modules\v1\models\Property::findOne(['key' => $key]);
+            $propertyCreated = false;
 
-        return [
-            'status' => 'success',
-            'key' => $key,
-            'property_created' => $propertyCreated,
-            'count' => count($verseList),
-            'verse_properties_created' => $versePropertiesCreated,
-            'verses' => $verseList,
-        ];
+            if (!$property) {
+                $property = new \api\modules\v1\models\Property();
+                $property->key = $key;
+                $property->info = $tag->name;
+                if (!$property->save()) {
+                    throw new Exception("Failed to create Property for key '{$key}': " . json_encode($property->errors));
+                }
+                $propertyCreated = true;
+            }
+
+            // 通过 verse_tags 表查找所有带有该标签的 verse
+            $verses = Verse::find()
+                ->innerJoin('verse_tags', 'verse_tags.verse_id = verse.id')
+                ->where(['verse_tags.tags_id' => $tag->id])
+                ->all();
+
+            $verseList = [];
+            $versePropertiesCreated = 0;
+            $errors = [];
+
+            foreach ($verses as $verse) {
+                try {
+                    // 检查该 verse 是否已有对应的 verse_property
+                    $existingVerseProperty = \api\modules\v1\models\VerseProperty::findOne([
+                        'verse_id' => $verse->id,
+                        'property_id' => $property->id,
+                    ]);
+
+                    if (!$existingVerseProperty) {
+                        // 创建新的 verse_property 记录
+                        $verseProperty = new \api\modules\v1\models\VerseProperty();
+                        $verseProperty->verse_id = $verse->id;
+                        $verseProperty->property_id = $property->id;
+                        if (!$verseProperty->save()) {
+                            throw new Exception("Failed to save VerseProperty: " . json_encode($verseProperty->errors));
+                        }
+                        $versePropertiesCreated++;
+                    }
+
+                    $verseList[] = [
+                        'id' => $verse->id,
+                        'name' => $verse->name,
+                    ];
+                } catch (\Exception $e) {
+                    $errors[] = [
+                        'verse_id' => $verse->id,
+                        'error' => $e->getMessage(),
+                    ];
+                    Yii::error("Tag migration error for verse {$verse->id}: " . $e->getMessage(), 'upgrade');
+                }
+            }
+
+            return [
+                'status' => 'success',
+                'key' => $key,
+                'property_created' => $propertyCreated,
+                'count' => count($verseList),
+                'verse_properties_created' => $versePropertiesCreated,
+                'verses' => $verseList,
+                'errors' => $errors,
+            ];
+        } catch (\Exception $e) {
+            throw new Exception(
+                "Tag migration failed for key '{$key}': " . $e->getMessage() . 
+                " [File: " . $e->getFile() . ", Line: " . $e->getLine() . "]",
+                0,
+                $e
+            );
+        }
     }
 }
