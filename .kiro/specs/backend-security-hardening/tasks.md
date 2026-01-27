@@ -30,29 +30,29 @@
     - **Validates: Requirements 1.6**
 
 - [ ] 3. 实施敏感信息保护
-  - [~] 3.1 更新 .gitignore 文件
+  - [ ] 3.1 更新 .gitignore 文件
     - 确保所有 .env 文件被忽略
     - 添加日志文件和临时文件模式
     - _Requirements: 1.5_
   
-  - [~] 3.2 从配置文件中移除硬编码凭证
+  - [ ] 3.2 从配置文件中移除硬编码凭证
     - 更新 files/common/config/main-local.php 使用环境变量
     - 更新 .env.docker 为模板文件
     - 创建 .env.example 文件
     - _Requirements: 1.1, 1.4_
   
-  - [~] 3.3 实施日志敏感信息过滤
+  - [ ] 3.3 实施日志敏感信息过滤
     - 创建 LogFilter 组件
     - 实现敏感数据模式匹配和替换
     - 集成到 Yii2 日志组件
     - _Requirements: 1.3_
   
-  - [~] 3.4 为日志过滤编写属性测试
+  - [ ] 3.4 为日志过滤编写属性测试
     - **Property 2: 敏感数据日志过滤**
     - **Validates: Requirements 1.3**
 
 - [ ] 4. 实施文件上传安全验证
-  - [~] 4.1 创建 UploadValidator 组件
+  - [ ] 4.1 创建 UploadValidator 组件
     - 定义 MIME 类型白名单
     - 定义文件扩展名白名单
     - 实现文件大小验证（10MB 限制）
@@ -60,80 +60,80 @@
     - 实现文件扩展名验证
     - _Requirements: 2.1, 2.2, 2.3_
   
-  - [~] 4.2 实施文件内容验证
+  - [ ] 4.2 实施文件内容验证
     - 使用 finfo_file() 验证实际内容类型
     - 实现双扩展名检测
     - 实现安全文件名生成
     - _Requirements: 2.4, 2.5, 2.8_
   
-  - [~] 4.3 更新 UploadController
+  - [ ] 4.3 更新 UploadController
     - 集成 UploadValidator
     - 添加验证失败的审计日志
     - 更新错误响应
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.8, 2.9_
   
-  - [~] 4.4 为文件上传验证编写属性测试
+  - [ ] 4.4 为文件上传验证编写属性测试
     - **Property 5: MIME 类型白名单验证**
     - **Property 6: 文件扩展名白名单验证**
     - **Property 7: 文件内容与声明类型匹配**
     - **Validates: Requirements 2.1, 2.2, 2.4_
   
-  - [~] 4.5 为文件名生成编写属性测试
+  - [ ] 4.5 为文件名生成编写属性测试
     - **Property 8: 生成的文件名无路径遍历**
     - **Property 9: 双扩展名文件拒绝**
     - **Validates: Requirements 2.5, 2.8**
   
-  - [~] 4.6 为文件上传审计编写属性测试
+  - [ ] 4.6 为文件上传审计编写属性测试
     - **Property 10: 文件上传失败记录审计**
     - **Validates: Requirements 2.9**
 
 - [ ] 5. 实施 API 速率限制
-  - [~] 5.1 创建 RateLimiter 组件
+  - [ ] 5.1 创建 RateLimiter 组件
     - 实现基于 Redis 的滑动窗口算法
     - 实现 IP 地址速率限制（100/分钟）
     - 实现用户速率限制（1000/小时）
     - 实现登录端点特殊限制（5/15分钟）
     - _Requirements: 4.1, 4.2_
   
-  - [~] 5.2 创建 RateLimitBehavior
+  - [ ] 5.2 创建 RateLimitBehavior
     - 实现 Yii2 行为接口
     - 添加速率限制响应头
     - 实现 HTTP 429 响应
     - _Requirements: 4.1, 4.2, 4.3_
   
-  - [~] 5.3 将速率限制应用到 API 控制器
+  - [ ] 5.3 将速率限制应用到 API 控制器
     - 更新 API 基础控制器
     - 配置不同端点的限制策略
     - _Requirements: 4.1, 4.2_
   
-  - [~] 5.4 为速率限制编写单元测试
+  - [ ] 5.4 为速率限制编写单元测试
     - 测试边界条件（第 100 和 101 个请求）
     - 测试响应头
     - _Requirements: 4.1, 4.2_
   
-  - [~] 5.5 为速率限制编写属性测试
+  - [ ] 5.5 为速率限制编写属性测试
     - **Property 17: 速率限制超限响应**
     - **Validates: Requirements 4.3**
 
 - [ ] 6. 强化密码策略
-  - [~] 6.1 更新 User 模型密码验证
+  - [ ] 6.1 更新 User 模型密码验证
     - 增加最小长度到 12 字符
     - 添加复杂度验证规则
     - 实现弱密码列表检查
     - _Requirements: 5.1, 5.2, 5.6, 5.7_
   
-  - [~] 6.2 更新密码哈希方法
+  - [ ] 6.2 更新密码哈希方法
     - 确保使用 password_hash() 和 PASSWORD_BCRYPT
     - 设置 cost 因子为 12
     - _Requirements: 5.4_
   
-  - [~] 6.3 为密码验证编写属性测试
+  - [ ] 6.3 为密码验证编写属性测试
     - **Property 21: 密码复杂度验证**
     - **Property 23: 密码哈希算法验证**
     - **Property 24: 弱密码拒绝**
     - **Validates: Requirements 5.2, 5.4, 5.6, 5.7**
 
-- [~] 7. Checkpoint - 验证 P0 实施
+- [ ] 7. Checkpoint - 验证 P0 实施
   - 运行所有测试确保通过
   - 验证环境变量配置正确
   - 测试文件上传安全性

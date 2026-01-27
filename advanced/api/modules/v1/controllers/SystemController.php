@@ -24,6 +24,174 @@ use yii\base\Exception;
 class SystemController extends Controller
 {
     /**
+     * @OA\Get(
+     *     path="/v1/system/test",
+     *     tags={"System"},
+     *     summary="系统环境检查",
+     *     description="检查数据库表、PHP 配置和依赖是否正常",
+     *     @OA\Response(
+     *         response=200,
+     *         description="检查结果",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="string"),
+     *             @OA\Property(property="checks", type="object")
+     *         )
+     *     )
+     * )
+     */
+    public function actionTest()
+    {
+        $checks = [];
+        $allPassed = true;
+
+        // 1. 检查数据库连接
+        try {
+            Yii::$app->db->open();
+            $checks['database_connection'] = [
+                'status' => 'ok',
+                'message' => '数据库连接正常',
+                'driver' => Yii::$app->db->driverName,
+            ];
+        } catch (\Exception $e) {
+            $checks['database_connection'] = [
+                'status' => 'error',
+                'message' => '数据库连接失败: ' . $e->getMessage(),
+            ];
+            $allPassed = false;
+        }
+
+        // 2. 检查必需的数据库表
+        $requiredTables = [
+            'version',
+            'meta',
+            'verse',
+            'meta_code',
+            'verse_code',
+            'tags',
+            'property',
+            'verse_property',
+            'verse_tags',
+        ];
+
+        $checks['database_tables'] = [];
+        foreach ($requiredTables as $table) {
+            try {
+                $exists = Yii::$app->db->schema->getTableSchema($table) !== null;
+                $checks['database_tables'][$table] = [
+                    'status' => $exists ? 'ok' : 'missing',
+                    'exists' => $exists,
+                ];
+                if (!$exists) {
+                    $allPassed = false;
+                }
+            } catch (\Exception $e) {
+                $checks['database_tables'][$table] = [
+                    'status' => 'error',
+                    'message' => $e->getMessage(),
+                ];
+                $allPassed = false;
+            }
+        }
+
+        // 3. 检查 PHP 配置
+        $checks['php_config'] = [
+            'version' => PHP_VERSION,
+            'memory_limit' => ini_get('memory_limit'),
+            'max_execution_time' => ini_get('max_execution_time'),
+            'can_set_time_limit' => function_exists('set_time_limit'),
+            'can_set_memory_limit' => function_exists('ini_set'),
+        ];
+
+        // 4. 检查 Faker 依赖
+        $checks['dependencies'] = [
+            'faker' => [
+                'class_exists' => class_exists('\Faker\Provider\Uuid'),
+                'status' => class_exists('\Faker\Provider\Uuid') ? 'ok' : 'missing',
+            ],
+            'yii_string_helper' => [
+                'class_exists' => class_exists('\yii\helpers\StringHelper'),
+                'status' => class_exists('\yii\helpers\StringHelper') ? 'ok' : 'missing',
+            ],
+        ];
+
+        if (!class_exists('\Faker\Provider\Uuid')) {
+            $checks['dependencies']['faker']['message'] = 'Faker 未安装，建议使用 Yii2 自带的 UUID 生成方法';
+            $checks['dependencies']['faker']['suggestion'] = 'composer require fzaninotto/faker 或使用 \yii\helpers\StringHelper::uuid()';
+        }
+
+        // 5. 检查模型类
+        $requiredModels = [
+            'api\modules\v1\models\Version',
+            'api\modules\v1\models\Meta',
+            'api\modules\v1\models\Verse',
+            'api\modules\v1\models\Tags',
+            'api\modules\v1\models\Property',
+            'api\modules\v1\models\VerseProperty',
+        ];
+
+        $checks['models'] = [];
+        foreach ($requiredModels as $model) {
+            $exists = class_exists($model);
+            $checks['models'][$model] = [
+                'status' => $exists ? 'ok' : 'missing',
+                'exists' => $exists,
+            ];
+            if (!$exists) {
+                $allPassed = false;
+            }
+        }
+
+        // 6. 检查数据库权限（尝试简单的查询）
+        try {
+            Yii::$app->db->createCommand('SELECT 1')->queryOne();
+            $checks['database_permissions'] = [
+                'status' => 'ok',
+                'message' => '数据库查询权限正常',
+            ];
+        } catch (\Exception $e) {
+            $checks['database_permissions'] = [
+                'status' => 'error',
+                'message' => '数据库权限问题: ' . $e->getMessage(),
+            ];
+            $allPassed = false;
+        }
+
+        // 7. 检查日志目录权限
+        $logPath = Yii::getAlias('@api/runtime/logs');
+        $checks['log_directory'] = [
+            'path' => $logPath,
+            'exists' => file_exists($logPath),
+            'writable' => is_writable($logPath),
+            'status' => (file_exists($logPath) && is_writable($logPath)) ? 'ok' : 'error',
+        ];
+
+        // 8. 尝试获取一些统计数据
+        $checks['data_statistics'] = [];
+        try {
+            if (isset($checks['database_tables']['meta']) && $checks['database_tables']['meta']['exists']) {
+                $checks['data_statistics']['meta_count'] = Meta::find()->count();
+            }
+            if (isset($checks['database_tables']['verse']) && $checks['database_tables']['verse']['exists']) {
+                $checks['data_statistics']['verse_count'] = Verse::find()->count();
+            }
+            if (isset($checks['database_tables']['version']) && $checks['database_tables']['version']['exists']) {
+                $checks['data_statistics']['version_count'] = Version::find()->count();
+            }
+        } catch (\Exception $e) {
+            $checks['data_statistics']['error'] = $e->getMessage();
+        }
+
+        return [
+            'status' => $allPassed ? 'ok' : 'error',
+            'message' => $allPassed ? '所有检查通过' : '部分检查失败，请查看详情',
+            'timestamp' => date('Y-m-d H:i:s'),
+            'environment' => YII_ENV,
+            'debug' => YII_DEBUG,
+            'checks' => $checks,
+        ];
+    }
+
+    /**
      * @OA\Post(
      *     path="/v1/system/upgrade",
      *     tags={"System"},
@@ -214,7 +382,7 @@ class SystemController extends Controller
                 ],
                 [
                     'allow' => true,
-                    'actions' => ['upgrade', 'take-photo'],
+                    'actions' => ['upgrade', 'take-photo', 'test'],
                     'roles' => ['@'], // 需要登录用户
                 ],
             ],
