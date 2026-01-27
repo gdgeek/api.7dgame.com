@@ -1,4 +1,5 @@
 <?php
+
 namespace api\modules\v1\controllers;
 
 use Yii;
@@ -52,16 +53,16 @@ class SystemController extends Controller
         set_time_limit(0);
         ignore_user_abort(true);
 
-        
+
         // 增加内存限制，防止大量数据处理导致内存溢出
         ini_set('memory_limit', '512M');
-        
+
         Version::upgrade();
 
-         
+
         $this->migrateTagToProperty('public');
         $this->migrateTagToProperty('checkin');
-        
+
 
         $result = [
             'meta' => ['total' => 0, 'success' => 0, 'fail' => 0, 'errors' => []],
@@ -243,7 +244,7 @@ class SystemController extends Controller
     {
         // 查找指定 key 的 tag
         $tag = \api\modules\v1\models\Tags::findOne(['key' => $key]);
-        
+
         if (!$tag) {
             return [
                 'status' => 'skipped',
@@ -251,11 +252,11 @@ class SystemController extends Controller
                 'message' => "Tag with key \"{$key}\" not found",
             ];
         }
-        
+
         // 检查 Property 表是否有对应 key 的记录，如果没有则创建
         $property = \api\modules\v1\models\Property::findOne(['key' => $key]);
         $propertyCreated = false;
-        
+
         if (!$property) {
             $property = new \api\modules\v1\models\Property();
             $property->key = $key;
@@ -263,23 +264,23 @@ class SystemController extends Controller
             $property->save();
             $propertyCreated = true;
         }
-        
+
         // 通过 verse_tags 表查找所有带有该标签的 verse
         $verses = Verse::find()
             ->innerJoin('verse_tags', 'verse_tags.verse_id = verse.id')
             ->where(['verse_tags.tags_id' => $tag->id])
             ->all();
-        
+
         $verseList = [];
         $versePropertiesCreated = 0;
-        
+
         foreach ($verses as $verse) {
             // 检查该 verse 是否已有对应的 verse_property
             $existingVerseProperty = \api\modules\v1\models\VerseProperty::findOne([
                 'verse_id' => $verse->id,
                 'property_id' => $property->id,
             ]);
-            
+
             if (!$existingVerseProperty) {
                 // 创建新的 verse_property 记录
                 $verseProperty = new \api\modules\v1\models\VerseProperty();
@@ -288,13 +289,13 @@ class SystemController extends Controller
                 $verseProperty->save();
                 $versePropertiesCreated++;
             }
-            
+
             $verseList[] = [
                 'id' => $verse->id,
                 'name' => $verse->name,
             ];
         }
-        
+
         return [
             'status' => 'success',
             'key' => $key,
