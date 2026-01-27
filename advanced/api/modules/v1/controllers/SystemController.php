@@ -277,7 +277,7 @@ class SystemController extends Controller
     {
         // 1. 确保 UUID 存在
         if (empty($meta->uuid)) {
-            $meta->uuid = \Faker\Provider\Uuid::uuid();
+            $meta->uuid = \yii\helpers\StringHelper::uuid();
             $meta->save();
         }
 
@@ -314,7 +314,7 @@ class SystemController extends Controller
     {
         // 1. 确保 UUID 存在
         if (empty($verse->uuid)) {
-            $verse->uuid = \Faker\Provider\Uuid::uuid();
+            $verse->uuid = \yii\helpers\StringHelper::uuid();
             $verse->save();
         }
 

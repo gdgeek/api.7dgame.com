@@ -45,7 +45,8 @@
     "doctrine/annotations": "^2.0",
     "tencentcloud/sts": "^3.0",
     "yiisoft/yii2-symfonymailer": "^4.0",
-    "predis/predis": "^3.3"
+    "predis/predis": "^3.3",
+    "fakerphp/faker": "^1.24"
   },
   "replace": {
     "npm-asset/bootstrap": ">=4.2.1",
