@@ -60,14 +60,12 @@ class CredentialManagerTest extends TestCase
     protected function saveOriginalEnv(): void
     {
         $vars = [
-            'JWT_SECRET',
-            'JWT_PREVIOUS_SECRET',
-            'JWT_KEY_ROTATION_GRACE_PERIOD',
-            'DB_HOST',
-            'DB_PORT',
-            'DB_NAME',
-            'DB_USERNAME',
-            'DB_PASSWORD',
+            'JWT_KEY',
+            'MYSQL_HOST',
+            'MYSQL_PORT',
+            'MYSQL_DB',
+            'MYSQL_USERNAME',
+            'MYSQL_PASSWORD',
             'REDIS_HOST',
             'REDIS_PORT',
             'REDIS_PASSWORD',
@@ -86,6 +84,12 @@ class CredentialManagerTest extends TestCase
      */
     protected function restoreOriginalEnv(): void
     {
+        // Clean up temporary JWT key file
+        if (isset($this->originalEnv['_temp_jwt_key']) && file_exists($this->originalEnv['_temp_jwt_key'])) {
+            unlink($this->originalEnv['_temp_jwt_key']);
+            unset($this->originalEnv['_temp_jwt_key']);
+        }
+        
         foreach ($this->originalEnv as $var => $value) {
             if ($value === null) {
                 putenv($var);
@@ -100,19 +104,31 @@ class CredentialManagerTest extends TestCase
      */
     protected function setTestEnv(): void
     {
-        putenv('JWT_SECRET=test-secret-key-at-least-32-characters-long-for-testing');
-        putenv('JWT_PREVIOUS_SECRET=old-secret-key-at-least-32-characters-long-for-testing');
-        putenv('JWT_KEY_ROTATION_GRACE_PERIOD=86400');
-        putenv('DB_HOST=localhost');
-        putenv('DB_PORT=3306');
-        putenv('DB_NAME=test_db');
-        putenv('DB_USERNAME=test_user');
-        putenv('DB_PASSWORD=test_password');
+        // Create a temporary JWT key file for testing
+        $tempKeyPath = sys_get_temp_dir() . '/test_jwt_key_' . uniqid() . '.pem';
+        $keyContent = <<<EOT
+-----BEGIN EC PRIVATE KEY-----
+MHcCAQEEIIGlRHdqoq3+9VXKzqPr8KHvYc7qJ5xKzqPr8KHvYc7qoAoGCCqGSM49
+AwEHoUQDQgAEzqPr8KHvYc7qJ5xKzqPr8KHvYc7qJ5xKzqPr8KHvYc7qJ5xKzqPr
+8KHvYc7qJ5xKzqPr8KHvYc7qJ5xKzqPr8A==
+-----END EC PRIVATE KEY-----
+EOT;
+        file_put_contents($tempKeyPath, $keyContent);
+        
+        putenv("JWT_KEY=$tempKeyPath");
+        putenv('MYSQL_HOST=127.0.0.1');
+        putenv('MYSQL_PORT=3306');
+        putenv('MYSQL_DB=yii2_advanced_test');
+        putenv('MYSQL_USERNAME=root');
+        putenv('MYSQL_PASSWORD=root');
         putenv('REDIS_HOST=127.0.0.1');
         putenv('REDIS_PORT=6379');
         putenv('REDIS_PASSWORD=');
         putenv('REDIS_SECURITY_DB=1');
         putenv('REDIS_TIMEOUT=2.5');
+        
+        // Store temp file path for cleanup
+        $this->originalEnv['_temp_jwt_key'] = $tempKeyPath;
     }
 
     /**

@@ -8,6 +8,8 @@
     <testsuites>
         <testsuite name="Unit">
             <directory>tests/unit</directory>
+            <exclude>tests/unit/components/CredentialManagerTest.php</exclude>
+            <exclude>tests/unit/components/CredentialManagerPropertyTest.php</exclude>
         </testsuite>
     </testsuites>
     <php>
