@@ -159,7 +159,7 @@ class Resource extends \yii\db\ActiveRecord
 
         parent::afterFind();
         if (empty($this->uuid)) {
-            $this->uuid = \Faker\Provider\Uuid::uuid();
+            $this->uuid = \common\components\UuidHelper::uuid();
             $this->save();
         }
     }

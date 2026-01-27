@@ -105,8 +105,8 @@ class SystemController extends Controller
         // 4. 检查 Faker 依赖
         $checks['dependencies'] = [
             'faker' => [
-                'class_exists' => class_exists('\Faker\Provider\Uuid'),
-                'status' => class_exists('\Faker\Provider\Uuid') ? 'ok' : 'missing',
+                'class_exists' => class_exists('\common\components\UuidHelper::uuid'),
+                'status' => class_exists('\common\components\UuidHelper::uuid') ? 'ok' : 'missing',
             ],
             'yii_string_helper' => [
                 'class_exists' => class_exists('\yii\helpers\StringHelper'),
@@ -114,7 +114,7 @@ class SystemController extends Controller
             ],
         ];
 
-        if (!class_exists('\Faker\Provider\Uuid')) {
+        if (!class_exists('\common\components\UuidHelper::uuid')) {
             $checks['dependencies']['faker']['message'] = 'Faker 未安装，建议使用 Yii2 自带的 UUID 生成方法';
             $checks['dependencies']['faker']['suggestion'] = 'composer require fzaninotto/faker 或使用 \yii\helpers\StringHelper::uuid()';
         }
@@ -277,7 +277,7 @@ class SystemController extends Controller
     {
         // 1. 确保 UUID 存在
         if (empty($meta->uuid)) {
-            $meta->uuid = \yii\helpers\StringHelper::uuid();
+            $meta->uuid = \common\components\UuidHelper::uuid();
             $meta->save();
         }
 
@@ -314,7 +314,7 @@ class SystemController extends Controller
     {
         // 1. 确保 UUID 存在
         if (empty($verse->uuid)) {
-            $verse->uuid = \yii\helpers\StringHelper::uuid();
+            $verse->uuid = \common\components\UuidHelper::uuid();
             $verse->save();
         }
 

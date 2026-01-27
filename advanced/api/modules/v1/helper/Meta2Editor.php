@@ -145,7 +145,7 @@ class Meta2Editor
         $scene = new \stdClass();
 
         $scene->object = new \stdClass();
-        $scene->object->uuid = \Faker\Provider\Uuid::uuid();
+        $scene->object->uuid = \common\components\UuidHelper::uuid();
 
         $scene->object->type = "Scene";
         $scene->object->name = "Scene";
