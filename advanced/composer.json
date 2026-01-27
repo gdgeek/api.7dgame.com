@@ -44,7 +44,8 @@
     "zircote/swagger-php": "^4.0",
     "doctrine/annotations": "^2.0",
     "tencentcloud/sts": "^3.0",
-    "yiisoft/yii2-symfonymailer": "^4.0"
+    "yiisoft/yii2-symfonymailer": "^4.0",
+    "predis/predis": "^3.3"
   },
   "replace": {
     "npm-asset/bootstrap": ">=4.2.1",
