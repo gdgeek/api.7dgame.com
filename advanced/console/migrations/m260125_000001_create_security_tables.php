@@ -28,7 +28,7 @@ class m260125_000001_create_security_tables extends Migration
             'jti' => $this->string(255)->notNull()->unique()->comment('JWT ID - unique token identifier'),
             'user_id' => $this->integer()->notNull()->comment('User ID who owns the token'),
             'revoked_at' => $this->timestamp()->defaultExpression('CURRENT_TIMESTAMP')->comment('When the token was revoked'),
-            'expires_at' => $this->timestamp()->notNull()->comment('Original token expiration time'),
+            'expires_at' => $this->timestamp()->null()->comment('Original token expiration time'),
             'reason' => $this->string(255)->null()->comment('Reason for revocation'),
         ]);
 
