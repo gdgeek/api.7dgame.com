@@ -1,10 +1,10 @@
 <?php
 use mdm\admin\components\MenuHelper;
 ?>
-<!-- LEFT MENU v2026.02.03.001 -->
+<!-- LEFT MENU v2026.02.03.002 -->
 <aside class="main-sidebar">
     <section class="sidebar">
-        <div style="background:#ff0;color:#000;padding:5px;font-size:12px;text-align:center;">v2026.02.03.001</div>
+        <div style="background:#ff0;color:#000;padding:5px;font-size:12px;text-align:center;">v2026.02.03.002</div>
         <div class="user-panel">
             <div class="pull-left image">
                 <img src="<?= Yii::$app->request->baseUrl ?>/public/image/default-avatar.png" class="img-cube" alt="User Image"/>
@@ -16,6 +16,11 @@ use mdm\admin\components\MenuHelper;
         </div>
 
         <?php
+        // 调试信息
+        $debugInfo = [];
+        $debugInfo[] = 'User ID: ' . (Yii::$app->user->isGuest ? 'Guest' : Yii::$app->user->id);
+        $debugInfo[] = 'MenuHelper exists: ' . (class_exists('mdm\admin\components\MenuHelper') ? 'Yes' : 'No');
+        
         try {
             $callback = function ($menu) {
                 $data = json_decode($menu['data'], true);
@@ -37,6 +42,9 @@ use mdm\admin\components\MenuHelper;
             $items = [];
             if (!Yii::$app->user->isGuest) {
                 $items = MenuHelper::getAssignedMenu(Yii::$app->user->id, null, $callback);
+                $debugInfo[] = 'Menu items count: ' . count($items);
+            } else {
+                $debugInfo[] = 'User is guest, no menu loaded';
             }
             
             $subTitle = Yii::$app->params['information']['sub-title'] ?? '';
@@ -44,11 +52,16 @@ use mdm\admin\components\MenuHelper;
                 array_unshift($items, ['label' => $subTitle]);
             }
 
+            // 显示调试信息
+            echo '<div style="background:#333;color:#0f0;padding:5px;font-size:10px;margin:5px;">';
+            echo implode('<br>', $debugInfo);
+            echo '</div>';
+
             echo dmstr\widgets\Menu::widget([
                 'options' => ['class' => 'sidebar-menu tree', 'data-widget' => 'tree'],
                 'items' => $items,
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             echo '<div class="alert alert-danger" style="margin: 10px;">';
             echo '<strong>菜单加载错误:</strong><br>';
             echo htmlspecialchars($e->getMessage()) . '<br>';
