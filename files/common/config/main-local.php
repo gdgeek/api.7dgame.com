@@ -38,8 +38,8 @@ return [
             'transport' => [
                 'scheme' => 'smtp',
                 'host' => 'smtp.exmail.qq.com',
-                'username' => getenv('MAILER_USERNAME'),
-                'password' => getenv('MAILER_PASSWORD'), // 注意：这里需要使用授权码，不是邮箱密码
+                'username' => getenv('MAILER_USERNAME') ?: null,
+                'password' => getenv('MAILER_PASSWORD') ?: null, // 注意：这里需要使用授权码，不是邮箱密码
                 'port' => 465,
                 'encryption' => 'ssl',
             ],
