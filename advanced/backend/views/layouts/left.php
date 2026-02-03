@@ -8,36 +8,51 @@ use mdm\admin\components\MenuHelper;
                 <img src="<?= Yii::$app->request->baseUrl ?>/public/image/default-avatar.png" class="img-cube" alt="User Image"/>
             </div>
             <div class="pull-left info">
-                <p><?= Yii::$app->user->identity->username ?></p>
+                <p><?= Yii::$app->user->identity->username ?? 'Guest' ?></p>
                 <a href="#"><i class="fa fa-circle text-success"></i> Online</a>
             </div>
         </div>
 
         <?php
-        $callback = function ($menu) {
-            $data = json_decode($menu['data'], true);
-            $items = $menu['children'];
-            $return = [
-                'label' => $menu['name'],
-                'url' => [$menu['route']],
-            ];
-            if ($data) {
-                isset($data['visible']) && $return['visible'] = $data['visible'];
-                isset($data['icon']) && $data['icon'] && $return['icon'] = $data['icon'];
-                $return['options'] = $data;
+        try {
+            $callback = function ($menu) {
+                $data = json_decode($menu['data'], true);
+                $items = $menu['children'];
+                $return = [
+                    'label' => $menu['name'],
+                    'url' => [$menu['route']],
+                ];
+                if ($data) {
+                    isset($data['visible']) && $return['visible'] = $data['visible'];
+                    isset($data['icon']) && $data['icon'] && $return['icon'] = $data['icon'];
+                    $return['options'] = $data;
+                }
+                (!isset($return['icon']) || !$return['icon']) && $return['icon'] = 'circle-o';
+                $items && $return['items'] = $items;
+                return $return;
+            };
+
+            $items = [];
+            if (!Yii::$app->user->isGuest) {
+                $items = MenuHelper::getAssignedMenu(Yii::$app->user->id, null, $callback);
             }
-            (!isset($return['icon']) || !$return['icon']) && $return['icon'] = 'circle-o';
-            $items && $return['items'] = $items;
-            return $return;
-        };
+            
+            $subTitle = Yii::$app->params['information']['sub-title'] ?? '';
+            if ($subTitle) {
+                array_unshift($items, ['label' => $subTitle]);
+            }
 
-        $items = MenuHelper::getAssignedMenu(Yii::$app->user->id, null, $callback);
-        array_unshift($items, ['label' => Yii::$app->params['information']['sub-title']]);
-
-        echo dmstr\widgets\Menu::widget([
-            'options' => ['class' => 'sidebar-menu tree', 'data-widget' => 'tree'],
-            'items' => $items,
-        ]);
+            echo dmstr\widgets\Menu::widget([
+                'options' => ['class' => 'sidebar-menu tree', 'data-widget' => 'tree'],
+                'items' => $items,
+            ]);
+        } catch (\Exception $e) {
+            echo '<div class="alert alert-danger" style="margin: 10px;">';
+            echo '<strong>菜单加载错误:</strong><br>';
+            echo htmlspecialchars($e->getMessage()) . '<br>';
+            echo '<small>' . htmlspecialchars($e->getFile()) . ':' . $e->getLine() . '</small>';
+            echo '</div>';
+        }
         ?>
     </section>
 </aside>
@@ -50,15 +65,15 @@ $(function() {
     // 恢复展开状态
     var open = JSON.parse(localStorage.getItem(KEY) || '[]');
     open.forEach(function(i) {
-        $('.sidebar-menu .treeview').eq(i).addClass('menu-open').find('> .treeview-menu').show();
+        \$('.sidebar-menu .treeview').eq(i).addClass('menu-open').find('> .treeview-menu').show();
     });
     
     // 保存展开状态
-    $('.sidebar-menu').on('click', '.treeview > a', function() {
+    \$('.sidebar-menu').on('click', '.treeview > a', function() {
         setTimeout(function() {
             var open = [];
-            $('.sidebar-menu .treeview.menu-open').each(function() {
-                open.push($('.sidebar-menu .treeview').index(this));
+            \$('.sidebar-menu .treeview.menu-open').each(function() {
+                open.push(\$('.sidebar-menu .treeview').index(this));
             });
             localStorage.setItem(KEY, JSON.stringify(open));
         }, 50);
