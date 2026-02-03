@@ -1,26 +1,18 @@
 <?php
 return [
     'language' => 'zh-CN',
-    'sourceLanguage' => 'zh-CN',
+    'sourceLanguage' => 'en-US',
     'aliases' => [
-        '@bower' => '@vendor/bower-asset',
+        '@bower' => '@vendor/yidas/yii2-bower-asset/bower',
         '@npm' => '@vendor/npm-asset',
     ],
     'vendorPath' => dirname(dirname(__DIR__)) . '/vendor',
     'timeZone' => 'Asia/Shanghai',
-    'name' => 'AR创作平台',
+    'name' => '元宇宙实景编程平台（MrPP.com）',
     
     'components' => [
-        'redis' => [
-            'class' => 'yii\\redis\\Connection',
-            'hostname' => getenv('REDIS_HOST') ?: 'localhost',
-            'port' => getenv('REDIS_PORT') ?: 6379,
-            'database' => getenv('REDIS_DB') ?: 0,
-            'password' => getenv('REDIS_PASSWORD') ?: null,
-        ],
         'cache' => [
-            'class' => 'yii\\redis\\Cache',
-            'redis' => 'redis',
+            'class' => 'yii\caching\FileCache',
         ],
         'urlManager' => [
             'enablePrettyUrl' => true,
@@ -30,10 +22,16 @@ return [
         'i18n' => [
             'translations' => [
                 'app*' => [
-                    'class' => 'yii\i18n\DbMessageSource',
-                    'sourceLanguage' => 'zh-CN',
-                    'enableCaching' => true,
-                    'cachingDuration' => 3600,
+                    'class' => 'yii\i18n\PhpMessageSource',
+                    'basePath' => '@common/messages',
+                    'sourceLanguage' => 'en-US',
+                    'fileMap' => [
+                        'app' => 'app.php',
+                        'app/editor' => 'editor.php',
+                        'app/system' => 'system.php',
+                        'app/error' => 'error.php',
+                        'app/site' => 'site.php',
+                    ],
                 ],
             ],
         ],
@@ -56,8 +54,12 @@ return [
         ],
         'jwt' => [
             'class' => \bizley\jwt\Jwt::class,
-            'signer' => \bizley\jwt\Jwt::HS256,  // 使用 HS256 (HMAC 对称加密)
-            'signingKey' => getenv('JWT_SECRET') ?: 'default-secret-key-at-least-32-bytes-long-please-change-in-production-immediately',
+            'signer' => \bizley\jwt\Jwt::HS256,
+            'signingKey' => [
+                'key' =>  getenv('JWT_KEY'), // path to your PRIVATE key, you can start the path with @ to indicate this is a Yii alias
+                'passphrase' => '', // omit it if you are not adding any passphrase
+                'method' => \bizley\jwt\Jwt::METHOD_FILE,
+            ],
             'validationConstraints'=> static function (\bizley\jwt\Jwt $jwt) {
                 $config = $jwt->getConfiguration();
                 return [
