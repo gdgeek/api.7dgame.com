@@ -1,10 +1,10 @@
 <?php
 use mdm\admin\components\MenuHelper;
 ?>
-<!-- LEFT MENU v2026.02.03.004 -->
+<!-- LEFT MENU v2026.02.03.005 -->
 <aside class="main-sidebar">
     <section class="sidebar">
-        <div style="background:#ff0;color:#000;padding:5px;font-size:12px;text-align:center;">v2026.02.03.004</div>
+        <div style="background:#ff0;color:#000;padding:5px;font-size:12px;text-align:center;">v2026.02.03.005</div>
         <div class="user-panel">
             <div class="pull-left image">
                 <img src="<?= Yii::$app->request->baseUrl ?>/public/image/default-avatar.png" class="img-cube" alt="User Image"/>
@@ -75,8 +75,17 @@ use mdm\admin\components\MenuHelper;
                     $routePermissions[] = $name;
                 }
             }
-            $debugInfo[] = 'Route permissions (first 10): ' . json_encode(array_slice($routePermissions, 0, 10));
+            $debugInfo[] = 'Route permissions: ' . json_encode($routePermissions);
             $debugInfo[] = 'Total route permissions: ' . count($routePermissions);
+            
+            // 检查 auth_item 表中以 / 开头的项
+            $authRoutes = (new \yii\db\Query())
+                ->select(['name'])
+                ->from('auth_item')
+                ->where(['like', 'name', '/%', false])
+                ->column();
+            $debugInfo[] = 'Auth_item routes (first 10): ' . json_encode(array_slice($authRoutes, 0, 10));
+            $debugInfo[] = 'Total auth_item routes: ' . count($authRoutes);
             
         } catch (\Throwable $e) {
             $debugInfo[] = 'RBAC check error: ' . $e->getMessage();
