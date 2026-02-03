@@ -1,10 +1,10 @@
 <?php
 use mdm\admin\components\MenuHelper;
 ?>
-<!-- LEFT MENU v2026.02.03.002 -->
+<!-- LEFT MENU v2026.02.03.003 -->
 <aside class="main-sidebar">
     <section class="sidebar">
-        <div style="background:#ff0;color:#000;padding:5px;font-size:12px;text-align:center;">v2026.02.03.002</div>
+        <div style="background:#ff0;color:#000;padding:5px;font-size:12px;text-align:center;">v2026.02.03.003</div>
         <div class="user-panel">
             <div class="pull-left image">
                 <img src="<?= Yii::$app->request->baseUrl ?>/public/image/default-avatar.png" class="img-cube" alt="User Image"/>
@@ -24,12 +24,31 @@ use mdm\admin\components\MenuHelper;
         
         // 检查 RBAC 数据
         try {
+            $db = Yii::$app->db;
+            $debugInfo[] = 'DB DSN: ' . substr($db->dsn, 0, 50) . '...';
+            
             $manager = Yii::$app->authManager;
+            $debugInfo[] = 'AuthManager class: ' . get_class($manager);
+            
+            // 直接查询 auth_assignment 表
+            $allAssignments = (new \yii\db\Query())->from('auth_assignment')->all();
+            $debugInfo[] = 'Total auth_assignment rows: ' . count($allAssignments);
+            
+            // 显示前3条记录的 user_id
+            $sampleIds = array_slice(array_column($allAssignments, 'user_id'), 0, 3);
+            $debugInfo[] = 'Sample user_ids: ' . json_encode($sampleIds);
+            
+            // 用不同方式查询当前用户
+            $byInt = (new \yii\db\Query())->from('auth_assignment')->where(['user_id' => $userId])->count();
+            $byStr = (new \yii\db\Query())->from('auth_assignment')->where(['user_id' => (string)$userId])->count();
+            $debugInfo[] = "Query by int($userId): $byInt, by string('$userId'): $byStr";
+            
             $assignments = $manager->getAssignments($userId);
-            $debugInfo[] = 'Assignments count: ' . count($assignments);
+            $debugInfo[] = 'Assignments via manager: ' . count($assignments);
             if ($assignments) {
                 $debugInfo[] = 'Roles: ' . implode(', ', array_keys($assignments));
             }
+            
             $permissions = $manager->getPermissionsByUser($userId);
             $debugInfo[] = 'Permissions count: ' . count($permissions);
             
@@ -37,15 +56,17 @@ use mdm\admin\components\MenuHelper;
             $menuCount = (new \yii\db\Query())->from('menu')->count();
             $debugInfo[] = 'Menu table rows: ' . $menuCount;
             
-            // 检查 auth_assignment 表中该用户
-            $authAssign = (new \yii\db\Query())
-                ->from('auth_assignment')
-                ->where(['user_id' => (string)$userId])
-                ->all();
-            $debugInfo[] = 'Auth assignments (string): ' . count($authAssign);
+            // 检查 auth_item 表
+            $authItemCount = (new \yii\db\Query())->from('auth_item')->count();
+            $debugInfo[] = 'Auth_item rows: ' . $authItemCount;
+            
+            // 检查 auth_item_child 表
+            $authItemChildCount = (new \yii\db\Query())->from('auth_item_child')->count();
+            $debugInfo[] = 'Auth_item_child rows: ' . $authItemChildCount;
             
         } catch (\Throwable $e) {
             $debugInfo[] = 'RBAC check error: ' . $e->getMessage();
+            $debugInfo[] = 'Error at: ' . $e->getFile() . ':' . $e->getLine();
         }
         
         try {
