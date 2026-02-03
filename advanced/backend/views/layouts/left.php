@@ -1,10 +1,10 @@
 <?php
 use mdm\admin\components\MenuHelper;
 ?>
-<!-- LEFT MENU v2026.02.03.003 -->
+<!-- LEFT MENU v2026.02.03.004 -->
 <aside class="main-sidebar">
     <section class="sidebar">
-        <div style="background:#ff0;color:#000;padding:5px;font-size:12px;text-align:center;">v2026.02.03.003</div>
+        <div style="background:#ff0;color:#000;padding:5px;font-size:12px;text-align:center;">v2026.02.03.004</div>
         <div class="user-panel">
             <div class="pull-left image">
                 <img src="<?= Yii::$app->request->baseUrl ?>/public/image/default-avatar.png" class="img-cube" alt="User Image"/>
@@ -63,6 +63,20 @@ use mdm\admin\components\MenuHelper;
             // 检查 auth_item_child 表
             $authItemChildCount = (new \yii\db\Query())->from('auth_item_child')->count();
             $debugInfo[] = 'Auth_item_child rows: ' . $authItemChildCount;
+            
+            // 检查 menu 表的 route 字段
+            $menuRoutes = (new \yii\db\Query())->select(['id', 'name', 'route'])->from('menu')->all();
+            $debugInfo[] = 'Menu routes: ' . json_encode(array_column($menuRoutes, 'route'));
+            
+            // 检查权限中以 / 开头的（路由权限）
+            $routePermissions = [];
+            foreach ($permissions as $name => $perm) {
+                if (isset($name[0]) && $name[0] === '/') {
+                    $routePermissions[] = $name;
+                }
+            }
+            $debugInfo[] = 'Route permissions (first 10): ' . json_encode(array_slice($routePermissions, 0, 10));
+            $debugInfo[] = 'Total route permissions: ' . count($routePermissions);
             
         } catch (\Throwable $e) {
             $debugInfo[] = 'RBAC check error: ' . $e->getMessage();
