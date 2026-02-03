@@ -18,8 +18,35 @@ use mdm\admin\components\MenuHelper;
         <?php
         // 调试信息
         $debugInfo = [];
-        $debugInfo[] = 'User ID: ' . (Yii::$app->user->isGuest ? 'Guest' : Yii::$app->user->id);
+        $userId = Yii::$app->user->isGuest ? null : Yii::$app->user->id;
+        $debugInfo[] = 'User ID: ' . ($userId ?? 'Guest') . ' (type: ' . gettype($userId) . ')';
         $debugInfo[] = 'MenuHelper exists: ' . (class_exists('mdm\admin\components\MenuHelper') ? 'Yes' : 'No');
+        
+        // 检查 RBAC 数据
+        try {
+            $manager = Yii::$app->authManager;
+            $assignments = $manager->getAssignments($userId);
+            $debugInfo[] = 'Assignments count: ' . count($assignments);
+            if ($assignments) {
+                $debugInfo[] = 'Roles: ' . implode(', ', array_keys($assignments));
+            }
+            $permissions = $manager->getPermissionsByUser($userId);
+            $debugInfo[] = 'Permissions count: ' . count($permissions);
+            
+            // 检查 menu 表
+            $menuCount = (new \yii\db\Query())->from('menu')->count();
+            $debugInfo[] = 'Menu table rows: ' . $menuCount;
+            
+            // 检查 auth_assignment 表中该用户
+            $authAssign = (new \yii\db\Query())
+                ->from('auth_assignment')
+                ->where(['user_id' => (string)$userId])
+                ->all();
+            $debugInfo[] = 'Auth assignments (string): ' . count($authAssign);
+            
+        } catch (\Throwable $e) {
+            $debugInfo[] = 'RBAC check error: ' . $e->getMessage();
+        }
         
         try {
             $callback = function ($menu) {
