@@ -1,10 +1,10 @@
 <?php
-use mdm\admin\components\MenuHelper;
+use backend\components\MenuHelper;
 ?>
-<!-- LEFT MENU v2026.02.03.005 -->
+<!-- LEFT MENU v2026.02.03.006 -->
 <aside class="main-sidebar">
     <section class="sidebar">
-        <div style="background:#ff0;color:#000;padding:5px;font-size:12px;text-align:center;">v2026.02.03.005</div>
+        <div style="background:#ff0;color:#000;padding:5px;font-size:12px;text-align:center;">v2026.02.03.006</div>
         <div class="user-panel">
             <div class="pull-left image">
                 <img src="<?= Yii::$app->request->baseUrl ?>/public/image/default-avatar.png" class="img-cube" alt="User Image"/>
