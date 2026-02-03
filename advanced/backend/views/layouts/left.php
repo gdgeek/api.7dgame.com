@@ -1,14 +1,8 @@
 <?php
 use backend\components\MenuHelper;
 ?>
-<!-- DEBUG v007 -->
 <aside class="main-sidebar">
     <section class="sidebar">
-        <?php
-        // 临时调试
-        try {
-            echo '<div style="background:#333;color:#0f0;padding:5px;font-size:10px;">Debug: Starting menu load</div>';
-        ?>
         <div class="user-panel">
             <div class="pull-left image">
                 <img src="<?= Yii::$app->request->baseUrl ?>/public/image/default-avatar.png" class="img-cube" alt="User Image"/>
@@ -55,14 +49,6 @@ use backend\components\MenuHelper;
         } catch (\Throwable $e) {
             echo '<div class="alert alert-danger" style="margin: 10px;">';
             echo '<strong>菜单加载错误:</strong><br>';
-            echo htmlspecialchars($e->getMessage()) . '<br>';
-            echo '<small>' . htmlspecialchars($e->getFile()) . ':' . $e->getLine() . '</small>';
-            echo '</div>';
-        }
-        } catch (\Throwable $e) {
-            echo '<div class="alert alert-danger" style="margin: 10px;">';
-            echo '<strong>整体错误:</strong><br>';
-            echo 'Code: ' . $e->getCode() . '<br>';
             echo htmlspecialchars($e->getMessage()) . '<br>';
             echo '<small>' . htmlspecialchars($e->getFile()) . ':' . $e->getLine() . '</small>';
             echo '</div>';
