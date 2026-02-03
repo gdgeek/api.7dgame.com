@@ -3,28 +3,34 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// 显示最近的错误日志
-$logFile = __DIR__ . '/../runtime/logs/app.log';
-echo "<h2>Log file: $logFile</h2>";
-if (file_exists($logFile)) {
-    $lines = file($logFile);
-    $recent = array_slice($lines, -100);
-    echo "<h2>Recent Logs:</h2><pre>";
-    echo htmlspecialchars(implode('', $recent));
-    echo "</pre>";
-} else {
-    echo "Log file not found<br>";
-    // 列出 runtime 目录
-    $runtimeDir = __DIR__ . '/../runtime';
-    if (is_dir($runtimeDir)) {
-        echo "<h3>Runtime dir contents:</h3><pre>";
-        print_r(scandir($runtimeDir));
-        echo "</pre>";
-        $logsDir = $runtimeDir . '/logs';
-        if (is_dir($logsDir)) {
-            echo "<h3>Logs dir contents:</h3><pre>";
-            print_r(scandir($logsDir));
-            echo "</pre>";
+// 直接加载应用并访问 admin/permission/index
+require __DIR__ . '/../vendor/autoload.php';
+require __DIR__ . '/../vendor/yiisoft/yii2/Yii.php';
+require __DIR__ . '/../common/config/bootstrap.php';
+require __DIR__ . '/../../backend/config/bootstrap.php';
+
+$config = yii\helpers\ArrayHelper::merge(
+    require __DIR__ . '/../common/config/main.php',
+    require __DIR__ . '/../common/config/main-local.php',
+    require __DIR__ . '/../../backend/config/main.php',
+    require __DIR__ . '/../../backend/config/main-local.php'
+);
+
+echo "<h2>PHP Version: " . phpversion() . "</h2>";
+echo "<h2>Testing mdm-admin module...</h2>";
+
+try {
+    // 检查 mdm-admin 版本
+    $composerLock = __DIR__ . '/../composer.lock';
+    if (file_exists($composerLock)) {
+        $lock = json_decode(file_get_contents($composerLock), true);
+        foreach ($lock['packages'] as $pkg) {
+            if ($pkg['name'] === 'mdmsoft/yii2-admin') {
+                echo "mdm-admin version: " . $pkg['version'] . "<br>";
+                break;
+            }
         }
     }
+} catch (\Throwable $e) {
+    echo "<pre>Error: " . $e->getMessage() . "\n" . $e->getTraceAsString() . "</pre>";
 }
