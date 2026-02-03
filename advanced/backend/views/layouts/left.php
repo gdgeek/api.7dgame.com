@@ -1,10 +1,8 @@
 <?php
 use backend\components\MenuHelper;
 ?>
-<!-- LEFT MENU v2026.02.03.006 -->
 <aside class="main-sidebar">
     <section class="sidebar">
-        <div style="background:#ff0;color:#000;padding:5px;font-size:12px;text-align:center;">v2026.02.03.006</div>
         <div class="user-panel">
             <div class="pull-left image">
                 <img src="<?= Yii::$app->request->baseUrl ?>/public/image/default-avatar.png" class="img-cube" alt="User Image"/>
@@ -16,82 +14,6 @@ use backend\components\MenuHelper;
         </div>
 
         <?php
-        // 调试信息
-        $debugInfo = [];
-        $userId = Yii::$app->user->isGuest ? null : Yii::$app->user->id;
-        $debugInfo[] = 'User ID: ' . ($userId ?? 'Guest') . ' (type: ' . gettype($userId) . ')';
-        $debugInfo[] = 'MenuHelper exists: ' . (class_exists('mdm\admin\components\MenuHelper') ? 'Yes' : 'No');
-        
-        // 检查 RBAC 数据
-        try {
-            $db = Yii::$app->db;
-            $debugInfo[] = 'DB DSN: ' . substr($db->dsn, 0, 50) . '...';
-            
-            $manager = Yii::$app->authManager;
-            $debugInfo[] = 'AuthManager class: ' . get_class($manager);
-            
-            // 直接查询 auth_assignment 表
-            $allAssignments = (new \yii\db\Query())->from('auth_assignment')->all();
-            $debugInfo[] = 'Total auth_assignment rows: ' . count($allAssignments);
-            
-            // 显示前3条记录的 user_id
-            $sampleIds = array_slice(array_column($allAssignments, 'user_id'), 0, 3);
-            $debugInfo[] = 'Sample user_ids: ' . json_encode($sampleIds);
-            
-            // 用不同方式查询当前用户
-            $byInt = (new \yii\db\Query())->from('auth_assignment')->where(['user_id' => $userId])->count();
-            $byStr = (new \yii\db\Query())->from('auth_assignment')->where(['user_id' => (string)$userId])->count();
-            $debugInfo[] = "Query by int($userId): $byInt, by string('$userId'): $byStr";
-            
-            $assignments = $manager->getAssignments($userId);
-            $debugInfo[] = 'Assignments via manager: ' . count($assignments);
-            if ($assignments) {
-                $debugInfo[] = 'Roles: ' . implode(', ', array_keys($assignments));
-            }
-            
-            $permissions = $manager->getPermissionsByUser($userId);
-            $debugInfo[] = 'Permissions count: ' . count($permissions);
-            
-            // 检查 menu 表
-            $menuCount = (new \yii\db\Query())->from('menu')->count();
-            $debugInfo[] = 'Menu table rows: ' . $menuCount;
-            
-            // 检查 auth_item 表
-            $authItemCount = (new \yii\db\Query())->from('auth_item')->count();
-            $debugInfo[] = 'Auth_item rows: ' . $authItemCount;
-            
-            // 检查 auth_item_child 表
-            $authItemChildCount = (new \yii\db\Query())->from('auth_item_child')->count();
-            $debugInfo[] = 'Auth_item_child rows: ' . $authItemChildCount;
-            
-            // 检查 menu 表的 route 字段
-            $menuRoutes = (new \yii\db\Query())->select(['id', 'name', 'route'])->from('menu')->all();
-            $debugInfo[] = 'Menu routes: ' . json_encode(array_column($menuRoutes, 'route'));
-            
-            // 检查权限中以 / 开头的（路由权限）
-            $routePermissions = [];
-            foreach ($permissions as $name => $perm) {
-                if (isset($name[0]) && $name[0] === '/') {
-                    $routePermissions[] = $name;
-                }
-            }
-            $debugInfo[] = 'Route permissions: ' . json_encode($routePermissions);
-            $debugInfo[] = 'Total route permissions: ' . count($routePermissions);
-            
-            // 检查 auth_item 表中以 / 开头的项
-            $authRoutes = (new \yii\db\Query())
-                ->select(['name'])
-                ->from('auth_item')
-                ->where(['like', 'name', '/%', false])
-                ->column();
-            $debugInfo[] = 'Auth_item routes (first 10): ' . json_encode(array_slice($authRoutes, 0, 10));
-            $debugInfo[] = 'Total auth_item routes: ' . count($authRoutes);
-            
-        } catch (\Throwable $e) {
-            $debugInfo[] = 'RBAC check error: ' . $e->getMessage();
-            $debugInfo[] = 'Error at: ' . $e->getFile() . ':' . $e->getLine();
-        }
-        
         try {
             $callback = function ($menu) {
                 $data = json_decode($menu['data'], true);
@@ -113,20 +35,12 @@ use backend\components\MenuHelper;
             $items = [];
             if (!Yii::$app->user->isGuest) {
                 $items = MenuHelper::getAssignedMenu(Yii::$app->user->id, null, $callback);
-                $debugInfo[] = 'Menu items count: ' . count($items);
-            } else {
-                $debugInfo[] = 'User is guest, no menu loaded';
             }
             
             $subTitle = Yii::$app->params['information']['sub-title'] ?? '';
             if ($subTitle) {
                 array_unshift($items, ['label' => $subTitle]);
             }
-
-            // 显示调试信息
-            echo '<div style="background:#333;color:#0f0;padding:5px;font-size:10px;margin:5px;">';
-            echo implode('<br>', $debugInfo);
-            echo '</div>';
 
             echo dmstr\widgets\Menu::widget([
                 'options' => ['class' => 'sidebar-menu tree', 'data-widget' => 'tree'],
