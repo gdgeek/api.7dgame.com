@@ -33,6 +33,9 @@ return [
         ],
     ],
     'components' => [
+        'healthService' => [
+            'class' => 'common\components\HealthService',
+        ],
         'request' => [
             'csrfParam' => '_csrf-api',
             'parsers' => [
@@ -70,6 +73,9 @@ return [
             'enableStrictParsing' => true,
             'showScriptName' => false,
             'rules' => [
+                // 健康检查路由（无需认证）
+                'GET health' => 'health/index',
+                
                 // Swagger API 文档路由
                 'GET swagger' => 'swagger/index',
                 'GET swagger/json-schema' => 'swagger/json-schema',
