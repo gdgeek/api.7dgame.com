@@ -54,7 +54,7 @@ return [
         ],
         'jwt' => [
             'class' => \bizley\jwt\Jwt::class,
-            'signer' => \bizley\jwt\Jwt::HS256,
+            'signer' => \bizley\jwt\Jwt::ES256,
             'signingKey' => [
                 'key' =>  getenv('JWT_KEY'), // path to your PRIVATE key, you can start the path with @ to indicate this is a Yii alias
                 'passphrase' => '', // omit it if you are not adding any passphrase
