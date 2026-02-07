@@ -8,6 +8,7 @@ use api\modules\v1\models\data\Link;
 use api\modules\v1\models\data\Register;
 use api\modules\v1\models\User;
 use api\modules\v1\models\AppleId;
+use common\components\security\RateLimitBehavior;
 use Yii;
 use yii\helpers\Url;
 use yii\base\Exception;
@@ -39,6 +40,15 @@ class SiteController extends \yii\rest\Controller
         $behaviors['authenticator'] = $auth;
         // avoid authentication on CORS-pre-flight requests (HTTP OPTIONS method)
         $behaviors['authenticator']['except'] = ['options'];
+
+        $behaviors['rateLimiter'] = [
+            'class' => RateLimitBehavior::class,
+            'rateLimiter' => 'rateLimiter',
+            'defaultStrategy' => 'ip',
+            'actionStrategies' => [
+                'login' => 'login',
+            ],
+        ];
 
         return $behaviors;
     }

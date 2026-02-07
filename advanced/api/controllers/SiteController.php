@@ -4,6 +4,7 @@ namespace api\controllers;
 use api\common\models\BindedEmailForm;
 use api\modules\v1\models\data\Login;
 use api\modules\v1\models\User;
+use common\components\security\RateLimitBehavior;
 use common\models\Invitation;
 use common\models\PasswordResetRequestForm;
 use common\models\ResendVerificationEmailForm;
@@ -43,6 +44,15 @@ class SiteController extends \yii\rest\Controller
         $behaviors['authenticator'] = $auth;
         // avoid authentication on CORS-pre-flight requests (HTTP OPTIONS method)
         $behaviors['authenticator']['except'] = ['options'];
+        
+        $behaviors['rateLimiter'] = [
+            'class' => RateLimitBehavior::class,
+            'rateLimiter' => 'rateLimiter',
+            'defaultStrategy' => 'ip',
+            'actionStrategies' => [
+                'login' => 'login',
+            ],
+        ];
         
         return $behaviors;
     }

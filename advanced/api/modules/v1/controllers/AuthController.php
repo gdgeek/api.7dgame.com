@@ -3,6 +3,7 @@
 namespace api\modules\v1\controllers;
 
 use api\modules\v1\models\UserLinked;
+use common\components\security\RateLimitBehavior;
 use yii\web\BadRequestHttpException;
 use api\modules\v1\models\User;
 use Yii;
@@ -22,6 +23,15 @@ class AuthController extends \yii\rest\Controller
     {
 
         $behaviors = parent::behaviors();
+
+        $behaviors['rateLimiter'] = [
+            'class' => RateLimitBehavior::class,
+            'rateLimiter' => 'rateLimiter',
+            'defaultStrategy' => 'ip',
+            'actionStrategies' => [
+                'login' => 'login',
+            ],
+        ];
 
         return $behaviors;
     }

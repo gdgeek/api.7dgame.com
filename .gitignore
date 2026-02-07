@@ -6,6 +6,8 @@
 *.key
 *.pem
 .env.docker
+.env.local
+.env
 jwt_keys/
 storage
 
@@ -13,6 +15,16 @@ storage
 backups/
 *.sql
 *.bak
+
+# Log files
+*.log
+runtime/logs/
+
+# Temp files
+tmp/
+*.tmp
+*.swp
+*.swo
 
 # Keep docker-compose.yml template in repo
 # docker-compose.yml

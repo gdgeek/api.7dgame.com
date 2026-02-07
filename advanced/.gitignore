@@ -45,3 +45,17 @@ phpunit.phar
 /api/web/index.php
 /api/web/index-test.php
 /api/web/robots.txt
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Log files
+*.log
+runtime/logs/*
+!runtime/logs/.gitignore
+
+# Temp files
+tmp/
+*.tmp

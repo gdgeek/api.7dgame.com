@@ -52,11 +52,11 @@ return [
             'traceLevel' => 3, //YII_DEBUG ? 3 : 0,
             'targets' => [
                 [
-                    'class' => 'yii\log\FileTarget',
+                    'class' => 'common\components\security\SafeFileTarget',
                     'levels' => ['info', 'error', 'warning'],
                 ],
                 [
-                    'class' => 'yii\log\FileTarget',
+                    'class' => 'common\components\security\SafeFileTarget',
                     'levels' => ['info'],
                     'categories' => ['mrpp'],
                     'logFile' => '@api/runtime/logs/mrpp.log',
