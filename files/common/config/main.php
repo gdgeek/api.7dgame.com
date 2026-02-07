@@ -56,8 +56,13 @@ return [
             'class' => \bizley\jwt\Jwt::class,
             'signer' => \bizley\jwt\Jwt::ES256,
             'signingKey' => [
-                'key' =>  getenv('JWT_KEY'), // path to your PRIVATE key, you can start the path with @ to indicate this is a Yii alias
-                'passphrase' => '', // omit it if you are not adding any passphrase
+                'key' =>  getenv('JWT_KEY') ?: '/var/www/.ssh/jwt-key.pem',
+                'passphrase' => '',
+                'method' => \bizley\jwt\Jwt::METHOD_FILE,
+            ],
+            'verifyingKey' => [
+                'key' =>  getenv('JWT_KEY') ?: '/var/www/.ssh/jwt-key.pem',
+                'passphrase' => '',
                 'method' => \bizley\jwt\Jwt::METHOD_FILE,
             ],
             'validationConstraints'=> static function (\bizley\jwt\Jwt $jwt) {
