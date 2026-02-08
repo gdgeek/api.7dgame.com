@@ -189,8 +189,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     needs: test
-    # 只在合并到主干时构建
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    # 所有分支 push 都构建
+    if: github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
 
@@ -214,27 +214,30 @@ jobs:
       - name: Build and Push Docker Image
         run: |
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-          BRANCH_NAME=$(echo "${{ github.ref }}" | sed 's|refs/heads/||')
+          BRANCH_NAME=$(echo "${{ github.ref }}" | sed 's|refs/heads/||' | sed 's|/|-|g')
+          IS_MAIN=${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' }}
           
           # Build image
           docker build -t hkccr.ccs.tencentyun.com/gdgeek/api:${SHORT_SHA} -f docker/Release .
           
-          # Push 7-char hash tag
+          # Push 短hash tag（所有分支）
           docker push hkccr.ccs.tencentyun.com/gdgeek/api:${SHORT_SHA}
           
-          # Push branch tag (master or main)
+          # Push 分支名 tag（所有分支）
           docker tag hkccr.ccs.tencentyun.com/gdgeek/api:${SHORT_SHA} hkccr.ccs.tencentyun.com/gdgeek/api:${BRANCH_NAME}
           docker push hkccr.ccs.tencentyun.com/gdgeek/api:${BRANCH_NAME}
           
-          # Push latest tag
-          docker tag hkccr.ccs.tencentyun.com/gdgeek/api:${SHORT_SHA} hkccr.ccs.tencentyun.com/gdgeek/api:latest
-          docker push hkccr.ccs.tencentyun.com/gdgeek/api:latest
+          # Push latest tag（仅主分支）
+          if [ "$IS_MAIN" = "true" ]; then
+            docker tag hkccr.ccs.tencentyun.com/gdgeek/api:${SHORT_SHA} hkccr.ccs.tencentyun.com/gdgeek/api:latest
+            docker push hkccr.ccs.tencentyun.com/gdgeek/api:latest
+          fi
 
-  # 阶段3: 部署
+  # 阶段3: 部署（仅主分支）
   deploy:
     runs-on: ubuntu-latest
     needs: build
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     steps:
       - name: Deploy via Portainer Webhook
         run: |
