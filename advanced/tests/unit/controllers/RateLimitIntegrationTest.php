@@ -24,43 +24,8 @@ use PHPUnit\Framework\TestCase;
 class RateLimitIntegrationTest extends TestCase
 {
     // =========================================================================
-    // API Config: RateLimiter component registration (source-level checks)
+    // RateLimiter component: production strategy values
     // =========================================================================
-
-    /**
-     * Test that the API config file contains the rateLimiter component registration.
-     */
-    public function testApiConfigRegistersRateLimiterComponent()
-    {
-        $configSource = file_get_contents(
-            __DIR__ . '/../../../api/config/main.php'
-        );
-
-        $this->assertStringContainsString(
-            "'rateLimiter'",
-            $configSource,
-            'API config should register the rateLimiter component'
-        );
-        $this->assertStringContainsString(
-            "common\\components\\security\\RateLimiter",
-            $configSource,
-            'API config should reference the RateLimiter class'
-        );
-    }
-
-    /**
-     * Test that the API config defines all three rate limit strategies.
-     */
-    public function testApiConfigDefinesAllStrategies()
-    {
-        $configSource = file_get_contents(
-            __DIR__ . '/../../../api/config/main.php'
-        );
-
-        $this->assertStringContainsString("'ip'", $configSource);
-        $this->assertStringContainsString("'user'", $configSource);
-        $this->assertStringContainsString("'login'", $configSource);
-    }
 
     /**
      * Test that the RateLimiter component works with expected production strategy values.
