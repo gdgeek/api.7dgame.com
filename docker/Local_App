@@ -1,7 +1,7 @@
 # Dockerfile-app
 
-# Use PHP 8.4 with Apache for better compatibility
-FROM  php:8.4-apache
+# Use PHP 8.5 with Apache
+FROM  php:8.5-apache
 
 # Enable the Rewrite Apache mod
 RUN cd /etc/apache2/mods-enabled && \
@@ -19,6 +19,9 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-install -j$(nproc) gd
 
 RUN docker-php-ext-install -j$(nproc) mysqli pdo pdo_mysql
+
+# Enable OPcache + JIT configuration (opcache is built-in for PHP 8.5)
+COPY ./docker/php-jit.ini $PHP_INI_DIR/conf.d/opcache-jit.ini
 
 RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
 

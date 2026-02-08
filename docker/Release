@@ -21,10 +21,7 @@ RUN apt-get update && apt-get install -y \
 
 RUN docker-php-ext-install -j$(nproc) mysqli pdo pdo_mysql
 
-# Install OPcache for JIT support
-RUN docker-php-ext-install opcache
-
-# Enable OPcache + JIT configuration
+# Enable OPcache + JIT configuration (opcache is built-in for PHP 8.5)
 COPY ./docker/php-jit.ini $PHP_INI_DIR/conf.d/opcache-jit.ini
 
 # Install Composer
