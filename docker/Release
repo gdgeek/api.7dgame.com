@@ -21,10 +21,16 @@ RUN apt-get update && apt-get install -y \
 
 RUN docker-php-ext-install -j$(nproc) mysqli pdo pdo_mysql
 
+# Install OPcache for JIT support
+RUN docker-php-ext-install opcache
+
+# Enable OPcache + JIT configuration
+COPY ./docker/php-jit.ini $PHP_INI_DIR/conf.d/opcache-jit.ini
+
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
+RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 
 WORKDIR /var/www/html/advanced
 
