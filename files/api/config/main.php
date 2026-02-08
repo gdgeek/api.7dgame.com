@@ -36,6 +36,14 @@ return [
         'healthService' => [
             'class' => 'common\components\HealthService',
         ],
+        'rateLimiter' => [
+            'class' => 'common\components\security\RateLimiter',
+            'strategies' => [
+                'ip' => ['limit' => 100, 'window' => 60],
+                'user' => ['limit' => 1000, 'window' => 3600],
+                'login' => ['limit' => 5, 'window' => 900],
+            ],
+        ],
         'request' => [
             'csrfParam' => '_csrf-api',
             'parsers' => [
