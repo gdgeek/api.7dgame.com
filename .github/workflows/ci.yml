@@ -29,12 +29,12 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'
+          php-version: '8.5'
           extensions: pdo, pdo_mysql, gd
           
       - name: Install Dependencies
         working-directory: ./advanced
-        run: composer install --prefer-dist --no-progress --optimize-autoloader --ignore-platform-req=php
+        run: composer install --prefer-dist --no-progress --optimize-autoloader
 
       - name: Prepare Test Configs
         working-directory: ./advanced
@@ -197,12 +197,12 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'
+          php-version: '8.5'
           extensions: pdo, pdo_mysql, gd
 
       - name: Install Dependencies (Production)
         working-directory: ./advanced
-        run: composer install --prefer-dist --no-progress --no-dev --optimize-autoloader --ignore-platform-req=php
+        run: composer install --prefer-dist --no-progress --no-dev --optimize-autoloader
       
       - name: Login to Tencent Registry
         uses: docker/login-action@v3
