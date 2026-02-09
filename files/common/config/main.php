@@ -61,7 +61,7 @@ return [
                 'method' => \bizley\jwt\Jwt::METHOD_FILE,
             ],
             'verifyingKey' => [
-                'key' =>  getenv('JWT_KEY') ?: '/var/www/.ssh/jwt-key.pem',
+                'key' =>  getenv('JWT_PUB_KEY') ?: '/var/www/.ssh/jwt-key-pub.pem',
                 'passphrase' => '',
                 'method' => \bizley\jwt\Jwt::METHOD_FILE,
             ],
