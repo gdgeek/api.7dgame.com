@@ -27,7 +27,7 @@ COPY ./docker/php-jit.ini $PHP_INI_DIR/conf.d/opcache-jit.ini
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
+RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
 
 WORKDIR /var/www/html/advanced
 
