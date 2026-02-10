@@ -4,6 +4,7 @@ namespace api\modules\v1\controllers;
 
 use api\modules\v1\models\File;
 use api\modules\v1\models\Verse;
+use api\modules\v1\models\Version;
 use api\modules\v1\services\ScenePackageService;
 use bizley\jwt\JwtHttpBearerAuth;
 use mdm\admin\components\AccessControl;
@@ -273,6 +274,9 @@ class ScenePackageController extends Controller
         // Validate required fields
         $this->validateImportData($data);
 
+        // Validate version compatibility
+        $this->validateVersion($data);
+
         // Validate fileId existence
         $this->validateFileIds($data);
 
@@ -324,6 +328,24 @@ class ScenePackageController extends Controller
     }
 
     /**
+     * Validate version compatibility of import data.
+     *
+     * @param array|null $data Import data to validate
+     * @throws BadRequestHttpException if version is missing or mismatched
+     */
+    private function validateVersion($data): void
+    {
+        $currentVersion = Version::getCurrentVersionNumber();
+        $packageVersion = (int) ($data['verse']['version'] ?? 0);
+
+        if ($packageVersion !== $currentVersion) {
+            throw new BadRequestHttpException(
+                "Version mismatch: package version is {$packageVersion}, but current system version is {$currentVersion}"
+            );
+        }
+    }
+
+    /**
      * Validate required fields in import data.
      *
      * @param array|null $data Import data to validate
@@ -341,7 +363,7 @@ class ScenePackageController extends Controller
         }
 
         // verse required fields
-        $verseRequiredFields = ['name', 'data', 'uuid'];
+        $verseRequiredFields = ['name', 'data', 'version', 'uuid'];
         foreach ($verseRequiredFields as $field) {
             if (!isset($data['verse'][$field]) || $data['verse'][$field] === '') {
                 throw new BadRequestHttpException("Missing required field: verse.{$field}");

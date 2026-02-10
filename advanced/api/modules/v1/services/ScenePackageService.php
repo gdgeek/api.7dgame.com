@@ -10,6 +10,7 @@ use api\modules\v1\models\MetaResource;
 use api\modules\v1\models\Resource;
 use api\modules\v1\models\Verse;
 use api\modules\v1\models\VerseCode;
+use api\modules\v1\models\Version;
 use api\modules\v1\models\VerseMeta;
 use common\components\UuidHelper;
 use Yii;
@@ -327,6 +328,7 @@ class ScenePackageService extends Component
             'info' => $verse->info,
             'data' => $verse->data,
             'uuid' => $verse->uuid,
+            'version' => Version::getCurrentVersionNumber(),
             'verseRelease' => null,
         ];
 
