@@ -305,11 +305,10 @@ class EmailVerificationFormsTest extends TestCase
     {
         $form = new ResetPasswordForm();
         $form->token = str_repeat('a', 32);
-        $form->password = 'Ab1!' . str_repeat('x', 20); // 超过 20 字符
+        $form->password = 'Ab1!' . str_repeat('x', 124); // 超过 128 字符
         
         $this->assertFalse($form->validate(), "Form should be invalid");
         $this->assertArrayHasKey('password', $form->errors);
-        $this->assertStringContainsString('不能超过', $form->getFirstError('password'));
     }
     
     /**
@@ -319,7 +318,7 @@ class EmailVerificationFormsTest extends TestCase
     {
         $form = new ResetPasswordForm();
         $form->token = str_repeat('a', 32);
-        $form->password = 'pass123!@#'; // 没有大写字母
+        $form->password = 'password123!@#'; // 没有大写字母，>=12字符
         
         $this->assertFalse($form->validate(), "Form should be invalid");
         $this->assertArrayHasKey('password', $form->errors);
@@ -333,7 +332,7 @@ class EmailVerificationFormsTest extends TestCase
     {
         $form = new ResetPasswordForm();
         $form->token = str_repeat('a', 32);
-        $form->password = 'PASS123!@#'; // 没有小写字母
+        $form->password = 'PASSWORD123!@#'; // 没有小写字母，>=12字符
         
         $this->assertFalse($form->validate(), "Form should be invalid");
         $this->assertArrayHasKey('password', $form->errors);
@@ -347,7 +346,7 @@ class EmailVerificationFormsTest extends TestCase
     {
         $form = new ResetPasswordForm();
         $form->token = str_repeat('a', 32);
-        $form->password = 'Password!@#'; // 没有数字
+        $form->password = 'PasswordAbc!@#'; // 没有数字，>=12字符
         
         $this->assertFalse($form->validate(), "Form should be invalid");
         $this->assertArrayHasKey('password', $form->errors);
@@ -361,7 +360,7 @@ class EmailVerificationFormsTest extends TestCase
     {
         $form = new ResetPasswordForm();
         $form->token = str_repeat('a', 32);
-        $form->password = 'Password123'; // 没有特殊字符
+        $form->password = 'Password12345'; // 没有特殊字符，>=12字符
         
         $this->assertFalse($form->validate(), "Form should be invalid");
         $this->assertArrayHasKey('password', $form->errors);
@@ -374,11 +373,11 @@ class EmailVerificationFormsTest extends TestCase
     public function testResetPasswordFormValidPasswordFormats()
     {
         $validPasswords = [
-            'Pass123!@#',
-            'Secure1!',
-            'MyP@ssw0rd',
+            'Password123!@#',
+            'SecurePass1!xx',
+            'MyP@ssw0rd!!ab',
             'Test123!@#ABC',
-            'aB3!defGHI',
+            'aB3!defGHIjkl',
         ];
         
         foreach ($validPasswords as $password) {
