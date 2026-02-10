@@ -14,12 +14,13 @@ RUN apt-get update && apt-get install -y \
     libfreetype6-dev \
     libjpeg62-turbo-dev \
     libpng-dev \
+    libzip-dev \
     git \
     unzip \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) gd
 
-RUN docker-php-ext-install -j$(nproc) mysqli pdo pdo_mysql
+RUN docker-php-ext-install -j$(nproc) mysqli pdo pdo_mysql zip
 
 # Enable OPcache + JIT configuration (opcache is built-in for PHP 8.5)
 COPY ./docker/php-jit.ini $PHP_INI_DIR/conf.d/opcache-jit.ini
