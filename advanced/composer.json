@@ -61,7 +61,8 @@
     "codeception/codeception": "^5.3",
     "codeception/module-yii2": "^2.0",
     "codeception/module-asserts": "^3.3",
-    "codeception/module-filesystem": "^3.0"
+    "codeception/module-filesystem": "^3.0",
+    "giorgiosironi/eris": "^1.0"
   },
   "config": {
     "process-timeout": 1800,
