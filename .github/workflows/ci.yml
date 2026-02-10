@@ -212,6 +212,9 @@ jobs:
           username: ${{ secrets.TENCENT_DOCKER_USERNAME }}
           password: ${{ secrets.TENCENT_DOCKER_PASSWORD }}
           
+      - name: Write Git Commit Hash
+        run: echo "${{ github.sha }}" > advanced/GIT_COMMIT
+
       - name: Build and Push Docker Image
         run: |
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)

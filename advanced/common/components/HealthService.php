@@ -37,11 +37,26 @@ class HealthService extends Component
             }
         }
 
-        return [
+        $result = [
             'status' => $isHealthy ? 'healthy' : 'unhealthy',
             'timestamp' => date('c'),
             'checks' => $checks,
         ];
+
+        // 读取构建时注入的 git commit hash
+        $basePath = Yii::getAlias('@app');
+        $candidates = [
+            $basePath . '/GIT_COMMIT',
+            dirname($basePath) . '/GIT_COMMIT',
+        ];
+        foreach ($candidates as $gitHashFile) {
+            if (file_exists($gitHashFile)) {
+                $result['gitCommit'] = trim(file_get_contents($gitHashFile));
+                break;
+            }
+        }
+
+        return $result;
     }
 
     /**
