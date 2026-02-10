@@ -39,7 +39,8 @@ class ScenePackageController extends Controller
     {
         $behaviors = parent::behaviors();
 
-        // Export action bypasses content negotiation to support both JSON and ZIP responses
+        // Export action excluded from contentNegotiator to support ZIP downloads
+        // Response format is set manually in actionExport (JSON by default, RAW for ZIP)
         $behaviors['contentNegotiator']['except'] = ['export'];
 
         // add CORS filter
