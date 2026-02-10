@@ -38,6 +38,9 @@ class ScenePackageController extends Controller
     {
         $behaviors = parent::behaviors();
 
+        // Allow export action to bypass content negotiation (supports application/zip)
+        $behaviors['contentNegotiator']['except'] = ['export'];
+
         // add CORS filter
         $behaviors['corsFilter'] = [
             'class' => \yii\filters\Cors::class,
@@ -104,7 +107,6 @@ class ScenePackageController extends Controller
      *                 @OA\Property(property="id", type="integer", example=626),
      *                 @OA\Property(property="name", type="string", example="我的场景"),
      *                 @OA\Property(property="uuid", type="string", example="verse-uuid-xxx"),
-     *                 @OA\Property(property="version", type="integer", example=3),
      *                 @OA\Property(property="data", type="object", description="场景 JSON 数据"),
      *                 @OA\Property(property="verseCode", type="object",
      *                     @OA\Property(property="blockly", type="string"),
@@ -194,19 +196,16 @@ class ScenePackageController extends Controller
             $zip->addFromString('scene.json', json_encode($exportData, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
             $zip->close();
 
-            $zipContent = file_get_contents($tmpFile);
-            @unlink($tmpFile);
+            $filename = 'scene_' . $id . '.zip';
 
-            // Build filename from verse name
-            $verseName = preg_replace('/[^a-zA-Z0-9_\-\x{4e00}-\x{9fff}]/u', '_', $exportData['verse']['name'] ?? 'scene');
-            $filename = $verseName . '.zip';
+            $response->on(Response::EVENT_AFTER_SEND, function () use ($tmpFile) {
+                @unlink($tmpFile);
+            });
 
-            $response->format = Response::FORMAT_RAW;
-            $response->headers->set('Content-Type', 'application/zip');
-            $response->headers->set('Content-Disposition', 'attachment; filename="' . $filename . '"');
-            $response->content = $zipContent;
-
-            return $response;
+            return $response->sendFile($tmpFile, $filename, [
+                'mimeType' => 'application/zip',
+                'inline' => false,
+            ]);
         }
 
         // Default: JSON response
@@ -221,15 +220,15 @@ class ScenePackageController extends Controller
      * @OA\Post(
      *     path="/v1/scene-package/verses/import",
      *     summary="导入场景包",
-     *     description="通过 JSON 请求体或 ZIP 文件上传导入完整场景。JSON 模式使用 application/json Content-Type 提交场景数据；ZIP 模式使用 multipart/form-data 上传包含 scene.json 的 ZIP 文件。请求体需包含 verse（必填 name/data/version/uuid）、metas 数组（必填 title/uuid）、resourceFileMappings 数组（必填 originalUuid/fileId/name/type/info）。",
+     *     description="通过 JSON 请求体或 ZIP 文件上传导入完整场景。JSON 模式使用 application/json Content-Type 提交场景数据；ZIP 模式使用 multipart/form-data 上传包含 scene.json 的 ZIP 文件。请求体需包含 verse（必填 name/data/uuid）、metas 数组（必填 title/uuid）、resourceFileMappings 数组（必填 originalUuid/fileId/name/type/info）。",
      *     tags={"ScenePackage"},
      *     security={{"Bearer": {}}},
      *     @OA\RequestBody(
      *         required=true,
-     *         description="场景导入数据（JSON 格式），verse 必填字段：name, data, version, uuid",
+     *         description="场景导入数据（JSON 格式），verse 必填字段：name, data, uuid",
      *         @OA\JsonContent(
      *             required={"verse"},
-     *             @OA\Property(property="verse", type="object", description="场景数据，必填：name, data, version, uuid"),
+     *             @OA\Property(property="verse", type="object", description="场景数据，必填：name, data, uuid"),
      *             @OA\Property(property="metas", type="array", description="实体数组，每项必填：title, uuid",
      *                 @OA\Items(type="object")
      *             ),
@@ -342,7 +341,7 @@ class ScenePackageController extends Controller
         }
 
         // verse required fields
-        $verseRequiredFields = ['name', 'data', 'version', 'uuid'];
+        $verseRequiredFields = ['name', 'data', 'uuid'];
         foreach ($verseRequiredFields as $field) {
             if (!isset($data['verse'][$field]) || $data['verse'][$field] === '') {
                 throw new BadRequestHttpException("Missing required field: verse.{$field}");

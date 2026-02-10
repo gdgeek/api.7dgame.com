@@ -134,7 +134,6 @@ class ScenePackageService extends Component
             $verse->uuid = UuidHelper::uuid();
             $verse->name = $verseData['name'];
             $verse->description = $verseData['description'] ?? null;
-            $verse->version = $verseData['version'] ?? null;
             // Save with empty data first to avoid afterSave refreshMetas issues
             $verse->data = null;
 
@@ -327,10 +326,7 @@ class ScenePackageService extends Component
             'description' => $verse->description,
             'info' => $verse->info,
             'data' => $verse->data,
-            'version' => $verse->version,
             'uuid' => $verse->uuid,
-            'editable' => $verse->editable,
-            'viewable' => $verse->viewable,
             'verseRelease' => null,
         ];
 
