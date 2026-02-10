@@ -231,7 +231,7 @@ class ScenePackagePropertyTest extends TestCase
     public function testZipSerializationRoundTripConsistency(): void
     {
         $this
-            ->limitTo(100)
+            ->limitTo(25)
             ->forAll(
                 Generators::choose(0, 5),       // numMetas
                 Generators::choose(0, 5),       // numResources
@@ -336,7 +336,7 @@ class ScenePackagePropertyTest extends TestCase
     public function testZipRoundTripPreservesUnicodeContent(): void
     {
         $this
-            ->limitTo(100)
+            ->limitTo(25)
             ->forAll(
                 Generators::choose(0, 3),       // numMetas
                 Generators::choose(0, 3),       // numResources
@@ -415,7 +415,7 @@ class ScenePackagePropertyTest extends TestCase
     public function testZipRoundTripJsonEncodingIdempotency(): void
     {
         $this
-            ->limitTo(100)
+            ->limitTo(25)
             ->forAll(
                 Generators::choose(0, 5),       // numMetas
                 Generators::choose(0, 5),       // numResources

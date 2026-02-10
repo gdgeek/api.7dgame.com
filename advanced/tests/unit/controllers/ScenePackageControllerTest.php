@@ -609,4 +609,211 @@ class ScenePackageControllerTest extends TestCase
         $this->assertTrue($reflection->hasMethod('validateFileIds'));
         $this->assertTrue($reflection->getMethod('validateFileIds')->isPrivate());
     }
+
+    /**
+     * Test that verse.image with missing url throws BadRequestHttpException.
+     */
+    public function testValidateImportDataRejectsVerseImageMissingUrl(): void
+    {
+        $data = self::buildValidImportData();
+        $data['verse']['image'] = [
+            'filename' => 'test.png',
+            'key' => 'images/test.png',
+        ];
+
+        $this->expectException(BadRequestHttpException::class);
+        $this->expectExceptionMessage('verse.image.url');
+
+        $this->validateImportDataMethod->invoke($this->controller, $data);
+    }
+
+    /**
+     * Test that verse.image with missing filename throws BadRequestHttpException.
+     */
+    public function testValidateImportDataRejectsVerseImageMissingFilename(): void
+    {
+        $data = self::buildValidImportData();
+        $data['verse']['image'] = [
+            'url' => 'https://example.com/test.png',
+            'key' => 'images/test.png',
+        ];
+
+        $this->expectException(BadRequestHttpException::class);
+        $this->expectExceptionMessage('verse.image.filename');
+
+        $this->validateImportDataMethod->invoke($this->controller, $data);
+    }
+
+    /**
+     * Test that verse.image with missing key throws BadRequestHttpException.
+     */
+    public function testValidateImportDataRejectsVerseImageMissingKey(): void
+    {
+        $data = self::buildValidImportData();
+        $data['verse']['image'] = [
+            'url' => 'https://example.com/test.png',
+            'filename' => 'test.png',
+        ];
+
+        $this->expectException(BadRequestHttpException::class);
+        $this->expectExceptionMessage('verse.image.key');
+
+        $this->validateImportDataMethod->invoke($this->controller, $data);
+    }
+
+    /**
+     * Test that verse.image with multiple missing fields reports all of them.
+     */
+    public function testValidateImportDataRejectsVerseImageMissingMultipleFields(): void
+    {
+        $data = self::buildValidImportData();
+        $data['verse']['image'] = []; // missing all required fields
+
+        $this->expectException(BadRequestHttpException::class);
+        $this->expectExceptionMessage('verse.image.url');
+
+        $this->validateImportDataMethod->invoke($this->controller, $data);
+    }
+
+    /**
+     * Test that verse.image as null skips validation.
+     */
+    public function testValidateImportDataAcceptsVerseImageNull(): void
+    {
+        $data = self::buildValidImportData();
+        $data['verse']['image'] = null;
+
+        // Should not throw any exception
+        $this->validateImportDataMethod->invoke($this->controller, $data);
+        $this->assertTrue(true);
+    }
+
+    /**
+     * Test that verse without image field skips validation.
+     */
+    public function testValidateImportDataAcceptsVerseWithoutImage(): void
+    {
+        $data = self::buildValidImportData();
+        // No 'image' key in verse at all
+
+        // Should not throw any exception
+        $this->validateImportDataMethod->invoke($this->controller, $data);
+        $this->assertTrue(true);
+    }
+
+    /**
+     * Test that valid verse.image passes validation.
+     */
+    public function testValidateImportDataAcceptsValidVerseImage(): void
+    {
+        $data = self::buildValidImportData();
+        $data['verse']['image'] = [
+            'url' => 'https://example.com/test.png',
+            'filename' => 'test.png',
+            'key' => 'images/test.png',
+        ];
+
+        // Should not throw any exception
+        $this->validateImportDataMethod->invoke($this->controller, $data);
+        $this->assertTrue(true);
+    }
+
+    /**
+     * Test that meta.image with missing required fields throws BadRequestHttpException.
+     */
+    public function testValidateImportDataRejectsMetaImageMissingUrl(): void
+    {
+        $data = self::buildValidImportData();
+        $data['metas'][0]['image'] = [
+            'filename' => 'meta.png',
+            'key' => 'images/meta.png',
+        ];
+
+        $this->expectException(BadRequestHttpException::class);
+        $this->expectExceptionMessage('metas[0].image.url');
+
+        $this->validateImportDataMethod->invoke($this->controller, $data);
+    }
+
+    /**
+     * Test that meta.image with missing key throws BadRequestHttpException.
+     */
+    public function testValidateImportDataRejectsMetaImageMissingKey(): void
+    {
+        $data = self::buildValidImportData();
+        $data['metas'][0]['image'] = [
+            'url' => 'https://example.com/meta.png',
+            'filename' => 'meta.png',
+        ];
+
+        $this->expectException(BadRequestHttpException::class);
+        $this->expectExceptionMessage('metas[0].image.key');
+
+        $this->validateImportDataMethod->invoke($this->controller, $data);
+    }
+
+    /**
+     * Test that meta.image as null skips validation.
+     */
+    public function testValidateImportDataAcceptsMetaImageNull(): void
+    {
+        $data = self::buildValidImportData();
+        $data['metas'][0]['image'] = null;
+
+        // Should not throw any exception
+        $this->validateImportDataMethod->invoke($this->controller, $data);
+        $this->assertTrue(true);
+    }
+
+    /**
+     * Test that meta without image field skips validation.
+     */
+    public function testValidateImportDataAcceptsMetaWithoutImage(): void
+    {
+        $data = self::buildValidImportData();
+        // metas[0] has no 'image' key by default
+
+        // Should not throw any exception
+        $this->validateImportDataMethod->invoke($this->controller, $data);
+        $this->assertTrue(true);
+    }
+
+    /**
+     * Test that valid meta.image passes validation.
+     */
+    public function testValidateImportDataAcceptsValidMetaImage(): void
+    {
+        $data = self::buildValidImportData();
+        $data['metas'][0]['image'] = [
+            'url' => 'https://example.com/meta.png',
+            'filename' => 'meta.png',
+            'key' => 'images/meta.png',
+        ];
+
+        // Should not throw any exception
+        $this->validateImportDataMethod->invoke($this->controller, $data);
+        $this->assertTrue(true);
+    }
+
+    /**
+     * Test that second meta's image validation uses correct index.
+     */
+    public function testValidateImportDataRejectsSecondMetaImageMissingFields(): void
+    {
+        $data = self::buildValidImportData();
+        $data['metas'][] = [
+            'title' => 'Meta B',
+            'uuid' => 'meta-uuid-002',
+            'image' => [
+                'url' => 'https://example.com/meta2.png',
+                // missing filename and key
+            ],
+        ];
+
+        $this->expectException(BadRequestHttpException::class);
+        $this->expectExceptionMessage('metas[1].image.filename');
+
+        $this->validateImportDataMethod->invoke($this->controller, $data);
+    }
+
 }

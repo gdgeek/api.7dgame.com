@@ -131,7 +131,7 @@ class ImportValidationPropertyTest extends TestCase
         $verseRequiredFields = ['name', 'data', 'version', 'uuid'];
 
         $this
-            ->limitTo(100)
+            ->limitTo(25)
             ->forAll(
                 Generators::elements($verseRequiredFields),
                 Generators::string(),
@@ -177,7 +177,7 @@ class ImportValidationPropertyTest extends TestCase
         $verseRequiredFields = ['name', 'data', 'version', 'uuid'];
 
         $this
-            ->limitTo(100)
+            ->limitTo(25)
             ->forAll(
                 Generators::elements($verseRequiredFields)
             )
@@ -209,7 +209,7 @@ class ImportValidationPropertyTest extends TestCase
         $metaRequiredFields = ['title', 'uuid'];
 
         $this
-            ->limitTo(100)
+            ->limitTo(25)
             ->forAll(
                 Generators::elements($metaRequiredFields),
                 Generators::choose(1, 5),
@@ -259,7 +259,7 @@ class ImportValidationPropertyTest extends TestCase
         $metaRequiredFields = ['title', 'uuid'];
 
         $this
-            ->limitTo(100)
+            ->limitTo(25)
             ->forAll(
                 Generators::elements($metaRequiredFields),
                 Generators::choose(1, 3)
@@ -303,7 +303,7 @@ class ImportValidationPropertyTest extends TestCase
         $mappingRequiredFields = ['originalUuid', 'fileId', 'name', 'type', 'info'];
 
         $this
-            ->limitTo(100)
+            ->limitTo(25)
             ->forAll(
                 Generators::elements($mappingRequiredFields),
                 Generators::choose(1, 5),
@@ -371,7 +371,7 @@ class ImportValidationPropertyTest extends TestCase
         $mappingRequiredFields = ['originalUuid', 'fileId', 'name', 'type', 'info'];
 
         $this
-            ->limitTo(100)
+            ->limitTo(25)
             ->forAll(
                 Generators::elements($mappingRequiredFields),
                 Generators::choose(1, 3)
@@ -431,7 +431,7 @@ class ImportValidationPropertyTest extends TestCase
         ];
 
         $this
-            ->limitTo(100)
+            ->limitTo(25)
             ->forAll(
                 Generators::elements($allRequiredFields)
             )

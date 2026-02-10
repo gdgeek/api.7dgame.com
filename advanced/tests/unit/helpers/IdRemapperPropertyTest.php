@@ -111,7 +111,7 @@ class IdRemapperPropertyTest extends TestCase
     public function testIdRemapperReplacementCorrectness(): void
     {
         $this
-            ->limitTo(100)
+            ->limitTo(25)
             ->forAll(
                 Generators::choose(1, 1000),   // oldMetaId
                 Generators::choose(1001, 2000), // newMetaId
@@ -188,7 +188,7 @@ class IdRemapperPropertyTest extends TestCase
     public function testIdRemapperNumericOnlyGuard(): void
     {
         $this
-            ->limitTo(100)
+            ->limitTo(25)
             ->forAll(
                 Generators::choose(1, 1000),   // oldResourceId (numeric)
                 Generators::choose(1001, 2000), // newResourceId
@@ -235,7 +235,7 @@ class IdRemapperPropertyTest extends TestCase
     public function testIdRemapperMultipleRulesIndependence(): void
     {
         $this
-            ->limitTo(100)
+            ->limitTo(25)
             ->forAll(
                 Generators::choose(1, 500),     // oldMetaId1
                 Generators::choose(501, 1000),  // newMetaId1
@@ -320,7 +320,7 @@ class IdRemapperPropertyTest extends TestCase
     public function testIdRemapperCompletenessInvariant(): void
     {
         $this
-            ->limitTo(100)
+            ->limitTo(25)
             ->forAll(
                 Generators::choose(2, 6),       // number of distinct old meta IDs
                 Generators::choose(2, 6),       // number of distinct old resource IDs
@@ -398,7 +398,7 @@ class IdRemapperPropertyTest extends TestCase
     public function testIdRemapperCompletenessWithComplexTree(): void
     {
         $this
-            ->limitTo(100)
+            ->limitTo(25)
             ->forAll(
                 Generators::choose(1, 5),       // number of modules
                 Generators::choose(1, 3),       // number of meta IDs

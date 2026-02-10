@@ -307,12 +307,40 @@ class ScenePackageController extends Controller
             }
         }
 
+        // Validate verse.image if present and not null
+        if (isset($data['verse']['image']) && $data['verse']['image'] !== null) {
+            $imageRequiredFields = ['url', 'filename', 'key'];
+            $missingFields = [];
+            foreach ($imageRequiredFields as $field) {
+                if (!isset($data['verse']['image'][$field]) || $data['verse']['image'][$field] === '') {
+                    $missingFields[] = "verse.image.{$field}";
+                }
+            }
+            if (!empty($missingFields)) {
+                throw new BadRequestHttpException("Missing required field: " . implode(', ', $missingFields));
+            }
+        }
+
         if (isset($data['metas']) && is_array($data['metas'])) {
             $metaRequiredFields = ['title', 'uuid'];
             foreach ($data['metas'] as $index => $meta) {
                 foreach ($metaRequiredFields as $field) {
                     if (!isset($meta[$field]) || $meta[$field] === '') {
                         throw new BadRequestHttpException("Missing required field: metas[{$index}].{$field}");
+                    }
+                }
+
+                // Validate meta.image if present and not null
+                if (isset($meta['image']) && $meta['image'] !== null) {
+                    $imageRequiredFields = ['url', 'filename', 'key'];
+                    $missingFields = [];
+                    foreach ($imageRequiredFields as $field) {
+                        if (!isset($meta['image'][$field]) || $meta['image'][$field] === '') {
+                            $missingFields[] = "metas[{$index}].image.{$field}";
+                        }
+                    }
+                    if (!empty($missingFields)) {
+                        throw new BadRequestHttpException("Missing required field: " . implode(', ', $missingFields));
                     }
                 }
             }

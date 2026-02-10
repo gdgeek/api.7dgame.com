@@ -113,6 +113,7 @@ class ScenePackageService extends Component
             // --- Step 1: Create Resources (new UUID, file_id from resourceFileMappings) ---
             $resourceIdMap = []; // originalUuid => new Resource ID
             $fileIdToResourceId = []; // fileId => new Resource ID
+            $fileIdMap = []; // original File ID => new File ID
 
             foreach ($resourceFileMappings as $mapping) {
                 $resource = new Resource();
@@ -140,6 +141,18 @@ class ScenePackageService extends Component
 
             if (!$verse->save()) {
                 throw new \Exception('Failed to create Verse: ' . json_encode($verse->getErrors()));
+            }
+
+            // --- Step 2.1: Handle verse.image (create File and set image_id) ---
+            if (!empty($verseData['image'])) {
+                $verseImageFile = $this->createFileFromImageData($verseData['image']);
+                $verse->image_id = $verseImageFile->id;
+                if (isset($verseData['image']['id'])) {
+                    $fileIdMap[$verseData['image']['id']] = $verseImageFile->id;
+                }
+                if (!$verse->save()) {
+                    throw new \Exception('Failed to update Verse image_id: ' . json_encode($verse->getErrors()));
+                }
             }
 
             // --- Step 3: Create VerseCode (if present) ---
@@ -170,6 +183,18 @@ class ScenePackageService extends Component
 
                 if (!$meta->save()) {
                     throw new \Exception('Failed to create Meta: ' . json_encode($meta->getErrors()));
+                }
+
+                // --- Step 4.1: Handle meta.image (create File and set image_id) ---
+                if (!empty($metaInput['image'])) {
+                    $metaImageFile = $this->createFileFromImageData($metaInput['image']);
+                    $meta->image_id = $metaImageFile->id;
+                    if (isset($metaInput['image']['id'])) {
+                        $fileIdMap[$metaInput['image']['id']] = $metaImageFile->id;
+                    }
+                    if (!$meta->save()) {
+                        throw new \Exception('Failed to update Meta image_id: ' . json_encode($meta->getErrors()));
+                    }
                 }
 
                 $metaIdMap[$metaInput['uuid']] = $meta->id;
@@ -304,6 +329,7 @@ class ScenePackageService extends Component
                 'verseId' => $verse->id,
                 'metaIdMap' => $metaIdMap,
                 'resourceIdMap' => $resourceIdMap,
+                'fileIdMap' => $fileIdMap,
             ];
         } catch (\Exception $e) {
             $transaction->rollBack();
@@ -311,6 +337,44 @@ class ScenePackageService extends Component
         }
     }
 
+
+    /**
+     * 从导出的图片数据创建 File 记录
+     *
+     * 使用导出数据中的文件信息创建一条新的 File 数据库记录。
+     * url、filename、key 为必填字段；md5、type、size 为可选字段（存在则设置）。
+     * user_id 由 File 模型的 BlameableBehavior 自动处理。
+     *
+     * @param array $imageData 包含 url, filename, key, md5, type, size
+     * @return File 新创建的 File 模型实例
+     * @throws \Exception 如果 File 保存失败
+     */
+    private function createFileFromImageData(array $imageData): File
+    {
+        $file = new File();
+
+        // 设置必填字段
+        $file->url = $imageData['url'];
+        $file->filename = $imageData['filename'];
+        $file->key = $imageData['key'];
+
+        // 设置可选字段（存在则设置）
+        if (isset($imageData['md5'])) {
+            $file->md5 = $imageData['md5'];
+        }
+        if (isset($imageData['type'])) {
+            $file->type = $imageData['type'];
+        }
+        if (isset($imageData['size'])) {
+            $file->size = $imageData['size'];
+        }
+
+        if (!$file->save()) {
+            throw new \Exception('Failed to create File from image data: ' . json_encode($file->getErrors()));
+        }
+
+        return $file;
+    }
 
     /**
      * 构建 verse 数据部分
