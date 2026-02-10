@@ -3,6 +3,7 @@
 namespace api\modules\v1\models;
 
 use yii\base\Model;
+use common\components\security\PasswordPolicyValidator;
 
 /**
  * 重置密码表单模型
@@ -37,20 +38,32 @@ class ResetPasswordForm extends Model
             [
                 'password', 
                 'string', 
-                'min' => 6, 
-                'max' => 20, 
-                'tooShort' => '密码长度不能少于 6 个字符',
-                'tooLong' => '密码长度不能超过 20 个字符'
+                'min' => 12, 
+                'max' => 128, 
+                'tooShort' => '密码长度不能少于 12 个字符',
+                'tooLong' => '密码长度不能超过 128 个字符'
             ],
-            [
-                'password', 
-                'match', 
-                'pattern' => '/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{6,}$/',
-                'message' => '密码必须包含大小写字母、数字和特殊字符'
-            ],
+            ['password', 'validatePasswordPolicy'],
         ];
     }
     
+    /**
+     * 使用 PasswordPolicyValidator 验证密码强度
+     */
+    public function validatePasswordPolicy($attribute, $params)
+    {
+        if ($this->hasErrors($attribute)) {
+            return;
+        }
+        $validator = new PasswordPolicyValidator();
+        $result = $validator->validate($this->$attribute);
+        if (!$result['valid']) {
+            foreach ($result['errors'] as $error) {
+                $this->addError($attribute, $error);
+            }
+        }
+    }
+
     /**
      * {@inheritdoc}
      */

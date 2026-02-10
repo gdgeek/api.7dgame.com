@@ -4,8 +4,7 @@ namespace common\models;
 use Yii;
 use yii\base\Model;
 use api\modules\v1\models\User;
-
-use yii\base\Exception;
+use common\components\security\PasswordPolicyValidator;
 /**
  * Signup form
  */
@@ -35,13 +34,33 @@ class SignupForm extends Model
             ['email', 'unique', 'targetClass' => '\api\modules\v1\models\User', 'message' => 'This email address has already been taken.'],
 
             ['password', 'required'],
-            ['password', 'string', 'min' => 6],
+            ['password', 'string', 'min' => 12, 'max' => 128,
+                'tooShort' => '密码长度不能少于 12 个字符',
+                'tooLong' => '密码长度不能超过 128 个字符'],
+            ['password', 'validatePasswordPolicy'],
 
 			
             ['invitation', 'required'],
 
 
         ];
+    }
+
+    /**
+     * 使用 PasswordPolicyValidator 验证密码强度（仅新注册用户）
+     */
+    public function validatePasswordPolicy($attribute, $params)
+    {
+        if ($this->hasErrors($attribute)) {
+            return;
+        }
+        $validator = new PasswordPolicyValidator();
+        $result = $validator->validate($this->$attribute);
+        if (!$result['valid']) {
+            foreach ($result['errors'] as $error) {
+                $this->addError($attribute, $error);
+            }
+        }
     }
 
     /**

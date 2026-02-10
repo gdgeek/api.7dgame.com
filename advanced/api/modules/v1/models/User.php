@@ -261,7 +261,8 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
     public function setPassword($password)
     {
         $this->password = $password;
-        $this->password_hash = Yii::$app->security->generatePasswordHash($password);
+        // 使用 bcrypt，cost 因子为 12（安全加固要求）
+        $this->password_hash = Yii::$app->security->generatePasswordHash($password, 12);
     }
     public static function findByUsername($username)
     {

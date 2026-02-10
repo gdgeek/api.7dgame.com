@@ -108,15 +108,19 @@
     - **Property 17: 速率限制超限响应**
     - **Validates: Requirements 4.3**
 
-- [ ] 6. 强化密码策略
-  - [ ] 6.1 更新 User 模型密码验证
-    - 增加最小长度到 12 字符
+- [x] 6. 强化密码策略
+  - [x] 6.1 更新 User 模型密码验证（仅新注册用户）
+    - 创建 PasswordPolicyValidator 组件 (advanced/common/components/security/PasswordPolicyValidator.php)
+    - 增加最小长度到 12 字符（仅在注册和密码重置时强制）
     - 添加复杂度验证规则（大写、小写、数字、特殊字符）
     - 实现弱密码列表检查
     - 实现密码被拒绝时的具体指导信息
+    - 更新 SignupForm 使用新密码策略
+    - 更新 ResetPasswordForm 使用新密码策略
+    - 注意：老用户登录不受新密码策略影响，仍可使用原有密码
     - _Requirements: 5.1, 5.2, 5.6, 5.7_
 
-  - [ ] 6.2 更新密码哈希方法
+  - [x] 6.2 更新密码哈希方法
     - 确保使用 password_hash() 和 PASSWORD_BCRYPT
     - 设置 cost 因子为 12
     - _Requirements: 5.4_
@@ -127,7 +131,7 @@
     - **Property 24: 弱密码拒绝**
     - **Validates: Requirements 5.2, 5.4, 5.6, 5.7**
 
-- [ ] 7. Checkpoint - 验证 P0 实施
+- [x] 7. Checkpoint - 验证 P0 实施
   - 运行所有测试确保通过
   - 验证环境变量配置正确
   - 测试文件上传安全性
