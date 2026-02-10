@@ -331,6 +331,16 @@ return [
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/scene-package',
+                    'pluralize' => false,
+                    'extraPatterns' => [
+                        'GET verses/<id:\d+>/export' => 'export',
+                        'POST verses/import' => 'import',
+                    ],
+                    'tokens' => [],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/verse',
                     'extraPatterns' => [
                         'GET public' => 'public',

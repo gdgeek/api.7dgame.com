@@ -221,49 +221,20 @@ class ScenePackageController extends Controller
      * @OA\Post(
      *     path="/v1/scene-package/verses/import",
      *     summary="导入场景包",
-     *     description="通过 JSON 请求体或 ZIP 文件上传导入完整场景。JSON 模式使用 application/json，ZIP 模式使用 multipart/form-data 上传包含 scene.json 的 ZIP 文件。",
+     *     description="通过 JSON 请求体或 ZIP 文件上传导入完整场景。JSON 模式使用 application/json Content-Type 提交场景数据；ZIP 模式使用 multipart/form-data 上传包含 scene.json 的 ZIP 文件。请求体需包含 verse（必填 name/data/version/uuid）、metas 数组（必填 title/uuid）、resourceFileMappings 数组（必填 originalUuid/fileId/name/type/info）。",
      *     tags={"ScenePackage"},
      *     security={{"Bearer": {}}},
      *     @OA\RequestBody(
      *         required=true,
-     *         description="场景导入数据（JSON 格式）",
+     *         description="场景导入数据（JSON 格式），verse 必填字段：name, data, version, uuid",
      *         @OA\JsonContent(
      *             required={"verse"},
-     *             @OA\Property(property="verse", type="object", required={"name", "data", "version", "uuid"},
-     *                 @OA\Property(property="name", type="string", description="场景名称", example="我的场景"),
-     *                 @OA\Property(property="description", type="string", description="场景描述", example="这是一个测试场景"),
-     *                 @OA\Property(property="data", type="string", description="场景 JSON 数据字符串", example="{\"type\":\"Verse\",\"children\":{}}"),
-     *                 @OA\Property(property="version", type="integer", description="版本号", example=3),
-     *                 @OA\Property(property="uuid", type="string", description="原始 UUID（导入时会生成新 UUID）", example="original-verse-uuid"),
-     *                 @OA\Property(property="verseCode", type="object",
-     *                     @OA\Property(property="blockly", type="string"),
-     *                     @OA\Property(property="lua", type="string"),
-     *                     @OA\Property(property="js", type="string")
-     *                 )
+     *             @OA\Property(property="verse", type="object", description="场景数据，必填：name, data, version, uuid"),
+     *             @OA\Property(property="metas", type="array", description="实体数组，每项必填：title, uuid",
+     *                 @OA\Items(type="object")
      *             ),
-     *             @OA\Property(property="metas", type="array",
-     *                 @OA\Items(type="object", required={"title", "uuid"},
-     *                     @OA\Property(property="title", type="string", description="实体名称", example="实体A"),
-     *                     @OA\Property(property="uuid", type="string", description="原始 UUID", example="original-meta-uuid"),
-     *                     @OA\Property(property="data", type="string", description="实体 JSON 数据"),
-     *                     @OA\Property(property="events", type="string", description="事件 JSON 数据"),
-     *                     @OA\Property(property="metaCode", type="object",
-     *                         @OA\Property(property="blockly", type="string"),
-     *                         @OA\Property(property="lua", type="string")
-     *                     ),
-     *                     @OA\Property(property="resourceFileIds", type="array", description="关联的文件 ID 列表",
-     *                         @OA\Items(type="integer", example=501)
-     *                     )
-     *                 )
-     *             ),
-     *             @OA\Property(property="resourceFileMappings", type="array",
-     *                 @OA\Items(type="object", required={"originalUuid", "fileId", "name", "type", "info"},
-     *                     @OA\Property(property="originalUuid", type="string", description="原始资源 UUID", example="original-resource-uuid"),
-     *                     @OA\Property(property="fileId", type="integer", description="已上传文件的 ID", example=501),
-     *                     @OA\Property(property="name", type="string", description="资源名称", example="模型A"),
-     *                     @OA\Property(property="type", type="string", description="资源类型", example="polygen"),
-     *                     @OA\Property(property="info", type="string", description="资源信息 JSON", example="{\"size\":1024}")
-     *                 )
+     *             @OA\Property(property="resourceFileMappings", type="array", description="资源文件映射数组，每项必填：originalUuid, fileId, name, type, info",
+     *                 @OA\Items(type="object")
      *             )
      *         )
      *     ),
@@ -272,8 +243,8 @@ class ScenePackageController extends Controller
      *         description="导入成功",
      *         @OA\JsonContent(
      *             @OA\Property(property="verseId", type="integer", description="新创建的场景 ID", example=700),
-     *             @OA\Property(property="metaIdMap", type="object", description="原始 Meta UUID → 新 Meta ID 映射，键为原始 UUID，值为新 Meta ID", example={"original-meta-uuid": 150}),
-     *             @OA\Property(property="resourceIdMap", type="object", description="原始 Resource UUID → 新 Resource ID 映射，键为原始 UUID，值为新 Resource ID", example={"original-resource-uuid": 250})
+     *             @OA\Property(property="metaIdMap", type="object", description="原始 Meta UUID 到新 Meta ID 的映射"),
+     *             @OA\Property(property="resourceIdMap", type="object", description="原始 Resource UUID 到新 Resource ID 的映射")
      *         )
      *     ),
      *     @OA\Response(response=400, description="请求数据验证失败（缺少必填字段、无效 ZIP 等）"),
