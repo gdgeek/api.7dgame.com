@@ -22,8 +22,13 @@ use OpenApi\Annotations as OA;
 /**
  * ScenePackageController handles scene package export and import operations.
  *
- * - GET /v1/verses/{id}/export - Export a scene as JSON or ZIP
- * - POST /v1/verses/import - Import a scene from JSON or ZIP
+ * JSON endpoints (standard REST, handled by contentNegotiator):
+ * - GET  /v1/scene-package/verses/{id}/export     → JSON export
+ * - POST /v1/scene-package/verses/import           → JSON import
+ *
+ * ZIP endpoints (raw binary, excluded from contentNegotiator):
+ * - GET  /v1/scene-package/verses/{id}/export-zip  → ZIP download
+ * - POST /v1/scene-package/verses/import-zip       → ZIP upload
  *
  * @OA\Tag(
  *     name="ScenePackage",
@@ -39,9 +44,8 @@ class ScenePackageController extends Controller
     {
         $behaviors = parent::behaviors();
 
-        // Export action excluded from contentNegotiator to support ZIP downloads
-        // Response format is set manually in actionExport (JSON by default, RAW for ZIP)
-        $behaviors['contentNegotiator']['except'] = ['export'];
+        // ZIP actions skip contentNegotiator (raw binary response)
+        $behaviors['contentNegotiator']['except'] = ['export-zip', 'import-zip'];
 
         // add CORS filter
         $behaviors['corsFilter'] = [
@@ -76,227 +80,154 @@ class ScenePackageController extends Controller
         return $behaviors;
     }
 
+    // =========================================================================
+    // Export: JSON
+    // =========================================================================
+
     /**
-     * GET /v1/verses/{id}/export
+     * GET /v1/scene-package/verses/{id}/export
      *
-     * Export a scene as JSON or ZIP based on the Accept header.
-     *
-     * @OA\Get(
-     *     path="/v1/scene-package/verses/{id}/export",
-     *     summary="导出场景包",
-     *     description="根据 Accept 头返回 JSON 或 ZIP 格式的完整场景数据树（Scene_Data_Tree），包含 verse、metas、resources、metaResourceLinks",
-     *     tags={"ScenePackage"},
-     *     security={{"Bearer": {}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         required=true,
-     *         description="场景 Verse ID",
-     *         @OA\Schema(type="integer", example=626)
-     *     ),
-     *     @OA\Parameter(
-     *         name="Accept",
-     *         in="header",
-     *         required=false,
-     *         description="响应格式：application/json（默认）或 application/zip",
-     *         @OA\Schema(type="string", enum={"application/json", "application/zip"}, default="application/json")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="导出成功",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="verse", type="object", description="场景数据",
-     *                 @OA\Property(property="id", type="integer", example=626),
-     *                 @OA\Property(property="name", type="string", example="我的场景"),
-     *                 @OA\Property(property="uuid", type="string", example="verse-uuid-xxx"),
-     *                 @OA\Property(property="data", type="object", description="场景 JSON 数据"),
-     *                 @OA\Property(property="verseCode", type="object",
-     *                     @OA\Property(property="blockly", type="string"),
-     *                     @OA\Property(property="lua", type="string"),
-     *                     @OA\Property(property="js", type="string")
-     *                 ),
-     *                 @OA\Property(property="image", type="object", nullable=true,
-     *                     @OA\Property(property="id", type="integer"),
-     *                     @OA\Property(property="url", type="string"),
-     *                     @OA\Property(property="filename", type="string")
-     *                 )
-     *             ),
-     *             @OA\Property(property="metas", type="array",
-     *                 @OA\Items(type="object",
-     *                     @OA\Property(property="id", type="integer", example=101),
-     *                     @OA\Property(property="uuid", type="string"),
-     *                     @OA\Property(property="title", type="string", example="实体A"),
-     *                     @OA\Property(property="data", type="object"),
-     *                     @OA\Property(property="events", type="object"),
-     *                     @OA\Property(property="metaCode", type="object", nullable=true)
-     *                 )
-     *             ),
-     *             @OA\Property(property="resources", type="array",
-     *                 @OA\Items(type="object",
-     *                     @OA\Property(property="id", type="integer", example=201),
-     *                     @OA\Property(property="uuid", type="string"),
-     *                     @OA\Property(property="name", type="string", example="模型A"),
-     *                     @OA\Property(property="type", type="string", example="polygen"),
-     *                     @OA\Property(property="file", type="object",
-     *                         @OA\Property(property="id", type="integer"),
-     *                         @OA\Property(property="url", type="string"),
-     *                         @OA\Property(property="filename", type="string"),
-     *                         @OA\Property(property="size", type="integer")
-     *                     )
-     *                 )
-     *             ),
-     *             @OA\Property(property="metaResourceLinks", type="array",
-     *                 @OA\Items(type="object",
-     *                     @OA\Property(property="meta_id", type="integer", example=101),
-     *                     @OA\Property(property="resource_id", type="integer", example=201)
-     *                 )
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(response=401, description="未认证"),
-     *     @OA\Response(response=403, description="无权访问该场景"),
-     *     @OA\Response(response=404, description="场景不存在")
-     * )
+     * Export scene data tree as JSON (standard REST response).
      *
      * @param int $id Verse ID
-     * @return mixed JSON array or ZIP file stream
-     * @throws NotFoundHttpException if Verse not found
-     * @throws ForbiddenHttpException if user has no view permission
+     * @return array Scene_Data_Tree
      */
-    public function actionExport(int $id): mixed
+    public function actionExport(int $id): array
     {
-        // Query Verse and check existence
-        $verse = Verse::findOne($id);
-        if ($verse === null) {
-            throw new NotFoundHttpException('Verse not found');
-        }
+        $verse = $this->findVerseOrFail($id);
+        $service = new ScenePackageService();
+        return $service->buildExportData($id);
+    }
 
-        // Check viewable permission
-        if (!$verse->viewable) {
-            throw new ForbiddenHttpException('You are not authorized to access this verse');
-        }
+    // =========================================================================
+    // Export: ZIP
+    // =========================================================================
 
-        // Build export data via service
+    /**
+     * GET /v1/scene-package/verses/{id}/export-zip
+     *
+     * Export scene data tree as a ZIP file containing scene.json.
+     *
+     * @param int $id Verse ID
+     * @return Response
+     */
+    public function actionExportZip(int $id): Response
+    {
+        $verse = $this->findVerseOrFail($id);
         $service = new ScenePackageService();
         $exportData = $service->buildExportData($id);
 
-        // Check Accept header for format negotiation
-        $acceptHeader = Yii::$app->request->getHeaders()->get('Accept', 'application/json');
+        $response = Yii::$app->response;
 
-        if (stripos($acceptHeader, 'application/zip') !== false) {
-            // ZIP export - create ZIP with scene.json
-            $response = Yii::$app->response;
+        $tmpFile = tempnam(sys_get_temp_dir(), 'scene_export_');
+        $zip = new \ZipArchive();
 
-            $tmpFile = tempnam(sys_get_temp_dir(), 'scene_export_');
-            $zip = new \ZipArchive();
-
-            if ($zip->open($tmpFile, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
-                @unlink($tmpFile);
-                throw new ServerErrorHttpException('Failed to create ZIP file');
-            }
-
-            $zip->addFromString('scene.json', json_encode($exportData, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
-            $zip->close();
-
-            $filename = 'scene_' . $id . '.zip';
-
-            $response->on(Response::EVENT_AFTER_SEND, function () use ($tmpFile) {
-                @unlink($tmpFile);
-            });
-
-            return $response->sendFile($tmpFile, $filename, [
-                'mimeType' => 'application/zip',
-                'inline' => false,
-            ]);
+        if ($zip->open($tmpFile, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+            @unlink($tmpFile);
+            throw new ServerErrorHttpException('Failed to create ZIP file');
         }
 
-        // Default: JSON response
-        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
-        return $exportData;
+        $zip->addFromString('scene.json', json_encode($exportData, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+        $zip->close();
+
+        $filename = 'scene_' . $id . '.zip';
+
+        $response->on(Response::EVENT_AFTER_SEND, function () use ($tmpFile) {
+            @unlink($tmpFile);
+        });
+
+        return $response->sendFile($tmpFile, $filename, [
+            'mimeType' => 'application/zip',
+            'inline' => false,
+        ]);
     }
 
+    // =========================================================================
+    // Import: JSON
+    // =========================================================================
+
     /**
-     * POST /v1/verses/import
+     * POST /v1/scene-package/verses/import
      *
-     * Import a scene from JSON request body or ZIP file upload.
+     * Import scene from JSON request body.
      *
-     * @OA\Post(
-     *     path="/v1/scene-package/verses/import",
-     *     summary="导入场景包",
-     *     description="通过 JSON 请求体或 ZIP 文件上传导入完整场景。JSON 模式使用 application/json Content-Type 提交场景数据；ZIP 模式使用 multipart/form-data 上传包含 scene.json 的 ZIP 文件。请求体需包含 verse（必填 name/data/uuid）、metas 数组（必填 title/uuid）、resourceFileMappings 数组（必填 originalUuid/fileId/name/type/info）。",
-     *     tags={"ScenePackage"},
-     *     security={{"Bearer": {}}},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         description="场景导入数据（JSON 格式），verse 必填字段：name, data, uuid",
-     *         @OA\JsonContent(
-     *             required={"verse"},
-     *             @OA\Property(property="verse", type="object", description="场景数据，必填：name, data, uuid"),
-     *             @OA\Property(property="metas", type="array", description="实体数组，每项必填：title, uuid",
-     *                 @OA\Items(type="object")
-     *             ),
-     *             @OA\Property(property="resourceFileMappings", type="array", description="资源文件映射数组，每项必填：originalUuid, fileId, name, type, info",
-     *                 @OA\Items(type="object")
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="导入成功",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="verseId", type="integer", description="新创建的场景 ID", example=700),
-     *             @OA\Property(property="metaIdMap", type="object", description="原始 Meta UUID 到新 Meta ID 的映射"),
-     *             @OA\Property(property="resourceIdMap", type="object", description="原始 Resource UUID 到新 Resource ID 的映射")
-     *         )
-     *     ),
-     *     @OA\Response(response=400, description="请求数据验证失败（缺少必填字段、无效 ZIP 等）"),
-     *     @OA\Response(response=401, description="未认证"),
-     *     @OA\Response(response=422, description="fileId 引用的文件不存在"),
-     *     @OA\Response(response=500, description="导入事务失败")
-     * )
-     *
-     * @return array Import result with verseId, metaIdMap, resourceIdMap
-     * @throws BadRequestHttpException if validation fails
-     * @throws UnprocessableEntityHttpException if fileId references non-existent File
-     * @throws ServerErrorHttpException if import transaction fails
+     * @return array {verseId, metaIdMap, resourceIdMap}
      */
     public function actionImport(): array
     {
-        $contentType = Yii::$app->request->getContentType();
+        $data = Yii::$app->request->getBodyParams();
 
-        // Parse request data based on Content-Type
-        if (stripos($contentType, 'multipart/form-data') !== false) {
-            // ZIP mode: extract and parse scene.json from uploaded ZIP
-            $data = $this->parseZipUpload();
-        } else {
-            // JSON mode: parse JSON request body
-            $data = Yii::$app->request->getBodyParams();
-        }
-
-        // Validate required fields
         $this->validateImportData($data);
-
-        // Validate version compatibility
         $this->validateVersion($data);
-
-        // Validate fileId existence
         $this->validateFileIds($data);
 
-        // Call ScenePackageService to import
         try {
             $service = new ScenePackageService();
-            $result = $service->importScene($data);
-            return $result;
+            return $service->importScene($data);
         } catch (\Exception $e) {
             throw new ServerErrorHttpException('Import failed: ' . $e->getMessage());
         }
     }
 
+    // =========================================================================
+    // Import: ZIP
+    // =========================================================================
+
+    /**
+     * POST /v1/scene-package/verses/import-zip
+     *
+     * Import scene from uploaded ZIP file containing scene.json.
+     *
+     * @return array {verseId, metaIdMap, resourceIdMap}
+     */
+    public function actionImportZip(): array
+    {
+        $data = $this->parseZipUpload();
+
+        $this->validateImportData($data);
+        $this->validateVersion($data);
+        $this->validateFileIds($data);
+
+        // Set response format manually since contentNegotiator is skipped for ZIP actions
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        try {
+            $service = new ScenePackageService();
+            return $service->importScene($data);
+        } catch (\Exception $e) {
+            throw new ServerErrorHttpException('Import failed: ' . $e->getMessage());
+        }
+    }
+
+    // =========================================================================
+    // Private helpers
+    // =========================================================================
+
+    /**
+     * Find Verse by ID, check existence and viewable permission.
+     *
+     * @param int $id
+     * @return Verse
+     * @throws NotFoundHttpException
+     * @throws ForbiddenHttpException
+     */
+    private function findVerseOrFail(int $id): Verse
+    {
+        $verse = Verse::findOne($id);
+        if ($verse === null) {
+            throw new NotFoundHttpException('Verse not found');
+        }
+        if (!$verse->viewable) {
+            throw new ForbiddenHttpException('You are not authorized to access this verse');
+        }
+        return $verse;
+    }
+
     /**
      * Parse ZIP file upload and extract scene.json data.
      *
-     * @return array Parsed scene data from scene.json
-     * @throws BadRequestHttpException if ZIP is invalid or missing scene.json
+     * @return array
+     * @throws BadRequestHttpException
      */
     private function parseZipUpload(): array
     {
@@ -307,9 +238,7 @@ class ScenePackageController extends Controller
         }
 
         $zip = new \ZipArchive();
-        $openResult = $zip->open($uploadedFile->tempName);
-
-        if ($openResult !== true) {
+        if ($zip->open($uploadedFile->tempName) !== true) {
             throw new BadRequestHttpException('Invalid ZIP file');
         }
 
@@ -321,7 +250,6 @@ class ScenePackageController extends Controller
         }
 
         $data = json_decode($sceneJson, true);
-
         if ($data === null) {
             throw new BadRequestHttpException('Invalid JSON in scene.json');
         }
@@ -330,12 +258,12 @@ class ScenePackageController extends Controller
     }
 
     /**
-     * Validate version compatibility of import data.
+     * Validate version compatibility.
      *
-     * @param array|null $data Import data to validate
-     * @throws BadRequestHttpException if version is missing or mismatched
+     * @param array $data
+     * @throws BadRequestHttpException
      */
-    private function validateVersion($data): void
+    private function validateVersion(array $data): void
     {
         $currentVersion = Version::getCurrentVersionNumber();
         $packageVersion = (int) ($data['verse']['version'] ?? 0);
@@ -350,8 +278,8 @@ class ScenePackageController extends Controller
     /**
      * Validate required fields in import data.
      *
-     * @param array|null $data Import data to validate
-     * @throws BadRequestHttpException if required fields are missing
+     * @param mixed $data
+     * @throws BadRequestHttpException
      */
     private function validateImportData($data): void
     {
@@ -359,12 +287,10 @@ class ScenePackageController extends Controller
             throw new BadRequestHttpException('Missing required field: verse');
         }
 
-        // verse object must exist
         if (!isset($data['verse']) || !is_array($data['verse'])) {
             throw new BadRequestHttpException('Missing required field: verse');
         }
 
-        // verse required fields
         $verseRequiredFields = ['name', 'data', 'version', 'uuid'];
         foreach ($verseRequiredFields as $field) {
             if (!isset($data['verse'][$field]) || $data['verse'][$field] === '') {
@@ -372,7 +298,6 @@ class ScenePackageController extends Controller
             }
         }
 
-        // metas[] required fields (if present)
         if (isset($data['metas']) && is_array($data['metas'])) {
             $metaRequiredFields = ['title', 'uuid'];
             foreach ($data['metas'] as $index => $meta) {
@@ -384,7 +309,6 @@ class ScenePackageController extends Controller
             }
         }
 
-        // resourceFileMappings[] required fields (if present)
         if (isset($data['resourceFileMappings']) && is_array($data['resourceFileMappings'])) {
             $mappingRequiredFields = ['originalUuid', 'fileId', 'name', 'type', 'info'];
             foreach ($data['resourceFileMappings'] as $index => $mapping) {
@@ -398,10 +322,10 @@ class ScenePackageController extends Controller
     }
 
     /**
-     * Validate that all fileId references in resourceFileMappings exist in the File table.
+     * Validate that all fileId references exist.
      *
-     * @param array $data Import data containing resourceFileMappings
-     * @throws UnprocessableEntityHttpException if a fileId does not exist
+     * @param array $data
+     * @throws UnprocessableEntityHttpException
      */
     private function validateFileIds(array $data): void
     {
@@ -411,8 +335,7 @@ class ScenePackageController extends Controller
 
         foreach ($data['resourceFileMappings'] as $mapping) {
             $fileId = $mapping['fileId'];
-            $file = File::findOne($fileId);
-            if ($file === null) {
+            if (File::findOne($fileId) === null) {
                 throw new UnprocessableEntityHttpException("File not found for fileId: {$fileId}");
             }
         }

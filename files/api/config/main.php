@@ -335,7 +335,9 @@ return [
                     'pluralize' => false,
                     'extraPatterns' => [
                         'GET verses/<id:\d+>/export' => 'export',
+                        'GET verses/<id:\d+>/export-zip' => 'export-zip',
                         'POST verses/import' => 'import',
+                        'POST verses/import-zip' => 'import-zip',
                     ],
                     'tokens' => [],
                 ],
