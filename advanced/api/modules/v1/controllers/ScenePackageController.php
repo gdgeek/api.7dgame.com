@@ -39,8 +39,8 @@ class ScenePackageController extends Controller
     {
         $behaviors = parent::behaviors();
 
-        // Export action supports both JSON and ZIP; add application/zip to accepted formats
-        $behaviors['contentNegotiator']['formats']['application/zip'] = \yii\web\Response::FORMAT_RAW;
+        // Export action bypasses content negotiation to support both JSON and ZIP responses
+        $behaviors['contentNegotiator']['except'] = ['export'];
 
         // add CORS filter
         $behaviors['corsFilter'] = [
@@ -210,6 +210,7 @@ class ScenePackageController extends Controller
         }
 
         // Default: JSON response
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
         return $exportData;
     }
 
