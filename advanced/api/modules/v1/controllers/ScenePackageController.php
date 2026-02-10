@@ -272,14 +272,8 @@ class ScenePackageController extends Controller
      *         description="导入成功",
      *         @OA\JsonContent(
      *             @OA\Property(property="verseId", type="integer", description="新创建的场景 ID", example=700),
-     *             @OA\Property(property="metaIdMap", type="object", description="原始 Meta UUID → 新 Meta ID 映射",
-     *                 @OA\AdditionalProperties(type="integer"),
-     *                 example={"original-meta-uuid": 150}
-     *             ),
-     *             @OA\Property(property="resourceIdMap", type="object", description="原始 Resource UUID → 新 Resource ID 映射",
-     *                 @OA\AdditionalProperties(type="integer"),
-     *                 example={"original-resource-uuid": 250}
-     *             )
+     *             @OA\Property(property="metaIdMap", type="object", description="原始 Meta UUID → 新 Meta ID 映射，键为原始 UUID，值为新 Meta ID", example={"original-meta-uuid": 150}),
+     *             @OA\Property(property="resourceIdMap", type="object", description="原始 Resource UUID → 新 Resource ID 映射，键为原始 UUID，值为新 Resource ID", example={"original-resource-uuid": 250})
      *         )
      *     ),
      *     @OA\Response(response=400, description="请求数据验证失败（缺少必填字段、无效 ZIP 等）"),
