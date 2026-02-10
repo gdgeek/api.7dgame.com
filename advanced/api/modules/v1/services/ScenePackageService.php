@@ -1,0 +1,431 @@
+<?php
+
+namespace api\modules\v1\services;
+
+use api\modules\v1\helpers\IdRemapper;
+use api\modules\v1\models\File;
+use api\modules\v1\models\Meta;
+use api\modules\v1\models\MetaCode;
+use api\modules\v1\models\MetaResource;
+use api\modules\v1\models\Resource;
+use api\modules\v1\models\Verse;
+use api\modules\v1\models\VerseCode;
+use api\modules\v1\models\VerseMeta;
+use common\components\UuidHelper;
+use Yii;
+use yii\base\Component;
+use yii\web\NotFoundHttpException;
+
+/**
+ * 场景包服务层
+ *
+ * 封装场景导出和导入的核心业务逻辑。
+ */
+class ScenePackageService extends Component
+{
+    /**
+     * 构建导出数据树
+     *
+     * 查询 Verse 及所有关联数据，组装 Scene_Data_Tree 结构。
+     *
+     * @param int $verseId 场景 ID
+     * @return array Scene_Data_Tree 结构
+     * @throws NotFoundHttpException 当 Verse 不存在时
+     */
+    public function buildExportData(int $verseId): array
+    {
+        // 查询 Verse
+        $verse = Verse::findOne($verseId);
+        if ($verse === null) {
+            throw new NotFoundHttpException('Verse not found');
+        }
+
+        // 构建 verse 部分
+        $verseData = $this->buildVerseData($verse);
+
+        // 查询所有关联 Metas（通过 VerseMeta）
+        $metas = $verse->getMetas()->all();
+
+        // 构建 metas 部分
+        $metasData = [];
+        foreach ($metas as $meta) {
+            $metasData[] = $this->buildMetaData($meta);
+        }
+
+        // 查询所有关联 Resources（通过 VerseMeta -> MetaResource）
+        $resources = $verse->getResources();
+
+        // 构建 resources 部分
+        $resourcesData = [];
+        foreach ($resources as $resource) {
+            $resourcesData[] = $this->buildResourceData($resource);
+        }
+
+        // 查询 MetaResource 关联关系构建 metaResourceLinks
+        $metaIds = array_map(function ($meta) {
+            return $meta->id;
+        }, $metas);
+
+        $metaResourceLinks = [];
+        if (!empty($metaIds)) {
+            $metaResources = MetaResource::find()
+                ->where(['meta_id' => $metaIds])
+                ->all();
+
+            foreach ($metaResources as $mr) {
+                $metaResourceLinks[] = [
+                    'meta_id' => $mr->meta_id,
+                    'resource_id' => $mr->resource_id,
+                ];
+            }
+        }
+
+        // 组装并返回 Scene_Data_Tree 结构
+        return [
+            'verse' => $verseData,
+            'metas' => $metasData,
+            'resources' => $resourcesData,
+            'metaResourceLinks' => $metaResourceLinks,
+        ];
+    }
+
+    /**
+     * 执行场景导入（事务内）
+     *
+     * 在单个数据库事务中按顺序创建所有实体、建立关联、执行 ID 重映射。
+     * 任何步骤失败将抛出异常触发事务回滚。
+     *
+     * @param array $data 解析后的场景数据
+     * @return array {verseId, metaIdMap, resourceIdMap}
+     * @throws \Exception 任何失败将触发事务回滚
+     */
+    public function importScene(array $data): array
+    {
+        $db = Yii::$app->db;
+        $transaction = $db->beginTransaction();
+
+        try {
+            $verseData = $data['verse'];
+            $metasData = $data['metas'] ?? [];
+            $resourceFileMappings = $data['resourceFileMappings'] ?? [];
+
+            // --- Step 1: Create Resources (new UUID, file_id from resourceFileMappings) ---
+            $resourceIdMap = []; // originalUuid => new Resource ID
+            $fileIdToResourceId = []; // fileId => new Resource ID
+
+            foreach ($resourceFileMappings as $mapping) {
+                $resource = new Resource();
+                $resource->uuid = UuidHelper::uuid();
+                $resource->name = $mapping['name'];
+                $resource->type = $mapping['type'];
+                $resource->info = $mapping['info'];
+                $resource->file_id = $mapping['fileId'];
+
+                if (!$resource->save()) {
+                    throw new \Exception('Failed to create Resource: ' . json_encode($resource->getErrors()));
+                }
+
+                $resourceIdMap[$mapping['originalUuid']] = $resource->id;
+                $fileIdToResourceId[$mapping['fileId']] = $resource->id;
+            }
+
+            // --- Step 2: Create Verse (new UUID, data temporarily empty) ---
+            $verse = new Verse();
+            $verse->uuid = UuidHelper::uuid();
+            $verse->name = $verseData['name'];
+            $verse->description = $verseData['description'] ?? null;
+            $verse->version = $verseData['version'] ?? null;
+            // Save with empty data first to avoid afterSave refreshMetas issues
+            $verse->data = null;
+
+            if (!$verse->save()) {
+                throw new \Exception('Failed to create Verse: ' . json_encode($verse->getErrors()));
+            }
+
+            // --- Step 3: Create VerseCode (if present) ---
+            if (!empty($verseData['verseCode'])) {
+                $verseCode = new VerseCode();
+                $verseCode->verse_id = $verse->id;
+                $verseCode->blockly = $verseData['verseCode']['blockly'] ?? null;
+                $verseCode->lua = $verseData['verseCode']['lua'] ?? null;
+                $verseCode->js = $verseData['verseCode']['js'] ?? null;
+
+                if (!$verseCode->save()) {
+                    throw new \Exception('Failed to create VerseCode: ' . json_encode($verseCode->getErrors()));
+                }
+            }
+
+            // --- Step 4: Create Metas (new UUID, data/events temporarily empty) and VerseMeta associations ---
+            $metaIdMap = []; // originalUuid => new Meta ID
+            $metaOriginalData = []; // new Meta ID => original data/events from input
+
+            foreach ($metasData as $metaInput) {
+                $meta = new Meta();
+                $meta->uuid = UuidHelper::uuid();
+                $meta->title = $metaInput['title'];
+                $meta->prefab = $metaInput['prefab'] ?? 0;
+                // Save with empty data/events first to avoid afterSave refreshResources issues
+                $meta->data = null;
+                $meta->events = null;
+
+                if (!$meta->save()) {
+                    throw new \Exception('Failed to create Meta: ' . json_encode($meta->getErrors()));
+                }
+
+                $metaIdMap[$metaInput['uuid']] = $meta->id;
+
+                // Store original data/events for later remapping
+                $metaOriginalData[$meta->id] = [
+                    'data' => $metaInput['data'] ?? null,
+                    'events' => $metaInput['events'] ?? null,
+                    'resourceFileIds' => $metaInput['resourceFileIds'] ?? [],
+                    'metaCode' => $metaInput['metaCode'] ?? null,
+                ];
+
+                // Create VerseMeta association
+                $verseMeta = new VerseMeta();
+                $verseMeta->verse_id = $verse->id;
+                $verseMeta->meta_id = $meta->id;
+
+                if (!$verseMeta->save()) {
+                    throw new \Exception('Failed to create VerseMeta: ' . json_encode($verseMeta->getErrors()));
+                }
+            }
+
+            // --- Step 5: Create MetaCodes (if present) ---
+            foreach ($metaOriginalData as $metaId => $originalData) {
+                if (!empty($originalData['metaCode'])) {
+                    $metaCode = new MetaCode();
+                    $metaCode->meta_id = $metaId;
+                    $metaCode->blockly = $originalData['metaCode']['blockly'] ?? null;
+                    $metaCode->lua = $originalData['metaCode']['lua'] ?? null;
+                    $metaCode->js = $originalData['metaCode']['js'] ?? null;
+
+                    if (!$metaCode->save()) {
+                        throw new \Exception('Failed to create MetaCode: ' . json_encode($metaCode->getErrors()));
+                    }
+                }
+            }
+
+            // --- Step 6: Create MetaResource associations (through resourceFileIds and fileId mapping) ---
+            foreach ($metaOriginalData as $metaId => $originalData) {
+                $resourceFileIds = $originalData['resourceFileIds'] ?? [];
+                foreach ($resourceFileIds as $fileId) {
+                    if (isset($fileIdToResourceId[$fileId])) {
+                        $metaResource = new MetaResource();
+                        $metaResource->meta_id = $metaId;
+                        $metaResource->resource_id = $fileIdToResourceId[$fileId];
+
+                        if (!$metaResource->save()) {
+                            throw new \Exception('Failed to create MetaResource: ' . json_encode($metaResource->getErrors()));
+                        }
+                    }
+                }
+            }
+
+            // --- Step 7: ID Remapping ---
+            // Build replacement maps: originalUuid => new ID
+            // The IdRemapper will replace matching values in the JSON data trees.
+            // For verse.data: replace meta_id values and resource values (numericOnly)
+            // For meta.data/events: replace resource values (numericOnly)
+            $metaIdReplacementMap = $metaIdMap; // originalUuid => new meta ID
+            $resourceIdReplacementMap = $resourceIdMap; // originalUuid => new resource ID
+
+            // Remap verse.data
+            $verseDataJson = $verseData['data'] ?? null;
+            if ($verseDataJson !== null) {
+                $verseDataDecoded = is_string($verseDataJson) ? json_decode($verseDataJson, true) : $verseDataJson;
+                if (is_array($verseDataDecoded)) {
+                    $verseDataDecoded = IdRemapper::remap($verseDataDecoded, [
+                        ['key' => 'meta_id', 'map' => $metaIdReplacementMap, 'numericOnly' => false],
+                        ['key' => 'resource', 'map' => $resourceIdReplacementMap, 'numericOnly' => true],
+                    ]);
+                    $verseDataJson = json_encode($verseDataDecoded);
+                }
+            }
+
+            // Remap each meta's data and events
+            $remappedMetaData = [];
+            foreach ($metaOriginalData as $metaId => $originalData) {
+                $metaDataJson = $originalData['data'];
+                $metaEventsJson = $originalData['events'];
+
+                // Remap meta.data
+                if ($metaDataJson !== null) {
+                    $metaDataDecoded = is_string($metaDataJson) ? json_decode($metaDataJson, true) : $metaDataJson;
+                    if (is_array($metaDataDecoded)) {
+                        $metaDataDecoded = IdRemapper::remap($metaDataDecoded, [
+                            ['key' => 'resource', 'map' => $resourceIdReplacementMap, 'numericOnly' => true],
+                        ]);
+                        $metaDataJson = json_encode($metaDataDecoded);
+                    }
+                }
+
+                // Remap meta.events
+                if ($metaEventsJson !== null) {
+                    $metaEventsDecoded = is_string($metaEventsJson) ? json_decode($metaEventsJson, true) : $metaEventsJson;
+                    if (is_array($metaEventsDecoded)) {
+                        $metaEventsDecoded = IdRemapper::remap($metaEventsDecoded, [
+                            ['key' => 'resource', 'map' => $resourceIdReplacementMap, 'numericOnly' => true],
+                        ]);
+                        $metaEventsJson = json_encode($metaEventsDecoded);
+                    }
+                }
+
+                $remappedMetaData[$metaId] = [
+                    'data' => $metaDataJson,
+                    'events' => $metaEventsJson,
+                ];
+            }
+
+            // --- Step 8: Update Verse.data and each Meta.data/events ---
+            $verse->data = $verseDataJson;
+            if (!$verse->save()) {
+                throw new \Exception('Failed to update Verse data: ' . json_encode($verse->getErrors()));
+            }
+
+            foreach ($remappedMetaData as $metaId => $remapped) {
+                $meta = Meta::findOne($metaId);
+                if ($meta === null) {
+                    throw new \Exception("Meta not found for update: {$metaId}");
+                }
+                $meta->data = $remapped['data'];
+                $meta->events = $remapped['events'];
+
+                if (!$meta->save()) {
+                    throw new \Exception('Failed to update Meta data: ' . json_encode($meta->getErrors()));
+                }
+            }
+
+            // --- Step 9: Commit transaction ---
+            $transaction->commit();
+
+            return [
+                'verseId' => $verse->id,
+                'metaIdMap' => $metaIdMap,
+                'resourceIdMap' => $resourceIdMap,
+            ];
+        } catch (\Exception $e) {
+            $transaction->rollBack();
+            throw $e;
+        }
+    }
+
+
+    /**
+     * 构建 verse 数据部分
+     *
+     * @param Verse $verse
+     * @return array
+     */
+    private function buildVerseData(Verse $verse): array
+    {
+        $data = [
+            'id' => $verse->id,
+            'author_id' => $verse->author_id,
+            'name' => $verse->name,
+            'description' => $verse->description,
+            'info' => $verse->info,
+            'data' => $verse->data,
+            'version' => $verse->version,
+            'uuid' => $verse->uuid,
+            'editable' => $verse->editable,
+            'viewable' => $verse->viewable,
+            'verseRelease' => null,
+        ];
+
+        // 关联 image（File 对象）
+        $image = $verse->image;
+        $data['image'] = $image ? $this->buildFileData($image) : null;
+
+        // 关联 verseCode
+        $verseCode = $verse->verseCode;
+        $data['verseCode'] = $verseCode ? [
+            'blockly' => $verseCode->blockly,
+            'lua' => $verseCode->lua,
+            'js' => $verseCode->js,
+        ] : null;
+
+        return $data;
+    }
+
+    /**
+     * 构建 meta 数据部分
+     *
+     * @param Meta $meta
+     * @return array
+     */
+    private function buildMetaData(Meta $meta): array
+    {
+        // 获取 meta 关联的 resources（通过 MetaResource）
+        $resources = $meta->getResources();
+        $resourcesData = [];
+        foreach ($resources as $resource) {
+            $resourcesData[] = $this->buildResourceData($resource);
+        }
+
+        $data = [
+            'id' => $meta->id,
+            'author_id' => $meta->author_id,
+            'uuid' => $meta->uuid,
+            'title' => $meta->title,
+            'data' => $meta->data,
+            'events' => $meta->events,
+            'image_id' => $meta->image_id,
+            'image' => $meta->image ? $this->buildFileData($meta->image) : null,
+            'prefab' => $meta->prefab,
+            'resources' => $resourcesData,
+            'editable' => $meta->editable,
+            'viewable' => $meta->viewable,
+        ];
+
+        // 关联 metaCode
+        $metaCode = $meta->metaCode;
+        $data['metaCode'] = $metaCode ? [
+            'blockly' => $metaCode->blockly,
+            'lua' => $metaCode->lua,
+        ] : null;
+
+        return $data;
+    }
+
+    /**
+     * 构建 resource 数据部分
+     *
+     * @param Resource $resource
+     * @return array
+     */
+    private function buildResourceData(Resource $resource): array
+    {
+        $file = $resource->file;
+
+        return [
+            'id' => $resource->id,
+            'uuid' => $resource->uuid,
+            'name' => $resource->name,
+            'type' => $resource->type,
+            'info' => $resource->info,
+            'created_at' => $resource->created_at,
+            'file' => $file ? $this->buildFileData($file) : null,
+        ];
+    }
+
+    /**
+     * 构建 file 数据部分
+     *
+     * @param File $file
+     * @return array
+     */
+    private function buildFileData(File $file): array
+    {
+        return [
+            'id' => $file->id,
+            'md5' => $file->md5,
+            'type' => $file->type,
+            'url' => $file->filterUrl,
+            'filename' => $file->filename,
+            'size' => $file->size,
+            'key' => $file->key,
+        ];
+    }
+}
