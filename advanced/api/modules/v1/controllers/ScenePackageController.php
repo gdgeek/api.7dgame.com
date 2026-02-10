@@ -39,8 +39,8 @@ class ScenePackageController extends Controller
     {
         $behaviors = parent::behaviors();
 
-        // Allow export action to bypass content negotiation (supports application/zip)
-        $behaviors['contentNegotiator']['except'] = ['export'];
+        // Export action supports both JSON and ZIP; add application/zip to accepted formats
+        $behaviors['contentNegotiator']['formats']['application/zip'] = \yii\web\Response::FORMAT_RAW;
 
         // add CORS filter
         $behaviors['corsFilter'] = [
