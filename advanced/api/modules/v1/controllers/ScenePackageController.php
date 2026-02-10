@@ -44,7 +44,14 @@ class ScenePackageController extends Controller
     {
         $behaviors = parent::behaviors();
 
-        // ZIP actions skip contentNegotiator (raw binary response)
+        // Accept any content type, default to JSON. Avoids 406 when clients
+        // don't send Accept: application/json (e.g. Postman, browsers).
+        $behaviors['contentNegotiator']['formats'] = [
+            'application/json' => Response::FORMAT_JSON,
+            'application/xml' => Response::FORMAT_XML,
+            '*/*' => Response::FORMAT_JSON,
+        ];
+        // ZIP actions skip contentNegotiator entirely (raw binary response)
         $behaviors['contentNegotiator']['except'] = ['export-zip', 'import-zip'];
 
         // add CORS filter
@@ -80,6 +87,7 @@ class ScenePackageController extends Controller
         return $behaviors;
     }
 
+
     // =========================================================================
     // Export: JSON
     // =========================================================================
@@ -94,7 +102,7 @@ class ScenePackageController extends Controller
      */
     public function actionExport(int $id): array
     {
-        $verse = $this->findVerseOrFail($id);
+        $this->findVerseOrFail($id);
         $service = new ScenePackageService();
         return $service->buildExportData($id);
     }
@@ -182,14 +190,15 @@ class ScenePackageController extends Controller
      */
     public function actionImportZip(): array
     {
+        // import-zip is excluded from contentNegotiator (for ZIP upload),
+        // but the response is JSON, so set format manually.
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
         $data = $this->parseZipUpload();
 
         $this->validateImportData($data);
         $this->validateVersion($data);
         $this->validateFileIds($data);
-
-        // Set response format manually since contentNegotiator is skipped for ZIP actions
-        Yii::$app->response->format = Response::FORMAT_JSON;
 
         try {
             $service = new ScenePackageService();
