@@ -290,11 +290,7 @@ class VerseController extends ActiveController
             throw new NotFoundHttpException('Verse not found');
         }
 
-        // 验证当前用户是否为作者
-        if ($verse->author_id !== Yii::$app->user->id) {
-            throw new ForbiddenHttpException('You are not authorized to modify this verse');
-        }
-
+     
         // 获取或创建 public 属性
         $property = Property::findOne(['key' => 'public']);
         if (!$property) {
@@ -369,10 +365,7 @@ class VerseController extends ActiveController
             throw new NotFoundHttpException('Verse not found');
         }
 
-        // 验证当前用户是否为作者
-        if ($verse->author_id !== Yii::$app->user->id) {
-            throw new ForbiddenHttpException('You are not authorized to modify this verse');
-        }
+
 
         // 获取 public 属性
         $property = Property::findOne(['key' => 'public']);
