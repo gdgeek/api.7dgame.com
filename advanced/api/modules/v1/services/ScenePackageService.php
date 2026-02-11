@@ -109,11 +109,74 @@ class ScenePackageService extends Component
             $verseData = $data['verse'];
             $metasData = $data['metas'] ?? [];
             $resourceFileMappings = $data['resourceFileMappings'] ?? [];
+            $exportedResources = $data['resources'] ?? [];
+            $exportedMetaResourceLinks = $data['metaResourceLinks'] ?? [];
+            $fileIdMap = []; // original File ID => new File ID
+
+            // --- Step 0: Convert exported resources format to import format ---
+            // When importing from ZIP (exported data), resources come as 'resources' array
+            // with file data embedded. Convert them to resourceFileMappings format by
+            // creating File records first, then building the mappings.
+            $resourceOriginalIdMap = []; // original resource ID => originalUuid (for numeric ID remap)
+            if (!empty($exportedResources) && empty($resourceFileMappings)) {
+                foreach ($exportedResources as $res) {
+                    // Create File record from exported file data
+                    $fileId = null;
+                    if (!empty($res['file'])) {
+                        $fileRecord = $this->createFileFromImageData($res['file']);
+                        $fileId = $fileRecord->id;
+                        if (isset($res['file']['id'])) {
+                            $fileIdMap[$res['file']['id']] = $fileRecord->id;
+                        }
+                    }
+
+                    $mapping = [
+                        'originalUuid' => $res['uuid'],
+                        'fileId' => $fileId,
+                        'name' => $res['name'],
+                        'type' => $res['type'],
+                        'info' => $res['info'],
+                        'image' => $res['image'] ?? null,
+                    ];
+                    if (isset($res['id'])) {
+                        $mapping['originalId'] = $res['id'];
+                    }
+                    $resourceFileMappings[] = $mapping;
+                }
+
+                // Convert metaResourceLinks to metas[].resourceFileIds
+                // metaResourceLinks: [{meta_id: 101, resource_id: 201}, ...]
+                // We need to map resource_id -> fileId for each meta
+                if (!empty($exportedMetaResourceLinks)) {
+                    // Build resource original ID -> fileId map
+                    $resIdToFileId = [];
+                    foreach ($exportedResources as $i => $res) {
+                        if (isset($res['id'], $resourceFileMappings[$i]['fileId'])) {
+                            $resIdToFileId[$res['id']] = $resourceFileMappings[$i]['fileId'];
+                        }
+                    }
+                    // Build meta original ID -> resourceFileIds
+                    $metaResourceFileIds = [];
+                    foreach ($exportedMetaResourceLinks as $link) {
+                        $metaId = $link['meta_id'];
+                        $resId = $link['resource_id'];
+                        if (isset($resIdToFileId[$resId])) {
+                            $metaResourceFileIds[$metaId][] = $resIdToFileId[$resId];
+                        }
+                    }
+                    // Inject resourceFileIds into metasData
+                    foreach ($metasData as &$metaInput) {
+                        if (isset($metaInput['id'], $metaResourceFileIds[$metaInput['id']])) {
+                            $metaInput['resourceFileIds'] = $metaResourceFileIds[$metaInput['id']];
+                        }
+                    }
+                    unset($metaInput);
+                }
+            }
 
             // --- Step 1: Create Resources (new UUID, file_id from resourceFileMappings) ---
             $resourceIdMap = []; // originalUuid => new Resource ID
             $fileIdToResourceId = []; // fileId => new Resource ID
-            $fileIdMap = []; // original File ID => new File ID
 
             foreach ($resourceFileMappings as $mapping) {
                 $resource = new Resource();
@@ -146,7 +209,7 @@ class ScenePackageService extends Component
             // --- Step 2: Create Verse (new UUID, data temporarily empty) ---
             $verse = new Verse();
             $verse->uuid = UuidHelper::uuid();
-            $verse->name = $verseData['name'];
+            $verse->name = $verseData['name'] . '（副本 ' . date('Y-m-d H:i:s') . '）';
             $verse->description = $verseData['description'] ?? null;
             // Save with empty data first to avoid afterSave refreshMetas issues
             $verse->data = null;
@@ -261,12 +324,28 @@ class ScenePackageService extends Component
             }
 
             // --- Step 7: ID Remapping ---
-            // Build replacement maps: originalUuid => new ID
-            // The IdRemapper will replace matching values in the JSON data trees.
-            // For verse.data: replace meta_id values and resource values (numericOnly)
-            // For meta.data/events: replace resource values (numericOnly)
+            // Build replacement maps for both UUID-based and numeric-ID-based lookups.
+            // verse.data uses numeric meta_id (e.g. "2290"), so we need originalId => newId.
             $metaIdReplacementMap = $metaIdMap; // originalUuid => new meta ID
             $resourceIdReplacementMap = $resourceIdMap; // originalUuid => new resource ID
+
+            // Build numeric ID map: original meta numeric ID => new meta ID
+            $metaNumericIdMap = [];
+            foreach ($metasData as $metaInput) {
+                if (isset($metaInput['id'], $metaIdMap[$metaInput['uuid']])) {
+                    $metaNumericIdMap[(string) $metaInput['id']] = $metaIdMap[$metaInput['uuid']];
+                }
+            }
+            // Build numeric ID map for resources
+            $resourceNumericIdMap = [];
+            foreach ($resourceFileMappings as $mapping) {
+                if (isset($mapping['originalId'], $resourceIdMap[$mapping['originalUuid']])) {
+                    $resourceNumericIdMap[(string) $mapping['originalId']] = $resourceIdMap[$mapping['originalUuid']];
+                }
+            }
+            // Merge both UUID and numeric maps (use + to preserve string-numeric keys)
+            $metaIdReplacementMap = $metaIdReplacementMap + $metaNumericIdMap;
+            $resourceIdReplacementMap = $resourceIdReplacementMap + $resourceNumericIdMap;
 
             // Remap verse.data
             $verseDataJson = $verseData['data'] ?? null;

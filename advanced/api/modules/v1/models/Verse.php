@@ -257,10 +257,19 @@ class Verse extends \yii\db\ActiveRecord
             return $this->info;
         };
         $fields['data'] = function () {
+            if(is_string($this->data) && json_validate($this->data)){
+                return json_decode($this->data);
+            }
             return $this->data;
         };
 
         return $fields;
+    }
+    public function afterFind()
+    {
+        
+        return parent::afterFind();
+
     }
     /**
      * {@inheritdoc}
@@ -332,10 +341,10 @@ class Verse extends \yii\db\ActiveRecord
     {
 
         parent::afterSave($insert, $changedAttributes);
+       
         $this->refreshMetas();
     }
-
-
+    
 
     public function extraFields()
     {

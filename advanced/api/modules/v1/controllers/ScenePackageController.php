@@ -300,9 +300,17 @@ class ScenePackageController extends Controller
             throw new BadRequestHttpException('Missing required field: verse');
         }
 
-        $verseRequiredFields = ['name', 'data', 'version', 'uuid'];
+        // Fields that must be present and non-empty
+        $verseRequiredFields = ['name', 'uuid'];
         foreach ($verseRequiredFields as $field) {
             if (!isset($data['verse'][$field]) || $data['verse'][$field] === '') {
+                throw new BadRequestHttpException("Missing required field: verse.{$field}");
+            }
+        }
+        // Fields that must exist as keys but may be null (e.g. empty scenes)
+        $verseNullableFields = ['data', 'version'];
+        foreach ($verseNullableFields as $field) {
+            if (!array_key_exists($field, $data['verse'])) {
                 throw new BadRequestHttpException("Missing required field: verse.{$field}");
             }
         }

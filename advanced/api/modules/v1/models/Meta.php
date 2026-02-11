@@ -227,7 +227,7 @@ class Meta extends \yii\db\ActiveRecord
      */
     public function getAuthor()
     {
-        return $this->hasOne(User::className(), ['id' => 'author_id']);
+        return $this->hasOne(User::class, ['id' => 'author_id']);
     }
 
     /**
@@ -267,7 +267,7 @@ class Meta extends \yii\db\ActiveRecord
      */
     public function getImage()
     {
-        return $this->hasOne(File::className(), ['id' => 'image_id']);
+        return $this->hasOne(File::class, ['id' => 'image_id']);
     }
 
     /**

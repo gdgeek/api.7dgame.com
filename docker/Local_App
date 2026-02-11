@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install -y \
 RUN docker-php-ext-install -j$(nproc) mysqli pdo pdo_mysql
 
 # Enable OPcache + JIT configuration (opcache is built-in for PHP 8.5)
-COPY ./docker/php-jit.ini $PHP_INI_DIR/conf.d/opcache-jit.ini
+COPY ./docker/php-jit-dev.ini $PHP_INI_DIR/conf.d/opcache-jit.ini
 
 RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
 
