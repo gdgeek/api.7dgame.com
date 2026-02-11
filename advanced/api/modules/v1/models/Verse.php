@@ -158,7 +158,8 @@ class Verse extends \yii\db\ActiveRecord
         }
 
         $verseIds = (new Query())
-            ->select('DISTINCT gv.verse_id')
+            ->select('gv.verse_id')
+            ->distinct()
             ->from(['gv' => 'group_verse'])
             ->innerJoin(['gu' => 'group_user'], 'gu.group_id = gv.group_id')
             ->where(['gu.user_id' => $userId])
