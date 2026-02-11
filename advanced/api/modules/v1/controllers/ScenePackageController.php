@@ -354,6 +354,20 @@ class ScenePackageController extends Controller
                         throw new BadRequestHttpException("Missing required field: resourceFileMappings[{$index}].{$field}");
                     }
                 }
+
+                // Validate resource image if present and not null
+                if (isset($mapping['image']) && $mapping['image'] !== null) {
+                    $imageRequiredFields = ['url', 'filename', 'key'];
+                    $missingFields = [];
+                    foreach ($imageRequiredFields as $field) {
+                        if (!isset($mapping['image'][$field]) || $mapping['image'][$field] === '') {
+                            $missingFields[] = "resourceFileMappings[{$index}].image.{$field}";
+                        }
+                    }
+                    if (!empty($missingFields)) {
+                        throw new BadRequestHttpException("Missing required field: " . implode(', ', $missingFields));
+                    }
+                }
             }
         }
     }

@@ -127,6 +127,18 @@ class ScenePackageService extends Component
                     throw new \Exception('Failed to create Resource: ' . json_encode($resource->getErrors()));
                 }
 
+                // --- Step 1.1: Handle resource.image (create File and set image_id) ---
+                if (!empty($mapping['image'])) {
+                    $resourceImageFile = $this->createFileFromImageData($mapping['image']);
+                    $resource->image_id = $resourceImageFile->id;
+                    if (isset($mapping['image']['id'])) {
+                        $fileIdMap[$mapping['image']['id']] = $resourceImageFile->id;
+                    }
+                    if (!$resource->save()) {
+                        throw new \Exception('Failed to update Resource image_id: ' . json_encode($resource->getErrors()));
+                    }
+                }
+
                 $resourceIdMap[$mapping['originalUuid']] = $resource->id;
                 $fileIdToResourceId[$mapping['fileId']] = $resource->id;
             }
@@ -446,6 +458,7 @@ class ScenePackageService extends Component
         $data['metaCode'] = $metaCode ? [
             'blockly' => $metaCode->blockly,
             'lua' => $metaCode->lua,
+            'js' => $metaCode->js,
         ] : null;
 
         return $data;
@@ -460,6 +473,7 @@ class ScenePackageService extends Component
     private function buildResourceData(Resource $resource): array
     {
         $file = $resource->file;
+        $image = $resource->image;
 
         return [
             'id' => $resource->id,
@@ -469,6 +483,7 @@ class ScenePackageService extends Component
             'info' => $resource->info,
             'created_at' => $resource->created_at,
             'file' => $file ? $this->buildFileData($file) : null,
+            'image' => $image ? $this->buildFileData($image) : null,
         ];
     }
 
