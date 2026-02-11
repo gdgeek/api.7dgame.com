@@ -181,7 +181,7 @@ class ScenePackageService extends Component
             foreach ($resourceFileMappings as $mapping) {
                 $resource = new Resource();
                 $resource->uuid = UuidHelper::uuid();
-                $resource->name = $mapping['name'];
+                $resource->name = $mapping['name'] . '（副本 ' . date('Y-m-d H:i:s') . '）';
                 $resource->type = $mapping['type'];
                 $resource->info = $mapping['info'];
                 $resource->file_id = $mapping['fileId'];
@@ -250,7 +250,7 @@ class ScenePackageService extends Component
             foreach ($metasData as $metaInput) {
                 $meta = new Meta();
                 $meta->uuid = UuidHelper::uuid();
-                $meta->title = $metaInput['title'];
+                $meta->title = $metaInput['title'] . '（副本 ' . date('Y-m-d H:i:s') . '）';
                 $meta->prefab = $metaInput['prefab'] ?? 0;
                 // Save with empty data/events first to avoid afterSave refreshResources issues
                 $meta->data = null;
@@ -356,7 +356,7 @@ class ScenePackageService extends Component
                         ['key' => 'meta_id', 'map' => $metaIdReplacementMap, 'numericOnly' => false],
                         ['key' => 'resource', 'map' => $resourceIdReplacementMap, 'numericOnly' => true],
                     ]);
-                    $verseDataJson = json_encode($verseDataDecoded);
+                    $verseDataJson = $verseDataDecoded;
                 }
             }
 
@@ -373,7 +373,7 @@ class ScenePackageService extends Component
                         $metaDataDecoded = IdRemapper::remap($metaDataDecoded, [
                             ['key' => 'resource', 'map' => $resourceIdReplacementMap, 'numericOnly' => true],
                         ]);
-                        $metaDataJson = json_encode($metaDataDecoded);
+                        $metaDataJson = $metaDataDecoded;
                     }
                 }
 
@@ -384,7 +384,7 @@ class ScenePackageService extends Component
                         $metaEventsDecoded = IdRemapper::remap($metaEventsDecoded, [
                             ['key' => 'resource', 'map' => $resourceIdReplacementMap, 'numericOnly' => true],
                         ]);
-                        $metaEventsJson = json_encode($metaEventsDecoded);
+                        $metaEventsJson = $metaEventsDecoded;
                     }
                 }
 

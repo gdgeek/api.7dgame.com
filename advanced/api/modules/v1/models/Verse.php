@@ -265,12 +265,6 @@ class Verse extends \yii\db\ActiveRecord
 
         return $fields;
     }
-    public function afterFind()
-    {
-        
-        return parent::afterFind();
-
-    }
     /**
      * {@inheritdoc}
      */
