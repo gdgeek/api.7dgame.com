@@ -160,42 +160,7 @@ return [
                         'POST reset' => 'reset',
                     ],
                 ],
-                /*
-                [
-                    'class' => 'yii\rest\UrlRule',
-                    'controller' => 'site',
-                    'extraPatterns' => [
-                        'POST login' => 'login',
-                        'OPTIONS login' => 'login',
-                        'POST signup' => 'signup',
-                        'OPTIONS signup' => 'signup',
-                        'GET password-reset-token' => 'password-reset-token',
-                        'GET verify-email' => 'verify-email',
-                        'GET binded-email' => 'binded-email',
-                        'GET param' => 'param',
-                        'GET information' => 'information',
-                        'POST resend-verification-email' => 'resend-verification-email',
-                        'OPTIONS resend-verification-email' => 'resend-verification-email',
-                        'POST request-password-reset' => 'request-password-reset',
-                        'OPTIONS request-password-reset' => 'request-password-reset',
-                        'POST reset-password' => 'reset-password',
-                        'OPTIONS reset-password' => 'reset-password',
-                    ],
-                ],
-                
-                [
-                    'class' => 'yii\rest\UrlRule',
-                    'controller' => 'server',
-                    'extraPatterns' => [
-                        'GET user' => 'user',
-                        'GET test' => 'test',
-                        'GET token' => 'token',
-                        'GET logout' => 'logout',
-                        'GET menu' => 'menu',
-                        'POST reset-password' => 'reset-password',
-                        'POST bind-email' => 'bind-email',
-                    ],
-                ],*/
+              
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/upload',

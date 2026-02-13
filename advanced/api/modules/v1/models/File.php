@@ -126,10 +126,16 @@ class File extends ActiveRecord
                 'class' => AttributesBehavior::class,
                 'attributes' => [
                     'size' => [
-                        \Yii\db\ActiveRecord::EVENT_BEFORE_INSERT => [$this, 'getFileSize'],
+                        \Yii\db\ActiveRecord::EVENT_BEFORE_INSERT => function ($event) {
+                            // 如果 size 已经被手动设置（如导入场景包时），跳过远程获取
+                            return $this->size ?? $this->getFileSize();
+                        },
                     ],
                     'type' => [
-                        \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => [$this, 'getFileType'],
+                        \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => function ($event) {
+                            // 如果 type 已经被手动设置（如导入场景包时），跳过远程获取
+                            return $this->type ?? $this->getFileType();
+                        },
                     ],
 
                 ],
