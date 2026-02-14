@@ -1,7 +1,5 @@
 <?php
 namespace api\controllers;
-
-use common\components\security\UploadValidator;
 use Yii;
 use yii\rest\ActiveController;
 use yii\helpers\ArrayHelper;
@@ -14,13 +12,14 @@ use bizley\jwt\JwtHttpBearerAuth;
 
 use common\models\Project;
 use common\models\Programme;
-use yii\web\UploadedFile;
 
 /**
- * Legacy FileController.
+ * Legacy FileController — 文件记录管理（纯数据库 CRUD）
  *
- * Note: The primary file upload endpoint is in api\modules\v1\controllers\FileController.
- * This controller is maintained for backward compatibility.
+ * 重要：本控制器不负责文件上传！
+ * 文件上传通过腾讯云 COS 直传完成，本控制器仅管理 file 表的数据库记录。
+ *
+ * 主要接口在 api\modules\v1\controllers\FileController，此控制器保留用于向后兼容。
  */
 class FileController extends ActiveController
 {
@@ -55,106 +54,5 @@ class FileController extends ActiveController
             'pagination' => false
         ]);
         return $activeData;
-    }
-
-    /**
-     * Handle file upload with security validation.
-     *
-     * Delegates to the UploadValidator for comprehensive file validation
-     * including MIME type, extension, file size, double extension, and content scanning.
-     *
-     * Requirements: 2.1, 2.2, 2.3, 2.4, 2.8, 2.9
-     *
-     * @return array Response data
-     */
-    public function actionUpload()
-    {
-        $uploadedFile = UploadedFile::getInstanceByName('file');
-
-        if ($uploadedFile === null) {
-            Yii::$app->response->statusCode = 400;
-            return [
-                'success' => false,
-                'code' => 'UPLOAD_NO_FILE',
-                'message' => 'No file was uploaded.',
-                'errors' => ['No file found in the request. Please upload a file using the "file" field.'],
-            ];
-        }
-
-        // Check for PHP upload errors
-        if ($uploadedFile->error !== UPLOAD_ERR_OK) {
-            Yii::$app->response->statusCode = 400;
-            return [
-                'success' => false,
-                'code' => 'UPLOAD_ERROR',
-                'message' => 'File upload failed.',
-                'errors' => ['A PHP upload error occurred.'],
-            ];
-        }
-
-        // Validate using UploadValidator
-        $validator = Yii::$app->has('uploadValidator')
-            ? Yii::$app->get('uploadValidator')
-            : new UploadValidator();
-
-        $result = $validator->validate($uploadedFile);
-
-        if (!$result->isValid()) {
-            // Requirement 2.9: Log failed upload validation
-            Yii::warning(json_encode([
-                'event' => 'file_upload_validation_failed',
-                'filename' => $uploadedFile->name,
-                'errors' => $result->getErrors(),
-                'user_id' => Yii::$app->user->id ?? null,
-                'ip_address' => Yii::$app->request->userIP ?? null,
-                'timestamp' => date('Y-m-d\TH:i:sP'),
-            ]), 'security.upload');
-
-            Yii::$app->response->statusCode = 400;
-            return [
-                'success' => false,
-                'code' => 'UPLOAD_VALIDATION_FAILED',
-                'message' => 'File validation failed.',
-                'errors' => $result->getErrors(),
-            ];
-        }
-
-        // Generate safe filename and save
-        $safeFilename = $validator->generateSafeFilename($uploadedFile->name);
-        $storagePath = $validator->getSecureStoragePath();
-        $fullPath = $storagePath . DIRECTORY_SEPARATOR . $safeFilename;
-
-        if (!is_dir($storagePath)) {
-            @mkdir($storagePath, 0750, true);
-        }
-
-        if (!$uploadedFile->saveAs($fullPath)) {
-            Yii::$app->response->statusCode = 500;
-            return [
-                'success' => false,
-                'code' => 'UPLOAD_SAVE_ERROR',
-                'message' => 'Failed to save the uploaded file.',
-                'errors' => ['An internal error occurred while saving the file.'],
-            ];
-        }
-
-        Yii::info(json_encode([
-            'event' => 'file_upload_success',
-            'user_id' => Yii::$app->user->id ?? null,
-            'original_name' => $uploadedFile->name,
-            'safe_name' => $safeFilename,
-            'size' => $uploadedFile->size,
-            'type' => $uploadedFile->type,
-        ]), 'security.upload');
-
-        return [
-            'success' => true,
-            'data' => [
-                'filename' => $safeFilename,
-                'original_name' => $uploadedFile->name,
-                'size' => $uploadedFile->size,
-                'type' => $uploadedFile->type,
-            ],
-        ];
     }
 }
