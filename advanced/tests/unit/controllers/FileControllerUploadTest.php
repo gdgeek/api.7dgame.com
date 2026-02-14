@@ -406,13 +406,13 @@ class FileControllerUploadTest extends TestCase
     // =========================================================================
 
     /**
-     * Test that the controller removes the default 'create' action.
-     * This ensures uploads go through our secure actionUpload instead.
+     * Test that the controller keeps the default 'create' action for File record creation.
+     * File uploads go to COS directly; this action creates DB records.
      */
-    public function testCreateActionIsRemoved()
+    public function testCreateActionIsPresent()
     {
         $actions = $this->controller->actions();
-        $this->assertArrayNotHasKey('create', $actions);
+        $this->assertArrayHasKey('create', $actions);
     }
 
     /**
