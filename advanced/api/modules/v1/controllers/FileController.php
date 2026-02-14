@@ -83,10 +83,7 @@ class FileController extends ActiveController
      */
     public function actions()
     {
-        $actions = parent::actions();
-        // Remove the default 'create' action so we can use our secure upload instead
-        unset($actions['create']);
-        return $actions;
+        return parent::actions();
     }
 
     /**
