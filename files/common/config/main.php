@@ -8,7 +8,7 @@ return [
     ],
     'vendorPath' => dirname(dirname(__DIR__)) . '/vendor',
     'timeZone' => 'Asia/Shanghai',
-    'name' => 'XR UGC平台（XRUGC.com）',
+    'name' => 'XR UGC平台',
     
     'components' => [
         'cache' => [
