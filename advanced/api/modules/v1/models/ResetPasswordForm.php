@@ -43,7 +43,7 @@ class ResetPasswordForm extends Model
         return [
             ['password', 'required', 'message' => '{attribute}不能为空'],
             [['token', 'email', 'code', 'password'], 'trim'],
-            ['token', 'validateResetIdentifier'],
+            ['token', 'validateResetIdentifier', 'skipOnEmpty' => false],
             ['token', 'string', 'min' => 32, 'max' => 255, 'tooShort' => '令牌格式不正确'],
             ['token', 'match', 'pattern' => '/^[A-Za-z0-9\-_]+$/', 'message' => '令牌格式不正确'],
             ['password', 'trim'],
