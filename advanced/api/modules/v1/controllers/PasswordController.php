@@ -8,6 +8,8 @@ use yii\web\Response;
 use api\modules\v1\services\PasswordResetService;
 use api\modules\v1\models\RequestPasswordResetForm;
 use api\modules\v1\models\ResetPasswordForm;
+use api\modules\v1\models\ChangePasswordForm;
+use api\modules\v1\models\VerifyResetCodeForm;
 
 /**
  * 密码重置控制器
@@ -44,6 +46,11 @@ class PasswordController extends Controller
         $behaviors['contentNegotiator']['formats'] = [
             'application/json' => Response::FORMAT_JSON,
         ];
+
+        $behaviors['authenticator'] = [
+            'class' => \yii\filters\auth\HttpBearerAuth::class,
+            'except' => ['request-reset', 'verify-code', 'reset'],
+        ];
         
         return $behaviors;
     }
@@ -77,7 +84,7 @@ class PasswordController extends Controller
             
             return [
                 'success' => true,
-                'message' => '密码重置链接已发送到您的邮箱',
+                'message' => '找回密码验证码已发送到您的邮箱',
             ];
         } catch (\yii\web\TooManyRequestsHttpException $e) {
             Yii::$app->response->statusCode = 429;
@@ -112,43 +119,64 @@ class PasswordController extends Controller
     }
     
     /**
-     * 验证重置令牌
+     * 验证找回密码验证码
      * 
-     * POST /v1/password/verify-token
+     * POST /v1/password/verify-code
      * 
      * @return array 响应数据
      */
-    public function actionVerifyToken()
+    public function actionVerifyCode()
     {
-        $token = Yii::$app->request->post('token');
-        
-        if (empty($token)) {
+        $form = new VerifyResetCodeForm();
+        $form->load(Yii::$app->request->post(), '');
+
+        if (!$form->validate()) {
             Yii::$app->response->statusCode = 400;
             return [
                 'success' => false,
                 'error' => [
                     'code' => 'VALIDATION_ERROR',
-                    'message' => '令牌不能为空',
+                    'message' => '请求参数验证失败',
+                    'details' => $form->errors,
                 ],
             ];
         }
         
         try {
-            $isValid = $this->passwordService->verifyResetToken($token);
+            $isValid = $this->passwordService->verifyResetCode($form->email, $form->code);
             
             return [
                 'success' => true,
                 'valid' => $isValid,
-                'message' => $isValid ? '令牌有效' : '令牌无效或已过期',
+                'message' => $isValid ? '验证码有效' : '验证码无效或已过期',
+            ];
+        } catch (\yii\web\TooManyRequestsHttpException $e) {
+            Yii::$app->response->statusCode = 429;
+            return [
+                'success' => false,
+                'error' => [
+                    'code' => 'ACCOUNT_LOCKED',
+                    'message' => $e->getMessage(),
+                    'retry_after' => $this->getRetryAfter($e),
+                ],
+            ];
+        } catch (\yii\web\BadRequestHttpException $e) {
+            Yii::$app->response->statusCode = 400;
+            return [
+                'success' => false,
+                'error' => [
+                    'code' => 'INVALID_CODE',
+                    'message' => $e->getMessage(),
+                ],
             ];
         } catch (\Exception $e) {
-            Yii::error("Failed to verify token: " . $e->getMessage(), __METHOD__);
+            Yii::error("Failed to verify code: " . $e->getMessage(), __METHOD__);
             Yii::$app->response->statusCode = 500;
             return [
                 'success' => false,
                 'error' => [
                     'code' => 'INTERNAL_ERROR',
-                    'message' => '验证令牌失败，请稍后重试',
+                    'message' => '验证验证码失败，请稍后重试',
                 ],
             ];
         }
@@ -179,18 +207,28 @@ class PasswordController extends Controller
         }
         
         try {
-            $this->passwordService->resetPassword($form->token, $form->password);
+            $this->passwordService->resetPassword($form->email, $form->code, $form->password);
             
             return [
                 'success' => true,
                 'message' => '密码重置成功，请使用新密码登录',
+            ];
+        } catch (\yii\web\TooManyRequestsHttpException $e) {
+            Yii::$app->response->statusCode = 429;
+            return [
+                'success' => false,
+                'error' => [
+                    'code' => 'ACCOUNT_LOCKED',
+                    'message' => $e->getMessage(),
+                    'retry_after' => $this->getRetryAfter($e),
+                ],
             ];
         } catch (\yii\web\BadRequestHttpException $e) {
             Yii::$app->response->statusCode = 400;
             return [
                 'success' => false,
                 'error' => [
-                    'code' => 'INVALID_TOKEN',
+                    'code' => 'INVALID_CODE',
                     'message' => $e->getMessage(),
                 ],
             ];
@@ -202,6 +240,86 @@ class PasswordController extends Controller
                 'error' => [
                     'code' => 'INTERNAL_ERROR',
                     'message' => '密码重置失败，请稍后重试',
+                ],
+            ];
+        }
+    }
+
+    /**
+     * 登录态修改密码（需邮箱已验证）
+     *
+     * POST /v1/password/change
+     *
+     * @return array
+     */
+    public function actionChange()
+    {
+        $user = Yii::$app->user->identity;
+        if (!$user) {
+            Yii::$app->response->statusCode = 401;
+            return [
+                'success' => false,
+                'error' => [
+                    'code' => 'UNAUTHORIZED',
+                    'message' => '用户未登录',
+                ],
+            ];
+        }
+
+        $form = new ChangePasswordForm();
+        $form->load(Yii::$app->request->post(), '');
+
+        if (!$form->validate()) {
+            Yii::$app->response->statusCode = 400;
+            return [
+                'success' => false,
+                'error' => [
+                    'code' => 'VALIDATION_ERROR',
+                    'message' => '请求参数验证失败',
+                    'details' => $form->errors,
+                ],
+            ];
+        }
+
+        try {
+            $result = $this->passwordService->changePassword(
+                $user,
+                $form->old_password,
+                $form->new_password
+            );
+
+            if (!$result) {
+                Yii::$app->response->statusCode = 500;
+                return [
+                    'success' => false,
+                    'error' => [
+                        'code' => 'CHANGE_FAILED',
+                        'message' => '修改密码失败，请稍后重试',
+                    ],
+                ];
+            }
+
+            return [
+                'success' => true,
+                'message' => '密码修改成功，请重新登录',
+            ];
+        } catch (\yii\web\BadRequestHttpException $e) {
+            Yii::$app->response->statusCode = 400;
+            return [
+                'success' => false,
+                'error' => [
+                    'code' => 'INVALID_REQUEST',
+                    'message' => $e->getMessage(),
+                ],
+            ];
+        } catch (\Exception $e) {
+            Yii::error("Failed to change password: " . $e->getMessage(), __METHOD__);
+            Yii::$app->response->statusCode = 500;
+            return [
+                'success' => false,
+                'error' => [
+                    'code' => 'INTERNAL_ERROR',
+                    'message' => '修改密码失败，请稍后重试',
                 ],
             ];
         }

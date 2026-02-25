@@ -146,6 +146,10 @@ return [
                     'extraPatterns' => [
                         'POST send-verification' => 'send-verification',
                         'POST verify' => 'verify',
+                        'POST send-change-confirmation' => 'send-change-confirmation',
+                        'POST verify-change-confirmation' => 'verify-change-confirmation',
+                        'POST unbind' => 'unbind',
+                        'GET cooldown' => 'cooldown',
                         'GET test' => 'test',
                         'GET status' => 'status',
                     ],
@@ -156,8 +160,9 @@ return [
                     'pluralize' => false,
                     'extraPatterns' => [
                         'POST request-reset' => 'request-reset',
-                        'POST verify-token' => 'verify-token',
+                        'POST verify-code' => 'verify-code',
                         'POST reset' => 'reset',
+                        'POST change' => 'change',
                     ],
                 ],
               
@@ -213,11 +218,6 @@ return [
                         'v1/resource',
                         'v1/tags',
                         'v1/token',
-                        // 'v1/edu-school',
-                        // 'v1/edu-teacher',
-                        //  'v1/edu-class',
-                        //  'v1/edu-student',
-                      //  'v1/group',
                         'v1/group-verse',
                     ],
                 ],

@@ -7,8 +7,8 @@ use yii\base\Component;
 class JwtParameter extends Component
 {
 
-    public $issuer = 'https://api.mrpp.com';
-    public $audience = 'https://mrpp.com';
+    public $issuer = 'https://api.xrugc.com';
+    public $audience = 'https://xrugc.com';
     public $id = '4f1g23a12aa';
 
 }

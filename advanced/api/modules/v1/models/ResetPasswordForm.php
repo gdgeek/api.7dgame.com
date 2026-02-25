@@ -16,9 +16,14 @@ use common\components\security\PasswordPolicyValidator;
 class ResetPasswordForm extends Model
 {
     /**
-     * @var string 重置令牌
+     * @var string 邮箱地址
      */
-    public $token;
+    public $email;
+
+    /**
+     * @var string 验证码
+     */
+    public $code;
     
     /**
      * @var string 新密码
@@ -31,10 +36,14 @@ class ResetPasswordForm extends Model
     public function rules()
     {
         return [
-            [['token', 'password'], 'required', 'message' => '{attribute}不能为空'],
-            ['token', 'trim'],
+            [['email', 'code', 'password'], 'required', 'message' => '{attribute}不能为空'],
+            ['email', 'trim'],
+            ['code', 'trim'],
             ['password', 'trim'],
-            ['token', 'string', 'min' => 32, 'tooShort' => '令牌格式不正确'],
+            ['email', 'email', 'message' => '邮箱格式不正确'],
+            ['email', 'string', 'max' => 255],
+            ['code', 'string', 'min' => 6, 'max' => 6, 'tooShort' => '验证码必须是 6 位', 'tooLong' => '验证码必须是 6 位'],
+            ['code', 'match', 'pattern' => '/^\d{6}$/', 'message' => '验证码必须是 6 位数字'],
             [
                 'password', 
                 'string', 
@@ -70,7 +79,8 @@ class ResetPasswordForm extends Model
     public function attributeLabels()
     {
         return [
-            'token' => '重置令牌',
+            'email' => '邮箱地址',
+            'code' => '验证码',
             'password' => '新密码',
         ];
     }

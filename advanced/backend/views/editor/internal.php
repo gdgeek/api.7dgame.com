@@ -230,7 +230,7 @@ $this->title = $setup->title;
         $('#editor').removeClass("disabled");
         $('#arrange').addClass("disabled");
         $('#preview').addClass("disabled");
-        $.get("https://api.mrpp.com/polygens?expand=file", function(result) {
+        $.get("https://api.xrugc.com/polygens?expand=file", function(result) {
             var sceneEl = document.querySelector('a-scene');
             sceneEl.emit('load', result);
         });

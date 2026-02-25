@@ -154,7 +154,7 @@ class SiteController extends \yii\rest\Controller
         $result = $this->getAppleUser($code, $appleParameter);
         $aid = AppleId::find()->where(['apple_id' => $result['id']])->one();
         if ($aid && $aid->user) {
-            //     $aid->user->addRoles(['mrpp.com']);
+            //     $aid->user->addRoles(['xrugc.com']);
             return $aid;
         }
 
@@ -168,7 +168,7 @@ class SiteController extends \yii\rest\Controller
             if ($user) {
                 $aid->user_id = $user->id;
                 if ($aid->validate()) {
-                    //  $user->addRoles(['mrpp.com']);
+                    //  $user->addRoles(['xrugc.com']);
                     $aid->save();
                 }
             } else {
@@ -180,7 +180,7 @@ class SiteController extends \yii\rest\Controller
                 }
             }
             ////   if($aid->user){
-            //      $aid->user->addRoles(['mrpp.com']);
+            //      $aid->user->addRoles(['xrugc.com']);
             //   }
             return $aid;
         } else {
@@ -191,7 +191,7 @@ class SiteController extends \yii\rest\Controller
                 throw new Exception(json_encode($aid->errors));
             }
             // if($aid->user){
-            //    $aid->user->addRoles(['mrpp.com']);
+            //    $aid->user->addRoles(['xrugc.com']);
             // }
             return $aid;
         }
@@ -276,7 +276,7 @@ class SiteController extends \yii\rest\Controller
                 $aid->save();
             }
             //   if($aid->user){
-            //       $aid->user->addRoles(['mrpp.com']);
+            //       $aid->user->addRoles(['xrugc.com']);
             //  }
             return $aid;
         }
@@ -305,7 +305,7 @@ class SiteController extends \yii\rest\Controller
                     throw new Exception(json_encode($aid->errors), 400);
                 }
                 //   if($aid->user){
-                //       $aid->user->addRoles(['mrpp.com']);
+                //       $aid->user->addRoles(['xrugc.com']);
                 //   }
                 return $aid;
             } else {
@@ -364,7 +364,7 @@ class SiteController extends \yii\rest\Controller
         if ($aid->user !== null) {
             $aid->token = null;
             $aid->save();
-            // $aid->user->addRoles(['mrpp.com']);
+            // $aid->user->addRoles(['xrugc.com']);
             return $aid;
         }
         if ($link->load(Yii::$app->getRequest()->getBodyParams(), '')) {
@@ -374,12 +374,12 @@ class SiteController extends \yii\rest\Controller
 
                 $aid->token = null;
                 if ($aid->validate()) {
-                    //  $link->user->addRoles(['mrpp.com']);
+                    //  $link->user->addRoles(['xrugc.com']);
                     $aid->save();
                 } else {
                     throw new Exception(json_encode($aid->errors), 400);
                 }
-                // $aid->user->addRoles(['mrpp.com']);
+                // $aid->user->addRoles(['xrugc.com']);
                 return $aid;
             } else {
                 throw new Exception('Error', 400);

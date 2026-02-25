@@ -11,7 +11,7 @@ var getAuthorization = function (options, callback) {
     // 服务端 JS 和 PHP 例子：https://github.com/tencentyun/cos-js-sdk-v5/blob/master/server/
     // 服务端其他语言参考 COS STS SDK ：https://github.com/tencentyun/qcloud-cos-sts-sdk
     // var url = 'http://127.0.0.1:3000/sts';
-    var url = 'https://MrPP.com/cos/sts';
+    var url = 'https://XRUGC.com/cos/sts';
     var xhr = new XMLHttpRequest();
     xhr.open('GET', url, true);
     xhr.onload = function (e) {

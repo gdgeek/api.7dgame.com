@@ -2,7 +2,6 @@
 
 namespace api\controllers;
 
-use api\common\models\BindEmailForm;
 use api\common\models\ResetPasswordForm;
 use mdm\admin\components\AccessControl;
 use bizley\jwt\JwtHttpBearerAuth;
@@ -113,40 +112,6 @@ class ServerController extends \yii\rest\Controller
         $ret = new \stdClass();
         // $ret->code = 20000;
         return $ret;
-    }
-    public function actionBindEmail()
-    {
-        $model = new BindEmailForm(Yii::$app->user->identity);
-        $post = Yii::$app->request->post();
-        if ($model->load($post, '')) {
-
-            if ($model->email == Yii::$app->user->identity->email) {
-                throw new Exception("重复绑定", 400);
-            }
-        } else {
-            throw new Exception("缺少数据", 400);
-        }
-          $identity = Yii::$app->user->identity;
-        if (!$identity instanceof User) {
-            throw new \yii\web\UnauthorizedHttpException('未授权');
-        }
-
-        $user = $identity;
-        $user->generateEmailVerificationTokenWithEmail($model->email);
-
-        if ($model->validate()) {
-            $model->sendEmail();
-            return [
-                'data' => Yii::$app->user->identity->getData(),
-                'code' => 20000,
-            ];
-        } else {
-            if (count($model->errors) == 0) {
-                throw new Exception("缺少数据", 400);
-            } else {
-                throw new Exception(json_encode($model->errors), 400);
-            }
-        }
     }
     public function actionResetPassword()
     {

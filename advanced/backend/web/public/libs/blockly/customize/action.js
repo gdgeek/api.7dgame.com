@@ -22,6 +22,6 @@ Blockly.Blocks["action_block"] ={
         .setCheck("Task");
     this.setColour(230);
  this.setTooltip("请选择相应动作");
- this.setHelpUrl("http://MrPP.com");
+ this.setHelpUrl("http://XRUGC.com");
   }
 };

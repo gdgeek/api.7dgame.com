@@ -49,7 +49,7 @@ class Info extends \yii\db\ActiveRecord
             'name' => '姓名',
             'company' => '您所在的企业',
             'tel' => '您的微信',
-            'reason' => '申请测试 http://MrPP.com 的原因',
+            'reason' => '申请测试 http://XRUGC.com 的原因',
             'invitation' => '邀请码',
         ];
     }

@@ -69,12 +69,26 @@ class UserController extends \yii\rest\Controller
     private function getUserData()
     {
         $user =  Yii::$app->user->identity;
+        $emailVerified = !empty($user->email_verified_at);
+        $emailBind = null;
+        if (!empty($user->email)) {
+            $emailBind = [
+                'email' => $user->email,
+                'verified' => $emailVerified,
+                'verifiedAt' => $user->email_verified_at,
+                'verifiedAtFormatted' => $user->email_verified_at ? date('Y-m-d H:i:s', $user->email_verified_at) : null,
+            ];
+        }
       
         return [
             'id' => $user->id,
             'userData' => $user->data,
             'userInfo' => $user->userInfo,
             'roles' => $user->roles,
+            'email' => $user->email,
+            'emailVerified' => $emailVerified,
+            'emailVerifiedAt' => $user->email_verified_at,
+            'emailBind' => $emailBind,
         ];
 
     }

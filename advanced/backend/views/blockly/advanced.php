@@ -344,11 +344,11 @@ BlocklyAsset::register($this);
             }
             $data = json_decode($blockly->block);
             if(is_null($data)){
-                $this->registerJs(
+                $this->registerJs("
 
 	Blockly.Blocks['$blockly->title'] = $blockly->block;
 	Blockly.Lua['$blockly->title'] = $blockly->lua;
-
+"
                 , $this::POS_READY
                 );
 
@@ -356,7 +356,7 @@ BlocklyAsset::register($this);
             }else{
                 $data->colour = $color[$blockly->type];
                 $block = json_encode($data);
-                $this->registerJs(
+                $this->registerJs("
 
 	Blockly.Blocks['$blockly->title'] = {
       init: function() {
@@ -366,7 +366,7 @@ BlocklyAsset::register($this);
       }
     }
 	Blockly.Lua['$blockly->title'] = $blockly->lua;
-
+"
                 , $this::POS_READY
                 );
 

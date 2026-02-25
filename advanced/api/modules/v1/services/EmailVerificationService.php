@@ -9,6 +9,7 @@ use api\modules\v1\components\RedisKeyManager;
 use api\modules\v1\models\User;
 use yii\web\TooManyRequestsHttpException;
 use yii\web\BadRequestHttpException;
+use yii\db\IntegrityException;
 
 /**
  * 邮箱验证服务
@@ -48,6 +49,11 @@ class EmailVerificationService extends Component
      * 发送验证码速率限制（秒）
      */
     const RATE_LIMIT_TTL = 60; // 1 分钟
+
+    /**
+     * 变更邮箱确认令牌有效期（秒）
+     */
+    const CHANGE_TOKEN_TTL = 600; // 10 分钟
     
     /**
      * @var RateLimiter 速率限制器
@@ -114,6 +120,26 @@ class EmailVerificationService extends Component
         
         return true;
     }
+
+    /**
+     * 发送当前绑定邮箱的二次确认验证码（用于改绑/解绑）
+     *
+     * @param User $user 当前用户
+     * @return bool
+     * @throws BadRequestHttpException
+     * @throws TooManyRequestsHttpException
+     */
+    public function sendCurrentEmailConfirmationCode(User $user): bool
+    {
+        if (empty($user->email)) {
+            throw new BadRequestHttpException('当前账号未绑定邮箱');
+        }
+        if (!$user->isEmailVerified()) {
+            throw new BadRequestHttpException('当前邮箱未验证，无需二次确认，可直接改绑');
+        }
+
+        return $this->sendVerificationCode($user->email);
+    }
     
     /**
      * 验证验证码
@@ -124,38 +150,12 @@ class EmailVerificationService extends Component
      * @throws BadRequestHttpException 验证码无效异常
      * @throws TooManyRequestsHttpException 账户锁定异常
      */
-    public function verifyCode(string $email, string $code): bool
+    public function verifyCode(string $email, string $code, ?string $changeToken = null): bool
     {
-        // 检查是否被锁定
-        if ($this->isLocked($email)) {
-            $attemptsKey = RedisKeyManager::getVerificationAttemptsKey($email);
-            $retryAfter = $this->rateLimiter->availableIn($attemptsKey);
-            Yii::warning("Account locked for {$email} (too many failed attempts)", __METHOD__);
-            throw new TooManyRequestsHttpException("验证失败次数过多，账户已被锁定，请 {$retryAfter} 秒后再试", 0, null, $retryAfter);
-        }
-        
-        // 获取存储的验证码
-        $codeKey = RedisKeyManager::getVerificationCodeKey($email);
-        $storedData = $this->redis->executeCommand('GET', [$codeKey]);
-        
-        if ($storedData === null) {
-            Yii::warning("Verification code not found or expired for {$email}", __METHOD__);
-            throw new BadRequestHttpException('验证码不存在或已过期');
-        }
-        
-        $data = json_decode($storedData, true);
-        $storedCode = $data['code'] ?? null;
-        
-        // 验证验证码
-        if ($storedCode !== $code) {
-            // 增加失败次数
-            $attempts = $this->incrementAttempts($email);
-            Yii::warning("Email verification failed for {$email} (attempt {$attempts}/" . self::MAX_ATTEMPTS . ")", __METHOD__);
-            throw new BadRequestHttpException('验证码不正确');
-        }
+        $this->assertCodeValid($email, $code);
         
         // 验证成功，标记邮箱为已验证
-        $this->markEmailAsVerified($email);
+        $this->markEmailAsVerified($email, $changeToken);
         
         // 清理 Redis 数据
         $this->clearVerificationData($email);
@@ -164,6 +164,88 @@ class EmailVerificationService extends Component
         Yii::info("Email verification successful for {$email}", __METHOD__);
         
         return true;
+    }
+
+    /**
+     * 校验当前绑定邮箱验证码并签发邮箱变更令牌
+     *
+     * @param User $user 当前用户
+     * @param string $code 验证码
+     * @return string 变更令牌
+     * @throws BadRequestHttpException
+     * @throws TooManyRequestsHttpException
+     */
+    public function verifyCurrentEmailForChange(User $user, string $code): string
+    {
+        if (empty($user->email) || !$user->isEmailVerified()) {
+            throw new BadRequestHttpException('当前账号未绑定已验证邮箱');
+        }
+
+        $currentEmail = $user->email;
+        $this->assertCodeValid($currentEmail, $code);
+        $this->clearVerificationData($currentEmail);
+
+        $changeToken = Yii::$app->security->generateRandomString(48);
+        $changeTokenKey = RedisKeyManager::getEmailChangeTokenKey((int)$user->id);
+        $this->redis->executeCommand('SETEX', [$changeTokenKey, self::CHANGE_TOKEN_TTL, $changeToken]);
+
+        return $changeToken;
+    }
+
+    /**
+     * 验证当前绑定邮箱验证码并解绑邮箱
+     *
+     * @param User $user 当前用户
+     * @param string $code 验证码
+     * @return bool
+     * @throws BadRequestHttpException
+     * @throws TooManyRequestsHttpException
+     */
+    public function unbindCurrentEmail(User $user, ?string $code = null): bool
+    {
+        if (empty($user->email)) {
+            throw new BadRequestHttpException('当前账号未绑定邮箱');
+        }
+
+        $currentEmail = $user->email;
+        if ($user->isEmailVerified()) {
+            if (empty($code)) {
+                throw new BadRequestHttpException('当前邮箱已验证，解绑需提供验证码');
+            }
+            $this->assertCodeValid($currentEmail, $code);
+            $this->clearVerificationData($currentEmail);
+        }
+
+        $this->clearEmailChangeToken((int)$user->id);
+
+        $user->email = null;
+        $user->email_verified_at = null;
+
+        if (!$user->save(false, ['email', 'email_verified_at'])) {
+            Yii::error("Failed to unbind email for user {$user->id}", __METHOD__);
+            return false;
+        }
+
+        Yii::info("Email unbound for user {$user->id}", __METHOD__);
+        return true;
+    }
+
+    /**
+     * 查询发送验证码冷却时间
+     *
+     * @param string $email 邮箱地址
+     * @return array
+     */
+    public function getSendCooldown(string $email): array
+    {
+        $rateLimitKey = RedisKeyManager::getRateLimitKey($email, 'send_verification');
+        $retryAfter = $this->rateLimiter->availableIn($rateLimitKey);
+
+        return [
+            'can_send' => $retryAfter === 0,
+            'retry_after' => $retryAfter,
+            'limit_seconds' => self::RATE_LIMIT_TTL,
+        ];
     }
     
     /**
@@ -217,7 +299,7 @@ class EmailVerificationService extends Component
      * @param string $email 邮箱地址
      * @return bool 是否成功
      */
-    protected function markEmailAsVerified(string $email): bool
+    protected function markEmailAsVerified(string $email, ?string $changeToken = null): bool
     {
         // 检查是否是控制台应用或用户组件不存在
         if (Yii::$app instanceof \yii\console\Application || !isset(Yii::$app->user)) {
@@ -238,15 +320,37 @@ class EmailVerificationService extends Component
             return false;
         }
         
+        // 已有验证邮箱时，改绑需要先完成旧邮箱二次确认
+        if (!empty($user->email) && $user->email !== $email && $user->isEmailVerified()) {
+            $this->assertEmailChangeTokenValid((int)$userId, $changeToken);
+        }
+
         // 更新用户邮箱和验证状态
+        $existingUser = User::find()
+            ->where(['email' => $email])
+            ->andWhere(['!=', 'id', $userId])
+            ->one();
+        if ($existingUser !== null) {
+            throw new BadRequestHttpException('该邮箱已被其他账号绑定');
+        }
+
         $user->email = $email;
         $user->email_verified_at = time();
         
-        if (!$user->save(false)) {
-            Yii::error("Failed to update user email: " . json_encode($user->errors), __METHOD__);
-            return false;
+        try {
+            if (!$user->save(false, ['email', 'email_verified_at'])) {
+                Yii::error("Failed to update user email: " . json_encode($user->errors), __METHOD__);
+                return false;
+            }
+        } catch (IntegrityException $e) {
+            // DB UNIQUE(email) 兜底，防止并发下重复绑定
+            Yii::warning("Email already bound by another account: {$email}", __METHOD__);
+            throw new BadRequestHttpException('该邮箱已被其他账号绑定');
         }
         
+        // 绑定或改绑成功后，清理变更令牌
+        $this->clearEmailChangeToken((int)$userId);
+
         Yii::info("Email verified and updated for user {$userId}: {$email}", __METHOD__);
         return true;
     }
@@ -262,5 +366,71 @@ class EmailVerificationService extends Component
         $keys = RedisKeyManager::getAllVerificationKeys($email);
         $result = $this->rateLimiter->clearMany($keys);
         return $result > 0;
+    }
+
+    /**
+     * 校验验证码，不进行用户资料写入
+     *
+     * @param string $email
+     * @param string $code
+     * @return void
+     * @throws BadRequestHttpException
+     * @throws TooManyRequestsHttpException
+     */
+    protected function assertCodeValid(string $email, string $code): void
+    {
+        if ($this->isLocked($email)) {
+            $attemptsKey = RedisKeyManager::getVerificationAttemptsKey($email);
+            $retryAfter = $this->rateLimiter->availableIn($attemptsKey);
+            Yii::warning("Account locked for {$email} (too many failed attempts)", __METHOD__);
+            throw new TooManyRequestsHttpException("验证失败次数过多，账户已被锁定，请 {$retryAfter} 秒后再试", 0, null, $retryAfter);
+        }
+
+        $codeKey = RedisKeyManager::getVerificationCodeKey($email);
+        $storedData = $this->redis->executeCommand('GET', [$codeKey]);
+        if ($storedData === null) {
+            Yii::warning("Verification code not found or expired for {$email}", __METHOD__);
+            throw new BadRequestHttpException('验证码不存在或已过期');
+        }
+
+        $data = json_decode($storedData, true);
+        $storedCode = $data['code'] ?? null;
+
+        if ($storedCode !== $code) {
+            $attempts = $this->incrementAttempts($email);
+            Yii::warning("Email verification failed for {$email} (attempt {$attempts}/" . self::MAX_ATTEMPTS . ")", __METHOD__);
+            throw new BadRequestHttpException('验证码不正确');
+        }
+    }
+
+    /**
+     * 检查当前用户的改绑确认令牌是否有效
+     *
+     * @param int $userId
+     * @throws BadRequestHttpException
+     */
+    protected function assertEmailChangeTokenValid(int $userId, ?string $requestToken): void
+    {
+        if (empty($requestToken)) {
+            throw new BadRequestHttpException('改绑邮箱需先完成旧邮箱验证');
+        }
+
+        $key = RedisKeyManager::getEmailChangeTokenKey($userId);
+        $storedToken = (string)$this->redis->executeCommand('GET', [$key]);
+        if ($storedToken === '' || !hash_equals($storedToken, $requestToken)) {
+            throw new BadRequestHttpException('改绑确认已失效，请重新验证旧邮箱');
+        }
+    }
+
+    /**
+     * 清除改绑确认令牌
+     *
+     * @param int $userId
+     * @return void
+     */
+    protected function clearEmailChangeToken(int $userId): void
+    {
+        $key = RedisKeyManager::getEmailChangeTokenKey($userId);
+        $this->redis->executeCommand('DEL', [$key]);
     }
 }

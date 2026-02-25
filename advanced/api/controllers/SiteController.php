@@ -1,9 +1,7 @@
 <?php
 namespace api\controllers;
 
-use api\common\models\BindedEmailForm;
 use api\modules\v1\models\data\Login;
-use api\modules\v1\models\User;
 use common\components\security\RateLimitBehavior;
 use common\models\Invitation;
 use common\models\PasswordResetRequestForm;
@@ -389,29 +387,4 @@ class SiteController extends \yii\rest\Controller
         return $items;
     }
     
-    public function actionBindedEmail($token)
-    {
-        $data = User::splitEmailVerificationTokenWithEmail($token);
-        if ($data == null) {
-            throw new Exception("无效Token", 400);
-        }
-        $model = new BindedEmailForm($token);
-        $model->email = $data->email;
-        
-        if ($model->validate()) {
-            $token = $model->binding();
-            return [
-                'access_token' => $token,
-                'data' => '绑定邮件成功。',
-                'code' => 20000,
-            ];
-        } else {
-            if (count($model->errors) == 0) {
-                throw new Exception("缺少数据", 400);
-            } else {
-                throw new Exception(json_encode($model->errors), 400);
-            }
-        }
-        
-    }
 }

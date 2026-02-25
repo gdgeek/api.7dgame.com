@@ -16,7 +16,7 @@ if (\Yii::$app->params['information']['local']) {
         $data = new \stdClass();
         $data->ip = \Yii::$app->params['information']['ip'];
         $code->data = $data;
-        $code->veri = 'MrPP.com';
+        $code->veri = 'XRUGC.com';
         $qrCode = (new QrCode(json_encode($code)))
             ->setSize(300)
             ->setMargin(5)

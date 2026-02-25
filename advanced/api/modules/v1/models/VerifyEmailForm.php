@@ -23,6 +23,11 @@ class VerifyEmailForm extends Model
      * @var string 验证码
      */
     public $code;
+
+    /**
+     * @var string|null 改绑确认令牌（仅已绑定邮箱改绑时需要）
+     */
+    public $change_token;
     
     /**
      * {@inheritdoc}
@@ -42,6 +47,8 @@ class VerifyEmailForm extends Model
                 'pattern' => '/^\d{6}$/', 
                 'message' => '验证码必须是 6 位数字'
             ],
+            ['change_token', 'trim'],
+            ['change_token', 'string', 'max' => 255],
         ];
     }
     
@@ -53,6 +60,7 @@ class VerifyEmailForm extends Model
         return [
             'email' => '邮箱地址',
             'code' => '验证码',
+            'change_token' => '改绑确认令牌',
         ];
     }
 }

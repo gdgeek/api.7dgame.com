@@ -18,7 +18,7 @@ use Da\QrCode\QrCode;
 $code =  new \stdClass();
 
 $code->projectId = $id;
-$code->veri = 'MrPP.com';
+$code->veri = 'XRUGC.com';
 $qrCode = (new QrCode(json_encode($code)))
     ->setSize(250)
     ->setMargin(5)

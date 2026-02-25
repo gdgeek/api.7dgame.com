@@ -159,11 +159,11 @@ class WeChat extends Component
 }
 
 /*
-{"string1":"jsapi_ticket=LIKLckvwlJT9cWIhEQTwfKFcpFdSS7xzXnMcYxBib_nKrAQ1duAAqXEjGpgX6RQbQev-r8HW39aWUNsO7tPZng&noncestr=BMkRsjUa0eJ5pgZA×tamp=1648517406&url=https%3A%2F%2Fadmin.t.mrpp.com%2Fwechat%2Fpay%3Fuuid%3Dcbf1e8ba-754e-30e4-884f-734780b32c8f",
+{"string1":"jsapi_ticket=LIKLckvwlJT9cWIhEQTwfKFcpFdSS7xzXnMcYxBib_nKrAQ1duAAqXEjGpgX6RQbQev-r8HW39aWUNsO7tPZng&noncestr=BMkRsjUa0eJ5pgZA×tamp=1648517406&url=https%3A%2F%2Fadmin.t.xrugc.com%2Fwechat%2Fpay%3Fuuid%3Dcbf1e8ba-754e-30e4-884f-734780b32c8f",
 "appid":"wx6f81800f15c9a88c",
 "signature":"dbfacbe726dd83fbef0c7edba116f2260b05e634",
 "timestamp":"1648517406",
 "nonceStr":"BMkRsjUa0eJ5pgZA",
 "jsapi_ticket":"LIKLckvwlJT9cWIhEQTwfKFcpFdSS7xzXnMcYxBib_nKrAQ1duAAqXEjGpgX6RQbQev-r8HW39aWUNsO7tPZng",
-"url":"https%3A%2F%2Fadmin.t.mrpp.com%2Fwechat%2Fpay%3Fuuid%3Dcbf1e8ba-754e-30e4-884f-734780b32c8f"}
+"url":"https%3A%2F%2Fadmin.t.xrugc.com%2Fwechat%2Fpay%3Fuuid%3Dcbf1e8ba-754e-30e4-884f-734780b32c8f"}
  */

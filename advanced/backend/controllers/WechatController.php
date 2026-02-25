@@ -30,18 +30,18 @@ class WechatController extends Controller
             "button" =>
             [
                 [
-                    "name" => "MrPP.com",
+                    "name" => "XRUGC.com",
                     "sub_button" =>
                     [
                         [
                             "type" => "view",
                             "name" => "获得邀请码",
-                            "url" => "https://mrpp.com/info/info/",
+                            "url" => "https://xrugc.com/info/info/",
                         ],
                         [
                             "type" => "view",
                             "name" => "访问平台",
-                            "url" => "https://mrpp.com",
+                            "url" => "https://xrugc.com",
                         ],
                     ],
                 ],

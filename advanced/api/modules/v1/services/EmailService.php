@@ -94,6 +94,42 @@ class EmailService extends Component
             return false;
         }
     }
+
+    /**
+     * 发送找回密码验证码邮件
+     *
+     * @param string $email 收件人邮箱
+     * @param string $code 验证码
+     * @return bool
+     */
+    public function sendPasswordResetCode(string $email, string $code): bool
+    {
+        try {
+            $fromEmail = Yii::$app->params['supportEmail'] ?? getenv('MAILER_USERNAME') ?? 'noreply@example.com';
+            $result = Yii::$app->mailer->compose(
+                ['html' => 'verificationCode-html', 'text' => 'verificationCode-text'],
+                [
+                    'code' => $code,
+                    'expiryMinutes' => 15,
+                ]
+            )
+            ->setFrom([$fromEmail => Yii::$app->name . ' 团队'])
+            ->setTo($email)
+            ->setSubject('找回密码验证码 - ' . Yii::$app->name)
+            ->send();
+
+            if ($result) {
+                Yii::info("Password reset code email sent successfully to {$email}", __METHOD__);
+            } else {
+                Yii::warning("Failed to send password reset code email to {$email}", __METHOD__);
+            }
+
+            return $result;
+        } catch (\Exception $e) {
+            Yii::error("Error sending password reset code email to {$email}: " . $e->getMessage(), __METHOD__);
+            return false;
+        }
+    }
     
     /**
      * 测试邮件配置

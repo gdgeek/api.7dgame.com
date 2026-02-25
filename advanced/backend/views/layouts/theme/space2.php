@@ -91,7 +91,7 @@ $this->registerMetaTag(['name' => 'author', 'content' => Yii::$app->params['info
 
 
               <div class="col-12 col-sm-8 col-lg-9 text-center pt-5 pb-5">
-                <i class="fas fa-user-secret fa-3x"> MrPP.com</i>
+                <i class="fas fa-user-secret fa-3x"> XRUGC.com</i>
                 <span class="h2 mb-3"></span>
                 <span class="h5 mb-3"> <?= Yii::t('app/site', 'Be a child, Craft a World!') ?></span>
                 <div class="card text-left">

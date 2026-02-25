@@ -10,8 +10,10 @@ namespace api\modules\v1\components;
  * 键格式规范：
  * - 验证码: email:verify:{email}
  * - 验证尝试次数: email:verify:attempts:{email}
- * - 重置令牌: password:reset:{token}
+ * - 密码重置验证码: password:reset:code:{email}
+ * - 密码重置验证码尝试次数: password:reset:attempts:{email}
  * - 速率限制: email:ratelimit:{action}:{email}
+ * - 改绑确认令牌: email:change:token:{userId}
  * 
  * @author Kiro AI
  * @since 1.0
@@ -29,14 +31,24 @@ class RedisKeyManager
     const PREFIX_VERIFICATION_ATTEMPTS = 'email:verify:attempts:';
     
     /**
-     * 重置令牌缓存键前缀
+     * 密码重置验证码缓存键前缀
      */
-    const PREFIX_RESET_TOKEN = 'password:reset:';
+    const PREFIX_RESET_CODE = 'password:reset:code:';
+
+    /**
+     * 密码重置验证码尝试次数缓存键前缀
+     */
+    const PREFIX_RESET_ATTEMPTS = 'password:reset:attempts:';
     
     /**
      * 速率限制缓存键前缀
      */
     const PREFIX_RATE_LIMIT = 'email:ratelimit:';
+
+    /**
+     * 改绑确认令牌缓存键前缀
+     */
+    const PREFIX_EMAIL_CHANGE_TOKEN = 'email:change:token:';
     
     /**
      * 获取验证码缓存键
@@ -69,18 +81,31 @@ class RedisKeyManager
     }
     
     /**
-     * 获取重置令牌缓存键
-     * 
-     * 格式: password:reset:{token}
-     * 用途: 存储密码重置令牌及相关信息
-     * TTL: 1800 秒 (30 分钟)
-     * 
-     * @param string $token 重置令牌
+     * 获取密码重置验证码缓存键
+     *
+     * 格式: password:reset:code:{email}
+     * 用途: 存储密码重置验证码
+     *
+     * @param string $email 邮箱地址
      * @return string Redis 键
      */
-    public static function getResetTokenKey(string $token): string
+    public static function getResetCodeKey(string $email): string
     {
-        return self::PREFIX_RESET_TOKEN . $token;
+        return self::PREFIX_RESET_CODE . self::sanitizeEmail($email);
+    }
+
+    /**
+     * 获取密码重置验证码尝试次数缓存键
+     *
+     * 格式: password:reset:attempts:{email}
+     * 用途: 记录密码重置验证码失败次数
+     *
+     * @param string $email 邮箱地址
+     * @return string Redis 键
+     */
+    public static function getResetAttemptsKey(string $email): string
+    {
+        return self::PREFIX_RESET_ATTEMPTS . self::sanitizeEmail($email);
     }
     
     /**
@@ -138,5 +163,19 @@ class RedisKeyManager
             self::getRateLimitKey($email, 'send_verification'),
             self::getRateLimitKey($email, 'request_reset'),
         ];
+    }
+
+    /**
+     * 获取改绑确认令牌缓存键
+     *
+     * 格式: email:change:token:{userId}
+     * 用途: 记录用户已通过旧邮箱二次确认
+     *
+     * @param int $userId 用户 ID
+     * @return string Redis 键
+     */
+    public static function getEmailChangeTokenKey(int $userId): string
+    {
+        return self::PREFIX_EMAIL_CHANGE_TOKEN . $userId;
     }
 }

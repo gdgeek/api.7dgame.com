@@ -20,7 +20,7 @@ $code =  new \stdClass();
 $data = new \stdClass();
 $data->id = $id;
 $code->data = $data;
-$code->veri = 'MrPP.com';
+$code->veri = 'XRUGC.com';
 $qrcode = (new QrCode(json_encode($code)))
     ->setSize(300)
     ->setMargin(5)
