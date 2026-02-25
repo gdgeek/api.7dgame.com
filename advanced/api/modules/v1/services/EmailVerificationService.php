@@ -82,7 +82,7 @@ class EmailVerificationService extends Component
      * @return bool 是否成功
      * @throws TooManyRequestsHttpException 速率限制异常
      */
-    public function sendVerificationCode(string $email): bool
+    public function sendVerificationCode(string $email, string $locale = 'en-US', array $i18n = []): bool
     {
         // 检查速率限制
         $rateLimitKey = RedisKeyManager::getRateLimitKey($email, 'send_verification');
@@ -104,7 +104,7 @@ class EmailVerificationService extends Component
         
         // 发送邮件
         $emailService = new EmailService();
-        $emailSent = $emailService->sendVerificationCode($email, $code);
+        $emailSent = $emailService->sendVerificationCode($email, $code, $locale, $i18n);
         
         if (!$emailSent) {
             Yii::warning("Failed to send verification email to {$email}, but code was stored in Redis", __METHOD__);
@@ -129,7 +129,7 @@ class EmailVerificationService extends Component
      * @throws BadRequestHttpException
      * @throws TooManyRequestsHttpException
      */
-    public function sendCurrentEmailConfirmationCode(User $user): bool
+    public function sendCurrentEmailConfirmationCode(User $user, string $locale = 'en-US', array $i18n = []): bool
     {
         if (empty($user->email)) {
             throw new BadRequestHttpException('当前账号未绑定邮箱');
@@ -138,7 +138,7 @@ class EmailVerificationService extends Component
             throw new BadRequestHttpException('当前邮箱未验证，无需二次确认，可直接改绑');
         }
 
-        return $this->sendVerificationCode($user->email);
+        return $this->sendVerificationCode($user->email, $locale, $i18n);
     }
     
     /**

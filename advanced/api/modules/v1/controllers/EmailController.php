@@ -81,7 +81,7 @@ class EmailController extends Controller
         }
         
         try {
-            $this->emailService->sendVerificationCode($form->email);
+            $this->emailService->sendVerificationCode($form->email, $form->locale, $form->i18n);
             
             return [
                 'success' => true,
@@ -312,7 +312,30 @@ class EmailController extends Controller
         }
 
         try {
-            $this->emailService->sendCurrentEmailConfirmationCode($user);
+            $locale = Yii::$app->request->post('locale', 'en-US');
+            $i18n = Yii::$app->request->post('i18n', []);
+            if (!is_string($locale) || !preg_match('/^[a-z]{2}-[A-Z]{2}$/', $locale)) {
+                Yii::$app->response->statusCode = 400;
+                return [
+                    'success' => false,
+                    'error' => [
+                        'code' => 'VALIDATION_ERROR',
+                        'message' => 'locale 必须为完整格式，如 en-US',
+                    ],
+                ];
+            }
+            if (!is_array($i18n)) {
+                Yii::$app->response->statusCode = 400;
+                return [
+                    'success' => false,
+                    'error' => [
+                        'code' => 'VALIDATION_ERROR',
+                        'message' => 'i18n 必须是对象，key 为 locale',
+                    ],
+                ];
+            }
+
+            $this->emailService->sendCurrentEmailConfirmationCode($user, $locale, $i18n);
             return [
                 'success' => true,
                 'message' => '二次确认验证码已发送到当前绑定邮箱',

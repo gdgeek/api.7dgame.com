@@ -19,6 +19,16 @@ class SendVerificationForm extends Model
      * @var string 邮箱地址
      */
     public $email;
+
+    /**
+     * @var string 完整 locale，例如 en-US
+     */
+    public $locale = 'en-US';
+
+    /**
+     * @var array 多语言文案，key 为 locale
+     */
+    public $i18n = [];
     
     /**
      * {@inheritdoc}
@@ -46,7 +56,40 @@ class SendVerificationForm extends Model
                     }
                 }
             ],
+            ['locale', 'default', 'value' => 'en-US'],
+            ['locale', 'trim'],
+            ['locale', 'match', 'pattern' => '/^[a-z]{2}-[A-Z]{2}$/', 'message' => 'locale 必须为完整格式，如 en-US'],
+            ['i18n', 'default', 'value' => []],
+            ['i18n', 'validateI18nPayload'],
         ];
+    }
+
+    public function validateI18nPayload($attribute, $params)
+    {
+        if ($this->hasErrors($attribute)) {
+            return;
+        }
+
+        if ($this->$attribute === null) {
+            $this->$attribute = [];
+            return;
+        }
+
+        if (!is_array($this->$attribute)) {
+            $this->addError($attribute, 'i18n 必须是对象，key 为 locale。');
+            return;
+        }
+
+        foreach ($this->$attribute as $locale => $texts) {
+            if (!is_string($locale) || !preg_match('/^[a-z]{2}-[A-Z]{2}$/', $locale)) {
+                $this->addError($attribute, 'i18n 的 key 必须是完整 locale（如 en-US）。');
+                return;
+            }
+            if (!is_array($texts)) {
+                $this->addError($attribute, 'i18n 的每个 locale 文案必须是对象。');
+                return;
+            }
+        }
     }
     
     /**
@@ -56,6 +99,8 @@ class SendVerificationForm extends Model
     {
         return [
             'email' => '邮箱地址',
+            'locale' => '语言地区',
+            'i18n' => '多语言文案',
         ];
     }
 }

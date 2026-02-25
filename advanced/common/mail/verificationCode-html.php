@@ -4,13 +4,49 @@ use yii\helpers\Html;
 /* @var $this yii\web\View */
 /* @var $code string 验证码 */
 /* @var $expiryMinutes int 过期时间（分钟） */
+/* @var $locale string 当前语言 */
+/* @var $content array 邮件文案 */
+
+$defaultContent = [
+    'title' => 'Email Verification',
+    'greeting' => 'Hello,',
+    'body' => 'You are verifying your email address. Your verification code is:',
+    'codeLabel' => 'Verification code',
+    'expiryText' => 'Please complete verification within {expiryMinutes} minutes.',
+    'securityTitle' => 'Security notice',
+    'securityItems' => [
+        'Do not share this code with anyone.',
+        'If this was not your action, please ignore this email.',
+        'The code will expire in {expiryMinutes} minutes.',
+    ],
+    'footer' => 'This email was sent automatically. Please do not reply.',
+];
+
+$content = is_array($content ?? null) ? array_merge($defaultContent, $content) : $defaultContent;
+$content['expiryText'] = strtr((string)$content['expiryText'], ['{expiryMinutes}' => (string)$expiryMinutes]);
+
+$securityItems = $content['securityItems'];
+if (!is_array($securityItems)) {
+    $securityItems = $defaultContent['securityItems'];
+}
+$securityItems = array_values(array_filter(array_map(function ($item) use ($expiryMinutes) {
+    if (!is_string($item)) {
+        return '';
+    }
+    return strtr($item, ['{expiryMinutes}' => (string)$expiryMinutes]);
+}, $securityItems), function ($item) {
+    return $item !== '';
+}));
+if (empty($securityItems)) {
+    $securityItems = $defaultContent['securityItems'];
+}
 ?>
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="<?= Html::encode($locale ?? 'en-US') ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>邮箱验证码</title>
+    <title><?= Html::encode($content['title']) ?></title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -44,6 +80,12 @@ use yii\helpers\Html;
             text-align: center;
             margin: 30px 0;
         }
+        .code-label {
+            font-size: 12px;
+            color: #6c757d;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
         .code {
             font-size: 36px;
             font-weight: bold;
@@ -63,10 +105,20 @@ use yii\helpers\Html;
             margin: 20px 0;
             border-radius: 4px;
         }
-        .warning p {
+        .warning-title {
+            margin: 0 0 8px 0;
+            color: #856404;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .warning-list {
             margin: 0;
+            padding-left: 18px;
             color: #856404;
             font-size: 14px;
+        }
+        .warning-list li {
+            margin: 4px 0;
         }
         .footer {
             text-align: center;
@@ -81,26 +133,29 @@ use yii\helpers\Html;
 <body>
     <div class="container">
         <div class="header">
-            <h1>📧 邮箱验证码</h1>
+            <h1><?= Html::encode($content['title']) ?></h1>
         </div>
-        
-        <p>您好，</p>
-        <p>您正在进行邮箱验证操作，您的验证码是：</p>
-        
+
+        <p><?= Html::encode($content['greeting']) ?></p>
+        <p><?= Html::encode($content['body']) ?></p>
+
         <div class="code-box">
+            <div class="code-label"><?= Html::encode($content['codeLabel']) ?></div>
             <div class="code"><?= Html::encode($code) ?></div>
-            <div class="info">请在 <?= Html::encode($expiryMinutes) ?> 分钟内完成验证</div>
+            <div class="info"><?= Html::encode($content['expiryText']) ?></div>
         </div>
-        
+
         <div class="warning">
-            <p><strong>⚠️ 安全提示：</strong></p>
-            <p>• 请勿将此验证码告诉任何人</p>
-            <p>• 如果这不是您本人的操作，请忽略此邮件</p>
-            <p>• 验证码将在 <?= Html::encode($expiryMinutes) ?> 分钟后失效</p>
+            <p class="warning-title"><?= Html::encode($content['securityTitle']) ?></p>
+            <ul class="warning-list">
+                <?php foreach ($securityItems as $item): ?>
+                    <li><?= Html::encode($item) ?></li>
+                <?php endforeach; ?>
+            </ul>
         </div>
-        
+
         <div class="footer">
-            <p>此邮件由系统自动发送，请勿直接回复</p>
+            <p><?= Html::encode($content['footer']) ?></p>
             <p>&copy; <?= date('Y') ?> <?= Html::encode(Yii::$app->name) ?>. All rights reserved.</p>
         </div>
     </div>

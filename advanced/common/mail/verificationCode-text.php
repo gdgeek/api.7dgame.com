@@ -2,24 +2,53 @@
 /* @var $this yii\web\View */
 /* @var $code string 验证码 */
 /* @var $expiryMinutes int 过期时间（分钟） */
+/* @var $content array 邮件文案 */
+
+$defaultContent = [
+    'title' => 'Email Verification',
+    'greeting' => 'Hello,',
+    'body' => 'You are verifying your email address. Your verification code is:',
+    'codeLabel' => 'Verification code',
+    'expiryText' => 'Please complete verification within {expiryMinutes} minutes.',
+    'securityTitle' => 'Security notice',
+    'securityItems' => [
+        'Do not share this code with anyone.',
+        'If this was not your action, please ignore this email.',
+        'The code will expire in {expiryMinutes} minutes.',
+    ],
+    'footer' => 'This email was sent automatically. Please do not reply.',
+];
+
+$content = is_array($content ?? null) ? array_merge($defaultContent, $content) : $defaultContent;
+$content['expiryText'] = strtr((string)$content['expiryText'], ['{expiryMinutes}' => (string)$expiryMinutes]);
+
+$securityItems = $content['securityItems'];
+if (!is_array($securityItems)) {
+    $securityItems = $defaultContent['securityItems'];
+}
+$securityItems = array_values(array_filter(array_map(function ($item) use ($expiryMinutes) {
+    if (!is_string($item)) {
+        return '';
+    }
+    return strtr($item, ['{expiryMinutes}' => (string)$expiryMinutes]);
+}, $securityItems), function ($item) {
+    return $item !== '';
+}));
+if (empty($securityItems)) {
+    $securityItems = $defaultContent['securityItems'];
+}
 ?>
-邮箱验证码
+<?= $content['title'] . "\n" ?>
 ================
 
-您好，
+<?= $content['greeting'] . "\n\n" ?>
+<?= $content['body'] . "\n\n" ?>
+<?= $content['codeLabel'] ?>: <?= $code . "\n\n" ?>
+<?= $content['expiryText'] . "\n\n" ?>
+<?= $content['securityTitle'] ?>:
+<?php foreach ($securityItems as $item): ?>
+- <?= $item . "\n" ?>
+<?php endforeach; ?>
 
-您正在进行邮箱验证操作，您的验证码是：
-
-<?= $code ?>
-
-
-请在 <?= $expiryMinutes ?> 分钟内完成验证。
-
-安全提示：
-• 请勿将此验证码告诉任何人
-• 如果这不是您本人的操作，请忽略此邮件
-• 验证码将在 <?= $expiryMinutes ?> 分钟后失效
-
-此邮件由系统自动发送，请勿直接回复。
-
+<?= "\n" . $content['footer'] . "\n\n" ?>
 © <?= date('Y') ?> <?= Yii::$app->name ?>. All rights reserved.

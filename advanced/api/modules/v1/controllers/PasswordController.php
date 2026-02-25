@@ -80,7 +80,7 @@ class PasswordController extends Controller
         }
         
         try {
-            $this->passwordService->sendResetCode($form->email);
+            $this->passwordService->sendResetCode($form->email, $form->locale, $form->i18n);
             
             return [
                 'success' => true,

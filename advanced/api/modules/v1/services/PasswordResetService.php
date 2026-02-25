@@ -61,7 +61,7 @@ class PasswordResetService extends Component
     /**
      * 生成并发送密码重置验证码
      */
-    public function sendResetCode(string $email): string
+    public function sendResetCode(string $email, string $locale = 'en-US', array $i18n = []): string
     {
         if (!$this->isEmailVerified($email)) {
             Yii::warning("Password reset requested for unverified email: {$email}", __METHOD__);
@@ -91,7 +91,7 @@ class PasswordResetService extends Component
         $this->redis->executeCommand('SETEX', [$codeKey, self::CODE_TTL, $codeData]);
 
         $emailService = new EmailService();
-        $emailSent = $emailService->sendPasswordResetCode($email, $code);
+        $emailSent = $emailService->sendPasswordResetCode($email, $code, $locale, $i18n);
         if (!$emailSent) {
             Yii::warning("Failed to send password reset code email to {$email}, but code was stored in Redis", __METHOD__);
         }
