@@ -49,7 +49,7 @@ class PasswordController extends Controller
 
         $behaviors['authenticator'] = [
             'class' => \yii\filters\auth\HttpBearerAuth::class,
-            'except' => ['request-reset', 'verify-code', 'reset'],
+            'except' => ['request-reset', 'verify-code', 'verify-token', 'reset'],
         ];
         
         return $behaviors;
@@ -207,7 +207,11 @@ class PasswordController extends Controller
         }
         
         try {
-            $this->passwordService->resetPassword($form->email, $form->code, $form->password);
+            if (!empty($form->token)) {
+                $this->passwordService->resetPassword($form->token, $form->password);
+            } else {
+                $this->passwordService->resetPassword($form->email, $form->code, $form->password);
+            }
             
             return [
                 'success' => true,
@@ -240,6 +244,58 @@ class PasswordController extends Controller
                 'error' => [
                     'code' => 'INTERNAL_ERROR',
                     'message' => '密码重置失败，请稍后重试',
+                ],
+            ];
+        }
+    }
+
+    /**
+     * 验证重置令牌
+     *
+     * POST /v1/password/verify-token
+     *
+     * @return array
+     */
+    public function actionVerifyToken()
+    {
+        $token = trim((string)Yii::$app->request->post('token', ''));
+        if ($token === '') {
+            Yii::$app->response->statusCode = 400;
+            return [
+                'success' => false,
+                'error' => [
+                    'code' => 'VALIDATION_ERROR',
+                    'message' => '请求参数验证失败',
+                    'details' => ['token' => ['重置令牌不能为空']],
+                ],
+            ];
+        }
+
+        try {
+            $isValid = $this->passwordService->verifyResetToken($token);
+            if (!$isValid) {
+                Yii::$app->response->statusCode = 400;
+                return [
+                    'success' => false,
+                    'error' => [
+                        'code' => 'INVALID_TOKEN',
+                        'message' => '重置令牌无效或已过期',
+                    ],
+                ];
+            }
+
+            return [
+                'success' => true,
+                'message' => '重置令牌有效',
+            ];
+        } catch (\Exception $e) {
+            Yii::error("Failed to verify reset token: " . $e->getMessage(), __METHOD__);
+            Yii::$app->response->statusCode = 500;
+            return [
+                'success' => false,
+                'error' => [
+                    'code' => 'INTERNAL_ERROR',
+                    'message' => '校验重置令牌失败，请稍后重试',
                 ],
             ];
         }
