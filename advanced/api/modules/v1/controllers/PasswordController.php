@@ -207,7 +207,11 @@ class PasswordController extends Controller
         }
         
         try {
-            $this->passwordService->resetPassword($form->email, $form->code, $form->password);
+            if (!empty($form->token)) {
+                $this->passwordService->resetPassword($form->token, $form->password);
+            } else {
+                $this->passwordService->resetPassword($form->email, $form->code, $form->password);
+            }
             
             return [
                 'success' => true,

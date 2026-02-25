@@ -31,6 +31,11 @@ class RedisKeyManager
     const PREFIX_VERIFICATION_ATTEMPTS = 'email:verify:attempts:';
     
     /**
+     * 密码重置令牌缓存键前缀
+     */
+    const PREFIX_RESET_TOKEN = 'password:reset:';
+
+    /**
      * 密码重置验证码缓存键前缀
      */
     const PREFIX_RESET_CODE = 'password:reset:code:';
@@ -92,6 +97,20 @@ class RedisKeyManager
     public static function getResetCodeKey(string $email): string
     {
         return self::PREFIX_RESET_CODE . self::sanitizeEmail($email);
+    }
+
+    /**
+     * 获取密码重置令牌缓存键
+     *
+     * 格式: password:reset:{token}
+     * 用途: 存储密码重置令牌映射
+     *
+     * @param string $token 重置令牌
+     * @return string Redis 键
+     */
+    public static function getResetTokenKey(string $token): string
+    {
+        return self::PREFIX_RESET_TOKEN . trim($token);
     }
 
     /**
