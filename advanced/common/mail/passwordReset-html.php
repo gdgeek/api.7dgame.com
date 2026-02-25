@@ -2,8 +2,7 @@
 use yii\helpers\Html;
 
 /* @var $this yii\web\View */
-/* @var $token string 重置令牌 */
-/* @var $resetUrl string 重置链接 */
+/* @var $code string 重置验证码 */
 /* @var $expiryMinutes int 过期时间（分钟） */
 ?>
 <!DOCTYPE html>
@@ -36,24 +35,6 @@ use yii\helpers\Html;
             color: #2c3e50;
             margin: 0;
             font-size: 24px;
-        }
-        .button-container {
-            text-align: center;
-            margin: 30px 0;
-        }
-        .reset-button {
-            display: inline-block;
-            padding: 15px 40px;
-            background-color: #007bff;
-            color: #ffffff !important;
-            text-decoration: none;
-            border-radius: 6px;
-            font-weight: bold;
-            font-size: 16px;
-            transition: background-color 0.3s;
-        }
-        .reset-button:hover {
-            background-color: #0056b3;
         }
         .token-box {
             background-color: #f8f9fa;
@@ -108,28 +89,19 @@ use yii\helpers\Html;
         </div>
         
         <p>您好，</p>
-        <p>我们收到了您的密码重置请求。请点击下面的按钮重置您的密码：</p>
-        
-        <div class="button-container">
-            <a href="<?= Html::encode($resetUrl) ?>" class="reset-button">重置密码</a>
-        </div>
-        
-        <div class="info">
-            或者复制以下链接到浏览器中打开：<br>
-            <a href="<?= Html::encode($resetUrl) ?>"><?= Html::encode($resetUrl) ?></a>
-        </div>
+        <p>我们收到了您的密码重置请求。请使用以下验证码完成重置：</p>
         
         <div class="token-box">
-            <div class="token-label">如果链接无法点击，您也可以使用以下令牌：</div>
-            <div class="token"><?= Html::encode($token) ?></div>
+            <div class="token-label">重置验证码：</div>
+            <div class="token"><?= Html::encode($code) ?></div>
         </div>
         
         <div class="warning">
             <p><strong>⚠️ 安全提示：</strong></p>
-            <p>• 此链接将在 <?= Html::encode($expiryMinutes) ?> 分钟后失效</p>
+            <p>• 此验证码将在 <?= Html::encode($expiryMinutes) ?> 分钟后失效</p>
             <p>• 如果这不是您本人的操作，请忽略此邮件并确保您的账户安全</p>
             <p>• 重置密码后，您需要使用新密码重新登录所有设备</p>
-            <p>• 请勿将此链接或令牌告诉任何人</p>
+            <p>• 请勿将验证码告诉任何人</p>
         </div>
         
         <div class="footer">

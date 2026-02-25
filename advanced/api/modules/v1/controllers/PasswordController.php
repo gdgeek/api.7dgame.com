@@ -80,7 +80,7 @@ class PasswordController extends Controller
         }
         
         try {
-            $this->passwordService->sendResetToken($form->email);
+            $this->passwordService->sendResetCode($form->email);
             
             return [
                 'success' => true,
@@ -106,13 +106,13 @@ class PasswordController extends Controller
                 ],
             ];
         } catch (\Exception $e) {
-            Yii::error("Failed to send reset token: " . $e->getMessage(), __METHOD__);
+            Yii::error("Failed to send reset code: " . $e->getMessage(), __METHOD__);
             Yii::$app->response->statusCode = 500;
             return [
                 'success' => false,
                 'error' => [
                     'code' => 'INTERNAL_ERROR',
-                    'message' => '发送重置链接失败，请稍后重试',
+                    'message' => '发送验证码失败，请稍后重试',
                 ],
             ];
         }
@@ -207,11 +207,7 @@ class PasswordController extends Controller
         }
         
         try {
-            if (!empty($form->token)) {
-                $this->passwordService->resetPassword($form->token, $form->password);
-            } else {
-                $this->passwordService->resetPassword($form->email, $form->code, $form->password);
-            }
+            $this->passwordService->resetPassword($form->email, $form->code, $form->password);
             
             return [
                 'success' => true,

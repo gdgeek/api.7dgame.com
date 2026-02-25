@@ -27,17 +27,7 @@ class PasswordResetService extends Component
     const CODE_TTL = 900; // 15 分钟
 
     /**
-     * 重置令牌长度
-     */
-    const TOKEN_LENGTH = 32;
-
-    /**
-     * 重置令牌过期时间（秒）
-     */
-    const TOKEN_TTL = 1800; // 30 分钟
-
-    /**
-     * 发送重置令牌速率限制（秒）
+     * 发送重置验证码速率限制（秒）
      */
     const RATE_LIMIT_TTL = 60; // 1 分钟
 
@@ -69,9 +59,9 @@ class PasswordResetService extends Component
     }
 
     /**
-     * 生成并发送密码重置令牌
+     * 生成并发送密码重置验证码
      */
-    public function sendResetToken(string $email): string
+    public function sendResetCode(string $email): string
     {
         if (!$this->isEmailVerified($email)) {
             Yii::warning("Password reset requested for unverified email: {$email}", __METHOD__);
@@ -90,16 +80,6 @@ class PasswordResetService extends Component
             throw new BadRequestHttpException('用户不存在');
         }
 
-        $token = $this->generateResetToken();
-        $tokenKey = RedisKeyManager::getResetTokenKey($token);
-        $tokenData = json_encode([
-            'email' => $email,
-            'user_id' => $user->id,
-            'created_at' => time(),
-        ]);
-        $this->redis->executeCommand('SETEX', [$tokenKey, self::TOKEN_TTL, $tokenData]);
-
-        // 兼容旧流程：仍保留 email+code 的验证码校验数据
         $code = $this->generateResetCode();
         $codeKey = RedisKeyManager::getResetCodeKey($email);
         $codeData = json_encode([
@@ -111,15 +91,15 @@ class PasswordResetService extends Component
         $this->redis->executeCommand('SETEX', [$codeKey, self::CODE_TTL, $codeData]);
 
         $emailService = new EmailService();
-        $emailSent = $emailService->sendPasswordResetLink($email, $token);
+        $emailSent = $emailService->sendPasswordResetCode($email, $code);
         if (!$emailSent) {
-            Yii::warning("Failed to send password reset email to {$email}, but token was stored in Redis", __METHOD__);
+            Yii::warning("Failed to send password reset code email to {$email}, but code was stored in Redis", __METHOD__);
         }
 
         $this->rateLimiter->hit($rateLimitKey, self::RATE_LIMIT_TTL);
-        Yii::info("Password reset token sent to {$email}", __METHOD__);
+        Yii::info("Password reset code sent to {$email}", __METHOD__);
 
-        return $token;
+        return $code;
     }
 
     /**
@@ -151,26 +131,11 @@ class PasswordResetService extends Component
     }
 
     /**
-     * 验证重置令牌（新流程）
-     */
-    public function verifyResetToken(string $token): bool
-    {
-        return $this->getResetTokenData($token) !== null;
-    }
-
-    /**
      * 重置密码
-     *
-     * 新流程: resetPassword($token, $newPassword)
-     * 旧流程: resetPassword($email, $code, $newPassword)
      */
-    public function resetPassword(string $identifier, string $codeOrNewPassword, ?string $newPassword = null): bool
+    public function resetPassword(string $email, string $code, string $newPassword): bool
     {
-        if ($newPassword === null) {
-            return $this->resetPasswordWithToken($identifier, $codeOrNewPassword);
-        }
-
-        return $this->resetPasswordWithCode($identifier, $codeOrNewPassword, $newPassword);
+        return $this->resetPasswordWithCode($email, $code, $newPassword);
     }
 
     /**
@@ -202,38 +167,6 @@ class PasswordResetService extends Component
         return true;
     }
 
-    protected function resetPasswordWithToken(string $token, string $newPassword): bool
-    {
-        $tokenData = $this->getResetTokenData($token);
-        if ($tokenData === null) {
-            throw new BadRequestHttpException('重置令牌无效或已过期');
-        }
-
-        $email = (string)($tokenData['email'] ?? '');
-        $userId = (int)($tokenData['user_id'] ?? 0);
-
-        $user = $userId > 0 ? User::findOne($userId) : null;
-        if ($user === null && $email !== '') {
-            $user = User::findByEmail($email);
-        }
-        if ($user === null) {
-            Yii::error("User not found for reset token: {$token}", __METHOD__);
-            throw new BadRequestHttpException('用户不存在');
-        }
-
-        $user->setPassword($newPassword);
-        if (!$user->save(false)) {
-            Yii::error("Failed to save new password for user ID: {$user->id}", __METHOD__);
-            return false;
-        }
-
-        $this->clearResetTokenData($token, $user->email);
-        $this->invalidateUserSessions((int)$user->id);
-        Yii::info("Password reset successful for user ID: {$user->id}", __METHOD__);
-
-        return true;
-    }
-
     protected function resetPasswordWithCode(string $email, string $code, string $newPassword): bool
     {
         $this->verifyResetCode($email, $code);
@@ -255,37 +188,6 @@ class PasswordResetService extends Component
         Yii::info("Password reset successful for user ID: {$user->id}", __METHOD__);
 
         return true;
-    }
-
-    protected function getResetTokenData(string $token): ?array
-    {
-        $tokenKey = RedisKeyManager::getResetTokenKey($token);
-        $storedData = $this->redis->executeCommand('GET', [$tokenKey]);
-        if ($storedData === null) {
-            return null;
-        }
-
-        $data = json_decode($storedData, true);
-        if (!is_array($data) || empty($data['email'])) {
-            return null;
-        }
-
-        return $data;
-    }
-
-    protected function clearResetTokenData(string $token, ?string $email = null): void
-    {
-        $keys = [RedisKeyManager::getResetTokenKey($token)];
-        if (!empty($email)) {
-            $keys[] = RedisKeyManager::getResetCodeKey($email);
-            $keys[] = RedisKeyManager::getResetAttemptsKey($email);
-        }
-        $this->rateLimiter->clearMany($keys);
-    }
-
-    protected function generateResetToken(): string
-    {
-        return Yii::$app->security->generateRandomString(self::TOKEN_LENGTH);
     }
 
     protected function generateResetCode(): string
