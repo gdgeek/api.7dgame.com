@@ -193,29 +193,24 @@ class EmailVerificationService extends Component
     }
 
     /**
-     * 验证当前绑定邮箱验证码并解绑邮箱
+     * 基于旧邮箱二次确认令牌解绑邮箱
      *
      * @param User $user 当前用户
-     * @param string $code 验证码
+     * @param string $changeToken 旧邮箱验证后签发的令牌
      * @return bool
      * @throws BadRequestHttpException
-     * @throws TooManyRequestsHttpException
      */
-    public function unbindCurrentEmail(User $user, ?string $code = null): bool
+    public function unbindCurrentEmail(User $user, string $changeToken): bool
     {
         if (empty($user->email)) {
             throw new BadRequestHttpException('当前账号未绑定邮箱');
         }
 
-        $currentEmail = $user->email;
-        if ($user->isEmailVerified()) {
-            if (empty($code)) {
-                throw new BadRequestHttpException('当前邮箱已验证，解绑需提供验证码');
-            }
-            $this->assertCodeValid($currentEmail, $code);
-            $this->clearVerificationData($currentEmail);
+        if (!$user->isEmailVerified()) {
+            throw new BadRequestHttpException('当前邮箱未验证，无法执行解绑');
         }
 
+        $this->assertEmailChangeTokenValid((int)$user->id, $changeToken);
         $this->clearEmailChangeToken((int)$user->id);
 
         $user->email = null;

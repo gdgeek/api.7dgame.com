@@ -156,7 +156,7 @@ Authorization: Bearer <token>
 
 ---
 
-## 3.5 校验旧邮箱验证码并获取改绑令牌
+## 3.5 校验旧邮箱验证码并获取操作令牌
 
 **POST** `/v1/email/verify-change-confirmation`
 
@@ -177,7 +177,7 @@ Content-Type: application/json
 ```json
 {
   "success": true,
-  "message": "旧邮箱验证成功，请在 10 分钟内完成新邮箱绑定",
+  "message": "旧邮箱验证成功，请在 10 分钟内完成改绑或解绑",
   "data": {
     "change_token": "xxxxx",
     "expires_in": 600
@@ -200,7 +200,7 @@ Content-Type: application/json
 ### 请求体
 ```json
 {
-  "code": "123456"
+  "change_token": "xxxxx"
 }
 ```
 
@@ -284,7 +284,8 @@ Authorization: Bearer <token>
    - `POST /v1/email/verify`（携带 `change_token`）
 4. 解绑邮箱：
    - `POST /v1/email/send-change-confirmation`
-   - `POST /v1/email/unbind`
+   - `POST /v1/email/verify-change-confirmation`（拿 `change_token`）
+   - `POST /v1/email/unbind`（携带 `change_token`）
 5. 倒计时显示：`GET /v1/email/cooldown`
 
 ---

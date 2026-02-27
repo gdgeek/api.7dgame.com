@@ -11,6 +11,9 @@ use api\modules\v1\models\ResetPasswordForm;
 use api\modules\v1\models\ChangePasswordForm;
 use api\modules\v1\models\VerifyResetCodeForm;
 
+use mdm\admin\components\AccessControl;
+use yii\filters\auth\CompositeAuth;
+use bizley\jwt\JwtHttpBearerAuth;
 /**
  * 密码重置控制器
  * 
@@ -25,7 +28,7 @@ class PasswordController extends Controller
      * @var PasswordResetService 密码重置服务
      */
     protected $passwordService;
-    
+
     /**
      * 初始化控制器
      */
@@ -34,14 +37,31 @@ class PasswordController extends Controller
         parent::init();
         $this->passwordService = new PasswordResetService();
     }
-    
+
     /**
      * {@inheritdoc}
      */
     public function behaviors()
     {
         $behaviors = parent::behaviors();
-        
+
+
+        // unset($behaviors['authenticator']);
+        $behaviors['authenticator'] = [
+            'class' => CompositeAuth::class,
+            'authMethods' => [
+                JwtHttpBearerAuth::class,
+            ],
+            'except' => ['options', 'request-reset', 'verify-code', 'reset'],
+        ];
+
+        $behaviors['access'] = [
+            'class' => AccessControl::class,
+            'except' => ['options', 'request-reset', 'verify-code', 'reset'],
+        ];
+
+
+        /*
         // 配置响应格式为 JSON
         $behaviors['contentNegotiator']['formats'] = [
             'application/json' => Response::FORMAT_JSON,
@@ -50,11 +70,11 @@ class PasswordController extends Controller
         $behaviors['authenticator'] = [
             'class' => \yii\filters\auth\HttpBearerAuth::class,
             'except' => ['request-reset', 'verify-code', 'verify-token', 'reset'],
-        ];
-        
+        ];*/
+
         return $behaviors;
     }
-    
+
     /**
      * 请求密码重置
      * 
@@ -66,7 +86,7 @@ class PasswordController extends Controller
     {
         $form = new RequestPasswordResetForm();
         $form->load(Yii::$app->request->post(), '');
-        
+
         if (!$form->validate()) {
             Yii::$app->response->statusCode = 400;
             return [
@@ -78,10 +98,10 @@ class PasswordController extends Controller
                 ],
             ];
         }
-        
+
         try {
             $this->passwordService->sendResetCode($form->email, $form->locale, $form->i18n);
-            
+
             return [
                 'success' => true,
                 'message' => '找回密码验证码已发送到您的邮箱',
@@ -117,7 +137,7 @@ class PasswordController extends Controller
             ];
         }
     }
-    
+
     /**
      * 验证找回密码验证码
      * 
@@ -141,10 +161,10 @@ class PasswordController extends Controller
                 ],
             ];
         }
-        
+
         try {
             $isValid = $this->passwordService->verifyResetCode($form->email, $form->code);
-            
+
             return [
                 'success' => true,
                 'valid' => $isValid,
@@ -181,7 +201,7 @@ class PasswordController extends Controller
             ];
         }
     }
-    
+
     /**
      * 重置密码
      * 
@@ -193,7 +213,7 @@ class PasswordController extends Controller
     {
         $form = new ResetPasswordForm();
         $form->load(Yii::$app->request->post(), '');
-        
+
         if (!$form->validate()) {
             Yii::$app->response->statusCode = 400;
             return [
@@ -205,14 +225,14 @@ class PasswordController extends Controller
                 ],
             ];
         }
-        
+
         try {
             if (!empty($form->token)) {
                 $this->passwordService->resetPassword($form->token, $form->password);
             } else {
                 $this->passwordService->resetPassword($form->email, $form->code, $form->password);
             }
-            
+
             return [
                 'success' => true,
                 'message' => '密码重置成功，请使用新密码登录',
@@ -380,7 +400,7 @@ class PasswordController extends Controller
             ];
         }
     }
-    
+
     /**
      * 从异常中提取 retry_after 值
      * 
@@ -393,7 +413,7 @@ class PasswordController extends Controller
         if (preg_match('/(\d+)\s*秒/', $exception->getMessage(), $matches)) {
             return (int)$matches[1];
         }
-        
+
         return null;
     }
 }

@@ -10,6 +10,11 @@ use api\modules\v1\models\SendVerificationForm;
 use api\modules\v1\models\VerifyEmailForm;
 use api\modules\v1\models\EmailCodeForm;
 use api\modules\v1\models\EmailAddressForm;
+use api\modules\v1\models\User;
+
+use mdm\admin\components\AccessControl;
+use yii\filters\auth\CompositeAuth;
+use bizley\jwt\JwtHttpBearerAuth;
 
 /**
  * 邮箱验证控制器
@@ -25,7 +30,7 @@ class EmailController extends Controller
      * @var EmailVerificationService 邮箱验证服务
      */
     protected $emailService;
-    
+
     /**
      * 初始化控制器
      */
@@ -34,28 +39,31 @@ class EmailController extends Controller
         parent::init();
         $this->emailService = new EmailVerificationService();
     }
-    
+
     /**
      * {@inheritdoc}
      */
     public function behaviors()
     {
         $behaviors = parent::behaviors();
-        
-        // 配置响应格式为 JSON
-        $behaviors['contentNegotiator']['formats'] = [
-            'application/json' => Response::FORMAT_JSON,
-        ];
-        
-        // 配置认证
+
+        // unset($behaviors['authenticator']);
         $behaviors['authenticator'] = [
-            'class' => \yii\filters\auth\HttpBearerAuth::class,
-            'except' => ['test'], // test 接口不需要认证
+            'class' => CompositeAuth::class,
+            'authMethods' => [
+                JwtHttpBearerAuth::class,
+            ],
+            'except' => ['options'],
         ];
-        
+
+        $behaviors['access'] = [
+            'class' => AccessControl::class,
+        ];
+
+
         return $behaviors;
     }
-    
+
     /**
      * 发送邮箱验证码
      * 
@@ -67,7 +75,7 @@ class EmailController extends Controller
     {
         $form = new SendVerificationForm();
         $form->load(Yii::$app->request->post(), '');
-        
+
         if (!$form->validate()) {
             Yii::$app->response->statusCode = 400;
             return [
@@ -79,10 +87,10 @@ class EmailController extends Controller
                 ],
             ];
         }
-        
+
         try {
             $this->emailService->sendVerificationCode($form->email, $form->locale, $form->i18n);
-            
+
             return [
                 'success' => true,
                 'message' => '验证码已发送到您的邮箱',
@@ -109,7 +117,7 @@ class EmailController extends Controller
             ];
         }
     }
-    
+
     /**
      * 验证邮箱验证码并绑定邮箱
      * 
@@ -121,7 +129,7 @@ class EmailController extends Controller
     {
         $form = new VerifyEmailForm();
         $form->load(Yii::$app->request->post(), '');
-        
+
         if (!$form->validate()) {
             Yii::$app->response->statusCode = 400;
             return [
@@ -133,11 +141,11 @@ class EmailController extends Controller
                 ],
             ];
         }
-        
+
         try {
             // 验证验证码并绑定邮箱
             $result = $this->emailService->verifyCode($form->email, $form->code, $form->change_token);
-            
+
             if (!$result) {
                 Yii::$app->response->statusCode = 500;
                 return [
@@ -148,11 +156,14 @@ class EmailController extends Controller
                     ],
                 ];
             }
-            
+
             // 获取更新后的用户信息
             $user = Yii::$app->user->identity;
+            if (!$user instanceof User) {
+                throw new \yii\web\UnauthorizedHttpException('未授权');
+            }
             $user->refresh(); // 刷新用户数据
-            
+
             return [
                 'success' => true,
                 'message' => '邮箱验证并绑定成功',
@@ -196,7 +207,7 @@ class EmailController extends Controller
             ];
         }
     }
-    
+
     /**
      * 发送测试邮件
      * 
@@ -209,7 +220,7 @@ class EmailController extends Controller
         try {
             $testEmail = 'nethz@163.com';
             $fromEmail = Yii::$app->params['supportEmail'] ?? getenv('MAILER_USERNAME') ?? 'noreply@example.com';
-            
+
             $result = Yii::$app->mailer->compose()
                 ->setFrom([$fromEmail => Yii::$app->name . ' 测试'])
                 ->setTo($testEmail)
@@ -217,7 +228,7 @@ class EmailController extends Controller
                 ->setTextBody('这是一封测试邮件，发送时间：' . date('Y-m-d H:i:s'))
                 ->setHtmlBody('<h2>邮件服务测试</h2><p>这是一封测试邮件</p><p>发送时间：' . date('Y-m-d H:i:s') . '</p>')
                 ->send();
-            
+
             if ($result) {
                 Yii::info("Test email sent successfully to {$testEmail}", __METHOD__);
                 return [
@@ -252,7 +263,15 @@ class EmailController extends Controller
             ];
         }
     }
-    
+    private function getUser(): User
+    {
+        $user = Yii::$app->user->identity;
+        if (!$user || !$user instanceof User) {
+            throw new \yii\web\UnauthorizedHttpException('未授权');
+        }
+        return $user;
+    }
+
     /**
      * 获取当前用户邮箱验证状态
      * 
@@ -262,21 +281,11 @@ class EmailController extends Controller
      */
     public function actionStatus()
     {
-        $user = Yii::$app->user->identity;
-        
-        if (!$user) {
-            Yii::$app->response->statusCode = 401;
-            return [
-                'success' => false,
-                'error' => [
-                    'code' => 'UNAUTHORIZED',
-                    'message' => '用户未登录',
-                ],
-            ];
-        }
-        
+        $user = $this->getUser();
+
+
         $isVerified = !empty($user->email_verified_at);
-        
+
         return [
             'success' => true,
             'data' => [
@@ -299,17 +308,8 @@ class EmailController extends Controller
      */
     public function actionSendChangeConfirmation()
     {
-        $user = Yii::$app->user->identity;
-        if (!$user) {
-            Yii::$app->response->statusCode = 401;
-            return [
-                'success' => false,
-                'error' => [
-                    'code' => 'UNAUTHORIZED',
-                    'message' => '用户未登录',
-                ],
-            ];
-        }
+        $user = $this->getUser();
+
 
         try {
             $locale = Yii::$app->request->post('locale', 'en-US');
@@ -381,17 +381,8 @@ class EmailController extends Controller
      */
     public function actionVerifyChangeConfirmation()
     {
-        $user = Yii::$app->user->identity;
-        if (!$user) {
-            Yii::$app->response->statusCode = 401;
-            return [
-                'success' => false,
-                'error' => [
-                    'code' => 'UNAUTHORIZED',
-                    'message' => '用户未登录',
-                ],
-            ];
-        }
+
+        $user = $this->getUser();
 
         $form = new EmailCodeForm();
         $form->load(Yii::$app->request->post(), '');
@@ -458,17 +449,9 @@ class EmailController extends Controller
      */
     public function actionUnbind()
     {
-        $user = Yii::$app->user->identity;
-        if (!$user) {
-            Yii::$app->response->statusCode = 401;
-            return [
-                'success' => false,
-                'error' => [
-                    'code' => 'UNAUTHORIZED',
-                    'message' => '用户未登录',
-                ],
-            ];
-        }
+
+        $user = $this->getUser();
+
 
         $code = null;
         if (!empty($user->email_verified_at)) {
@@ -554,9 +537,11 @@ class EmailController extends Controller
      */
     public function actionCooldown()
     {
+
+        $user = $this->getUser();
         $email = Yii::$app->request->get('email');
-        if (empty($email) && Yii::$app->user->identity && !empty(Yii::$app->user->identity->email)) {
-            $email = Yii::$app->user->identity->email;
+        if (empty($email) && $user && !empty($user->email)) {
+            $email = $user->email;
         }
 
         $form = new EmailAddressForm();
@@ -583,7 +568,7 @@ class EmailController extends Controller
             ),
         ];
     }
-    
+
     /**
      * 从异常中提取 retry_after 值
      * 
@@ -596,7 +581,7 @@ class EmailController extends Controller
         if (preg_match('/(\d+)\s*秒/', $exception->getMessage(), $matches)) {
             return (int)$matches[1];
         }
-        
+
         return null;
     }
 }

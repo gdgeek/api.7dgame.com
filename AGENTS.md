@@ -29,6 +29,29 @@
 - 控制器统一以 `Controller` 结尾；测试文件以 `Test` 结尾（Codeception 场景测试使用 `*Cest`）。
 - 迁移文件使用 Yii 时间戳命名，例如 `m260211_190000_unify_json_columns.php`。
 
+## 控制器权限约定（Yii2-RBAC）
+- 所有业务控制器都必须实现统一权限行为，至少包含 `CompositeAuth + JwtHttpBearerAuth + AccessControl`。
+- 新增控制器或重构控制器时，`behaviors()` 必须包含以下模板（可按业务补充 `except`）：
+
+```php
+$behaviors = parent::behaviors();
+
+// unset($behaviors['authenticator']);
+$behaviors['authenticator'] = [
+    'class' => CompositeAuth::class,
+    'authMethods' => [
+        JwtHttpBearerAuth::class,
+    ],
+    'except' => ['options'],
+];
+
+$behaviors['access'] = [
+    'class' => AccessControl::class,
+];
+
+return $behaviors;
+```
+
 ## 测试规范
 - 当前测试框架为 Codeception（`advanced/codeception.yml`）和 PHPUnit（`advanced/phpunit.xml`）。
 - 单元测试放在 `advanced/tests/unit/<domain>/`。
