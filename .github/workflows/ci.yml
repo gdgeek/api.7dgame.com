@@ -31,6 +31,21 @@ jobs:
         with:
           php-version: '8.5'
           extensions: pdo, pdo_mysql, gd, zip
+
+      - name: Configure CA Certificates For Composer
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ca-certificates
+          sudo update-ca-certificates
+
+          # Optional: install corporate/self-signed root CA from GitHub Secret (base64 encoded PEM/CRT).
+          if [ -n "${{ secrets.CUSTOM_CA_CERT_B64 }}" ]; then
+            echo "${{ secrets.CUSTOM_CA_CERT_B64 }}" | base64 -d | sudo tee /usr/local/share/ca-certificates/custom-ca.crt > /dev/null
+            sudo update-ca-certificates
+          fi
+
+          composer config -g cafile /etc/ssl/certs/ca-certificates.crt
+          composer config -g secure-http true
           
       - name: Install Dependencies
         working-directory: ./advanced
@@ -200,6 +215,21 @@ jobs:
         with:
           php-version: '8.5'
           extensions: pdo, pdo_mysql, gd
+
+      - name: Configure CA Certificates For Composer
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ca-certificates
+          sudo update-ca-certificates
+
+          # Optional: install corporate/self-signed root CA from GitHub Secret (base64 encoded PEM/CRT).
+          if [ -n "${{ secrets.CUSTOM_CA_CERT_B64 }}" ]; then
+            echo "${{ secrets.CUSTOM_CA_CERT_B64 }}" | base64 -d | sudo tee /usr/local/share/ca-certificates/custom-ca.crt > /dev/null
+            sudo update-ca-certificates
+          fi
+
+          composer config -g cafile /etc/ssl/certs/ca-certificates.crt
+          composer config -g secure-http true
 
       - name: Install Dependencies (Production)
         working-directory: ./advanced
