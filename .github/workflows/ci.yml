@@ -50,7 +50,7 @@ jobs:
       - name: Install Dependencies
         working-directory: ./advanced
         run: |
-          composer update --prefer-dist --no-progress --optimize-autoloader
+          composer install --prefer-dist --no-progress --optimize-autoloader
 
       - name: Prepare Test Configs
         working-directory: ./advanced
