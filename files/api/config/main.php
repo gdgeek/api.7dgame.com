@@ -110,12 +110,13 @@ return [
                     'controller' => 'v1/plugin-user',
                     'pluralize' => false,
                     'only' => [
-                        'users', 'create-user', 'update-user', 'delete-user', 'change-role',
+                        'me', 'users', 'create-user', 'update-user', 'delete-user', 'change-role',
                         'invitations', 'create-invitation', 'delete-invitation',
                         'check-invitation', 'invitation-records',
                         'register-send-code', 'register',
                     ],
                     'extraPatterns' => [
+                        'GET me' => 'me',
                         'GET users' => 'users',
                         'POST create-user' => 'create-user',
                         'POST update-user' => 'update-user',

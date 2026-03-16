@@ -18,7 +18,7 @@ use backend\components\MenuHelper;
         <?php
         try {
             $callback = function ($menu) {
-                $data = json_decode($menu['data'], true);
+                $data = $menu['data'] ? json_decode($menu['data'], true) : null;
                 $items = $menu['children'];
                 $return = [
                     'label' => $menu['name'],
