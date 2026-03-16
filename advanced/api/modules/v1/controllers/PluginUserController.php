@@ -202,6 +202,7 @@ class PluginUserController extends \yii\rest\Controller
                 'data' => [
                     'id' => $user->id,
                     'username' => $user->username,
+                    'nickname' => $user->nickname,
                     'email' => $user->email,
                     'status' => $user->status,
                     'created_at' => $user->created_at,
@@ -233,11 +234,36 @@ class PluginUserController extends \yii\rest\Controller
             $query->andWhere(['status' => (int)$status]);
         }
 
-        $total = $query->count();
-        $users = $query->orderBy(['id' => SORT_DESC])
-            ->offset(($page - 1) * $pageSize)
-            ->limit($pageSize)
-            ->all();
+        // 排序支持
+        $sortField = $request->get('sort', 'id');
+        $sortOrder = strtolower($request->get('order', 'desc')) === 'asc' ? SORT_ASC : SORT_DESC;
+        $allowedSortFields = ['id', 'username', 'nickname', 'email', 'created_at'];
+
+        if ($sortField === 'roles') {
+            // 先算 total（在加 JOIN/GROUP BY 之前）
+            $total = $query->count();
+            // 按角色等级排序：LEFT JOIN auth_assignment，用 CASE 映射角色等级
+            $query->leftJoin('auth_assignment', '{{auth_assignment}}.[[user_id]] = {{user}}.[[id]]');
+            $orderExpr = new \yii\db\Expression(
+                "MAX(CASE {{auth_assignment}}.[[item_name]] " .
+                "WHEN 'root' THEN 4 WHEN 'admin' THEN 3 WHEN 'manager' THEN 2 WHEN 'user' THEN 1 ELSE 0 END) " .
+                ($sortOrder === SORT_ASC ? "ASC" : "DESC")
+            );
+            $query->groupBy('{{user}}.[[id]]');
+            $users = $query->orderBy($orderExpr)
+                ->offset(($page - 1) * $pageSize)
+                ->limit($pageSize)
+                ->all();
+        } else {
+            if (!in_array($sortField, $allowedSortFields)) {
+                $sortField = 'id';
+            }
+            $total = $query->count();
+            $users = $query->orderBy([$sortField => $sortOrder])
+                ->offset(($page - 1) * $pageSize)
+                ->limit($pageSize)
+                ->all();
+        }
 
         $data = [];
         foreach ($users as $u) {
@@ -245,6 +271,7 @@ class PluginUserController extends \yii\rest\Controller
             $data[] = [
                 'id' => $u->id,
                 'username' => $u->username,
+                'nickname' => $u->nickname,
                 'email' => $u->email,
                 'status' => $u->status,
                 'created_at' => $u->created_at,
