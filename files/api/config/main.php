@@ -95,6 +95,43 @@ return [
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/plugin',
+                    'pluralize' => false,
+                    'only' => ['verify-token', 'check-permission', 'allowed-actions', 'send-email'],
+                    'extraPatterns' => [
+                        'GET verify-token' => 'verify-token',
+                        'GET check-permission' => 'check-permission',
+                        'GET allowed-actions' => 'allowed-actions',
+                        'POST send-email' => 'send-email',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/plugin-user',
+                    'pluralize' => false,
+                    'only' => [
+                        'users', 'create-user', 'update-user', 'delete-user', 'change-role',
+                        'invitations', 'create-invitation', 'delete-invitation',
+                        'check-invitation', 'invitation-records',
+                        'register-send-code', 'register',
+                    ],
+                    'extraPatterns' => [
+                        'GET users' => 'users',
+                        'POST create-user' => 'create-user',
+                        'POST update-user' => 'update-user',
+                        'POST delete-user' => 'delete-user',
+                        'POST change-role' => 'change-role',
+                        'GET invitations' => 'invitations',
+                        'POST create-invitation' => 'create-invitation',
+                        'POST delete-invitation' => 'delete-invitation',
+                        'GET check-invitation' => 'check-invitation',
+                        'GET invitation-records' => 'invitation-records',
+                        'POST register-send-code' => 'register-send-code',
+                        'POST register' => 'register',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/tencent-cloud',
                     'extraPatterns' => [
                         'GET token' => 'token',
@@ -166,14 +203,15 @@ return [
                     ],
                 ],
               
-                [
-                    'class' => 'yii\rest\UrlRule',
-                    'controller' => 'v1/upload',
-                    'pluralize' => false,
-                    'extraPatterns' => [
-                        'POST file' => 'file',
-                    ],
-                ],
+                // 本地文件上传已废弃，统一走 COS 直传，暂时注释观察
+                // [
+                //     'class' => 'yii\rest\UrlRule',
+                //     'controller' => 'v1/upload',
+                //     'pluralize' => false,
+                //     'extraPatterns' => [
+                //         'POST file' => 'file',
+                //     ],
+                // ],
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/tools',
