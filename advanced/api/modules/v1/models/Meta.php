@@ -153,6 +153,8 @@ class Meta extends \yii\db\ActiveRecord
             'resources',
             'data',
             'info',
+            'created_at',
+            'updated_at',
         ];
     }
     /**
