@@ -4,10 +4,11 @@ namespace api\modules\v1\controllers;
 
 use api\modules\v1\models\User;
 use common\models\PluginPermissionConfig;
-use Lcobucci\JWT\Token\InvalidTokenStructure;
-use Lcobucci\JWT\Validation\RequiredConstraintsViolated;
 use api\modules\v1\components\RateLimiter;
 use api\modules\v1\services\EmailService;
+use mdm\admin\components\AccessControl;
+use bizley\jwt\JwtHttpBearerAuth;
+use yii\filters\auth\CompositeAuth;
 use Yii;
 use yii\web\Response;
 
@@ -22,12 +23,24 @@ class PluginController extends \yii\rest\Controller
 {
     /**
      * {@inheritdoc}
-     * 移除默认 authenticator，由 action 内手动解析 Token
+     * 使用标准 JWT 认证 + RBAC 权限控制
      */
     public function behaviors()
     {
         $behaviors = parent::behaviors();
-        unset($behaviors['authenticator']);
+
+        $behaviors['authenticator'] = [
+            'class' => CompositeAuth::class,
+            'authMethods' => [
+                JwtHttpBearerAuth::class,
+            ],
+            'except' => ['options'],
+        ];
+
+        $behaviors['access'] = [
+            'class' => AccessControl::class,
+        ];
+
         return $behaviors;
     }
 
@@ -46,60 +59,15 @@ class PluginController extends \yii\rest\Controller
     }
 
     /**
-     * 从请求中解析 JWT Token 并返回用户信息
+     * 获取当前已认证用户及其角色
      *
-     * @param \yii\web\Request $request
      * @return array ['user' => User, 'roles' => string[]]
      */
-    protected function resolveUser($request): array
+    protected function resolveUser(): array
     {
-        // 1. 从 Authorization 头提取 Bearer token
-        $authHeader = $request->getHeaders()->get('Authorization');
-        if (!$authHeader || !preg_match('/^Bearer\s+(.+)$/i', $authHeader, $matches)) {
-            Yii::$app->response->statusCode = 401;
-            return ['error' => ['code' => 1001, 'message' => '缺少有效的 Authorization 头']];
-        }
-        $token = $matches[1];
-
-        // 2. 解析 Token
-        try {
-            $parsedToken = Yii::$app->jwt->parse($token);
-        } catch (InvalidTokenStructure $e) {
-            Yii::$app->response->statusCode = 401;
-            return ['error' => ['code' => 1003, 'message' => 'Token 无效']];
-        } catch (\Exception $e) {
-            Yii::$app->response->statusCode = 401;
-            return ['error' => ['code' => 1003, 'message' => 'Token 无效']];
-        }
-
-        // 3. 验证 Token（签名 + 过期时间）
-        try {
-            Yii::$app->jwt->assert($parsedToken);
-        } catch (RequiredConstraintsViolated $e) {
-            // 检查是否是过期错误
-            $message = $e->getMessage();
-            if (stripos($message, 'expired') !== false || stripos($message, 'not yet valid') !== false) {
-                Yii::$app->response->statusCode = 401;
-                return ['error' => ['code' => 1002, 'message' => 'Token 已过期']];
-            }
-            Yii::$app->response->statusCode = 401;
-            return ['error' => ['code' => 1003, 'message' => 'Token 无效']];
-        } catch (\Exception $e) {
-            Yii::$app->response->statusCode = 401;
-            return ['error' => ['code' => 1003, 'message' => 'Token 无效']];
-        }
-
-        // 4. 从 claims 获取 uid，查找用户
-        $claims = $parsedToken->claims();
-        $uid = $claims->get('uid');
-        $user = User::findIdentity($uid);
-        if (!$user) {
-            Yii::$app->response->statusCode = 401;
-            return ['error' => ['code' => 1004, 'message' => '用户不存在']];
-        }
-
-        // 5. 获取用户角色
-        $roles = array_keys(Yii::$app->authManager->getRolesByUser($uid));
+        /** @var User $user */
+        $user = Yii::$app->user->identity;
+        $roles = array_keys(Yii::$app->authManager->getRolesByUser($user->id));
 
         return ['user' => $user, 'roles' => $roles];
     }
@@ -112,7 +80,7 @@ class PluginController extends \yii\rest\Controller
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
-        $result = $this->resolveUser(Yii::$app->request);
+        $result = $this->resolveUser();
 
         if (isset($result['error'])) {
             return $result['error'];
@@ -155,7 +123,7 @@ class PluginController extends \yii\rest\Controller
             ];
         }
 
-        $result = $this->resolveUser($request);
+        $result = $this->resolveUser();
 
         if (isset($result['error'])) {
             return $result['error'];
@@ -198,7 +166,7 @@ class PluginController extends \yii\rest\Controller
             ];
         }
 
-        $result = $this->resolveUser($request);
+        $result = $this->resolveUser();
 
         if (isset($result['error'])) {
             return $result['error'];
@@ -238,8 +206,8 @@ class PluginController extends \yii\rest\Controller
 
         $request = Yii::$app->request;
 
-        // 1. 验证 JWT token
-        $result = $this->resolveUser($request);
+        // 1. 获取已认证用户
+        $result = $this->resolveUser();
         if (isset($result['error'])) {
             return $result['error'];
         }
