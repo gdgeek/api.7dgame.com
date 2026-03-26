@@ -87,6 +87,17 @@ return [
                 // Swagger API 文档路由
                 'GET swagger' => 'swagger/index',
                 'GET swagger/json-schema' => 'swagger/json-schema',
+
+                // 调试路由
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/test',
+                    'pluralize' => false,
+                    'only' => ['db-debug'],
+                    'extraPatterns' => [
+                        'GET db-debug' => 'db-debug',
+                    ],
+                ],
                 
                 [
                     'pattern' => 'apple-app-site-association',
