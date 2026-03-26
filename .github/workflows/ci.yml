@@ -250,6 +250,9 @@ jobs:
       - name: Write Git Commit Hash
         run: echo "${{ github.sha }}" > advanced/GIT_COMMIT
 
+      - name: Write Build Time
+        run: TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S' > advanced/BUILD_TIME
+
       - name: Build and Push Docker Image
         run: |
           BRANCH_NAME=$(echo "${{ github.ref }}" | sed 's|refs/heads/||' | sed 's|/|-|g')

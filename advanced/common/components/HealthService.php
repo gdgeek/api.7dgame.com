@@ -56,6 +56,18 @@ class HealthService extends Component
             }
         }
 
+        // 读取构建时注入的打包时间（北京时间）作为版本号
+        $buildTimeCandidates = [
+            $basePath . '/BUILD_TIME',
+            dirname($basePath) . '/BUILD_TIME',
+        ];
+        foreach ($buildTimeCandidates as $buildTimeFile) {
+            if (file_exists($buildTimeFile)) {
+                $result['version'] = trim(file_get_contents($buildTimeFile));
+                break;
+            }
+        }
+
         return $result;
     }
 
