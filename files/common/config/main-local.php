@@ -24,6 +24,14 @@ return [
             'password' => getenv(name: 'MYSQL_PASSWORD'),
             'charset' => 'utf8',
         ],
+        'pluginDb' => [
+            'class' => 'common\components\CynosDbConnection',
+            'dsn' => 'mysql:host=' . (getenv('PLUGIN_MYSQL_HOST') ?: getenv('MYSQL_HOST'))
+                     . ';dbname=' . (getenv('PLUGIN_MYSQL_DB') ?: 'bujiaban_plugin'),
+            'username' => getenv('PLUGIN_MYSQL_USERNAME') ?: getenv('MYSQL_USERNAME'),
+            'password' => getenv('PLUGIN_MYSQL_PASSWORD') ?: getenv('MYSQL_PASSWORD'),
+            'charset' => 'utf8',
+        ],
 
         'redis' => [
             'class' => 'yii\redis\Connection',

@@ -97,12 +97,13 @@ return [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/plugin',
                     'pluralize' => false,
-                    'only' => ['verify-token', 'check-permission', 'allowed-actions', 'send-email'],
+                    'only' => ['verify-token', 'check-permission', 'allowed-actions', 'send-email', 'list'],
                     'extraPatterns' => [
                         'GET verify-token' => 'verify-token',
                         'GET check-permission' => 'check-permission',
                         'GET allowed-actions' => 'allowed-actions',
                         'POST send-email' => 'send-email',
+                        'GET list' => 'list',
                     ],
                 ],
                 [
@@ -114,6 +115,7 @@ return [
                         'invitations', 'create-invitation', 'delete-invitation',
                         'check-invitation', 'invitation-records',
                         'register-send-code', 'register',
+                        'batch-create-users',
                     ],
                     'extraPatterns' => [
                         'GET me' => 'me',
@@ -129,6 +131,7 @@ return [
                         'GET invitation-records' => 'invitation-records',
                         'POST register-send-code' => 'register-send-code',
                         'POST register' => 'register',
+                        'POST batch-create-users' => 'batch-create-users',
                     ],
                 ],
                 [

@@ -25,6 +25,15 @@ class PluginPermissionConfig extends \yii\db\ActiveRecord
     }
 
     /**
+     * 返回插件数据库连接
+     * @return \yii\db\Connection
+     */
+    public static function getDb()
+    {
+        return \Yii::$app->get('pluginDb');
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function rules()

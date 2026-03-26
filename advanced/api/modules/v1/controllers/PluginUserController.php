@@ -74,6 +74,7 @@ class PluginUserController extends \yii\rest\Controller
             'invitation-records' => ['GET'],
             'register-send-code' => ['POST'],
             'register' => ['POST'],
+            'batch-create-users' => ['POST'],
         ];
     }
 
@@ -330,6 +331,119 @@ class PluginUserController extends \yii\rest\Controller
             ],
         ];
     }
+
+    /**
+     * 批量创建用户
+     * POST /v1/plugin-user/batch-create-users
+     *
+     * 请求体: { "users": [ { "username", "nickname", "password", "role", "status" }, ... ] }
+     * 最多 100 条，逐条创建，部分失败不影响其余。
+     */
+    public function actionBatchCreateUsers()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $result = $this->resolveUserWithPermission('create-user');
+        if (isset($result['error'])) {
+            return $result['error'];
+        }
+
+        $request = Yii::$app->request;
+        $users = $request->getBodyParam('users', []);
+
+        if (!is_array($users) || count($users) < 1 || count($users) > 100) {
+            Yii::$app->response->statusCode = 400;
+            return ['code' => 4001, 'message' => '用户数组长度必须在 1-100 之间'];
+        }
+
+        $operatorLevel = $this->getRoleLevel($result['roles']);
+        $authManager = Yii::$app->authManager;
+        $results = [];
+        $successCount = 0;
+        $failedCount = 0;
+
+        foreach ($users as $index => $userData) {
+            $username = trim($userData['username'] ?? '');
+            $nickname = trim($userData['nickname'] ?? '');
+            $password = $userData['password'] ?? '';
+            $role = $userData['role'] ?? '';
+            $status = isset($userData['status']) ? (int)$userData['status'] : 10;
+
+            // 校验 username
+            if (empty($username) || mb_strlen($username) > 64) {
+                $results[] = ['index' => $index, 'username' => $username, 'success' => false, 'error' => '用户名不能为空且不超过64字符'];
+                $failedCount++;
+                continue;
+            }
+
+            // 校验 password
+            if (strlen($password) < 6) {
+                $results[] = ['index' => $index, 'username' => $username, 'success' => false, 'error' => '密码不少于6位'];
+                $failedCount++;
+                continue;
+            }
+
+            // 校验 role 合法且非 root
+            if (!in_array($role, self::VALID_ROLES) || $role === 'root') {
+                $results[] = ['index' => $index, 'username' => $username, 'success' => false, 'error' => '角色无效或不允许分配 root'];
+                $failedCount++;
+                continue;
+            }
+
+            // 校验 role 级别不超过操作者
+            $roleLevel = self::ROLE_LEVELS[$role] ?? 0;
+            if ($roleLevel > $operatorLevel) {
+                $results[] = ['index' => $index, 'username' => $username, 'success' => false, 'error' => '不能分配高于自身的角色'];
+                $failedCount++;
+                continue;
+            }
+
+            // 检查 username 唯一性
+            $existing = User::findOne(['username' => $username]);
+            if ($existing) {
+                $results[] = ['index' => $index, 'username' => $username, 'success' => false, 'error' => '用户名已存在'];
+                $failedCount++;
+                continue;
+            }
+
+            // 创建用户
+            $now = time();
+            $user = new User();
+            $user->username = $username;
+            $user->nickname = $nickname;
+            $user->email = '';
+            $user->password_hash = Yii::$app->security->generatePasswordHash($password);
+            $user->auth_key = Yii::$app->security->generateRandomString();
+            $user->status = $status;
+            $user->created_at = $now;
+            $user->updated_at = $now;
+
+            if (!$user->save(false)) {
+                $results[] = ['index' => $index, 'username' => $username, 'success' => false, 'error' => '创建用户失败'];
+                $failedCount++;
+                continue;
+            }
+
+            // 分配角色
+            $roleObj = $authManager->getRole($role);
+            if ($roleObj) {
+                $authManager->assign($roleObj, $user->id);
+            }
+
+            $results[] = ['index' => $index, 'username' => $username, 'success' => true, 'id' => $user->id];
+            $successCount++;
+        }
+
+        return [
+            'code' => 0,
+            'data' => [
+                'total' => count($users),
+                'success' => $successCount,
+                'failed' => $failedCount,
+                'results' => $results,
+            ],
+        ];
+    }
+
 
     /**
      * POST /v1/plugin-user/update-user

@@ -34,7 +34,7 @@ class PluginController extends \yii\rest\Controller
             'authMethods' => [
                 JwtHttpBearerAuth::class,
             ],
-            'except' => ['options'],
+            'except' => ['options', 'list'],
         ];
 
         $behaviors['access'] = [
@@ -55,6 +55,7 @@ class PluginController extends \yii\rest\Controller
             'check-permission' => ['GET'],
             'allowed-actions' => ['GET'],
             'send-email' => ['POST'],
+            'list' => ['GET'],
         ];
     }
 
@@ -313,6 +314,67 @@ class PluginController extends \yii\rest\Controller
                 'email' => $email,
                 'type' => $type,
             ],
+        ];
+    }
+
+    /**
+     * GET /v1/plugin/list
+     * 获取插件列表和菜单分组（支持按域名查询白牌配置）
+     */
+    public function actionList()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $domain = Yii::$app->request->get('domain');
+        $pluginDb = Yii::$app->get('pluginDb');
+
+        // 查询菜单分组：优先域名专属，回退默认
+        $groups = (new \yii\db\Query())->from('plugin_menu_groups')
+            ->where(['domain' => $domain])->orderBy(['order' => SORT_ASC])->all($pluginDb);
+        if (empty($groups)) {
+            $groups = (new \yii\db\Query())->from('plugin_menu_groups')
+                ->where(['domain' => null])->orderBy(['order' => SORT_ASC])->all($pluginDb);
+        }
+
+        // 查询插件列表：优先域名专属，回退默认
+        $plugins = (new \yii\db\Query())->from('plugins')
+            ->where(['domain' => $domain, 'enabled' => 1])->orderBy(['order' => SORT_ASC])->all($pluginDb);
+        if (empty($plugins)) {
+            $plugins = (new \yii\db\Query())->from('plugins')
+                ->where(['domain' => null, 'enabled' => 1])->orderBy(['order' => SORT_ASC])->all($pluginDb);
+        }
+
+        // 转换字段名以兼容前端 plugins.json 格式
+        $formattedGroups = array_map(function ($g) {
+            return [
+                'id' => $g['id'],
+                'name' => $g['name'],
+                'nameI18n' => $g['name_i18n'] ? json_decode($g['name_i18n'], true) : null,
+                'icon' => $g['icon'],
+                'order' => (int)$g['order'],
+            ];
+        }, $groups);
+
+        $formattedPlugins = array_map(function ($p) {
+            return [
+                'id' => $p['id'],
+                'name' => $p['name'],
+                'nameI18n' => $p['name_i18n'] ? json_decode($p['name_i18n'], true) : null,
+                'description' => $p['description'],
+                'url' => $p['url'],
+                'icon' => $p['icon'],
+                'group' => $p['group_id'],
+                'enabled' => (bool)$p['enabled'],
+                'order' => (int)$p['order'],
+                'allowedOrigin' => $p['allowed_origin'],
+                'version' => $p['version'],
+            ];
+        }, $plugins);
+
+        return [
+            'version' => '1.0.0',
+            'menuGroups' => $formattedGroups,
+            'plugins' => $formattedPlugins,
         ];
     }
 }
