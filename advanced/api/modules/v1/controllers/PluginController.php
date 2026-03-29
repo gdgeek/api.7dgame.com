@@ -39,6 +39,7 @@ class PluginController extends \yii\rest\Controller
 
         $behaviors['access'] = [
             'class' => AccessControl::class,
+            'allowActions' => ['options', 'list'],
         ];
 
         return $behaviors;
@@ -318,8 +319,24 @@ class PluginController extends \yii\rest\Controller
     }
 
     /**
+     * 按 id 字段合并两个行数组，$override 中同 id 的记录覆盖 $base，新 id 追加。
+     */
+    private function mergeById(array $base, array $override): array
+    {
+        if (empty($override)) return $base;
+        $map = [];
+        foreach ($base as $row) {
+            $map[$row['id']] = $row;
+        }
+        foreach ($override as $row) {
+            $map[$row['id']] = $row;
+        }
+        return array_values($map);
+    }
+
+    /**
      * GET /v1/plugin/list
-     * 获取插件列表和菜单分组（支持按域名查询白牌配置）
+     * 获取插件列表和菜单分组（三层合并：通用默认 + 域名专属叠加）
      */
     public function actionList()
     {
@@ -328,21 +345,19 @@ class PluginController extends \yii\rest\Controller
         $domain = Yii::$app->request->get('domain');
         $pluginDb = Yii::$app->get('pluginDb');
 
-        // 查询菜单分组：优先域名专属，回退默认
-        $groups = (new \yii\db\Query())->from('plugin_menu_groups')
-            ->where(['domain' => $domain])->orderBy(['order' => SORT_ASC])->all($pluginDb);
-        if (empty($groups)) {
-            $groups = (new \yii\db\Query())->from('plugin_menu_groups')
-                ->where(['domain' => null])->orderBy(['order' => SORT_ASC])->all($pluginDb);
-        }
+        // 查询菜单分组：通用（domain=NULL）为基础，域名专属按 id 叠加覆盖
+        $generalGroups = (new \yii\db\Query())->from('plugin_menu_groups')
+            ->where(['domain' => null])->orderBy(['order' => SORT_ASC])->all($pluginDb);
+        $domainGroups = $domain ? (new \yii\db\Query())->from('plugin_menu_groups')
+            ->where(['domain' => $domain])->orderBy(['order' => SORT_ASC])->all($pluginDb) : [];
+        $groups = $this->mergeById($generalGroups, $domainGroups);
 
-        // 查询插件列表：优先域名专属，回退默认
-        $plugins = (new \yii\db\Query())->from('plugins')
-            ->where(['domain' => $domain, 'enabled' => 1])->orderBy(['order' => SORT_ASC])->all($pluginDb);
-        if (empty($plugins)) {
-            $plugins = (new \yii\db\Query())->from('plugins')
-                ->where(['domain' => null, 'enabled' => 1])->orderBy(['order' => SORT_ASC])->all($pluginDb);
-        }
+        // 查询插件列表：通用（domain=NULL）为基础，域名专属按 id 叠加覆盖
+        $generalPlugins = (new \yii\db\Query())->from('plugins')
+            ->where(['domain' => null, 'enabled' => 1])->orderBy(['order' => SORT_ASC])->all($pluginDb);
+        $domainPlugins = $domain ? (new \yii\db\Query())->from('plugins')
+            ->where(['domain' => $domain, 'enabled' => 1])->orderBy(['order' => SORT_ASC])->all($pluginDb) : [];
+        $plugins = $this->mergeById($generalPlugins, $domainPlugins);
 
         // 转换字段名以兼容前端 plugins.json 格式
         $formattedGroups = array_map(function ($g) {

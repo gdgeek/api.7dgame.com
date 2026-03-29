@@ -147,6 +147,30 @@ return [
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/plugin-admin',
+                    'pluralize' => false,
+                    'only' => [
+                        'permissions', 'create-permission', 'update-permission', 'delete-permission',
+                        'plugins', 'create-plugin', 'update-plugin', 'delete-plugin',
+                        'menu-groups', 'create-menu-group', 'update-menu-group', 'delete-menu-group',
+                    ],
+                    'extraPatterns' => [
+                        'GET permissions' => 'permissions',
+                        'POST create-permission' => 'create-permission',
+                        'PUT update-permission' => 'update-permission',
+                        'POST delete-permission' => 'delete-permission',
+                        'GET plugins' => 'plugins',
+                        'POST create-plugin' => 'create-plugin',
+                        'PUT update-plugin' => 'update-plugin',
+                        'POST delete-plugin' => 'delete-plugin',
+                        'GET menu-groups' => 'menu-groups',
+                        'POST create-menu-group' => 'create-menu-group',
+                        'PUT update-menu-group' => 'update-menu-group',
+                        'POST delete-menu-group' => 'delete-menu-group',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/tencent-cloud',
                     'extraPatterns' => [
                         'GET token' => 'token',

@@ -28,3 +28,4 @@ tmp/
 
 # Keep docker-compose.yml template in repo
 # docker-compose.yml
+.copilot-specs-cache/
