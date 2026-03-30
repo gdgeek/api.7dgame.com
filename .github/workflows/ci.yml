@@ -77,6 +77,13 @@ jobs:
                       'password' => 'root',
                       'charset' => 'utf8',
                   ],
+                  'pluginDb' => [
+                      'class' => 'yii\\db\\Connection',
+                      'dsn' => 'mysql:host=127.0.0.1;dbname=yii2_plugin_test',
+                      'username' => 'root',
+                      'password' => 'root',
+                      'charset' => 'utf8',
+                  ],
               ],
           ];" > common/config/main-local.php
           echo "<?php return [];" > common/config/test.php
@@ -185,6 +192,9 @@ jobs:
             echo "Importing initial SQL dump..."
             mysql -h 127.0.0.1 -u root -proot yii2_advanced_test < ../docker/bujiaban.sql
           fi
+
+          # Create plugin database
+          mysql -h 127.0.0.1 -u root -proot -e "CREATE DATABASE IF NOT EXISTS yii2_plugin_test CHARACTER SET utf8 COLLATE utf8_unicode_ci;"
 
           # Apply RBAC migrations explicitly first
           php yii migrate/up --migrationPath=@yii/rbac/migrations --interactive=0
