@@ -542,6 +542,11 @@ class PluginUserController extends \yii\rest\Controller
             return ['code' => 4001, 'message' => '无效的角色，有效值: ' . implode(', ', self::VALID_ROLES)];
         }
 
+        if ($role === 'root') {
+            Yii::$app->response->statusCode = 400;
+            return ['code' => 4001, 'message' => '不允许通过此接口分配 root 角色'];
+        }
+
         $targetUser = User::findOne($id);
         if (!$targetUser) {
             Yii::$app->response->statusCode = 404;
@@ -550,6 +555,12 @@ class PluginUserController extends \yii\rest\Controller
 
         $operatorLevel = $this->getRoleLevel($result['roles']);
         $targetRoles = array_keys(Yii::$app->authManager->getRolesByUser($id));
+
+        if (in_array('root', $targetRoles, true)) {
+            Yii::$app->response->statusCode = 403;
+            return ['code' => 2006, 'message' => 'root 用户角色不可修改'];
+        }
+
         $targetLevel = $this->getRoleLevel($targetRoles);
         $newLevel = self::ROLE_LEVELS[$role];
 
