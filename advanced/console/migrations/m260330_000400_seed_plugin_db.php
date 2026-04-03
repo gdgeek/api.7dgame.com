@@ -7,14 +7,27 @@ class m260330_000400_seed_plugin_db extends Migration
 {
     public $db = 'pluginDb';
 
+    private bool $_skip = false;
+
     public function init()
     {
+        if (!\Yii::$app->has('pluginDb')) {
+            $this->_skip = true;
+            $this->db = \Yii::$app->db;
+            parent::init();
+            return;
+        }
         $this->db = 'pluginDb';
         parent::init();
     }
 
     public function safeUp()
     {
+        if ($this->_skip) {
+            echo "    > pluginDb not configured, skipping.\n";
+            return;
+        }
+
         $toolsGroupI18n = json_encode([
             'zh-CN' => '实用工具',
             'zh-TW' => '實用工具',
@@ -144,6 +157,10 @@ class m260330_000400_seed_plugin_db extends Migration
 
     public function safeDown()
     {
+        if ($this->_skip) {
+            return;
+        }
+
         $this->delete('{{%plugin_permission_config}}', [
             'role_or_permission' => 'root',
             'plugin_name' => 'system-admin',

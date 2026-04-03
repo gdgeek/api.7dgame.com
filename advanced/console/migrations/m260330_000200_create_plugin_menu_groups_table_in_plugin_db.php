@@ -6,14 +6,27 @@ class m260330_000200_create_plugin_menu_groups_table_in_plugin_db extends Migrat
 {
     public $db = 'pluginDb';
 
+    private bool $_skip = false;
+
     public function init()
     {
+        if (!\Yii::$app->has('pluginDb')) {
+            $this->_skip = true;
+            $this->db = \Yii::$app->db;
+            parent::init();
+            return;
+        }
         $this->db = 'pluginDb';
         parent::init();
     }
 
     public function safeUp()
     {
+        if ($this->_skip) {
+            echo "    > pluginDb not configured, skipping.\n";
+            return;
+        }
+
         if ($this->db->schema->getTableSchema('{{%plugin_menu_groups}}') !== null) {
             return;
         }
@@ -35,6 +48,11 @@ class m260330_000200_create_plugin_menu_groups_table_in_plugin_db extends Migrat
 
     public function safeDown()
     {
+        if ($this->_skip) {
+            echo "    > pluginDb not configured, skipping.\n";
+            return;
+        }
+
         if ($this->db->schema->getTableSchema('{{%plugin_menu_groups}}') !== null) {
             $this->dropTable('{{%plugin_menu_groups}}');
         }
