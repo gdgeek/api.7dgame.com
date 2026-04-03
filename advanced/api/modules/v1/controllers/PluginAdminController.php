@@ -69,9 +69,28 @@ class PluginAdminController extends \yii\rest\Controller
     protected function resolveUserWithPermission(string $action): array
     {
         $user = Yii::$app->user->identity;
-        $roles = array_keys(Yii::$app->authManager->getRolesByUser($user->id));
+        if ($user === null) {
+            Yii::error('[PluginAdmin] resolveUserWithPermission: user identity is null', 'plugin-admin');
+            Yii::$app->response->statusCode = 401;
+            return ['error' => ['code' => 2001, 'message' => '用户未认证']];
+        }
 
-        $allowed = PluginPermissionConfig::checkPermission($roles, self::PLUGIN_NAME, $action);
+        try {
+            $roles = array_keys(Yii::$app->authManager->getRolesByUser($user->id));
+        } catch (\Throwable $e) {
+            Yii::error('[PluginAdmin] getRolesByUser failed: ' . $e->getMessage(), 'plugin-admin');
+            Yii::$app->response->statusCode = 500;
+            return ['error' => ['code' => 2099, 'message' => '获取用户角色失败: ' . $e->getMessage()]];
+        }
+
+        try {
+            $allowed = PluginPermissionConfig::checkPermission($roles, self::PLUGIN_NAME, $action);
+        } catch (\Throwable $e) {
+            Yii::error('[PluginAdmin] checkPermission failed (pluginDb): ' . $e->getMessage(), 'plugin-admin');
+            Yii::$app->response->statusCode = 500;
+            return ['error' => ['code' => 2098, 'message' => '权限检查失败(pluginDb): ' . $e->getMessage()]];
+        }
+
         if (!$allowed) {
             Yii::$app->response->statusCode = 403;
             return ['error' => ['code' => 2003, 'message' => '没有权限执行此操作']];
@@ -100,21 +119,29 @@ class PluginAdminController extends \yii\rest\Controller
         $page             = (int) $request->get('page', 1);
         $perPage          = (int) $request->get('per_page', 20);
 
-        $query = PluginPermissionConfig::find();
+        try {
+            $query = PluginPermissionConfig::find();
 
-        if ($roleOrPermission !== null && $roleOrPermission !== '') {
-            $query->andWhere(['like', 'role_or_permission', $roleOrPermission]);
-        }
-        if ($pluginName !== null && $pluginName !== '') {
-            $query->andWhere(['like', 'plugin_name', $pluginName]);
-        }
-        if ($action !== null && $action !== '') {
-            $query->andWhere(['like', 'action', $action]);
-        }
+            if ($roleOrPermission !== null && $roleOrPermission !== '') {
+                $query->andWhere(['like', 'role_or_permission', $roleOrPermission]);
+            }
+            if ($pluginName !== null && $pluginName !== '') {
+                $query->andWhere(['like', 'plugin_name', $pluginName]);
+            }
+            if ($action !== null && $action !== '') {
+                $query->andWhere(['like', 'action', $action]);
+            }
 
-        $total  = $query->count();
-        $offset = ($page - 1) * $perPage;
-        $models = $query->offset($offset)->limit($perPage)->all();
+            $total  = $query->count();
+            $offset = ($page - 1) * $perPage;
+            $models = $query->offset($offset)->limit($perPage)->all();
+        } catch (\Throwable $e) {
+            Yii::error('[PluginAdmin] actionPermissions query failed (pluginDb): ' . $e->getMessage(), 'plugin-admin');
+            return [
+                'code'    => 5000,
+                'message' => '数据库查询失败: ' . $e->getMessage(),
+            ];
+        }
 
         $items = array_map(function ($m) {
             return [
