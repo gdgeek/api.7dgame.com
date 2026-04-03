@@ -343,28 +343,45 @@ class PluginController extends \yii\rest\Controller
         Yii::$app->response->format = Response::FORMAT_JSON;
 
         $domain = Yii::$app->request->get('domain');
-        $pluginDb = Yii::$app->get('pluginDb');
 
-        // 查询菜单分组：通用（domain=NULL）为基础，域名专属按 id 叠加覆盖
-        $generalGroups = (new \yii\db\Query())->from('plugin_menu_groups')
-            ->where(['domain' => null])->orderBy(['order' => SORT_ASC])->all($pluginDb);
-        $domainGroups = $domain ? (new \yii\db\Query())->from('plugin_menu_groups')
-            ->where(['domain' => $domain])->orderBy(['order' => SORT_ASC])->all($pluginDb) : [];
-        $groups = $this->mergeById($generalGroups, $domainGroups);
+        try {
+            $pluginDb = Yii::$app->get('pluginDb');
+        } catch (\Throwable $e) {
+            Yii::error('[PluginController] Failed to get pluginDb: ' . $e->getMessage(), 'plugin');
+            return [
+                'code' => 5001,
+                'message' => 'pluginDb connection failed: ' . $e->getMessage(),
+            ];
+        }
 
-        // 查询插件列表：通用（domain=NULL）为基础，域名专属按 id 叠加覆盖
-        $generalPlugins = (new \yii\db\Query())->from('plugins')
-            ->where(['domain' => null, 'enabled' => 1])->orderBy(['order' => SORT_ASC])->all($pluginDb);
-        $domainPlugins = $domain ? (new \yii\db\Query())->from('plugins')
-            ->where(['domain' => $domain, 'enabled' => 1])->orderBy(['order' => SORT_ASC])->all($pluginDb) : [];
-        $plugins = $this->mergeById($generalPlugins, $domainPlugins);
+        try {
+            // 查询菜单分组：通用（domain=NULL）为基础，域名专属按 id 叠加覆盖
+            $generalGroups = (new \yii\db\Query())->from('plugin_menu_groups')
+                ->where(['domain' => null])->orderBy(['order' => SORT_ASC])->all($pluginDb);
+            $domainGroups = $domain ? (new \yii\db\Query())->from('plugin_menu_groups')
+                ->where(['domain' => $domain])->orderBy(['order' => SORT_ASC])->all($pluginDb) : [];
+            $groups = $this->mergeById($generalGroups, $domainGroups);
+
+            // 查询插件列表：通用（domain=NULL）为基础，域名专属按 id 叠加覆盖
+            $generalPlugins = (new \yii\db\Query())->from('plugins')
+                ->where(['domain' => null, 'enabled' => 1])->orderBy(['order' => SORT_ASC])->all($pluginDb);
+            $domainPlugins = $domain ? (new \yii\db\Query())->from('plugins')
+                ->where(['domain' => $domain, 'enabled' => 1])->orderBy(['order' => SORT_ASC])->all($pluginDb) : [];
+            $plugins = $this->mergeById($generalPlugins, $domainPlugins);
+        } catch (\Throwable $e) {
+            Yii::error('[PluginController] actionList query failed (pluginDb): ' . $e->getMessage(), 'plugin');
+            return [
+                'code' => 5000,
+                'message' => 'pluginDb query failed: ' . $e->getMessage(),
+            ];
+        }
 
         // 转换字段名以兼容前端 plugins.json 格式
         $formattedGroups = array_map(function ($g) {
             return [
                 'id' => $g['id'],
                 'name' => $g['name'],
-                'nameI18n' => $g['name_i18n'] ? json_decode($g['name_i18n'], true) : null,
+                'nameI18n' => $this->decodeJsonField($g['name_i18n']),
                 'icon' => $g['icon'],
                 'order' => (int)$g['order'],
             ];
@@ -374,7 +391,7 @@ class PluginController extends \yii\rest\Controller
             return [
                 'id' => $p['id'],
                 'name' => $p['name'],
-                'nameI18n' => $p['name_i18n'] ? json_decode($p['name_i18n'], true) : null,
+                'nameI18n' => $this->decodeJsonField($p['name_i18n']),
                 'description' => $p['description'],
                 'url' => $p['url'],
                 'icon' => $p['icon'],
@@ -391,5 +408,20 @@ class PluginController extends \yii\rest\Controller
             'menuGroups' => $formattedGroups,
             'plugins' => $formattedPlugins,
         ];
+    }
+
+    /**
+     * 安全解码 JSON 字段，处理可能的双重编码（MySQL JSON 列有时返回字符串而非数组）
+     */
+    private function decodeJsonField($value)
+    {
+        if ($value === null || $value === '') return null;
+        if (is_array($value)) return $value;
+        $decoded = json_decode($value, true);
+        // 如果解码后仍是字符串，说明被双重编码了，再解一次
+        if (is_string($decoded)) {
+            $decoded = json_decode($decoded, true);
+        }
+        return is_array($decoded) ? $decoded : null;
     }
 }
