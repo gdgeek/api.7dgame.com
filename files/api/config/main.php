@@ -174,10 +174,22 @@ return [
                     'controller' => 'v1/tencent-cloud',
                     'extraPatterns' => [
                         'GET token' => 'token',
-                        'GET store' => 'store',
+                   //     'GET store' => 'store',
                         'GET cloud' => 'cloud',
                     ],
                 ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/tencent-cloud',
+                    'pluralize' => false,
+                    'extraPatterns' => [
+                        'GET token' => 'token',
+                        //'GET store' => 'store',
+                        'GET cloud' => 'cloud',
+                        'GET public-token' => 'public-token',
+                    ],
+                ],
+                
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/user',

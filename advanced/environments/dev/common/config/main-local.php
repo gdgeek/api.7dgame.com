@@ -3,9 +3,17 @@ return [
     'components' => [
         'db' => [
             'class' => 'yii\db\Connection',
-            'dsn' => 'mysql:host=localhost;dbname=yii2advanced',
-            'username' => 'root',
-            'password' => '',
+            'dsn' => 'mysql:host=' . (getenv('MYSQL_HOST') ?: 'localhost') . ';dbname=' . (getenv('MYSQL_DB') ?: 'yii2advanced'),
+            'username' => getenv('MYSQL_USERNAME') ?: 'root',
+            'password' => getenv('MYSQL_PASSWORD') ?: '',
+            'charset' => 'utf8',
+        ],
+        'pluginDb' => [
+            'class' => 'yii\db\Connection',
+            'dsn' => 'mysql:host=' . (getenv('PLUGIN_MYSQL_HOST') ?: getenv('MYSQL_HOST') ?: 'localhost')
+                     . ';dbname=' . (getenv('PLUGIN_MYSQL_DB') ?: 'bujiaban_plugin'),
+            'username' => getenv('PLUGIN_MYSQL_USERNAME') ?: getenv('MYSQL_USERNAME') ?: 'root',
+            'password' => getenv('PLUGIN_MYSQL_PASSWORD') ?: getenv('MYSQL_PASSWORD') ?: '',
             'charset' => 'utf8',
         ],
         'mailer' => [

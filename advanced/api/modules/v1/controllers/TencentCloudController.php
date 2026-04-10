@@ -9,6 +9,7 @@ use TencentCloud\Sts\V20180813\Models\GetFederationTokenRequest;
 // 导入可选配置类
 use TencentCloud\Sts\V20180813\StsClient;
 use Yii;
+use yii\rest\Controller;
 use yii\rest\ActiveController;
 use OpenApi\Annotations as OA;
 
@@ -18,10 +19,10 @@ use OpenApi\Annotations as OA;
  *     description="腾讯云服务接口"
  * )
  */
-class TencentCloudController extends ActiveController
+class TencentCloudController extends Controller
 {
     
-    public $modelClass = 'api\modules\v1\models\Meta';
+   // public $modelClass = 'api\modules\v1\models\Meta';
     public function behaviors()
     {
         $behaviors = parent::behaviors();
@@ -71,6 +72,11 @@ class TencentCloudController extends ActiveController
         $cloud = Yii::$app->secret->cloud;
         return $cloud;
     }
+    public function actionPublicToken()
+    {
+        $cloud = Yii::$app->secret->cloud['public'];
+        return $this->actionToken($cloud['bucket'], $cloud['region']);
+    }
 
     /**
      * @OA\Get(
@@ -106,7 +112,10 @@ class TencentCloudController extends ActiveController
      */
     public function actionToken($bucket, $region = 'ap-nanjing')
     {
-        
+        //如果$bucket为空，则使用默认值
+        if (empty($bucket)) {
+            $bucket = Yii::$app->secret->cloud['bucket'];
+        }
         $cred = new Credential(Yii::$app->secret->id, Yii::$app->secret->key);
         
         // 实例化一个http选项，可选的，没有特殊需求可以跳过
