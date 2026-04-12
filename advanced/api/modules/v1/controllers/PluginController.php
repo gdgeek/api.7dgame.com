@@ -99,6 +99,7 @@ class PluginController extends \yii\rest\Controller
                 'username' => $user->username,
                 'nickname' => $user->nickname,
                 'roles' => $roles,
+                'organizations' => User::normalizeOrganizations($user->organizations ?? []),
             ],
         ];
     }
