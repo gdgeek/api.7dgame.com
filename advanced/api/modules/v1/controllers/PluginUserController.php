@@ -3,8 +3,8 @@
 namespace api\modules\v1\controllers;
 
 use api\modules\v1\models\User;
-use common\models\PluginPermissionConfig;
 use api\modules\v1\components\RateLimiter;
+use api\modules\v1\components\PluginUserRolePolicy;
 use api\modules\v1\services\EmailService;
 use mdm\admin\components\AccessControl;
 use bizley\jwt\JwtHttpBearerAuth;
@@ -100,7 +100,7 @@ class PluginUserController extends \yii\rest\Controller
             return $result;
         }
 
-        $allowed = PluginPermissionConfig::checkPermission($result['roles'], self::PLUGIN_NAME, $action);
+        $allowed = Yii::$app->authManager->checkAccess($result['user']->id, self::PLUGIN_NAME . '.' . $action);
         if (!$allowed) {
             Yii::$app->response->statusCode = 403;
             return ['error' => ['code' => 2003, 'message' => '没有权限执行此操作']];
@@ -114,12 +114,7 @@ class PluginUserController extends \yii\rest\Controller
      */
     protected function getRoleLevel($roles): int
     {
-        $maxLevel = 0;
-        foreach ($roles as $role) {
-            $level = self::ROLE_LEVELS[$role] ?? 0;
-            $maxLevel = max($maxLevel, $level);
-        }
-        return $maxLevel;
+        return PluginUserRolePolicy::getRoleLevel($roles);
     }
 
     // ==================== 用户管理 CRUD ====================
@@ -553,24 +548,11 @@ class PluginUserController extends \yii\rest\Controller
             return ['code' => 4004, 'message' => '用户不存在'];
         }
 
-        $operatorLevel = $this->getRoleLevel($result['roles']);
         $targetRoles = array_keys(Yii::$app->authManager->getRolesByUser($id));
-
-        if (in_array('root', $targetRoles, true)) {
-            Yii::$app->response->statusCode = 403;
-            return ['code' => 2006, 'message' => 'root 用户角色不可修改'];
-        }
-
-        $targetLevel = $this->getRoleLevel($targetRoles);
-        $newLevel = self::ROLE_LEVELS[$role];
-
-        if ($targetLevel > $operatorLevel) {
-            Yii::$app->response->statusCode = 403;
-            return ['code' => 2004, 'message' => '不能修改比自己角色级别高的用户'];
-        }
-        if ($newLevel > $operatorLevel) {
-            Yii::$app->response->statusCode = 403;
-            return ['code' => 2005, 'message' => '不能赋予高于自己角色级别的角色'];
+        $policyError = PluginUserRolePolicy::validateRoleChange($result['roles'], $targetRoles, $role);
+        if ($policyError !== null) {
+            Yii::$app->response->statusCode = in_array($policyError['code'], [2004, 2005, 2006], true) ? 403 : 400;
+            return $policyError;
         }
 
         $authManager = Yii::$app->authManager;
