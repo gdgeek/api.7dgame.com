@@ -20,6 +20,16 @@ class m260412_000100_register_user_management_rbac_permissions extends Migration
     {
         $now = time();
 
+        foreach (self::ROLES as $role) {
+            $this->upsert('{{%auth_item}}', [
+                'name' => $role,
+                'type' => 1,
+                'description' => $role,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ], false);
+        }
+
         foreach (self::PERMISSIONS as $permission) {
             $this->upsert('{{%auth_item}}', [
                 'name' => $permission,
