@@ -31,7 +31,10 @@ class PluginController extends \yii\rest\Controller
         $behaviors['authenticator'] = [
             'class' => CompositeAuth::class,
             'authMethods' => [
-                JwtHttpBearerAuth::class,
+                [
+                    'class' => JwtHttpBearerAuth::class,
+                    'throwException' => false,
+                ],
             ],
             'except' => ['options'],
         ];
