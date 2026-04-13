@@ -144,6 +144,19 @@ return [
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/organization',
+                    'pluralize' => false,
+                    'only' => ['list', 'create', 'update', 'bind-user', 'unbind-user'],
+                    'extraPatterns' => [
+                        'GET list' => 'list',
+                        'POST create' => 'create',
+                        'POST update' => 'update',
+                        'POST bind-user' => 'bind-user',
+                        'POST unbind-user' => 'unbind-user',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/tencent-cloud',
                     'extraPatterns' => [
                         'GET token' => 'token',
