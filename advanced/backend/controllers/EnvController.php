@@ -132,6 +132,8 @@ class EnvController extends Controller
                 'APP_DEBUG' => ['description' => '调试模式', 'required' => false, 'default' => 'false'],
                 'APP_TITLE' => ['description' => '应用标题', 'required' => false],
                 'APP_VERSION' => ['description' => '应用版本', 'required' => false],
+                'PLUGIN_USER_MANAGEMENT_URL' => ['description' => 'user-management 插件注册地址', 'required' => false],
+                'PLUGIN_SYSTEM_ADMIN_URL' => ['description' => 'system-admin 插件注册地址', 'required' => false],
             ],
             '应用信息 (MRPP)' => [
                 'MRPP_TITLE' => ['description' => '应用标题', 'required' => false],
