@@ -22,13 +22,13 @@ Yii::setAlias('@tests', __DIR__ . '/tests');
 $isDocker = getenv('DOCKER_ENV') === 'true' || file_exists('/.dockerenv');
 
 // Database configuration
-$dbHost = $isDocker ? 'db' : '127.0.0.1';
-$dbName = $isDocker ? 'bujiaban' : 'yii2_advanced_test';
-$dbUser = $isDocker ? 'bujiaban' : 'root';
-$dbPass = $isDocker ? 'local_dev_password' : 'root';
+$dbHost = getenv('MYSQL_HOST') ?: ($isDocker ? 'db' : '127.0.0.1');
+$dbName = getenv('MYSQL_DB') ?: ($isDocker ? 'bujiaban' : 'yii2_advanced_test');
+$dbUser = getenv('MYSQL_USERNAME') ?: ($isDocker ? 'bujiaban' : 'root');
+$dbPass = getenv('MYSQL_PASSWORD') ?: ($isDocker ? 'local_dev_password' : 'root');
 
 // Redis configuration
-$redisHost = $isDocker ? 'redis' : '127.0.0.1';
+$redisHost = getenv('REDIS_HOST') ?: ($isDocker ? 'redis' : '127.0.0.1');
 
 // Create a minimal application for tests
 new \yii\console\Application([
