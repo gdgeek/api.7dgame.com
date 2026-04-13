@@ -2,7 +2,9 @@
 
 namespace api\modules\v1\controllers;
 
+use api\modules\v1\models\Organization;
 use api\modules\v1\models\User;
+use api\modules\v1\models\UserOrganization;
 use api\modules\v1\components\RateLimiter;
 use api\modules\v1\components\PluginUserRolePolicy;
 use api\modules\v1\services\EmailService;
@@ -120,6 +122,105 @@ class PluginUserController extends \yii\rest\Controller
         return PluginUserRolePolicy::getRoleLevel($roles);
     }
 
+    /**
+     * 解析组织 ID 数组。
+     * create-user：缺省等同于空数组
+     * update-user：缺省表示不修改组织绑定
+     */
+    protected function resolveOrganizationIds(array $bodyParams, bool $defaultToEmptyArray = false): array|null
+    {
+        if (!array_key_exists('organization_ids', $bodyParams)) {
+            return $defaultToEmptyArray ? [] : null;
+        }
+
+        $rawValue = $bodyParams['organization_ids'];
+        if (!is_array($rawValue)) {
+            Yii::$app->response->statusCode = 422;
+            return ['error' => ['code' => 4220, 'message' => 'organization_ids 必须为数组']];
+        }
+
+        $organizationIds = [];
+        foreach ($rawValue as $value) {
+            if (is_int($value)) {
+                $organizationId = $value;
+            } elseif (is_string($value) && ctype_digit($value)) {
+                $organizationId = (int)$value;
+            } else {
+                Yii::$app->response->statusCode = 422;
+                return ['error' => ['code' => 4220, 'message' => 'organization_ids 仅允许正整数']];
+            }
+
+            if ($organizationId <= 0) {
+                Yii::$app->response->statusCode = 422;
+                return ['error' => ['code' => 4220, 'message' => 'organization_ids 仅允许正整数']];
+            }
+
+            $organizationIds[] = $organizationId;
+        }
+
+        $organizationIds = array_values(array_unique($organizationIds));
+        sort($organizationIds);
+
+        if (empty($organizationIds)) {
+            return [];
+        }
+
+        $existingCount = (int)Organization::find()
+            ->where(['id' => $organizationIds])
+            ->count();
+
+        if ($existingCount !== count($organizationIds)) {
+            Yii::$app->response->statusCode = 422;
+            return ['error' => ['code' => 4220, 'message' => '存在无效的 organization_ids']];
+        }
+
+        return $organizationIds;
+    }
+
+    /**
+     * 用最终组织集合替换用户组织绑定。
+     */
+    protected function replaceUserOrganizations(int $userId, array $organizationIds): array|null
+    {
+        UserOrganization::deleteAll(['user_id' => $userId]);
+
+        foreach ($organizationIds as $organizationId) {
+            $binding = new UserOrganization([
+                'user_id' => $userId,
+                'organization_id' => $organizationId,
+            ]);
+
+            if (!$binding->save()) {
+                Yii::$app->response->statusCode = 422;
+                return [
+                    'code' => 4220,
+                    'message' => '保存用户组织关系失败',
+                    'errors' => $binding->getErrors(),
+                ];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 统一序列化用户管理返回体。
+     */
+    protected function serializeManagedUser(User $user, array $roles): array
+    {
+        return [
+            'id' => $user->id,
+            'username' => $user->username,
+            'nickname' => $user->nickname ?? $user->username,
+            'email' => $user->email,
+            'status' => $user->status,
+            'created_at' => $user->created_at,
+            'updated_at' => $user->updated_at,
+            'roles' => $roles,
+            'organizations' => User::normalizeOrganizations($user->organizations),
+        ];
+    }
+
     // ==================== 用户管理 CRUD ====================
 
     /**
@@ -174,16 +275,7 @@ class PluginUserController extends \yii\rest\Controller
             $roles = array_keys(Yii::$app->authManager->getRolesByUser($id));
             return [
                 'code' => 0,
-                'data' => [
-                    'id' => $user->id,
-                    'username' => $user->username,
-                    'nickname' => $user->nickname,
-                    'email' => $user->email,
-                    'status' => $user->status,
-                    'created_at' => $user->created_at,
-                    'updated_at' => $user->updated_at,
-                    'roles' => $roles,
-                ],
+                'data' => $this->serializeManagedUser($user, $roles),
             ];
         }
 
@@ -282,6 +374,10 @@ class PluginUserController extends \yii\rest\Controller
         $password = $request->getBodyParam('password');
         $email = $request->getBodyParam('email', '');
         $status = $request->getBodyParam('status', 10);
+        $organizationIds = $this->resolveOrganizationIds($request->getBodyParams(), true);
+        if (is_array($organizationIds) && isset($organizationIds['error'])) {
+            return $organizationIds['error'];
+        }
 
         if (empty($username) || empty($password)) {
             Yii::$app->response->statusCode = 400;
@@ -303,30 +399,41 @@ class PluginUserController extends \yii\rest\Controller
         $user->status = (int)$status;
         $user->created_at = $now;
         $user->updated_at = $now;
+        $authManager = Yii::$app->authManager;
 
-        if (!$user->save(false)) {
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            if (!$user->save(false)) {
+                $transaction->rollBack();
+                Yii::$app->response->statusCode = 500;
+                return ['code' => 5000, 'message' => '创建用户失败'];
+            }
+
+            // 分配默认角色 user
+            $roleObj = $authManager->getRole('user');
+            if ($roleObj) {
+                $authManager->assign($roleObj, $user->id);
+            }
+
+            $organizationError = $this->replaceUserOrganizations((int)$user->id, $organizationIds ?? []);
+            if ($organizationError !== null) {
+                $transaction->rollBack();
+                return $organizationError;
+            }
+
+            $transaction->commit();
+        } catch (\Throwable $e) {
+            if ($transaction->isActive) {
+                $transaction->rollBack();
+            }
+
             Yii::$app->response->statusCode = 500;
             return ['code' => 5000, 'message' => '创建用户失败'];
         }
 
-        // 分配默认角色 user
-        $authManager = Yii::$app->authManager;
-        $roleObj = $authManager->getRole('user');
-        if ($roleObj) {
-            $authManager->assign($roleObj, $user->id);
-        }
-
         return [
             'code' => 0,
-            'data' => [
-                'id' => $user->id,
-                'username' => $user->username,
-                'email' => $user->email,
-                'status' => $user->status,
-                'created_at' => $user->created_at,
-                'updated_at' => $user->updated_at,
-                'roles' => ['user'],
-            ],
+            'data' => $this->serializeManagedUser($user, ['user']),
         ];
     }
 
@@ -463,6 +570,10 @@ class PluginUserController extends \yii\rest\Controller
         }
 
         $updated = false;
+        $organizationIds = $this->resolveOrganizationIds($request->getBodyParams(), false);
+        if (is_array($organizationIds) && isset($organizationIds['error'])) {
+            return $organizationIds['error'];
+        }
         $username = $request->getBodyParam('username');
         $email = $request->getBodyParam('email');
         $status = $request->getBodyParam('status');
@@ -475,25 +586,43 @@ class PluginUserController extends \yii\rest\Controller
             $user->password_hash = Yii::$app->security->generatePasswordHash($password);
             $updated = true;
         }
+        if ($organizationIds !== null) {
+            $updated = true;
+        }
 
         if (!$updated) {
             Yii::$app->response->statusCode = 400;
             return ['code' => 4001, 'message' => '没有要更新的字段'];
         }
 
-        $user->updated_at = time();
-        $user->save(false);
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            $user->updated_at = time();
+            $user->save(false);
+
+            if ($organizationIds !== null) {
+                $organizationError = $this->replaceUserOrganizations((int)$user->id, $organizationIds);
+                if ($organizationError !== null) {
+                    $transaction->rollBack();
+                    return $organizationError;
+                }
+            }
+
+            $transaction->commit();
+        } catch (\Throwable $e) {
+            if ($transaction->isActive) {
+                $transaction->rollBack();
+            }
+
+            Yii::$app->response->statusCode = 500;
+            return ['code' => 5000, 'message' => '更新用户失败'];
+        }
+
+        $roles = array_keys(Yii::$app->authManager->getRolesByUser($user->id));
 
         return [
             'code' => 0,
-            'data' => [
-                'id' => $user->id,
-                'username' => $user->username,
-                'email' => $user->email,
-                'status' => $user->status,
-                'created_at' => $user->created_at,
-                'updated_at' => $user->updated_at,
-            ],
+            'data' => $this->serializeManagedUser($user, $roles),
         ];
     }
 
