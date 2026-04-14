@@ -56,6 +56,60 @@ class PersonController extends ActiveController
 
         return $dataProvider;
     }
+    protected function findManagedUserById(int $id)
+    {
+        return User::findOne($id);
+    }
+
+    protected function normalizeOrganizationsForResponse(iterable $organizations): array
+    {
+        return User::normalizeOrganizations($organizations);
+    }
+
+    public function actionUpdate($id)
+    {
+        $user = $this->findManagedUserById((int) $id);
+        if ($user == null) {
+            throw new BadRequestHttpException('没有user');
+        }
+
+        $roles = Yii::$app->user->identity->roles ?? [];
+
+        if (Yii::$app->user->identity->id == $user->id) {
+            throw new BadRequestHttpException('不能修改自己');
+        }
+        if (in_array('root', $user->roles, true)) {
+            throw new BadRequestHttpException('root用户不可修改');
+        }
+        if (
+            !in_array('root', $roles, true)
+            && (in_array('admin', $user->roles, true) || in_array('manager', $user->roles, true))
+        ) {
+            throw new BadRequestHttpException('权限不足');
+        }
+        if (!in_array('root', $roles, true) && !in_array('admin', $roles, true)) {
+            throw new BadRequestHttpException('权限不足');
+        }
+
+        $body = Yii::$app->request->getBodyParams();
+        if (!array_key_exists('nickname', $body)) {
+            throw new BadRequestHttpException('缺乏 nickname 数据');
+        }
+
+        $nickname = trim((string) $body['nickname']);
+        $user->nickname = $nickname === '' ? null : $nickname;
+        $user->save(false, ['nickname']);
+
+        return [
+            'success' => true,
+            'data' => [
+                'id' => (int) $user->id,
+                'username' => (string) $user->username,
+                'nickname' => $user->nickname,
+                'organizations' => $this->normalizeOrganizationsForResponse($user->organizations ?? []),
+            ],
+        ];
+    }
     public function actionDelete($id)
     {
 
