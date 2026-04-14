@@ -17,7 +17,7 @@ class TestController extends ActiveController
 
     /**
      * 数据库连接调试页面
-     * GET /v1/tests/db-debug
+     * GET /v1/test/db-debug
      */
     public function actionDbDebug()
     {
@@ -28,9 +28,6 @@ class TestController extends ActiveController
 
         // 测试主数据库 (db)
         $result['connections']['db'] = $this->testConnection('db', 'bujiaban');
-
-        // 测试插件数据库 (pluginDb)
-        $result['connections']['pluginDb'] = $this->testConnection('pluginDb', 'bujiaban_plugin');
 
         // 测试 Redis
         $result['connections']['redis'] = $this->testRedis();

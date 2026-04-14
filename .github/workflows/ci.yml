@@ -4,7 +4,7 @@ on:
   push:
     branches: ['*']  # 所有分支 push 都触发 test
   pull_request:
-    branches: [main, master]
+    branches: [main]
 
 jobs:
   # 阶段1: 测试
@@ -209,7 +209,6 @@ jobs:
       github.event_name == 'push' && (
         github.ref == 'refs/heads/publish' ||
         github.ref == 'refs/heads/main' ||
-        github.ref == 'refs/heads/master' ||
         github.ref == 'refs/heads/develop'
       )
     steps:
@@ -260,7 +259,7 @@ jobs:
           # Build image with branch name tag
           docker build -t hkccr.ccs.tencentyun.com/gdgeek/api:${BRANCH_NAME} -f docker/Release .
           
-          # Push 分支名 tag（publish / main / master / develop）
+          # Push 分支名 tag（publish / main / develop）
           docker push hkccr.ccs.tencentyun.com/gdgeek/api:${BRANCH_NAME}
           
           # Push latest tag（仅 publish 分支）

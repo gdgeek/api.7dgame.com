@@ -130,6 +130,13 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
 
     }
 
+    public function getOrganizations()
+    {
+        return $this->hasMany(Organization::class, ['id' => 'organization_id'])
+            ->viaTable('{{%user_organization}}', ['user_id' => 'id'])
+            ->orderBy(['title' => SORT_ASC, 'id' => SORT_ASC]);
+    }
+
 
     public static function findByRefreshToken($refreshToken)
     {
@@ -183,6 +190,35 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
 
         return $this->toArray(['username', 'nickname']);
 
+    }
+
+    public static function normalizeOrganizations(iterable $organizations): array
+    {
+        $items = [];
+
+        foreach ($organizations as $organization) {
+            if (is_array($organization)) {
+                $id = $organization['id'] ?? null;
+                $name = $organization['name'] ?? null;
+                $title = $organization['title'] ?? null;
+            } else {
+                $id = $organization->id ?? null;
+                $name = $organization->name ?? null;
+                $title = $organization->title ?? null;
+            }
+
+            if ($id === null || $name === null || $title === null) {
+                continue;
+            }
+
+            $items[] = [
+                'id' => (int)$id,
+                'name' => (string)$name,
+                'title' => (string)$title,
+            ];
+        }
+
+        return $items;
     }
 
     //生成token

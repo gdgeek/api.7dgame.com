@@ -3,7 +3,6 @@
 namespace api\modules\v1\controllers;
 
 use api\modules\v1\models\User;
-use common\models\PluginPermissionConfig;
 use api\modules\v1\components\RateLimiter;
 use api\modules\v1\services\EmailService;
 use mdm\admin\components\AccessControl;
@@ -17,7 +16,7 @@ use yii\web\Response;
  *
  * 端点：
  * - GET /v1/plugin/verify-token   验证 JWT Token 并返回用户信息
- * - GET /v1/plugin/check-permission  检查用户是否有权限执行某插件操作
+ * - POST /v1/plugin/send-email    通过主后端发送邮件
  */
 class PluginController extends \yii\rest\Controller
 {
@@ -37,12 +36,12 @@ class PluginController extends \yii\rest\Controller
                     'throwException' => false,
                 ],
             ],
-            'except' => ['options', 'list'],
+            'except' => ['options'],
         ];
 
         $behaviors['access'] = [
             'class' => AccessControl::class,
-            'allowActions' => ['options', 'list'],
+            'allowActions' => ['options'],
         ];
 
         return $behaviors;
@@ -56,10 +55,7 @@ class PluginController extends \yii\rest\Controller
     {
         return [
             'verify-token' => ['GET'],
-            'check-permission' => ['GET'],
-            'allowed-actions' => ['GET'],
             'send-email' => ['POST'],
-            'list' => ['GET'],
         ];
     }
 
@@ -103,93 +99,7 @@ class PluginController extends \yii\rest\Controller
                 'username' => $user->username,
                 'nickname' => $user->nickname,
                 'roles' => $roles,
-            ],
-        ];
-    }
-
-    /**
-     * GET /v1/plugin/check-permission
-     * 检查用户是否有权限执行某插件操作
-     */
-    public function actionCheckPermission()
-    {
-        Yii::$app->response->format = Response::FORMAT_JSON;
-
-        $request = Yii::$app->request;
-        $pluginName = $request->get('plugin_name');
-        $action = $request->get('action');
-
-        // 验证必要参数
-        if (empty($pluginName) || empty($action)) {
-            Yii::$app->response->statusCode = 400;
-            return [
-                'code' => 2001,
-                'message' => '缺少必要参数: plugin_name, action',
-            ];
-        }
-
-        $result = $this->resolveUser();
-
-        if (isset($result['error'])) {
-            return $result['error'];
-        }
-
-        /** @var User $user */
-        $user = $result['user'];
-        $roles = $result['roles'];
-
-        // 查询 plugin_permission_config 表判定权限
-        $allowed = PluginPermissionConfig::checkPermission($roles, $pluginName, $action);
-
-        return [
-            'code' => 0,
-            'message' => 'ok',
-            'data' => [
-                'allowed' => $allowed,
-                'user_id' => $user->id,
-                'roles' => $roles,
-            ],
-        ];
-    }
-
-    /**
-     * GET /v1/plugin/allowed-actions
-     * 批量获取用户在某插件下的所有允许操作
-     */
-    public function actionAllowedActions()
-    {
-        Yii::$app->response->format = Response::FORMAT_JSON;
-
-        $request = Yii::$app->request;
-        $pluginName = $request->get('plugin_name');
-
-        if (empty($pluginName)) {
-            Yii::$app->response->statusCode = 400;
-            return [
-                'code' => 2001,
-                'message' => '缺少必要参数: plugin_name',
-            ];
-        }
-
-        $result = $this->resolveUser();
-
-        if (isset($result['error'])) {
-            return $result['error'];
-        }
-
-        /** @var User $user */
-        $user = $result['user'];
-        $roles = $result['roles'];
-
-        $actions = PluginPermissionConfig::getAllowedActions($roles, $pluginName);
-
-        return [
-            'code' => 0,
-            'message' => 'ok',
-            'data' => [
-                'actions' => $actions,
-                'user_id' => $user->id,
-                'roles' => $roles,
+                'organizations' => User::normalizeOrganizations($user->organizations ?? []),
             ],
         ];
     }
@@ -319,112 +229,5 @@ class PluginController extends \yii\rest\Controller
                 'type' => $type,
             ],
         ];
-    }
-
-    /**
-     * 按 id 字段合并两个行数组，$override 中同 id 的记录覆盖 $base，新 id 追加。
-     */
-    private function mergeById(array $base, array $override): array
-    {
-        if (empty($override)) return $base;
-        $map = [];
-        foreach ($base as $row) {
-            $map[$row['id']] = $row;
-        }
-        foreach ($override as $row) {
-            $map[$row['id']] = $row;
-        }
-        return array_values($map);
-    }
-
-    /**
-     * GET /v1/plugin/list
-     * 获取插件列表和菜单分组（三层合并：通用默认 + 域名专属叠加）
-     */
-    public function actionList()
-    {
-        Yii::$app->response->format = Response::FORMAT_JSON;
-
-        $domain = Yii::$app->request->get('domain');
-
-        try {
-            $pluginDb = Yii::$app->get('pluginDb');
-        } catch (\Throwable $e) {
-            Yii::error('[PluginController] Failed to get pluginDb: ' . $e->getMessage(), 'plugin');
-            return [
-                'code' => 5001,
-                'message' => 'pluginDb connection failed: ' . $e->getMessage(),
-            ];
-        }
-
-        try {
-            // 查询菜单分组：通用（domain=NULL）为基础，域名专属按 id 叠加覆盖
-            $generalGroups = (new \yii\db\Query())->from('plugin_menu_groups')
-                ->where(['domain' => null])->orderBy(['order' => SORT_ASC])->all($pluginDb);
-            $domainGroups = $domain ? (new \yii\db\Query())->from('plugin_menu_groups')
-                ->where(['domain' => $domain])->orderBy(['order' => SORT_ASC])->all($pluginDb) : [];
-            $groups = $this->mergeById($generalGroups, $domainGroups);
-
-            // 查询插件列表：通用（domain=NULL）为基础，域名专属按 id 叠加覆盖
-            $generalPlugins = (new \yii\db\Query())->from('plugins')
-                ->where(['domain' => null, 'enabled' => 1])->orderBy(['order' => SORT_ASC])->all($pluginDb);
-            $domainPlugins = $domain ? (new \yii\db\Query())->from('plugins')
-                ->where(['domain' => $domain, 'enabled' => 1])->orderBy(['order' => SORT_ASC])->all($pluginDb) : [];
-            $plugins = $this->mergeById($generalPlugins, $domainPlugins);
-        } catch (\Throwable $e) {
-            Yii::error('[PluginController] actionList query failed (pluginDb): ' . $e->getMessage(), 'plugin');
-            return [
-                'code' => 5000,
-                'message' => 'pluginDb query failed: ' . $e->getMessage(),
-            ];
-        }
-
-        // 转换字段名以兼容前端 plugins.json 格式
-        $formattedGroups = array_map(function ($g) {
-            return [
-                'id' => $g['id'],
-                'name' => $g['name'],
-                'nameI18n' => $this->decodeJsonField($g['name_i18n']),
-                'icon' => $g['icon'],
-                'order' => (int)$g['order'],
-            ];
-        }, $groups);
-
-        $formattedPlugins = array_map(function ($p) {
-            return [
-                'id' => $p['id'],
-                'name' => $p['name'],
-                'nameI18n' => $this->decodeJsonField($p['name_i18n']),
-                'description' => $p['description'],
-                'url' => $p['url'],
-                'icon' => $p['icon'],
-                'group' => $p['group_id'],
-                'enabled' => (bool)$p['enabled'],
-                'order' => (int)$p['order'],
-                'allowedOrigin' => $p['allowed_origin'],
-                'version' => $p['version'],
-            ];
-        }, $plugins);
-
-        return [
-            'version' => '1.0.0',
-            'menuGroups' => $formattedGroups,
-            'plugins' => $formattedPlugins,
-        ];
-    }
-
-    /**
-     * 安全解码 JSON 字段，处理可能的双重编码（MySQL JSON 列有时返回字符串而非数组）
-     */
-    private function decodeJsonField($value)
-    {
-        if ($value === null || $value === '') return null;
-        if (is_array($value)) return $value;
-        $decoded = json_decode($value, true);
-        // 如果解码后仍是字符串，说明被双重编码了，再解一次
-        if (is_string($decoded)) {
-            $decoded = json_decode($decoded, true);
-        }
-        return is_array($decoded) ? $decoded : null;
     }
 }
