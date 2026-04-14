@@ -73,6 +73,15 @@ class Person extends \yii\db\ActiveRecord
         $fields['roles'] = function () {return $this->roles;};
         return $fields;
     }
+
+    public function extraFields()
+    {
+        return [
+            'organizations' => function () {
+                return User::normalizeOrganizations($this->organizations ?? []);
+            },
+        ];
+    }
     /**
      * {@inheritdoc}
      */
@@ -120,6 +129,13 @@ class Person extends \yii\db\ActiveRecord
     public function getUserInfo()
     {
         return $this->hasOne(UserInfo::className(), ['user_id' => 'id']);
+    }
+
+    public function getOrganizations()
+    {
+        return $this->hasMany(Organization::className(), ['id' => 'organization_id'])
+            ->viaTable('{{%user_organization}}', ['user_id' => 'id'])
+            ->orderBy(['title' => SORT_ASC, 'id' => SORT_ASC]);
     }
 
 }

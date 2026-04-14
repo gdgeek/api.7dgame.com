@@ -85,6 +85,7 @@ class UserController extends \yii\rest\Controller
             'userData' => $user->data,
             'userInfo' => $user->userInfo,
             'roles' => $user->roles,
+            'organizations' => User::normalizeOrganizations($user->organizations ?? []),
             'email' => $user->email,
             'emailVerified' => $emailVerified,
             'emailVerifiedAt' => $user->email_verified_at,
