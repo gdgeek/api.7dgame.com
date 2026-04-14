@@ -335,16 +335,7 @@ class PluginUserController extends \yii\rest\Controller
         $data = [];
         foreach ($users as $u) {
             $roles = array_keys(Yii::$app->authManager->getRolesByUser($u->id));
-            $data[] = [
-                'id' => $u->id,
-                'username' => $u->username,
-                'nickname' => $u->nickname,
-                'email' => $u->email,
-                'status' => $u->status,
-                'created_at' => $u->created_at,
-                'updated_at' => $u->updated_at,
-                'roles' => $roles,
-            ];
+            $data[] = $this->serializeManagedUser($u, $roles);
         }
 
         return [
@@ -371,6 +362,7 @@ class PluginUserController extends \yii\rest\Controller
 
         $request = Yii::$app->request;
         $username = $request->getBodyParam('username');
+        $nickname = trim((string)$request->getBodyParam('nickname', ''));
         $password = $request->getBodyParam('password');
         $email = $request->getBodyParam('email', '');
         $status = $request->getBodyParam('status', 10);
@@ -393,6 +385,7 @@ class PluginUserController extends \yii\rest\Controller
         $now = time();
         $user = new User();
         $user->username = $username;
+        $user->nickname = $nickname === '' ? null : $nickname;
         $user->email = $email;
         $user->password_hash = Yii::$app->security->generatePasswordHash($password);
         $user->auth_key = Yii::$app->security->generateRandomString();
@@ -574,12 +567,16 @@ class PluginUserController extends \yii\rest\Controller
         if (is_array($organizationIds) && isset($organizationIds['error'])) {
             return $organizationIds['error'];
         }
-        $username = $request->getBodyParam('username');
+        $nickname = $request->getBodyParam('nickname');
         $email = $request->getBodyParam('email');
         $status = $request->getBodyParam('status');
         $password = $request->getBodyParam('password');
 
-        if ($username !== null) { $user->username = $username; $updated = true; }
+        if ($nickname !== null) {
+            $normalizedNickname = trim((string)$nickname);
+            $user->nickname = $normalizedNickname === '' ? null : $normalizedNickname;
+            $updated = true;
+        }
         if ($email !== null) { $user->email = $email; $updated = true; }
         if ($status !== null) { $user->status = (int)$status; $updated = true; }
         if (!empty($password)) {

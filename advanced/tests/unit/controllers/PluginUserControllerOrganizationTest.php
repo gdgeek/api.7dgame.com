@@ -80,6 +80,7 @@ final class PluginUserControllerOrganizationTest extends TestCase
         $this->bootAuthenticatedOperator($operator->id, ['create-user']);
         Yii::$app->set('request', new PluginUserTestRequest([], [
             'username' => self::CREATE_TARGET_USERNAME,
+            'nickname' => 'Created Nickname',
             'password' => 'secret123',
             'email' => 'created@example.com',
             'status' => 10,
@@ -97,6 +98,8 @@ final class PluginUserControllerOrganizationTest extends TestCase
             ->all();
 
         $this->assertSame(0, $result['code']);
+        $this->assertSame('Created Nickname', $createdUser->nickname);
+        $this->assertSame('Created Nickname', $result['data']['nickname']);
         $this->assertCount(2, $bindings);
         $this->assertSame(
             [$organizationA->id, $organizationB->id],
@@ -130,7 +133,7 @@ final class PluginUserControllerOrganizationTest extends TestCase
         $this->assertNull(User::findOne(['username' => self::CREATE_TARGET_USERNAME]));
     }
 
-    public function testUpdateUserCanReplaceOrganizationsWithoutOtherFieldChanges(): void
+    public function testUpdateUserCanReplaceOrganizationsAndUpdateNicknameWithoutRenamingUsername(): void
     {
         $operator = $this->createUser(self::OPERATOR_USERNAME, 'operator@example.com');
         $target = $this->createUser(self::UPDATE_TARGET_USERNAME, 'update@example.com');
@@ -142,12 +145,15 @@ final class PluginUserControllerOrganizationTest extends TestCase
         $this->bootAuthenticatedOperator($operator->id, ['update-user']);
         Yii::$app->set('request', new PluginUserTestRequest([], [
             'id' => $target->id,
+            'username' => 'renamed-attempt',
+            'nickname' => 'Updated Nickname',
             'organization_ids' => [$organizationB->id],
         ]));
         Yii::$app->set('response', new Response());
 
         $controller = new PluginUserController('plugin-user', Yii::$app->getModule('v1'));
         $result = $controller->actionUpdateUser();
+        $target->refresh();
 
         $bindings = UserOrganization::find()
             ->where(['user_id' => $target->id])
@@ -155,6 +161,9 @@ final class PluginUserControllerOrganizationTest extends TestCase
             ->all();
 
         $this->assertSame(0, $result['code']);
+        $this->assertSame(self::UPDATE_TARGET_USERNAME, $target->username);
+        $this->assertSame('Updated Nickname', $target->nickname);
+        $this->assertSame('Updated Nickname', $result['data']['nickname']);
         $this->assertSame([$organizationB->id], array_map(
             static fn (UserOrganization $binding): int => (int) $binding->organization_id,
             $bindings
@@ -162,6 +171,36 @@ final class PluginUserControllerOrganizationTest extends TestCase
         $this->assertSame([
             ['id' => $organizationB->id, 'name' => self::ORGANIZATION_NAMES[1], 'title' => 'Global Team'],
         ], $result['data']['organizations']);
+    }
+
+    public function testUsersListIncludesOrganizations(): void
+    {
+        $operator = $this->createUser(self::OPERATOR_USERNAME, 'operator@example.com');
+        $target = $this->createUser(self::DETAIL_TARGET_USERNAME, 'detail@example.com');
+        $organization = $this->createOrganization('North Team', self::ORGANIZATION_NAMES[2]);
+
+        $this->bindOrganization($target->id, $organization->id);
+        $this->bootAuthenticatedOperator($operator->id, ['list-users']);
+        Yii::$app->set('request', new PluginUserTestRequest(['page' => '1', 'pageSize' => '20'], []));
+        Yii::$app->set('response', new Response());
+
+        $controller = new PluginUserController('plugin-user', Yii::$app->getModule('v1'));
+        $result = $controller->actionUsers();
+
+        $targetRow = null;
+        foreach ($result['data'] as $row) {
+            if (($row['username'] ?? null) === self::DETAIL_TARGET_USERNAME) {
+                $targetRow = $row;
+                break;
+            }
+        }
+
+        $this->assertSame(0, $result['code'] ?? 0);
+        $this->assertNotNull($targetRow);
+        $this->assertArrayHasKey('organizations', $targetRow);
+        $this->assertSame([
+            ['id' => $organization->id, 'name' => self::ORGANIZATION_NAMES[2], 'title' => 'North Team'],
+        ], $targetRow['organizations']);
     }
 
     private function bootAuthenticatedOperator(int $userId, array $allowedActions): void
