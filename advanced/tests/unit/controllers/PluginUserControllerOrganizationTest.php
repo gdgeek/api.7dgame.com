@@ -19,6 +19,10 @@ final class PluginUserControllerOrganizationTest extends TestCase
     private const DETAIL_TARGET_USERNAME = 'plugin-user-org-detail-target';
     private const UPDATE_TARGET_USERNAME = 'plugin-user-org-update-target';
     private const CREATE_TARGET_USERNAME = 'plugin-user-org-create-target';
+    private const BATCH_TARGET_USERNAMES = [
+        'plugin-user-org-batch-target-1',
+        'plugin-user-org-batch-target-2',
+    ];
     private const ORGANIZATION_NAMES = [
         'plugin-user-org-acme',
         'plugin-user-org-global',
@@ -203,6 +207,127 @@ final class PluginUserControllerOrganizationTest extends TestCase
         ], $targetRow['organizations']);
     }
 
+    public function testBatchCreateUsersAllowsMultipleBlankEmailsWithoutServerError(): void
+    {
+        $operator = $this->createUser(self::OPERATOR_USERNAME, 'operator@example.com');
+
+        $this->bootAuthenticatedOperator($operator->id, ['create-user']);
+        Yii::$app->set('request', new PluginUserTestRequest([], [
+            'users' => [
+                [
+                    'username' => self::BATCH_TARGET_USERNAMES[0],
+                    'nickname' => 'Batch Target 1',
+                    'password' => 'secret123',
+                    'role' => 'user',
+                    'status' => 10,
+                ],
+                [
+                    'username' => self::BATCH_TARGET_USERNAMES[1],
+                    'nickname' => 'Batch Target 2',
+                    'password' => 'secret123',
+                    'role' => 'user',
+                    'status' => 10,
+                ],
+            ],
+        ]));
+        Yii::$app->set('response', new Response());
+
+        $controller = new PluginUserController('plugin-user', Yii::$app->getModule('v1'));
+        $result = $controller->actionBatchCreateUsers();
+
+        $createdUsers = User::find()
+            ->where(['username' => self::BATCH_TARGET_USERNAMES])
+            ->orderBy(['username' => SORT_ASC])
+            ->all();
+
+        $this->assertSame(0, $result['code']);
+        $this->assertSame(2, $result['data']['success']);
+        $this->assertSame(0, $result['data']['failed']);
+        $this->assertCount(2, $createdUsers);
+        $this->assertSame([null, null], array_map(
+            static fn (User $user): ?string => $user->email,
+            $createdUsers
+        ));
+    }
+
+    public function testBatchCreateUsersAppliesSharedOrganizationsToEveryCreatedUser(): void
+    {
+        $operator = $this->createUser(self::OPERATOR_USERNAME, 'operator@example.com');
+        $organizationA = $this->createOrganization('Acme Studio', self::ORGANIZATION_NAMES[0]);
+        $organizationB = $this->createOrganization('Global Team', self::ORGANIZATION_NAMES[1]);
+
+        $this->bootAuthenticatedOperator($operator->id, ['create-user']);
+        Yii::$app->set('request', new PluginUserTestRequest([], [
+            'users' => [
+                [
+                    'username' => self::BATCH_TARGET_USERNAMES[0],
+                    'nickname' => 'Batch Target 1',
+                    'password' => 'secret123',
+                    'role' => 'user',
+                    'status' => 10,
+                ],
+                [
+                    'username' => self::BATCH_TARGET_USERNAMES[1],
+                    'nickname' => 'Batch Target 2',
+                    'password' => 'secret123',
+                    'role' => 'user',
+                    'status' => 10,
+                ],
+            ],
+            'organization_ids' => [$organizationA->id, $organizationB->id],
+        ]));
+        Yii::$app->set('response', new Response());
+
+        $controller = new PluginUserController('plugin-user', Yii::$app->getModule('v1'));
+        $result = $controller->actionBatchCreateUsers();
+
+        $createdUsers = User::find()
+            ->where(['username' => self::BATCH_TARGET_USERNAMES])
+            ->orderBy(['username' => SORT_ASC])
+            ->all();
+
+        $this->assertSame(0, $result['code']);
+        $this->assertSame(2, $result['data']['success']);
+        foreach ($createdUsers as $createdUser) {
+            $bindings = UserOrganization::find()
+                ->where(['user_id' => $createdUser->id])
+                ->orderBy(['organization_id' => SORT_ASC])
+                ->all();
+
+            $this->assertSame(
+                [$organizationA->id, $organizationB->id],
+                array_map(static fn (UserOrganization $binding): int => (int) $binding->organization_id, $bindings)
+            );
+        }
+    }
+
+    public function testBatchCreateUsersRejectsUnknownSharedOrganizationIds(): void
+    {
+        $operator = $this->createUser(self::OPERATOR_USERNAME, 'operator@example.com');
+
+        $this->bootAuthenticatedOperator($operator->id, ['create-user']);
+        Yii::$app->set('request', new PluginUserTestRequest([], [
+            'users' => [
+                [
+                    'username' => self::BATCH_TARGET_USERNAMES[0],
+                    'nickname' => 'Batch Target 1',
+                    'password' => 'secret123',
+                    'role' => 'user',
+                    'status' => 10,
+                ],
+            ],
+            'organization_ids' => [999999],
+        ]));
+        Yii::$app->set('response', new Response());
+
+        $controller = new PluginUserController('plugin-user', Yii::$app->getModule('v1'));
+        $result = $controller->actionBatchCreateUsers();
+
+        $this->assertSame(422, Yii::$app->response->statusCode);
+        $this->assertSame(4220, $result['code']);
+        $this->assertNull(User::findOne(['username' => self::BATCH_TARGET_USERNAMES[0]]));
+    }
+
     private function bootAuthenticatedOperator(int $userId, array $allowedActions): void
     {
         $webUser = new WebUser([
@@ -289,6 +414,7 @@ final class PluginUserControllerOrganizationTest extends TestCase
                 self::DETAIL_TARGET_USERNAME,
                 self::UPDATE_TARGET_USERNAME,
                 self::CREATE_TARGET_USERNAME,
+                ...self::BATCH_TARGET_USERNAMES,
             ]])
             ->column();
 
