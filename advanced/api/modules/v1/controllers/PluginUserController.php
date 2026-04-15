@@ -178,6 +178,16 @@ class PluginUserController extends \yii\rest\Controller
     }
 
     /**
+     * 将可选邮箱字段标准化为可重复为空的 null，避免唯一索引与空字符串冲突。
+     */
+    protected function normalizeOptionalEmail($value): ?string
+    {
+        $email = trim((string)($value ?? ''));
+
+        return $email === '' ? null : $email;
+    }
+
+    /**
      * 用最终组织集合替换用户组织绑定。
      */
     protected function replaceUserOrganizations(int $userId, array $organizationIds): array|null
@@ -226,8 +236,8 @@ class PluginUserController extends \yii\rest\Controller
 
         if (array_key_exists('email', $bodyParams)) {
             $requestedUpdate = true;
-            $nextEmail = trim((string)$bodyParams['email']);
-            $currentEmail = trim((string)($user->email ?? ''));
+            $nextEmail = $this->normalizeOptionalEmail($bodyParams['email']);
+            $currentEmail = $this->normalizeOptionalEmail($user->email);
 
             if ($currentEmail !== $nextEmail) {
                 $user->email = $nextEmail;
@@ -415,7 +425,7 @@ class PluginUserController extends \yii\rest\Controller
         $username = $request->getBodyParam('username');
         $nickname = trim((string)$request->getBodyParam('nickname', ''));
         $password = $request->getBodyParam('password');
-        $email = $request->getBodyParam('email', '');
+        $email = $this->normalizeOptionalEmail($request->getBodyParam('email'));
         $status = $request->getBodyParam('status', 10);
         $organizationIds = $this->resolveOrganizationIds($request->getBodyParams(), true);
         if (is_array($organizationIds) && isset($organizationIds['error'])) {
@@ -498,6 +508,10 @@ class PluginUserController extends \yii\rest\Controller
 
         $request = Yii::$app->request;
         $users = $request->getBodyParam('users', []);
+        $organizationIds = $this->resolveOrganizationIds($request->getBodyParams(), true);
+        if (is_array($organizationIds) && isset($organizationIds['error'])) {
+            return $organizationIds['error'];
+        }
 
         if (!is_array($users) || count($users) < 1 || count($users) > 100) {
             Yii::$app->response->statusCode = 400;
@@ -516,6 +530,7 @@ class PluginUserController extends \yii\rest\Controller
             $password = $userData['password'] ?? '';
             $role = $userData['role'] ?? '';
             $status = isset($userData['status']) ? (int)$userData['status'] : 10;
+            $email = $this->normalizeOptionalEmail($userData['email'] ?? null);
 
             // 校验 username
             if (empty($username) || mb_strlen($username) > 64) {
@@ -558,24 +573,59 @@ class PluginUserController extends \yii\rest\Controller
             $now = time();
             $user = new User();
             $user->username = $username;
-            $user->nickname = $nickname;
-            $user->email = '';
+            $user->nickname = $nickname === '' ? null : $nickname;
+            $user->email = $email;
             $user->password_hash = Yii::$app->security->generatePasswordHash($password);
             $user->auth_key = Yii::$app->security->generateRandomString();
             $user->status = $status;
             $user->created_at = $now;
             $user->updated_at = $now;
 
-            if (!$user->save(false)) {
+            $transaction = Yii::$app->db->beginTransaction();
+            try {
+                if (!$user->save(false)) {
+                    $transaction->rollBack();
+                    $results[] = ['index' => $index, 'username' => $username, 'success' => false, 'error' => '创建用户失败'];
+                    $failedCount++;
+                    continue;
+                }
+
+                // 分配角色
+                $roleObj = $authManager->getRole($role);
+                if ($roleObj) {
+                    $authManager->assign($roleObj, $user->id);
+                }
+
+                $organizationError = $this->replaceUserOrganizations((int)$user->id, $organizationIds ?? []);
+                if ($organizationError !== null) {
+                    $transaction->rollBack();
+                    $results[] = [
+                        'index' => $index,
+                        'username' => $username,
+                        'success' => false,
+                        'error' => $organizationError['message'] ?? '创建用户失败',
+                    ];
+                    $failedCount++;
+                    continue;
+                }
+
+                $transaction->commit();
+            } catch (\Throwable $e) {
+                if ($transaction->isActive) {
+                    $transaction->rollBack();
+                }
+
+                Yii::error([
+                    'message' => 'Plugin user batch create failed',
+                    'index' => $index,
+                    'username' => $username,
+                    'role' => $role,
+                    'exception' => $e->getMessage(),
+                ], __METHOD__);
+
                 $results[] = ['index' => $index, 'username' => $username, 'success' => false, 'error' => '创建用户失败'];
                 $failedCount++;
                 continue;
-            }
-
-            // 分配角色
-            $roleObj = $authManager->getRole($role);
-            if ($roleObj) {
-                $authManager->assign($roleObj, $user->id);
             }
 
             $results[] = ['index' => $index, 'username' => $username, 'success' => true, 'id' => $user->id];

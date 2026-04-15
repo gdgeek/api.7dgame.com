@@ -57,4 +57,21 @@ final class PluginUserControllerUpdateDiffTest extends TestCase
         $this->assertSame(0, $user->status);
         $this->assertNotSame('old-hash', $user->password_hash);
     }
+
+    public function testCollectManagedUserDirtyAttributesNormalizesBlankEmailToNull(): void
+    {
+        $controller = new PluginUserController('plugin-user', Yii::$app->getModule('v1'));
+        $user = new User();
+        $user->email = 'alice@example.com';
+
+        $method = new \ReflectionMethod($controller, 'collectManagedUserDirtyAttributes');
+
+        [$requestedUpdate, $dirtyAttributes] = $method->invoke($controller, $user, [
+            'email' => '   ',
+        ]);
+
+        $this->assertTrue($requestedUpdate);
+        $this->assertSame(['email'], $dirtyAttributes);
+        $this->assertNull($user->email);
+    }
 }
