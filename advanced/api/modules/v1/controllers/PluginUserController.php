@@ -204,6 +204,57 @@ class PluginUserController extends \yii\rest\Controller
     }
 
     /**
+     * 收集用户主表真正发生变化的字段，避免无关字段重写触发历史脏数据异常。
+     *
+     * @return array{0: bool, 1: array<int, string>}
+     */
+    protected function collectManagedUserDirtyAttributes(User $user, array $bodyParams): array
+    {
+        $requestedUpdate = false;
+        $dirtyAttributes = [];
+
+        if (array_key_exists('nickname', $bodyParams)) {
+            $requestedUpdate = true;
+            $normalizedNickname = trim((string)$bodyParams['nickname']);
+            $nextNickname = $normalizedNickname === '' ? null : $normalizedNickname;
+
+            if ($user->nickname !== $nextNickname) {
+                $user->nickname = $nextNickname;
+                $dirtyAttributes[] = 'nickname';
+            }
+        }
+
+        if (array_key_exists('email', $bodyParams)) {
+            $requestedUpdate = true;
+            $nextEmail = trim((string)$bodyParams['email']);
+            $currentEmail = trim((string)($user->email ?? ''));
+
+            if ($currentEmail !== $nextEmail) {
+                $user->email = $nextEmail;
+                $dirtyAttributes[] = 'email';
+            }
+        }
+
+        if (array_key_exists('status', $bodyParams)) {
+            $requestedUpdate = true;
+            $nextStatus = (int)$bodyParams['status'];
+
+            if ((int)$user->status !== $nextStatus) {
+                $user->status = $nextStatus;
+                $dirtyAttributes[] = 'status';
+            }
+        }
+
+        if (!empty($bodyParams['password'])) {
+            $requestedUpdate = true;
+            $user->password_hash = Yii::$app->security->generatePasswordHash((string)$bodyParams['password']);
+            $dirtyAttributes[] = 'password_hash';
+        }
+
+        return [$requestedUpdate, $dirtyAttributes];
+    }
+
+    /**
      * 统一序列化用户管理返回体。
      */
     protected function serializeManagedUser(User $user, array $roles): array
@@ -563,26 +614,13 @@ class PluginUserController extends \yii\rest\Controller
         }
 
         $updated = false;
-        $organizationIds = $this->resolveOrganizationIds($request->getBodyParams(), false);
+        $bodyParams = $request->getBodyParams();
+        $organizationIds = $this->resolveOrganizationIds($bodyParams, false);
         if (is_array($organizationIds) && isset($organizationIds['error'])) {
             return $organizationIds['error'];
         }
-        $nickname = $request->getBodyParam('nickname');
-        $email = $request->getBodyParam('email');
-        $status = $request->getBodyParam('status');
-        $password = $request->getBodyParam('password');
-
-        if ($nickname !== null) {
-            $normalizedNickname = trim((string)$nickname);
-            $user->nickname = $normalizedNickname === '' ? null : $normalizedNickname;
-            $updated = true;
-        }
-        if ($email !== null) { $user->email = $email; $updated = true; }
-        if ($status !== null) { $user->status = (int)$status; $updated = true; }
-        if (!empty($password)) {
-            $user->password_hash = Yii::$app->security->generatePasswordHash($password);
-            $updated = true;
-        }
+        [$requestedProfileUpdate, $dirtyAttributes] = $this->collectManagedUserDirtyAttributes($user, $bodyParams);
+        $updated = $requestedProfileUpdate;
         if ($organizationIds !== null) {
             $updated = true;
         }
@@ -594,8 +632,11 @@ class PluginUserController extends \yii\rest\Controller
 
         $transaction = Yii::$app->db->beginTransaction();
         try {
-            $user->updated_at = time();
-            $user->save(false);
+            if (!empty($dirtyAttributes)) {
+                $user->updated_at = time();
+                $dirtyAttributes[] = 'updated_at';
+                $user->save(false, array_values(array_unique($dirtyAttributes)));
+            }
 
             if ($organizationIds !== null) {
                 $organizationError = $this->replaceUserOrganizations((int)$user->id, $organizationIds);
@@ -610,6 +651,14 @@ class PluginUserController extends \yii\rest\Controller
             if ($transaction->isActive) {
                 $transaction->rollBack();
             }
+
+            Yii::error([
+                'message' => 'Plugin user update failed',
+                'user_id' => (int)$id,
+                'dirty_attributes' => $dirtyAttributes ?? [],
+                'organization_ids' => $organizationIds,
+                'exception' => $e->getMessage(),
+            ], __METHOD__);
 
             Yii::$app->response->statusCode = 500;
             return ['code' => 5000, 'message' => '更新用户失败'];
