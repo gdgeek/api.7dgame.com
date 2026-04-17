@@ -16,12 +16,14 @@ docs/
 ├── email/                  # 邮件功能文档
 ├── security/               # 安全相关文档
 ├── sessions/               # 历史会话和任务记录
+├── CAPABILITIES.md         # 系统能力概览（能做什么）
 ├── QUICK_REFERENCE.md      # 快速参考
 └── README.md               # 本文件
 ```
 
 ## 快速入口
 
+- [🚀 系统能力概览](CAPABILITIES.md) ⭐ — 了解本系统能做什么
 - [快速参考](QUICK_REFERENCE.md)
 - [API 健康检查](HEALTH_CHECK.md)
 - [Docker 快速开始](docker/DOCKER_QUICK_START.md)
