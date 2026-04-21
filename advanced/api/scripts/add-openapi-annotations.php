@@ -87,7 +87,7 @@ $controllers = [
     [
         'path' => 'modules/v1/controllers/EduSchoolController.php',
         'tag' => 'EduSchool',
-        'description' => '教育-学校管理接口'
+        'description' => '教育-学校信息接口'
     ],
     [
         'path' => 'modules/v1/controllers/EduClassController.php',
