@@ -64,4 +64,24 @@ class PluginControllerAuthTest extends TestCase
             'Malformed plugin JWTs should fail as unauthorized instead of bubbling a parser exception.'
         );
     }
+
+    public function testVerifyTokenRequiresJwtButBypassesRouteRbac(): void
+    {
+        $controller = new PluginController('test', null);
+        $behaviors = $controller->behaviors();
+
+        $this->assertArrayHasKey('authenticator', $behaviors);
+        $this->assertArrayHasKey('access', $behaviors);
+
+        $this->assertNotContains(
+            'verify-token',
+            $behaviors['authenticator']['except'] ?? [],
+            'verify-token must still require a bearer token.'
+        );
+        $this->assertContains(
+            'verify-token',
+            $behaviors['access']['allowActions'] ?? [],
+            'verify-token should not require an RBAC route assignment after JWT authentication.'
+        );
+    }
 }

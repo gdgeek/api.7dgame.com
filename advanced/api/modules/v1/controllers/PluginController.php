@@ -41,7 +41,7 @@ class PluginController extends \yii\rest\Controller
 
         $behaviors['access'] = [
             'class' => AccessControl::class,
-            'allowActions' => ['options'],
+            'allowActions' => ['options', 'verify-token'],
         ];
 
         return $behaviors;
