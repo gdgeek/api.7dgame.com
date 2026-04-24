@@ -332,7 +332,7 @@ export SWAGGER_ENABLED=true
 - `GET /v1/prefab` - 获取 Prefab 列表
 
 #### 教育管理
-- `GET /v1/edu-school` - 学校管理
+- `GET /v1/edu-school` - 学校信息
 - `GET /v1/edu-class` - 班级管理
 - `GET /v1/edu-teacher` - 教师管理
 - `GET /v1/edu-student` - 学生管理

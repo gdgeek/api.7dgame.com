@@ -24,16 +24,6 @@ $globe = '<i class="fas fa-globe text-aqua"></i>';
 
             <ul class="nav navbar-nav">
 			
-				<?php if (!Yii::$app->user->isGuest): ?>
-                <li>
-                    <?= Html::a(
-                        '<i class="fa fa-graduation-cap"></i> <span class="hidden-xs">学校管理</span>',
-                        ['/school-management/redirect'],
-                        ['class' => 'btn btn-sm btn-default navbar-btn', 'style' => 'margin-top:8px;margin-right:5px;']
-                    ) ?>
-                </li>
-                <?php endif; ?>
-
 				<?php /*
                     <ul class="dropdown-menu">
                         <li class="header">You have 4 messages</li>

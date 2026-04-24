@@ -17,7 +17,7 @@ use OpenApi\Annotations as OA;
 /**
  * @OA\Tag(
  *     name="EduSchool",
- *     description="学校管理接口"
+ *     description="学校信息接口"
  * )
  */
 class EduSchoolController extends ActiveController
