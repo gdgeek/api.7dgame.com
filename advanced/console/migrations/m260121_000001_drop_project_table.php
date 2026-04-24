@@ -9,6 +9,8 @@ use yii\db\Migration;
  * 
  * Related tables that have foreign keys to project:
  * - logic (fk-logic-project_id)
+ * - editor_data (fk-editor_data-project_id)
+ * - script_data (fk-script_data-project_id)
  * 
  * Foreign keys in project table:
  * - fk-project-user_id (to user table)
@@ -30,6 +32,22 @@ class m260121_000001_drop_project_table extends Migration
             } catch (\Exception $e) {
                 // Foreign key might not exist, continue
                 echo "Note: Foreign key fk-logic-project_id not found or already dropped.\n";
+            }
+        }
+
+        if ($this->db->schema->getTableSchema('{{%editor_data}}', true) !== null) {
+            try {
+                $this->dropForeignKey('{{%fk-editor_data-project_id}}', '{{%editor_data}}');
+            } catch (\Exception $e) {
+                echo "Note: Foreign key fk-editor_data-project_id not found or already dropped.\n";
+            }
+        }
+
+        if ($this->db->schema->getTableSchema('{{%script_data}}', true) !== null) {
+            try {
+                $this->dropForeignKey('{{%fk-script_data-project_id}}', '{{%script_data}}');
+            } catch (\Exception $e) {
+                echo "Note: Foreign key fk-script_data-project_id not found or already dropped.\n";
             }
         }
         
@@ -127,6 +145,28 @@ class m260121_000001_drop_project_table extends Migration
             $this->addForeignKey(
                 '{{%fk-logic-project_id}}',
                 '{{%logic}}',
+                'project_id',
+                '{{%project}}',
+                'id',
+                'CASCADE'
+            );
+        }
+
+        if ($this->db->schema->getTableSchema('{{%editor_data}}', true) !== null) {
+            $this->addForeignKey(
+                '{{%fk-editor_data-project_id}}',
+                '{{%editor_data}}',
+                'project_id',
+                '{{%project}}',
+                'id',
+                'CASCADE'
+            );
+        }
+
+        if ($this->db->schema->getTableSchema('{{%script_data}}', true) !== null) {
+            $this->addForeignKey(
+                '{{%fk-script_data-project_id}}',
+                '{{%script_data}}',
                 'project_id',
                 '{{%project}}',
                 'id',

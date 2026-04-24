@@ -582,7 +582,7 @@ Authorization: Bearer {accessToken}
 
 > **认证要求**: JWT Token + 权限控制
 
-### 27. 学校管理 (EduSchool)
+### 27. 学校信息 (EduSchool)
 
 **端点**:
 

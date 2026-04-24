@@ -20,7 +20,7 @@
 9. **v1/PrefabController** - 预制件管理接口
 10. **v1/TagsController** - 标签管理接口
 11. **v1/VerseTagsController** - Verse 标签管理接口
-12. **v1/EduSchoolController** - 学校管理接口
+12. **v1/EduSchoolController** - 学校信息接口
 13. **v1/TokenController** - Token 管理接口
 14. **v1/SystemController** - 系统管理接口
 15. **v1/ToolsController** - 工具类接口

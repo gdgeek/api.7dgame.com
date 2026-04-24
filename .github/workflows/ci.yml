@@ -24,7 +24,7 @@ jobs:
         ports:
           - 6379:6379
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -212,7 +212,7 @@ jobs:
         github.ref == 'refs/heads/develop'
       )
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
