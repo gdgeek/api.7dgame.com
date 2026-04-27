@@ -9,16 +9,22 @@ use Yii;
 use yii\base\Component;
 use yii\db\Connection;
 use yii\web\ForbiddenHttpException;
+use yii\web\Request;
+use yii\web\Response;
 
 final class VerseSpaceControllerTest extends TestCase
 {
     private $originalDbComponent;
+    private $originalRequestComponent;
+    private $originalResponseComponent;
     private $originalUserComponent;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->originalDbComponent = Yii::$app->get('db', false);
+        $this->originalRequestComponent = Yii::$app->get('request', false);
+        $this->originalResponseComponent = Yii::$app->get('response', false);
         $this->originalUserComponent = Yii::$app->get('user', false);
 
         Yii::$app->set('db', new Connection(['dsn' => 'sqlite::memory:']));
@@ -55,10 +61,14 @@ final class VerseSpaceControllerTest extends TestCase
         ])->execute();
 
         Yii::$app->set('user', new VerseSpaceControllerTestUser());
+        Yii::$app->set('request', new Request());
+        Yii::$app->set('response', new Response());
     }
 
     protected function tearDown(): void
     {
+        Yii::$app->set('request', $this->originalRequestComponent);
+        Yii::$app->set('response', $this->originalResponseComponent);
         Yii::$app->set('user', $this->originalUserComponent);
         Yii::$app->db->close();
         Yii::$app->set('db', $this->originalDbComponent);
