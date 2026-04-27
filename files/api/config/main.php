@@ -116,6 +116,17 @@ return [
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/plugin-ar-slam-localization',
+                    'pluralize' => false,
+                    'only' => ['bindings', 'create-bindings', 'delete-binding'],
+                    'extraPatterns' => [
+                        'GET bindings' => 'bindings',
+                        'POST bindings' => 'create-bindings',
+                        'DELETE bindings/<verseId:\d+>' => 'delete-binding',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/plugin-user',
                     'pluralize' => false,
                     'only' => [
@@ -291,8 +302,10 @@ return [
                         'v1/prefab',
                         'v1/file',
                         'v1/resource',
+                        'v1/space',
                         'v1/tags',
                         'v1/token',
+                        'v1/verse-space',
                         'v1/group-verse',
                     ],
                 ],

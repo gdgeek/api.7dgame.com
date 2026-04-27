@@ -101,7 +101,7 @@ class BindingRule extends Rule
                     
                     $verse = Verse::findOne($post['verse_id']);
                     $space = Space::findOne($post['space_id']);
-                    if ($verse && $verse->editable && $space && $space->author_id == $userid) {
+                    if ($verse && $verse->editable && $space && $space->user_id == $userid) {
                         return true;
                     }
                 }

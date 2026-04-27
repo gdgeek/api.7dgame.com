@@ -26,7 +26,7 @@ class SpaceRule extends Rule
 
         $userid = Yii::$app->user->identity->id;
 
-        if ($userid == $space->author_id) {
+        if ($userid == $space->user_id) {
             return true;
         }
 
