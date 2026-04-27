@@ -55,7 +55,14 @@ class OrganizationController extends Controller
             return $error;
         }
 
-        $organizations = Organization::find()->ordered()->all();
+        $query = Organization::find();
+        $names = $this->resolveOrganizationNames(Yii::$app->request->get('names'));
+
+        if (!empty($names)) {
+            $query->andWhere(['name' => $names]);
+        }
+
+        $organizations = $query->ordered()->all();
 
         return [
             'code' => 0,
@@ -242,6 +249,25 @@ class OrganizationController extends Controller
             'title' => $organization->title,
             'name' => $organization->name,
         ];
+    }
+
+    private function resolveOrganizationNames($rawNames): array
+    {
+        if ($rawNames === null || $rawNames === '') {
+            return [];
+        }
+
+        $values = is_array($rawNames) ? $rawNames : explode(',', (string)$rawNames);
+        $names = [];
+
+        foreach ($values as $value) {
+            $name = strtolower(trim((string)$value));
+            if ($name !== '') {
+                $names[] = $name;
+            }
+        }
+
+        return array_values(array_unique($names));
     }
 
     private function validationError($model): array

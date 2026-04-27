@@ -295,6 +295,16 @@ class Verse extends \yii\db\ActiveRecord
         return  $this->hasOne(VerseCode::class, ['verse_id' => 'id']);
     }
 
+    public function getVerseSpace()
+    {
+        return $this->hasOne(VerseSpace::class, ['verse_id' => 'id']);
+    }
+
+    public function getSpace()
+    {
+        return $this->hasOne(Space::class, ['id' => 'space_id'])->via('verseSpace');
+    }
+
 
     public function getResources(): array
     {
