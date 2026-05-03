@@ -14,6 +14,9 @@ class m260427_000000_rebuild_space_and_verse_space_tables extends Migration
             $tableOptions = 'CHARACTER SET utf8 COLLATE utf8_unicode_ci ENGINE=InnoDB';
         }
 
+        $spaceRows = $this->spaceRowsForNewContract();
+        $verseSpaceRows = $this->verseSpaceRowsForNewContract();
+
         if ($this->db->schema->getTableSchema('{{%verse_space}}', true) !== null) {
             $this->dropTable('{{%verse_space}}');
         }
@@ -32,6 +35,19 @@ class m260427_000000_rebuild_space_and_verse_space_tables extends Migration
             'created_at' => $this->timestamp()->defaultExpression('CURRENT_TIMESTAMP')->notNull(),
             'data' => $this->json(),
         ], $tableOptions);
+
+        if ($spaceRows !== []) {
+            $this->batchInsert('{{%space}}', [
+                'id',
+                'name',
+                'user_id',
+                'mesh_id',
+                'image_id',
+                'file_id',
+                'created_at',
+                'data',
+            ], $spaceRows);
+        }
 
         $this->createIndex('{{%idx-space-user_id}}', '{{%space}}', 'user_id');
         $this->addForeignKey(
@@ -80,6 +96,15 @@ class m260427_000000_rebuild_space_and_verse_space_tables extends Migration
             'created_at' => $this->timestamp()->defaultExpression('CURRENT_TIMESTAMP')->notNull(),
         ], $tableOptions);
 
+        if ($verseSpaceRows !== []) {
+            $this->batchInsert('{{%verse_space}}', [
+                'id',
+                'verse_id',
+                'space_id',
+                'created_at',
+            ], $verseSpaceRows);
+        }
+
         $this->createIndex('{{%idx-verse_space-verse_id-unique}}', '{{%verse_space}}', 'verse_id', true);
         $this->addForeignKey(
             '{{%fk-verse_space-verse_id}}',
@@ -99,6 +124,66 @@ class m260427_000000_rebuild_space_and_verse_space_tables extends Migration
             'id',
             'CASCADE'
         );
+    }
+
+    private function spaceRowsForNewContract(): array
+    {
+        $table = $this->db->schema->getTableSchema('{{%space}}', true);
+        if ($table === null) {
+            return [];
+        }
+
+        return array_map(
+            fn (array $row): array => [
+                (int) $row['id'],
+                $this->firstNonEmpty($row, ['name', 'title'], 'Space ' . $row['id']),
+                (int) ($row['user_id'] ?? $row['author_id'] ?? 0),
+                (int) ($row['mesh_id'] ?? 0),
+                $this->nullableInt($row['image_id'] ?? $row['sample_id'] ?? null),
+                $this->nullableInt($row['file_id'] ?? $row['dat_id'] ?? null),
+                $this->firstNonEmpty($row, ['created_at'], gmdate('Y-m-d H:i:s')),
+                $row['data'] ?? $row['info'] ?? null,
+            ],
+            $this->db->createCommand('SELECT * FROM {{%space}}')->queryAll()
+        );
+    }
+
+    private function verseSpaceRowsForNewContract(): array
+    {
+        $table = $this->db->schema->getTableSchema('{{%verse_space}}', true);
+        if ($table === null) {
+            return [];
+        }
+
+        return array_map(
+            fn (array $row): array => [
+                (int) $row['id'],
+                (int) $row['verse_id'],
+                (int) $row['space_id'],
+                $this->firstNonEmpty($row, ['created_at'], gmdate('Y-m-d H:i:s')),
+            ],
+            $this->db->createCommand('SELECT * FROM {{%verse_space}}')->queryAll()
+        );
+    }
+
+    private function firstNonEmpty(array $row, array $columns, string $fallback): string
+    {
+        foreach ($columns as $column) {
+            if (isset($row[$column]) && trim((string) $row[$column]) !== '') {
+                return (string) $row[$column];
+            }
+        }
+
+        return $fallback;
+    }
+
+    private function nullableInt($value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return (int) $value;
     }
 
     public function safeDown()

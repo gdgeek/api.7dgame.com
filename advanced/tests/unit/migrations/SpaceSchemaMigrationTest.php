@@ -50,11 +50,33 @@ final class SpaceSchemaMigrationTest extends TestCase
             'mesh_id' => 'integer not null',
             'dat_id' => 'integer not null',
             'info' => 'text',
+            'created_at' => 'datetime',
+            'image_id' => 'integer',
+            'name' => 'string',
         ])->execute();
         Yii::$app->db->createCommand()->createTable('verse_space', [
             'id' => 'pk',
             'verse_id' => 'integer not null',
             'space_id' => 'integer not null',
+            'created_at' => 'datetime',
+        ])->execute();
+        Yii::$app->db->createCommand()->insert('space', [
+            'id' => 7,
+            'title' => 'Legacy Space',
+            'author_id' => 42,
+            'sample_id' => 101,
+            'mesh_id' => 102,
+            'dat_id' => 103,
+            'info' => '{"source":"legacy-space"}',
+            'created_at' => '2026-04-27 12:00:00',
+            'image_id' => null,
+            'name' => null,
+        ])->execute();
+        Yii::$app->db->createCommand()->insert('verse_space', [
+            'id' => 9,
+            'verse_id' => 3,
+            'space_id' => 7,
+            'created_at' => '2026-04-27 12:30:00',
         ])->execute();
 
         $migration = new class extends \m260427_000000_rebuild_space_and_verse_space_tables {
@@ -78,12 +100,36 @@ final class SpaceSchemaMigrationTest extends TestCase
         $this->assertArrayNotHasKey('sample_id', $space->columns);
         $this->assertArrayNotHasKey('dat_id', $space->columns);
         $this->assertArrayNotHasKey('info', $space->columns);
+        $migratedSpace = Yii::$app->db->createCommand('SELECT * FROM space WHERE id = 7')->queryOne();
+        foreach (['id', 'user_id', 'mesh_id', 'image_id', 'file_id'] as $column) {
+            $migratedSpace[$column] = (int)$migratedSpace[$column];
+        }
+        $this->assertSame([
+            'id' => 7,
+            'name' => 'Legacy Space',
+            'user_id' => 42,
+            'mesh_id' => 102,
+            'image_id' => 101,
+            'file_id' => 103,
+            'created_at' => '2026-04-27 12:00:00',
+            'data' => '{"source":"legacy-space"}',
+        ], $migratedSpace);
 
         $verseSpace = Yii::$app->db->schema->getTableSchema('verse_space', true);
         $this->assertSame(
             ['id', 'verse_id', 'space_id', 'created_at'],
             array_keys($verseSpace->columns)
         );
+        $migratedVerseSpace = Yii::$app->db->createCommand('SELECT * FROM verse_space WHERE id = 9')->queryOne();
+        foreach (['id', 'verse_id', 'space_id'] as $column) {
+            $migratedVerseSpace[$column] = (int)$migratedVerseSpace[$column];
+        }
+        $this->assertSame([
+            'id' => 9,
+            'verse_id' => 3,
+            'space_id' => 7,
+            'created_at' => '2026-04-27 12:30:00',
+        ], $migratedVerseSpace);
 
         $indexes = Yii::$app->db
             ->createCommand("PRAGMA index_list('verse_space')")
