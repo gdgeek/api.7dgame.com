@@ -53,6 +53,58 @@ final class SpaceTest extends TestCase
         $this->assertSame('map-001', $array['data']['mapId']);
     }
 
+    public function testArSlamDataIsReducedBeforeStorage(): void
+    {
+        $space = new Space([
+            'name' => 'SLAM Space',
+            'user_id' => 42,
+            'mesh_id' => 11543,
+            'file_id' => 11544,
+            'image_id' => 11545,
+            'data' => [
+                'source' => 'ar-slam-localization',
+                'provider' => 'immersal',
+                'zipMd5' => '56d97f43f244272abe5341851ae7d839',
+                'zipName' => '143403-Ofc2.zip',
+                'cosPrefix' => 'spaces/56d97f43f244272abe5341851ae7d839',
+                'modelFileId' => 11543,
+                'thumbnailFileId' => 11545,
+                'screenshotKey' => 'spaces/56d97f43f244272abe5341851ae7d839.png',
+                'localizationFileIds' => [11544],
+                'primaryLocalizationFileId' => 11544,
+                'files' => [
+                    [
+                        'fileId' => 11543,
+                        'role' => 'model',
+                        'url' => 'https://example.test/model.glb',
+                    ],
+                    [
+                        'fileId' => 11544,
+                        'role' => 'localization',
+                        'url' => 'https://example.test/map.bytes',
+                    ],
+                ],
+            ],
+        ]);
+
+        $this->assertTrue($space->beforeValidate());
+        $storedData = json_decode($space->data, true);
+
+        $this->assertSame([
+            'source' => 'ar-slam-localization',
+            'provider' => 'immersal',
+            'zipMd5' => '56d97f43f244272abe5341851ae7d839',
+            'zipName' => '143403-Ofc2.zip',
+            'thumbnailFileId' => 11545,
+        ], $storedData);
+        $this->assertArrayNotHasKey('files', $storedData);
+        $this->assertArrayNotHasKey('modelFileId', $storedData);
+        $this->assertArrayNotHasKey('localizationFileIds', $storedData);
+        $this->assertArrayNotHasKey('primaryLocalizationFileId', $storedData);
+        $this->assertArrayNotHasKey('screenshotKey', $storedData);
+        $this->assertArrayNotHasKey('cosPrefix', $storedData);
+    }
+
     public function testFileIdIsAnIntegerAttribute(): void
     {
         $rules = (new Space())->rules();

@@ -541,7 +541,17 @@ class VerseController extends ActiveController
      *             @OA\Property(property="uuid", type="string", description="快照UUID"),
      *             @OA\Property(property="name", type="string", description="快照名称"),
      *             @OA\Property(property="description", type="string", description="快照描述"),
-     *             @OA\Property(property="data", type="string", description="快照数据（JSON）")
+     *             @OA\Property(property="data", type="string", description="快照数据（JSON）"),
+     *             @OA\Property(
+     *                 property="space",
+     *                 type="object",
+     *                 nullable=true,
+     *                 description="绑定的空间快照，只包含 type、image、mesh、file",
+     *                 @OA\Property(property="type", type="string", description="定位类型", enum={"immersal", "area-target-scanner"}),
+     *                 @OA\Property(property="image", ref="#/components/schemas/File", nullable=true),
+     *                 @OA\Property(property="mesh", ref="#/components/schemas/File", nullable=true),
+     *                 @OA\Property(property="file", ref="#/components/schemas/File", nullable=true)
+     *             )
      *         )
      *     ),
      *     @OA\Response(response=400, description="请求错误"),
@@ -557,7 +567,7 @@ class VerseController extends ActiveController
         } else {
             throw new Exception(json_encode($snapshot->errors), 400);
         }
-        return $snapshot->toArray([], ['code', 'id', 'name', 'data', 'description', 'metas', 'resources', 'uuid', 'image']);
+        return $snapshot->toArray([], Snapshot::TAKE_PHOTO_EXTRA_FIELDS);
     }
 
     /**

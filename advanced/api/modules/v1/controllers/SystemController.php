@@ -485,7 +485,7 @@ class SystemController extends Controller
         } else {
             throw new Exception(json_encode($snapshot->errors), 400);
         }
-        return $snapshot->toArray([], ['code', 'id', 'name', 'data', 'description', 'metas', 'resources', 'uuid', 'image']);
+        return $snapshot->toArray([], Snapshot::TAKE_PHOTO_EXTRA_FIELDS);
     }
 
     /**

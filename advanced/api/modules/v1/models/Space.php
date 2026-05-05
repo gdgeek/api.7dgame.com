@@ -72,6 +72,7 @@ class Space extends \yii\db\ActiveRecord
 
     public function beforeValidate()
     {
+        $this->data = self::compactData($this->data, $this->image_id ? (int)$this->image_id : null);
         if (is_array($this->data) || is_object($this->data)) {
             $this->data = json_encode($this->data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         }
@@ -82,15 +83,53 @@ class Space extends \yii\db\ActiveRecord
     {
         $fields = parent::fields();
         $fields['data'] = function () {
-            if (is_string($this->data)) {
-                $decoded = json_decode($this->data, true);
-                if (json_last_error() === JSON_ERROR_NONE) {
-                    return $decoded;
-                }
-            }
-            return $this->data;
+            return self::compactData($this->data, $this->image_id ? (int)$this->image_id : null);
         };
         return $fields;
+    }
+
+    public static function compactData($value, ?int $thumbnailFileId = null)
+    {
+        $data = self::decodeDataValue($value);
+        if ($data === null) {
+            return $value;
+        }
+
+        if (($data['source'] ?? null) !== 'ar-slam-localization') {
+            return $data;
+        }
+
+        $compact = [];
+        foreach (['source', 'provider', 'zipMd5', 'zipName', 'thumbnailFileId'] as $key) {
+            if (array_key_exists($key, $data) && $data[$key] !== null && $data[$key] !== '') {
+                $compact[$key] = $data[$key];
+            }
+        }
+
+        if (!array_key_exists('thumbnailFileId', $compact) && $thumbnailFileId !== null) {
+            $compact['thumbnailFileId'] = $thumbnailFileId;
+        }
+
+        return $compact;
+    }
+
+    private static function decodeDataValue($value): ?array
+    {
+        if (is_array($value)) {
+            return $value;
+        }
+
+        if (is_object($value)) {
+            $decoded = json_decode(json_encode($value), true);
+            return is_array($decoded) ? $decoded : null;
+        }
+
+        if (is_string($value) && trim($value) !== '') {
+            $decoded = json_decode($value, true);
+            return is_array($decoded) ? $decoded : null;
+        }
+
+        return null;
     }
 
     public function extraFields()

@@ -222,7 +222,7 @@ class SiteController extends \yii\rest\Controller
         $snapshot->save();
 
          
-        return $snapshot->toArray([], ['code', 'id', 'name', 'data', 'description', 'metas', 'resources', 'uuid']);
+        return $snapshot->toArray([], \api\modules\v1\models\Snapshot::TAKE_PHOTO_EXTRA_FIELDS);
       
     }
 
