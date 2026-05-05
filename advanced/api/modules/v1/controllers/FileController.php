@@ -1,6 +1,7 @@
 <?php
 namespace api\modules\v1\controllers;
 
+use api\modules\v1\models\File;
 use common\components\security\RateLimitBehavior;
 use mdm\admin\components\AccessControl;
 use bizley\jwt\JwtHttpBearerAuth;
@@ -8,6 +9,7 @@ use Yii;
 use yii\data\ActiveDataProvider;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
+use yii\web\ServerErrorHttpException;
 use OpenApi\Annotations as OA;
 
 /**
@@ -30,6 +32,13 @@ class FileController extends ActiveController
 {
     public $modelClass = 'api\modules\v1\models\File';
 
+    public function actions()
+    {
+        $actions = parent::actions();
+        unset($actions['create']);
+        return $actions;
+    }
+
     public function behaviors()
     {
         $behaviors = parent::behaviors();
@@ -51,6 +60,42 @@ class FileController extends ActiveController
             'defaultStrategy' => 'ip',
         ];
         return $behaviors;
+    }
+
+    public function actionCreate()
+    {
+        $body = Yii::$app->request->bodyParams;
+        $key = trim((string)($body['key'] ?? ''));
+        if ($key !== '') {
+            $existingFile = File::find()
+                ->where([
+                    'user_id' => Yii::$app->user->id,
+                    'key' => $key,
+                ])
+                ->orderBy(['id' => SORT_DESC])
+                ->one();
+            if ($existingFile) {
+                Yii::$app->response->statusCode = 200;
+                return $existingFile;
+            }
+        }
+
+        $model = new File();
+        $model->load($body, '');
+        $model->user_id = (int) Yii::$app->user->id;
+        $this->checkAccess('create', $model);
+
+        if ($model->save()) {
+            Yii::$app->response->statusCode = 201;
+            return $model;
+        }
+
+        if (!$model->hasErrors()) {
+            throw new ServerErrorHttpException('Failed to create the object for unknown reason.');
+        }
+
+        Yii::$app->response->statusCode = 422;
+        return $model;
     }
 
     /**

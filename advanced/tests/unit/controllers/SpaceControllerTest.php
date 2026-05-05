@@ -29,6 +29,12 @@ final class SpaceControllerTest extends TestCase
         Yii::$app->set('db', new Connection(['dsn' => 'sqlite::memory:']));
         Yii::$app->db->open();
         Yii::$app->db->createCommand('PRAGMA foreign_keys = ON')->execute();
+        Yii::$app->db->createCommand()->createTable('{{%user}}', [
+            'id' => 'pk',
+        ])->execute();
+        Yii::$app->db->createCommand()->createTable('{{%file}}', [
+            'id' => 'pk',
+        ])->execute();
         Yii::$app->db->createCommand()->createTable('{{%space}}', [
             'id' => 'pk',
             'name' => 'string not null',
@@ -50,6 +56,13 @@ final class SpaceControllerTest extends TestCase
             'created_at' => 'datetime',
             'FOREIGN KEY ([[verse_id]]) REFERENCES {{%verse}} ([[id]]) ON DELETE CASCADE',
             'FOREIGN KEY ([[space_id]]) REFERENCES {{%space}} ([[id]]) ON DELETE CASCADE',
+        ])->execute();
+        Yii::$app->db->createCommand()->batchInsert('{{%user}}', ['id'], [
+            [7],
+            [42],
+        ])->execute();
+        Yii::$app->db->createCommand()->batchInsert('{{%file}}', ['id'], [
+            [200],
         ])->execute();
         Yii::$app->db->createCommand()->batchInsert(
             '{{%space}}',
@@ -155,6 +168,33 @@ final class SpaceControllerTest extends TestCase
         $this->assertSame(3, (int)\api\modules\v1\models\Space::find()->count());
     }
 
+    public function testCreateIgnoresForgedUserIdAndUsesCurrentUser(): void
+    {
+        $request = new Request();
+        $request->setBodyParams([
+            'name' => 'Forged Owner',
+            'user_id' => 7,
+            'mesh_id' => 200,
+            'data' => [
+                'source' => 'ar-slam-localization',
+                'zipMd5' => 'zip-md5-forged-owner',
+            ],
+        ]);
+        Yii::$app->set('request', $request);
+        $controller = new CapturingSpaceController('space', Yii::$app->getModule('v1'));
+
+        $model = $controller->actionCreate();
+
+        $this->assertSame(42, (int)$controller->checkedModel->user_id);
+        $this->assertSame(42, (int)$model->user_id);
+        $this->assertSame(
+            42,
+            (int)Yii::$app->db->createCommand('SELECT user_id FROM {{%space}} WHERE id = :id', [
+                ':id' => $model->id,
+            ])->queryScalar()
+        );
+    }
+
     public function testVerseSpaceSpaceIdUsesCascadeForeignKey(): void
     {
         $foreignKeys = Yii::$app->db->createCommand('PRAGMA foreign_key_list(verse_space)')->queryAll();
@@ -187,4 +227,18 @@ final class SpaceControllerTest extends TestCase
 final class SpaceControllerTestUser extends Component
 {
     public int $id = 42;
+}
+
+final class CapturingSpaceController extends SpaceController
+{
+    public ?\api\modules\v1\models\Space $checkedModel = null;
+
+    public function checkAccess($action, $model = null, $params = [])
+    {
+        if ($action === 'create' && $model instanceof \api\modules\v1\models\Space) {
+            $this->checkedModel = clone $model;
+        }
+
+        parent::checkAccess($action, $model, $params);
+    }
 }

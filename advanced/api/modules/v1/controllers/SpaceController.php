@@ -68,6 +68,7 @@ class SpaceController extends ActiveController
 
         $model = new Space();
         $model->load($body, '');
+        $model->user_id = (int) Yii::$app->user->id;
         $this->checkAccess('create', $model);
 
         if ($model->save()) {
