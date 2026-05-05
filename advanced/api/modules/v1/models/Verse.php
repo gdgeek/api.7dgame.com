@@ -365,6 +365,7 @@ class Verse extends \yii\db\ActiveRecord
             'tags',
             'js',
             'lua',
+            'space',
         ];
     }
     public function getLua(): string
