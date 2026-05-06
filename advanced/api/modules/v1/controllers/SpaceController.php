@@ -16,6 +16,13 @@ class SpaceController extends ActiveController
 {
     public $modelClass = 'api\modules\v1\models\Space';
 
+    public function actions()
+    {
+        $actions = parent::actions();
+        unset($actions['index']);
+        return $actions;
+    }
+
     public function behaviors()
     {
         $behaviors = parent::behaviors();

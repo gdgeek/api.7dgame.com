@@ -79,7 +79,7 @@ final class VerseSpaceControllerTest extends TestCase
     {
         $controller = new VerseSpaceController('verse-space', Yii::$app->getModule('v1'));
 
-        $models = $controller->actionIndex()->getModels();
+        $models = $controller->createAction('index')->runWithParams([])->getModels();
 
         $this->assertCount(1, $models);
         $this->assertSame(801, (int) $models[0]->id);

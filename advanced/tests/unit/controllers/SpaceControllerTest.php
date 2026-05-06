@@ -111,7 +111,7 @@ final class SpaceControllerTest extends TestCase
     {
         $controller = new SpaceController('space', Yii::$app->getModule('v1'));
 
-        $dataProvider = $controller->actionIndex();
+        $dataProvider = $controller->createAction('index')->runWithParams([]);
         $models = $dataProvider->getModels();
         $names = array_column($models, 'name');
         sort($names);

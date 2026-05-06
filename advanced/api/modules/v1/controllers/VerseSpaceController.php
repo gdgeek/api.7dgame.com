@@ -15,6 +15,13 @@ class VerseSpaceController extends ActiveController
 {
     public $modelClass = 'api\modules\v1\models\VerseSpace';
 
+    public function actions()
+    {
+        $actions = parent::actions();
+        unset($actions['index']);
+        return $actions;
+    }
+
     public function behaviors()
     {
         $behaviors = parent::behaviors();
