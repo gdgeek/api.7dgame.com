@@ -105,6 +105,65 @@ final class SpaceTest extends TestCase
         $this->assertArrayNotHasKey('cosPrefix', $storedData);
     }
 
+    public function testAreaTargetScannerDataIsReducedBeforeStorage(): void
+    {
+        $space = new Space([
+            'name' => 'uv_unwrap_fixed.zip',
+            'user_id' => 42,
+            'mesh_id' => 310,
+            'file_id' => 311,
+            'image_id' => 312,
+            'data' => [
+                'source' => 'ar-slam-localization',
+                'provider' => 'area-target-scanner',
+                'zipMd5' => 'area-target-content-md5',
+                'zipName' => 'uv_unwrap_fixed.zip',
+                'cosPrefix' => 'spaces/area-target-content-md5',
+                'modelFileId' => 310,
+                'primaryLocalizationFileId' => 311,
+                'thumbnailFileId' => 312,
+                'localizationFileIds' => [311],
+                'manifestSummary' => [
+                    'version' => '2.0',
+                    'keyframeCount' => 18,
+                    'rawKeys' => ['version', 'meshFile', 'featureDbFile'],
+                ],
+                'files' => [
+                    [
+                        'path' => 'mesh.glb',
+                        'originalName' => 'optimized.glb',
+                        'role' => 'model',
+                    ],
+                    [
+                        'path' => 'file.zip',
+                        'role' => 'localization',
+                        'entries' => [
+                            ['path' => 'manifest.json', 'role' => 'manifest'],
+                            ['path' => 'features.db', 'role' => 'localization'],
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $this->assertTrue($space->beforeValidate());
+        $storedData = json_decode($space->data, true);
+
+        $this->assertSame([
+            'source' => 'ar-slam-localization',
+            'provider' => 'area-target-scanner',
+            'zipMd5' => 'area-target-content-md5',
+            'zipName' => 'uv_unwrap_fixed.zip',
+            'thumbnailFileId' => 312,
+        ], $storedData);
+        $this->assertArrayNotHasKey('files', $storedData);
+        $this->assertArrayNotHasKey('manifestSummary', $storedData);
+        $this->assertArrayNotHasKey('modelFileId', $storedData);
+        $this->assertArrayNotHasKey('localizationFileIds', $storedData);
+        $this->assertArrayNotHasKey('primaryLocalizationFileId', $storedData);
+        $this->assertArrayNotHasKey('cosPrefix', $storedData);
+    }
+
     public function testFileIdIsAnIntegerAttribute(): void
     {
         $rules = (new Space())->rules();
