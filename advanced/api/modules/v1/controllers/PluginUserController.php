@@ -32,6 +32,8 @@ class PluginUserController extends \yii\rest\Controller
     ];
 
     private const VALID_ROLES = ['root', 'admin', 'manager', 'user'];
+    private const BASE_ROLE = 'user';
+    private const ELEVATED_ROLES = ['root', 'admin', 'manager'];
 
     /**
      * {@inheritdoc}
@@ -120,6 +122,32 @@ class PluginUserController extends \yii\rest\Controller
     protected function getRoleLevel($roles): int
     {
         return PluginUserRolePolicy::getRoleLevel($roles);
+    }
+
+    /**
+     * 所有注册用户都保留 user 基础角色；高权限角色作为附加角色存在。
+     */
+    protected function resolveAssignedRoles(string $role): array
+    {
+        if ($role === self::BASE_ROLE) {
+            return [self::BASE_ROLE];
+        }
+
+        return [self::BASE_ROLE, $role];
+    }
+
+    protected function assignMissingRoles($authManager, int $userId, array $roles, array $existingRoles = []): void
+    {
+        foreach ($roles as $roleName) {
+            if (in_array($roleName, $existingRoles, true)) {
+                continue;
+            }
+
+            $roleObj = $authManager->getRole($roleName);
+            if ($roleObj) {
+                $authManager->assign($roleObj, $userId);
+            }
+        }
     }
 
     /**
@@ -590,11 +618,8 @@ class PluginUserController extends \yii\rest\Controller
                     continue;
                 }
 
-                // 分配角色
-                $roleObj = $authManager->getRole($role);
-                if ($roleObj) {
-                    $authManager->assign($roleObj, $user->id);
-                }
+                // 分配角色：所有用户都有 user，admin/manager 是附加角色
+                $this->assignMissingRoles($authManager, (int)$user->id, $this->resolveAssignedRoles($role));
 
                 $organizationError = $this->replaceUserOrganizations((int)$user->id, $organizationIds ?? []);
                 if ($organizationError !== null) {
@@ -786,13 +811,20 @@ class PluginUserController extends \yii\rest\Controller
         $authManager = Yii::$app->authManager;
         $transaction = Yii::$app->db->beginTransaction();
         try {
-            // 移除所有现有角色
-            $authManager->revokeAll($id);
-            // 分配新角色
-            $roleObj = $authManager->getRole($role);
-            if ($roleObj) {
-                $authManager->assign($roleObj, $id);
+            // 仅切换高权限角色，保留 user 基础角色
+            foreach (self::ELEVATED_ROLES as $roleToRevoke) {
+                if ($roleToRevoke === $role || !in_array($roleToRevoke, $targetRoles, true)) {
+                    continue;
+                }
+
+                $roleObj = $authManager->getRole($roleToRevoke);
+                if ($roleObj) {
+                    $authManager->revoke($roleObj, $id);
+                }
             }
+
+            $nextRoles = $this->resolveAssignedRoles($role);
+            $this->assignMissingRoles($authManager, (int)$id, $nextRoles, $targetRoles);
             $transaction->commit();
         } catch (\Exception $e) {
             $transaction->rollBack();
@@ -809,7 +841,7 @@ class PluginUserController extends \yii\rest\Controller
                 'status' => $targetUser->status,
                 'created_at' => $targetUser->created_at,
                 'updated_at' => $targetUser->updated_at,
-                'roles' => [$role],
+                'roles' => $nextRoles,
             ],
         ];
     }
