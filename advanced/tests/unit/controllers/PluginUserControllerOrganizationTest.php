@@ -19,6 +19,7 @@ final class PluginUserControllerOrganizationTest extends TestCase
     private const DETAIL_TARGET_USERNAME = 'plugin-user-org-detail-target';
     private const UPDATE_TARGET_USERNAME = 'plugin-user-org-update-target';
     private const CREATE_TARGET_USERNAME = 'plugin-user-org-create-target';
+    private const ROLE_TARGET_USERNAME = 'plugin-user-org-role-target';
     private const BATCH_TARGET_USERNAMES = [
         'plugin-user-org-batch-target-1',
         'plugin-user-org-batch-target-2',
@@ -328,6 +329,92 @@ final class PluginUserControllerOrganizationTest extends TestCase
         $this->assertNull(User::findOne(['username' => self::BATCH_TARGET_USERNAMES[0]]));
     }
 
+    public function testChangeRolePreservesAndBackfillsBaseUserRole(): void
+    {
+        $operator = $this->createUser(self::OPERATOR_USERNAME, 'operator@example.com');
+        $target = $this->createUser(self::ROLE_TARGET_USERNAME, 'role-target@example.com');
+
+        $webUser = new WebUser([
+            'identityClass' => User::class,
+            'enableSession' => false,
+        ]);
+        $webUser->setIdentity($operator);
+
+        $authManager = new class((int)$operator->id, (int)$target->id) extends Component {
+            public array $assigned = [];
+            public array $revoked = [];
+
+            public function __construct(
+                private int $operatorId,
+                private int $targetId,
+                $config = []
+            ) {
+                parent::__construct($config);
+            }
+
+            public function checkAccess($userId, $permissionName, $params = []): bool
+            {
+                return $permissionName === 'user-management.change-role';
+            }
+
+            public function getRolesByUser($userId): array
+            {
+                if ((int)$userId === $this->operatorId) {
+                    return $this->rolesToMap(['admin', 'user']);
+                }
+
+                if ((int)$userId === $this->targetId) {
+                    return $this->rolesToMap(['admin']);
+                }
+
+                return [];
+            }
+
+            public function getRole($roleName): object
+            {
+                return (object)['name' => $roleName];
+            }
+
+            public function revoke($role, $userId): bool
+            {
+                $this->revoked[] = [$role->name, (int)$userId];
+                return true;
+            }
+
+            public function assign($role, $userId): bool
+            {
+                $this->assigned[] = [$role->name, (int)$userId];
+                return true;
+            }
+
+            private function rolesToMap(array $roles): array
+            {
+                $items = [];
+                foreach ($roles as $role) {
+                    $items[$role] = (object)['name' => $role];
+                }
+
+                return $items;
+            }
+        };
+
+        Yii::$app->set('user', $webUser);
+        Yii::$app->set('authManager', $authManager);
+        Yii::$app->set('request', new PluginUserTestRequest([], [
+            'id' => $target->id,
+            'role' => 'manager',
+        ]));
+        Yii::$app->set('response', new Response());
+
+        $controller = new PluginUserController('plugin-user', Yii::$app->getModule('v1'));
+        $result = $controller->actionChangeRole();
+
+        $this->assertSame(0, $result['code']);
+        $this->assertSame(['user', 'manager'], $result['data']['roles']);
+        $this->assertSame([['admin', (int)$target->id]], $authManager->revoked);
+        $this->assertSame([['user', (int)$target->id], ['manager', (int)$target->id]], $authManager->assigned);
+    }
+
     private function bootAuthenticatedOperator(int $userId, array $allowedActions): void
     {
         $webUser = new WebUser([
@@ -414,6 +501,7 @@ final class PluginUserControllerOrganizationTest extends TestCase
                 self::DETAIL_TARGET_USERNAME,
                 self::UPDATE_TARGET_USERNAME,
                 self::CREATE_TARGET_USERNAME,
+                self::ROLE_TARGET_USERNAME,
                 ...self::BATCH_TARGET_USERNAMES,
             ]])
             ->column();
