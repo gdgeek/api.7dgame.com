@@ -41,6 +41,34 @@ class WechatController extends \yii\rest\Controller
         return $wx;
         
     }
+
+    private function isLocalDeployment()
+    {
+        $mode = strtolower(getenv('DEPLOYMENT_MODE') ?: 'cloud');
+        return in_array($mode, ['local', 'private'], true);
+    }
+
+    private function featureEnabled($name)
+    {
+        $value = getenv($name);
+        if ($value === false || $value === '') {
+            return !$this->isLocalDeployment();
+        }
+        return in_array(strtolower($value), ['1', 'true', 'yes', 'on'], true);
+    }
+
+    private function disabledWechatResponse()
+    {
+        if ($this->featureEnabled('ENABLE_WECHAT_LOGIN')) {
+            return null;
+        }
+        Yii::$app->response->statusCode = 501;
+        return [
+            'code' => 'FEATURE_DISABLED',
+            'feature' => 'wechat-login',
+            'message' => '微信登录在当前部署模式下已禁用',
+        ];
+    }
     
     private function binding($user, $wx)
     {
@@ -66,6 +94,9 @@ class WechatController extends \yii\rest\Controller
     }*/
     public function actionBinding()
     {
+        if ($disabled = $this->disabledWechatResponse()) {
+            return $disabled;
+        }
         
         $model = new Login();
         if ($model->load(Yii::$app->getRequest()->getBodyParams(), '')) {
@@ -90,6 +121,9 @@ class WechatController extends \yii\rest\Controller
     }
     public function actionSignup()
     {
+        if ($disabled = $this->disabledWechatResponse()) {
+            return $disabled;
+        }
         
         $post = Yii::$app->request->post();
         $token = $post['token'];
@@ -126,6 +160,9 @@ class WechatController extends \yii\rest\Controller
     
     public function actionOpenid($token)
     {
+        if ($disabled = $this->disabledWechatResponse()) {
+            return $disabled;
+        }
         $wx = $this->getWx($token);
         if (isset($wx)) {
             
@@ -144,6 +181,9 @@ class WechatController extends \yii\rest\Controller
     }
     public function actionQrcode()
     {
+        if ($disabled = $this->disabledWechatResponse()) {
+            return $disabled;
+        }
         $wechat = \Yii::$app->wechat;
         $app = $wechat->application();
         

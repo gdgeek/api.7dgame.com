@@ -81,6 +81,34 @@ class SiteController extends \yii\rest\Controller
 
     }
 
+    private function isLocalDeployment()
+    {
+        $mode = strtolower(getenv('DEPLOYMENT_MODE') ?: 'cloud');
+        return in_array($mode, ['local', 'private'], true);
+    }
+
+    private function featureEnabled($name)
+    {
+        $value = getenv($name);
+        if ($value === false || $value === '') {
+            return !$this->isLocalDeployment();
+        }
+        return in_array(strtolower($value), ['1', 'true', 'yes', 'on'], true);
+    }
+
+    private function disabledAppleResponse()
+    {
+        if ($this->featureEnabled('ENABLE_APPLE_LOGIN')) {
+            return null;
+        }
+        Yii::$app->response->statusCode = 501;
+        return [
+            'code' => 'FEATURE_DISABLED',
+            'feature' => 'apple-login',
+            'message' => 'Apple 登录在当前部署模式下已禁用',
+        ];
+    }
+
     /**
      * @OA\Post(
      *     path="/v1/site/apple-id",
@@ -111,6 +139,9 @@ class SiteController extends \yii\rest\Controller
      */
     public function actionAppleId()
     {
+        if ($disabled = $this->disabledAppleResponse()) {
+            return $disabled;
+        }
 
 
 
@@ -255,6 +286,9 @@ class SiteController extends \yii\rest\Controller
      */
     public function actionAppleIdCreate()
     {
+        if ($disabled = $this->disabledAppleResponse()) {
+            return $disabled;
+        }
         $register = new Register();
         $appleId = Yii::$app->request->post('apple_id');
         if (!$appleId) {
@@ -347,6 +381,9 @@ class SiteController extends \yii\rest\Controller
      */
     public function actionAppleIdLink()
     {
+        if ($disabled = $this->disabledAppleResponse()) {
+            return $disabled;
+        }
         $link = new Link();
         $appleId = Yii::$app->request->post('apple_id');
         if (!$appleId) {

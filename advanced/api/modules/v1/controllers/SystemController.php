@@ -23,6 +23,33 @@ use yii\base\Exception;
  */
 class SystemController extends Controller
 {
+    public function actionDeployment()
+    {
+        $mode = $this->deploymentMode();
+        $local = $mode === 'local';
+
+        return [
+            'deploymentMode' => $mode,
+            'storageDriver' => getenv('FILE_STORAGE_DRIVER') ?: ($local ? 'local' : 'cos'),
+            'storage' => [
+                'publicBaseUrl' => getenv('LOCAL_STORAGE_PUBLIC_BASE_URL') ?: '/storage',
+                'publicBucket' => getenv('LOCAL_STORAGE_PUBLIC_BUCKET') ?: 'store',
+                'privateBucket' => getenv('LOCAL_STORAGE_PRIVATE_BUCKET') ?: 'raw',
+                'tempBucket' => getenv('LOCAL_STORAGE_TEMP_BUCKET') ?: 'temp',
+            ],
+            'features' => [
+                'cosStorage' => $this->featureEnabled('ENABLE_COS_STORAGE', !$local),
+                'cosImageProcessing' => $this->featureEnabled('ENABLE_COS_IMAGE_PROCESSING', !$local),
+                'ai3dGenerator' => $this->featureEnabled('ENABLE_AI_3D_GENERATOR', !$local),
+                'wechatLogin' => $this->featureEnabled('ENABLE_WECHAT_LOGIN', !$local),
+                'appleLogin' => $this->featureEnabled('ENABLE_APPLE_LOGIN', !$local),
+                'geoIpLocale' => $this->featureEnabled('ENABLE_GEO_IP_LOCALE', !$local),
+                'analytics' => $this->featureEnabled('ENABLE_ANALYTICS', !$local),
+                'externalCdn' => $this->featureEnabled('ENABLE_EXTERNAL_CDN', !$local),
+            ],
+        ];
+    }
+
     /**
      * @OA\Get(
      *     path="/v1/system/test",
@@ -455,7 +482,7 @@ class SystemController extends Controller
             'authMethods' => [
                 JwtHttpBearerAuth::class,
             ],
-            'except' => ['options'],
+            'except' => ['options', 'deployment'],
         ];
 
         $behaviors['access'] = [
@@ -463,7 +490,7 @@ class SystemController extends Controller
             'rules' => [
                 [
                     'allow' => true,
-                    'actions' => ['options'],
+                    'actions' => ['options', 'deployment'],
                 ],
                 [
                     'allow' => true,
@@ -474,6 +501,21 @@ class SystemController extends Controller
         ];
 
         return $behaviors;
+    }
+
+    private function deploymentMode()
+    {
+        $mode = strtolower(getenv('DEPLOYMENT_MODE') ?: 'cloud');
+        return in_array($mode, ['local', 'private'], true) ? 'local' : 'cloud';
+    }
+
+    private function featureEnabled($name, $default)
+    {
+        $value = getenv($name);
+        if ($value === false || $value === '') {
+            return (bool)$default;
+        }
+        return in_array(strtolower($value), ['1', 'true', 'yes', 'on'], true);
     }
 
 

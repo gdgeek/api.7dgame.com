@@ -36,6 +36,21 @@ class ThemeAsset extends AssetBundle
     public $depends = [
         'yii\web\YiiAsset',
     ];
-}
 
+    public function init()
+    {
+        parent::init();
+        $mode = strtolower(getenv('DEPLOYMENT_MODE') ?: 'cloud');
+        $externalCdn = getenv('ENABLE_EXTERNAL_CDN');
+        $externalCdnEnabled = $externalCdn === false || $externalCdn === ''
+            ? !in_array($mode, ['local', 'private'], true)
+            : in_array(strtolower($externalCdn), ['1', 'true', 'yes', 'on'], true);
+
+        if (!$externalCdnEnabled) {
+            $this->css = array_values(array_filter($this->css, function ($href) {
+                return !preg_match('/^https?:\/\//i', $href);
+            }));
+        }
+    }
+}
 

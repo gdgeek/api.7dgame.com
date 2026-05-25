@@ -9,6 +9,8 @@ use yii\base\Exception;
 use yii\filters\auth\CompositeAuth;
 use yii\helpers\ArrayHelper;
 use yii\web\UploadedFile;
+use yii\web\BadRequestHttpException;
+use yii\web\ServerErrorHttpException;
 use OpenApi\Annotations as OA;
 
 /**
@@ -94,13 +96,24 @@ class UploadController extends \yii\rest\Controller
         }
         $data = \Yii::$app->request->post();
 
-        $skip = ArrayHelper::getValue($data, 'skip'); //['skip'];
-        $filename = ArrayHelper::getValue($data, 'filename'); //['skip'];
-        $size = ArrayHelper::getValue($data, 'size'); //['skip'];
-        $upload_size = ArrayHelper::getValue($data, 'upload_size'); //['skip'];
-        $md5 = ArrayHelper::getValue($data, 'md5'); //['skip'];
-        $directory = ArrayHelper::getValue($data, 'directory'); //['skip'];
-        $bucket = ArrayHelper::getValue($data, 'bucket'); //['skip'];
+        $skip = (int)ArrayHelper::getValue($data, 'skip', 0);
+        $blockSize = (int)ArrayHelper::getValue($data, 'block_size', 1048576);
+        $filename = $this->normalizeFilename(ArrayHelper::getValue($data, 'filename'));
+        $size = (int)ArrayHelper::getValue($data, 'size', 0);
+        $upload_size = (int)ArrayHelper::getValue($data, 'upload_size', 0);
+        $md5 = strtolower((string)ArrayHelper::getValue($data, 'md5'));
+        $directory = $this->normalizeDirectory(ArrayHelper::getValue($data, 'directory', ''));
+        $bucket = (string)ArrayHelper::getValue($data, 'bucket', 'store');
+
+        if (!in_array($bucket, $storage->buckets, true)) {
+            throw new BadRequestHttpException('非法存储桶');
+        }
+        if ($size <= 0 || $upload_size <= 0 || $upload_size > $size || $blockSize <= 0) {
+            throw new BadRequestHttpException('非法文件大小');
+        }
+        if (!preg_match('/^[a-f0-9]{32}$/', $md5)) {
+            throw new BadRequestHttpException('非法 MD5');
+        }
 
         $file = UploadedFile::getInstanceByName('file');
 
@@ -108,22 +121,76 @@ class UploadController extends \yii\rest\Controller
             throw new Exception('没有上传文件', 400);
         }
 
-        $path = $storage->tempDirector . $filename;
+        $path = $storage->tempDirector . $md5 . '.part';
         if ($skip == 0) {
-            $file->saveAs($path);
+            if (!$file->saveAs($path)) {
+                throw new ServerErrorHttpException('保存上传分片失败');
+            }
         } else {
+            $expectedOffset = $skip * $blockSize;
+            if (!is_file($path) || filesize($path) !== $expectedOffset) {
+                throw new BadRequestHttpException('上传分片偏移不匹配');
+            }
             file_put_contents($path, file_get_contents($file->tempName), FILE_APPEND);
         }
 
         if ($size <= $upload_size) {
             if ($md5 == md5_file($path)) {
-                rename($path, $storage->targetDirector($bucket, $directory) . $filename);
-                return json_encode(['target' => $storage->targetDirector($bucket, $directory), 'over' => true, 'data' => $data]);
+                $targetDirectory = $storage->targetDirector($bucket, $directory);
+                $target = $targetDirectory . $filename;
+                if (!rename($path, $target)) {
+                    throw new ServerErrorHttpException('移动上传文件失败');
+                }
+                $key = ltrim(($directory === '' ? '' : $directory . '/') . $filename, '/');
+                return [
+                    'over' => true,
+                    'bucket' => $bucket,
+                    'key' => $key,
+                    'url' => $storage->publicUrl($bucket, $key),
+                    'filename' => $filename,
+                    'size' => $size,
+                    'md5' => $md5,
+                    'target' => $targetDirectory,
+                    'data' => $data,
+                ];
             }
+            throw new BadRequestHttpException('文件 MD5 校验失败');
         }
 
-        return json_encode(['over' => false, 'data' => $data]);
+        return [
+            'over' => false,
+            'bucket' => $bucket,
+            'filename' => $filename,
+            'size' => $size,
+            'uploadedSize' => filesize($path),
+            'md5' => $md5,
+            'data' => $data,
+        ];
 
+    }
+
+    private function normalizeFilename($filename)
+    {
+        $filename = trim((string)$filename);
+        if ($filename === '' || preg_match('/[\x00-\x1F\x7F]/', $filename)) {
+            throw new BadRequestHttpException('非法文件名');
+        }
+        if (strpos($filename, '/') !== false || strpos($filename, '\\') !== false || strpos($filename, '..') !== false) {
+            throw new BadRequestHttpException('非法文件名');
+        }
+        return $filename;
+    }
+
+    private function normalizeDirectory($directory)
+    {
+        $directory = trim((string)$directory, '/');
+        if ($directory === '') {
+            return '';
+        }
+        if (preg_match('/[\x00-\x1F\x7F]/', $directory) || strpos($directory, '\\') !== false || strpos($directory, '..') !== false) {
+            throw new BadRequestHttpException('非法目录');
+        }
+        return $directory;
     }
 
 }

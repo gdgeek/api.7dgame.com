@@ -83,6 +83,8 @@ return [
             'rules' => [
                 // 健康检查路由（无需认证）
                 'GET health' => 'health/index',
+                'GET storage/<bucket>/<key:.+>' => 'storage/file',
+                'HEAD storage/<bucket>/<key:.+>' => 'storage/file',
                 
                 // Swagger API 文档路由
                 'GET swagger' => 'swagger/index',
@@ -251,15 +253,14 @@ return [
                     ],
                 ],
               
-                // 本地文件上传已废弃，统一走 COS 直传，暂时注释观察
-                // [
-                //     'class' => 'yii\rest\UrlRule',
-                //     'controller' => 'v1/upload',
-                //     'pluralize' => false,
-                //     'extraPatterns' => [
-                //         'POST file' => 'file',
-                //     ],
-                // ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/upload',
+                    'pluralize' => false,
+                    'extraPatterns' => [
+                        'POST file' => 'file',
+                    ],
+                ],
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/tools',
@@ -292,6 +293,7 @@ return [
                     ],
                     'extraPatterns' => [
                         'GET test' => 'test',
+                        'GET deployment' => 'deployment',
                         'POST upgrade' => 'upgrade',
                     ],
                 ],

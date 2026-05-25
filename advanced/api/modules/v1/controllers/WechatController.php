@@ -26,6 +26,34 @@ class WechatController extends \yii\rest\Controller
         return $behaviors;
     }
 
+    private function isLocalDeployment()
+    {
+        $mode = strtolower(getenv('DEPLOYMENT_MODE') ?: 'cloud');
+        return in_array($mode, ['local', 'private'], true);
+    }
+
+    private function featureEnabled($name)
+    {
+        $value = getenv($name);
+        if ($value === false || $value === '') {
+            return !$this->isLocalDeployment();
+        }
+        return in_array(strtolower($value), ['1', 'true', 'yes', 'on'], true);
+    }
+
+    private function disabledWechatResponse()
+    {
+        if ($this->featureEnabled('ENABLE_WECHAT_LOGIN')) {
+            return null;
+        }
+        Yii::$app->response->statusCode = 501;
+        return [
+            'code' => 'FEATURE_DISABLED',
+            'feature' => 'wechat-login',
+            'message' => '微信登录在当前部署模式下已禁用',
+        ];
+    }
+
     /**
      * @OA\Post(
      *     path="/v1/wechat/login",
@@ -52,6 +80,9 @@ class WechatController extends \yii\rest\Controller
      * )
      */
     public function actionLogin(){
+        if ($disabled = $this->disabledWechatResponse()) {
+            return $disabled;
+        }
         $token = Yii::$app->request->post("token");
         if (!$token) {
             throw new BadRequestHttpException("token is required");
@@ -97,6 +128,9 @@ class WechatController extends \yii\rest\Controller
      * )
      */
     public function actionRegister(){
+        if ($disabled = $this->disabledWechatResponse()) {
+            return $disabled;
+        }
         $token = Yii::$app->request->post("token");
         if (!$token) {
             throw new BadRequestHttpException("token is required");

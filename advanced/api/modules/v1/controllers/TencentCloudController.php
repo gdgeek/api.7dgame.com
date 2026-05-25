@@ -69,11 +69,29 @@ class TencentCloudController extends Controller
      */
     public function actionCloud()
     {
+        if ($this->isLocalDeployment()) {
+            return [
+                'driver' => 'local',
+                'public' => [
+                    'bucket' => getenv('LOCAL_STORAGE_PUBLIC_BUCKET') ?: 'store',
+                    'baseUrl' => getenv('LOCAL_STORAGE_PUBLIC_BASE_URL') ?: '/storage',
+                ],
+                'private' => [
+                    'bucket' => getenv('LOCAL_STORAGE_PRIVATE_BUCKET') ?: 'raw',
+                ],
+                'temp' => [
+                    'bucket' => getenv('LOCAL_STORAGE_TEMP_BUCKET') ?: 'temp',
+                ],
+            ];
+        }
         $cloud = Yii::$app->secret->cloud;
         return $cloud;
     }
     public function actionPublicToken()
     {
+        if ($this->isLocalDeployment()) {
+            return $this->featureDisabled('cos-storage');
+        }
         $cloud = Yii::$app->secret->cloud['public'];
         return $this->actionToken($cloud['bucket'], $cloud['region']);
     }
@@ -110,8 +128,11 @@ class TencentCloudController extends Controller
      *     )
      * )
      */
-    public function actionToken($bucket, $region = 'ap-nanjing')
+    public function actionToken($bucket = null, $region = 'ap-nanjing')
     {
+        if ($this->isLocalDeployment()) {
+            return $this->featureDisabled('cos-storage');
+        }
         //如果$bucket为空，则使用默认值
         if (empty($bucket)) {
             $bucket = Yii::$app->secret->cloud['bucket'];
@@ -168,6 +189,23 @@ class TencentCloudController extends Controller
         $resp = $client->GetFederationToken($req);
         //!!$resp->StartTime = time();
         return $resp;
+    }
+
+    private function isLocalDeployment()
+    {
+        $mode = strtolower(getenv('DEPLOYMENT_MODE') ?: 'cloud');
+        $driver = strtolower(getenv('FILE_STORAGE_DRIVER') ?: '');
+        return in_array($mode, ['local', 'private'], true) || $driver === 'local';
+    }
+
+    private function featureDisabled($feature)
+    {
+        Yii::$app->response->statusCode = 501;
+        return [
+            'code' => 'FEATURE_DISABLED',
+            'message' => '该功能在本地部署模式下不可用',
+            'feature' => $feature,
+        ];
     }
     
 }
