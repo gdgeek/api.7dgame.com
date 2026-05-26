@@ -28,9 +28,11 @@ class SystemController extends Controller
         $mode = $this->deploymentMode();
         $local = $mode === 'local';
 
+        Yii::$app->response->headers->set('Cache-Control', 'no-store');
+
         return [
             'deploymentMode' => $mode,
-            'storageDriver' => getenv('FILE_STORAGE_DRIVER') ?: ($local ? 'local' : 'cos'),
+            'storageDriver' => $this->storageDriver($local),
             'storage' => [
                 'publicBaseUrl' => getenv('LOCAL_STORAGE_PUBLIC_BASE_URL') ?: '/storage',
                 'publicBucket' => getenv('LOCAL_STORAGE_PUBLIC_BUCKET') ?: 'store',
@@ -507,6 +509,15 @@ class SystemController extends Controller
     {
         $mode = strtolower(getenv('DEPLOYMENT_MODE') ?: 'cloud');
         return in_array($mode, ['local', 'private'], true) ? 'local' : 'cloud';
+    }
+
+    private function storageDriver($local)
+    {
+        $driver = strtolower(getenv('FILE_STORAGE_DRIVER') ?: '');
+        if (in_array($driver, ['local', 'cos'], true)) {
+            return $driver;
+        }
+        return $local ? 'local' : 'cos';
     }
 
     private function featureEnabled($name, $default)
