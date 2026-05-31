@@ -64,7 +64,7 @@ class AuthController extends \yii\rest\Controller
     public function actionRefresh(){
 
         $refreshToken = Yii::$app->request->post("refreshToken");
-        if(!$refreshToken){
+        if(!is_string($refreshToken) || $refreshToken === ''){
             throw new BadRequestHttpException("refreshToken is required");
         }
         $user = User::findByRefreshToken($refreshToken);

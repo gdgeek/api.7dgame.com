@@ -140,16 +140,28 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
 
     public static function findByRefreshToken($refreshToken)
     {
+        $tokenHash = RefreshToken::hashToken($refreshToken);
+        $token = RefreshToken::find()->where(['key' => $tokenHash])->one();
 
-        $token = RefreshToken::find()->where(['key' => $refreshToken])->one();
+        // Backward-compatible one-time migration for existing plaintext tokens.
+        if (!$token) {
+            $token = RefreshToken::find()->where(['key' => $refreshToken])->one();
+        }
 
         if (!$token) {
             throw new \yii\web\UnauthorizedHttpException('Refresh token is invalid.');
         }
+        if ($token->isExpired()) {
+            $token->delete();
+            throw new \yii\web\UnauthorizedHttpException('Refresh token is expired.');
+        }
+
         $user = static::findIdentity($token->user_id);
         if (!$user) {
+            $token->delete();
             throw new \yii\web\UnauthorizedHttpException('User is not found.');
         }
+        $token->delete();
         return $user;
     }
     public function getRefreshToken()
@@ -161,14 +173,18 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
         $token = new RefreshToken();
         $token->user_id = $this->id;
 
-        $token->key = Yii::$app->security->generateRandomString();
-        $token->save();
+        $refreshToken = Yii::$app->security->generateRandomString(64);
+        $token->key = RefreshToken::hashToken($refreshToken);
+        $token->expires_at = time() + RefreshToken::expirySeconds();
+        if (!$token->save()) {
+            throw new \yii\web\ServerErrorHttpException('Failed to create refresh token.');
+        }
         $now = new \DateTimeImmutable('now', new \DateTimeZone(\Yii::$app->timeZone));
         $expires = $now->modify('+3 hour');
         return [
             'accessToken' => $this->generateAccessToken($now, $expires),
             'expires' => $expires->format('Y-m-d H:i:s'),
-            'refreshToken' => $token->key,
+            'refreshToken' => $refreshToken,
         ];
     }
     public function getAuth()
