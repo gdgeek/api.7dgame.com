@@ -342,7 +342,7 @@ class PasswordController extends Controller
             ];
         }
 
-        $form = new ChangePasswordForm();
+        $form = new ChangePasswordForm(['user' => $user]);
         $form->load(Yii::$app->request->post(), '');
 
         if (!$form->validate()) {

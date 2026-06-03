@@ -27,44 +27,36 @@ class PasswordPolicyValidatorTest extends TestCase
 
     public function testTooShortPasswordFails(): void
     {
-        $result = $this->validator->validate('Short1!a');
+        $result = $this->validator->validate('Sh1!abc');
         $this->assertFalse($result['valid']);
         $this->assertNotEmpty($result['errors']);
     }
 
     public function testExactMinLengthPasses(): void
     {
-        // 12 chars: Abcdefgh1!23
-        $result = $this->validator->validate('Abcdefgh1!23');
+        // 8 chars, 3 categories
+        $result = $this->validator->validate('Abcdef12');
         $this->assertTrue($result['valid']);
     }
 
-    public function testMissingUppercaseFails(): void
-    {
-        $result = $this->validator->validate('alllowercase1!');
-        $this->assertFalse($result['valid']);
-        $this->assertTrue($this->hasErrorContaining($result['errors'], '大写字母'));
-    }
-
-    public function testMissingLowercaseFails(): void
-    {
-        $result = $this->validator->validate('ALLUPPERCASE1!');
-        $this->assertFalse($result['valid']);
-        $this->assertTrue($this->hasErrorContaining($result['errors'], '小写字母'));
-    }
-
-    public function testMissingDigitFails(): void
-    {
-        $result = $this->validator->validate('NoDigitsHere!!');
-        $this->assertFalse($result['valid']);
-        $this->assertTrue($this->hasErrorContaining($result['errors'], '数字'));
-    }
-
-    public function testMissingSpecialCharFails(): void
+    public function testOneMissingCategoryStillPasses(): void
     {
         $result = $this->validator->validate('NoSpecial12345');
+        $this->assertTrue($result['valid']);
+    }
+
+    public function testOnlyTwoCategoriesFails(): void
+    {
+        $result = $this->validator->validate('lowercase123');
         $this->assertFalse($result['valid']);
-        $this->assertTrue($this->hasErrorContaining($result['errors'], '特殊字符'));
+        $this->assertTrue($this->hasErrorContaining($result['errors'], '至少包含 3 类'));
+    }
+
+    public function testCountsCharacterCategories(): void
+    {
+        $this->assertSame(4, $this->validator->countCharacterCategories('Abc123!@'));
+        $this->assertSame(3, $this->validator->countCharacterCategories('Abc12345'));
+        $this->assertSame(2, $this->validator->countCharacterCategories('abc12345'));
     }
 
     public function testWeakPasswordFails(): void
@@ -91,13 +83,22 @@ class PasswordPolicyValidatorTest extends TestCase
     public function testGetPolicyDescription(): void
     {
         $desc = $this->validator->getPolicyDescription();
-        $this->assertStringContainsString('12', $desc);
+        $this->assertStringContainsString('8', $desc);
+        $this->assertStringContainsString('64', $desc);
+        $this->assertStringContainsString('3', $desc);
     }
 
     public function testIsWeakPasswordMethod(): void
     {
         $this->assertTrue($this->validator->isWeakPassword('Admin123456!'));
         $this->assertFalse($this->validator->isWeakPassword('Xk9#mP2$vL7@nQ'));
+    }
+
+    public function testPasswordContainingUsernameFails(): void
+    {
+        $result = $this->validator->validate('Dirui2026!', ['username' => 'dirui']);
+        $this->assertFalse($result['valid']);
+        $this->assertTrue($this->hasErrorContaining($result['errors'], '用户名'));
     }
 
     private function hasErrorContaining(array $errors, string $keyword): bool

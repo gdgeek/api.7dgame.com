@@ -11,6 +11,8 @@ use Yii;
  */
 class UserTest extends TestCase
 {
+    private const SAFE_PASSWORD = 'N9#VaultSafe';
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -26,7 +28,7 @@ class UserTest extends TestCase
      */
     public function testCreateUser()
     {
-        $user = User::create('test@example.com', 'Test123!@#');
+        $user = User::create('test@example.com', self::SAFE_PASSWORD);
         $this->assertNotNull($user->auth_key, '应该生成 auth_key');
         $this->assertNotNull($user->password_hash, '应该生成 password_hash');
         $this->assertTrue($user->save(), '用户应该能够保存');
@@ -40,7 +42,7 @@ class UserTest extends TestCase
      */
     public function testFindByUsername()
     {
-        $user = User::create('test2@example.com', 'Test123!@#');
+        $user = User::create('test2@example.com', self::SAFE_PASSWORD);
         $user->save();
 
         $found = User::findByUsername('test2@example.com');
@@ -56,7 +58,7 @@ class UserTest extends TestCase
      */
     public function testFindByEmail()
     {
-        $user = User::create('test3@example.com', 'Test123!@#');
+        $user = User::create('test3@example.com', self::SAFE_PASSWORD);
         $user->email = 'test3@example.com';
         $user->save();
 
@@ -73,10 +75,10 @@ class UserTest extends TestCase
      */
     public function testValidatePassword()
     {
-        $user = User::create('test4@example.com', 'Test123!@#');
+        $user = User::create('test4@example.com', self::SAFE_PASSWORD);
         $user->save();
 
-        $this->assertTrue($user->validatePassword('Test123!@#'), '正确的密码应该验证通过');
+        $this->assertTrue($user->validatePassword(self::SAFE_PASSWORD), '正确的密码应该验证通过');
         $this->assertFalse($user->validatePassword('wrongpassword'), '错误的密码应该验证失败');
         
         // 清理
@@ -88,7 +90,7 @@ class UserTest extends TestCase
      */
     public function testIsEmailVerifiedReturnsFalseWhenNull()
     {
-        $user = User::create('test5@example.com', 'Test123!@#');
+        $user = User::create('test5@example.com', self::SAFE_PASSWORD);
         $user->email = 'test5@example.com';
         $user->save();
 
@@ -103,7 +105,7 @@ class UserTest extends TestCase
      */
     public function testIsEmailVerifiedReturnsTrueWhenSet()
     {
-        $user = User::create('test6@example.com', 'Test123!@#');
+        $user = User::create('test6@example.com', self::SAFE_PASSWORD);
         $user->email = 'test6@example.com';
         $user->email_verified_at = time();
         $user->save();
@@ -119,7 +121,7 @@ class UserTest extends TestCase
      */
     public function testMarkEmailAsVerified()
     {
-        $user = User::create('test7@example.com', 'Test123!@#');
+        $user = User::create('test7@example.com', self::SAFE_PASSWORD);
         $user->email = 'test7@example.com';
         $user->save();
 
@@ -147,7 +149,7 @@ class UserTest extends TestCase
      */
     public function testGenerateAccessToken()
     {
-        $user = User::create('test8@example.com', 'Test123!@#');
+        $user = User::create('test8@example.com', self::SAFE_PASSWORD);
         $user->save();
 
         $token = $user->generateAccessToken();
@@ -164,7 +166,7 @@ class UserTest extends TestCase
     public function testUsernameRequired()
     {
         $user = new User();
-        $user->setPassword('Test123!@#');
+        $user->setPassword(self::SAFE_PASSWORD);
         $user->generateAuthKey();
 
         $this->assertFalse($user->validate(), '没有用户名应该验证失败');
@@ -190,10 +192,10 @@ class UserTest extends TestCase
      */
     public function testUsernameUnique()
     {
-        $user1 = User::create('test10@example.com', 'Test123!@#');
+        $user1 = User::create('test10@example.com', self::SAFE_PASSWORD);
         $user1->save();
 
-        $user2 = User::create('test10@example.com', 'Test123!@#');
+        $user2 = User::create('test10@example.com', self::SAFE_PASSWORD);
         $this->assertFalse($user2->save(), '相同用户名应该保存失败');
         $this->assertArrayHasKey('username', $user2->errors);
         
