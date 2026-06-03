@@ -42,11 +42,10 @@ class ResetPasswordForm extends Model
     {
         return [
             ['password', 'required', 'message' => '{attribute}不能为空'],
-            [['token', 'email', 'code', 'password'], 'trim'],
+            [['token', 'email', 'code'], 'trim'],
             ['token', 'validateResetIdentifier', 'skipOnEmpty' => false],
             ['token', 'string', 'min' => 32, 'max' => 255, 'tooShort' => '令牌格式不正确'],
             ['token', 'match', 'pattern' => '/^[A-Za-z0-9\-_]+$/', 'message' => '令牌格式不正确'],
-            ['password', 'trim'],
             ['email', 'email', 'message' => '邮箱格式不正确', 'when' => function ($model) {
                 return empty($model->token);
             }],
@@ -62,10 +61,10 @@ class ResetPasswordForm extends Model
             [
                 'password', 
                 'string', 
-                'min' => 12, 
-                'max' => 128, 
-                'tooShort' => '密码长度不能少于 12 个字符',
-                'tooLong' => '密码长度不能超过 128 个字符'
+                'min' => 8,
+                'max' => 64,
+                'tooShort' => '密码长度不能少于 8 个字符',
+                'tooLong' => '密码长度不能超过 64 个字符'
             ],
             ['password', 'validatePasswordPolicy'],
         ];
@@ -105,7 +104,9 @@ class ResetPasswordForm extends Model
             return;
         }
         $validator = new PasswordPolicyValidator();
-        $result = $validator->validate($this->$attribute);
+        $result = $validator->validate($this->$attribute, [
+            'email' => $this->email,
+        ]);
         if (!$result['valid']) {
             foreach ($result['errors'] as $error) {
                 $this->addError($attribute, $error);

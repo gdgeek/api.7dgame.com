@@ -11,6 +11,11 @@ use common\components\security\PasswordPolicyValidator;
 class ChangePasswordForm extends Model
 {
     /**
+     * @var User|null 当前登录用户，用于账号信息校验
+     */
+    public $user;
+
+    /**
      * @var string 旧密码
      */
     public $old_password;
@@ -32,8 +37,10 @@ class ChangePasswordForm extends Model
     {
         return [
             [['old_password', 'new_password', 'confirm_password'], 'required', 'message' => '{attribute}不能为空'],
-            [['old_password', 'new_password', 'confirm_password'], 'trim'],
-            [['old_password', 'new_password', 'confirm_password'], 'string', 'min' => 1, 'max' => 128],
+            ['old_password', 'string'],
+            [['new_password', 'confirm_password'], 'string', 'min' => 8, 'max' => 64,
+                'tooShort' => '密码长度不能少于 8 个字符',
+                'tooLong' => '密码长度不能超过 64 个字符'],
             ['new_password', 'compare', 'compareAttribute' => 'confirm_password', 'message' => '两次输入的新密码不一致'],
             ['new_password', 'validatePasswordPolicy'],
         ];
@@ -48,7 +55,10 @@ class ChangePasswordForm extends Model
             return;
         }
         $validator = new PasswordPolicyValidator();
-        $result = $validator->validate($this->$attribute);
+        $result = $validator->validate($this->$attribute, [
+            'username' => $this->user->username ?? null,
+            'email' => $this->user->email ?? null,
+        ]);
         if (!$result['valid']) {
             foreach ($result['errors'] as $error) {
                 $this->addError($attribute, $error);

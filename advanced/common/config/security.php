@@ -65,25 +65,31 @@ return [
 
     /**
      * Password Policy Configuration
-     * Requirement 5.1: WHEN a password is created, THE Auth_Manager SHALL enforce a minimum length of 12 characters
-     * Requirement 5.2: WHEN a password is created, THE Auth_Manager SHALL require at least one uppercase letter, one lowercase letter, one digit, and one special character
+     * Requirement 5.1: WHEN a password is created, THE Auth_Manager SHALL enforce a length of 8-64 characters
+     * Requirement 5.2: WHEN a password is created, THE Auth_Manager SHALL require at least 3 of uppercase, lowercase, digit, and special character categories
      * Requirement 5.3: WHEN a password is changed, THE Auth_Manager SHALL verify it differs from the previous 5 passwords
      * Requirement 5.4: WHEN a password is stored, THE Auth_Manager SHALL hash it using bcrypt with a cost factor of at least 12
      */
     'password' => [
         // Minimum password length
-        'minLength' => (int)(getenv('PASSWORD_MIN_LENGTH') ?: 12),
+        'minLength' => (int)(getenv('PASSWORD_MIN_LENGTH') ?: 8),
+
+        // Maximum password length
+        'maxLength' => (int)(getenv('PASSWORD_MAX_LENGTH') ?: 64),
+
+        // Minimum number of required character categories
+        'minCharacterCategories' => (int)(getenv('PASSWORD_MIN_CHARACTER_CATEGORIES') ?: 3),
         
-        // Require uppercase letter
+        // Count uppercase letters as one password category
         'requireUppercase' => filter_var(getenv('PASSWORD_REQUIRE_UPPERCASE') ?: 'true', FILTER_VALIDATE_BOOLEAN),
         
-        // Require lowercase letter
+        // Count lowercase letters as one password category
         'requireLowercase' => filter_var(getenv('PASSWORD_REQUIRE_LOWERCASE') ?: 'true', FILTER_VALIDATE_BOOLEAN),
         
-        // Require digit
+        // Count digits as one password category
         'requireDigit' => filter_var(getenv('PASSWORD_REQUIRE_DIGIT') ?: 'true', FILTER_VALIDATE_BOOLEAN),
         
-        // Require special character
+        // Count special characters as one password category
         'requireSpecial' => filter_var(getenv('PASSWORD_REQUIRE_SPECIAL') ?: 'true', FILTER_VALIDATE_BOOLEAN),
         
         // Number of previous passwords to check against

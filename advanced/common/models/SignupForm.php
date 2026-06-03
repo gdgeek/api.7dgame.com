@@ -34,9 +34,9 @@ class SignupForm extends Model
             ['email', 'unique', 'targetClass' => '\api\modules\v1\models\User', 'message' => 'This email address has already been taken.'],
 
             ['password', 'required'],
-            ['password', 'string', 'min' => 12, 'max' => 128,
-                'tooShort' => '密码长度不能少于 12 个字符',
-                'tooLong' => '密码长度不能超过 128 个字符'],
+            ['password', 'string', 'min' => 8, 'max' => 64,
+                'tooShort' => '密码长度不能少于 8 个字符',
+                'tooLong' => '密码长度不能超过 64 个字符'],
             ['password', 'validatePasswordPolicy'],
 
 			
@@ -55,7 +55,10 @@ class SignupForm extends Model
             return;
         }
         $validator = new PasswordPolicyValidator();
-        $result = $validator->validate($this->$attribute);
+        $result = $validator->validate($this->$attribute, [
+            'username' => $this->username,
+            'email' => $this->email,
+        ]);
         if (!$result['valid']) {
             foreach ($result['errors'] as $error) {
                 $this->addError($attribute, $error);
