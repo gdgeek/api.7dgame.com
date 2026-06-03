@@ -114,6 +114,8 @@ final class SnapshotTest extends TestCase
         Yii::$app->db->createCommand()->createTable('{{%manager}}', [
             'id' => 'pk',
             'verse_id' => 'integer not null',
+            'type' => 'string not null',
+            'data' => 'text',
         ])->execute();
     }
 
@@ -204,13 +206,82 @@ final class SnapshotTest extends TestCase
         $this->assertNull($array['space']);
     }
 
-    private function insertVerse(int $id): void
+    public function testCreateByIdKeepsCollectionFieldsAsArraysAfterSave(): void
+    {
+        $this->insertVerse(503, [
+            'type' => 'Verse',
+            'children' => [
+                'modules' => [
+                    [
+                        'type' => 'Module',
+                        'parameters' => [
+                            'meta_id' => 801,
+                            'uuid' => 'module-801',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+        Yii::$app->db->createCommand()->insert('{{%meta}}', [
+            'id' => 801,
+            'author_id' => 42,
+            'uuid' => 'meta-801',
+            'title' => 'Meta 801',
+            'data' => '{"type":"MetaRoot","children":{"entities":[]}}',
+            'events' => '{"inputs":[],"outputs":[]}',
+            'prefab' => 0,
+        ])->execute();
+        Yii::$app->db->createCommand()->insert('{{%verse_meta}}', [
+            'verse_id' => 503,
+            'meta_id' => 801,
+        ])->execute();
+
+        $this->insertFile(201, 'model.glb', 'model-key');
+        $this->insertFile(202, 'model.jpg', 'model-image-key', 'image/jpeg');
+        Yii::$app->db->createCommand()->insert('{{%resource}}', [
+            'id' => 901,
+            'name' => 'model.glb',
+            'type' => 'polygen',
+            'author_id' => 42,
+            'file_id' => 201,
+            'image_id' => 202,
+            'info' => '{"size":{"x":1,"y":2,"z":3}}',
+            'uuid' => 'resource-901',
+        ])->execute();
+        Yii::$app->db->createCommand()->insert('{{%meta_resource}}', [
+            'meta_id' => 801,
+            'resource_id' => 901,
+        ])->execute();
+        Yii::$app->db->createCommand()->insert('{{%manager}}', [
+            'verse_id' => 503,
+            'type' => 'score',
+            'data' => '{"value":10}',
+        ])->execute();
+
+        $snapshot = Snapshot::CreateById(503);
+        $snapshot->detachBehaviors();
+        $snapshot->created_at = '2026-05-05 13:30:00';
+        $this->assertTrue($snapshot->save());
+
+        $reloaded = Snapshot::findOne(['verse_id' => 503]);
+        $this->assertNotNull($reloaded);
+        $array = $reloaded->toArray([], ['metas', 'resources', 'managers']);
+
+        $this->assertIsArray($array['metas']);
+        $this->assertSame(801, $array['metas'][0]['id']);
+        $this->assertIsArray($array['resources']);
+        $this->assertSame(901, $array['resources'][0]['id']);
+        $this->assertIsArray($array['managers']);
+        $this->assertSame('score', $array['managers'][0]['type']);
+    }
+
+    private function insertVerse(int $id, ?array $data = null): void
     {
         Yii::$app->db->createCommand()->insert('{{%verse}}', [
             'id' => $id,
             'author_id' => 42,
             'name' => 'Verse ' . $id,
-            'data' => '{"children":{"modules":[]}}',
+            'data' => json_encode($data ?? ['children' => ['modules' => []]]),
             'uuid' => 'verse-' . $id,
             'description' => 'Snapshot test verse',
         ])->execute();
