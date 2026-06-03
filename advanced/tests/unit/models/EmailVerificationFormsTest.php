@@ -291,7 +291,7 @@ class EmailVerificationFormsTest extends TestCase
     {
         $form = new ResetPasswordForm();
         $form->token = str_repeat('a', 32);
-        $form->password = 'Ab1!'; // 少于 6 字符
+        $form->password = 'Ab1!'; // 少于 8 字符
         
         $this->assertFalse($form->validate(), "Form should be invalid");
         $this->assertArrayHasKey('password', $form->errors);
@@ -305,72 +305,49 @@ class EmailVerificationFormsTest extends TestCase
     {
         $form = new ResetPasswordForm();
         $form->token = str_repeat('a', 32);
-        $form->password = 'Ab1!' . str_repeat('x', 124); // 128 字符
+        $form->password = 'Ab1!' . str_repeat('x', 61); // 65 字符
 
-        // 密码策略可能没有最大长度限制，只要满足复杂度即可
-        // 如果有最大长度限制则验证失败，否则验证通过
-        $result = $form->validate();
-        if (!$result) {
-            $this->assertArrayHasKey('password', $form->errors);
-        } else {
-            $this->assertTrue(true, "No max length restriction on password");
+        $this->assertFalse($form->validate(), "Form should be invalid");
+        $this->assertArrayHasKey('password', $form->errors);
+        $this->assertStringContainsString('不能超过', $form->getFirstError('password'));
+    }
+    
+    /**
+     * 测试 ResetPasswordForm - 密码缺少一类字符仍然有效
+     */
+    public function testResetPasswordFormPasswordMissingOneCategoryStillValid()
+    {
+        $validPasswords = [
+            'password123!@#', // 没有大写字母
+            'PASSWORD123!@#', // 没有小写字母
+            'PasswordAbc!@#', // 没有数字
+            'Password12345',  // 没有特殊字符
+        ];
+
+        foreach ($validPasswords as $password) {
+            $form = new ResetPasswordForm();
+            $form->token = str_repeat('a', 32);
+            $form->password = $password;
+
+            $this->assertTrue(
+                $form->validate(),
+                "Password '{$password}' should be valid when it has at least 3 character categories"
+            );
         }
     }
-    
+
     /**
-     * 测试 ResetPasswordForm - 密码缺少大写字母
+     * 测试 ResetPasswordForm - 密码只包含两类字符
      */
-    public function testResetPasswordFormPasswordNoUppercase()
+    public function testResetPasswordFormPasswordOnlyTwoCategories()
     {
         $form = new ResetPasswordForm();
         $form->token = str_repeat('a', 32);
-        $form->password = 'password123!@#'; // 没有大写字母，>=12字符
-        
+        $form->password = 'password123'; // 只有小写字母和数字
+
         $this->assertFalse($form->validate(), "Form should be invalid");
         $this->assertArrayHasKey('password', $form->errors);
-        $this->assertStringContainsString('大写', $form->getFirstError('password'));
-    }
-    
-    /**
-     * 测试 ResetPasswordForm - 密码缺少小写字母
-     */
-    public function testResetPasswordFormPasswordNoLowercase()
-    {
-        $form = new ResetPasswordForm();
-        $form->token = str_repeat('a', 32);
-        $form->password = 'PASSWORD123!@#'; // 没有小写字母，>=12字符
-        
-        $this->assertFalse($form->validate(), "Form should be invalid");
-        $this->assertArrayHasKey('password', $form->errors);
-        $this->assertStringContainsString('小写', $form->getFirstError('password'));
-    }
-    
-    /**
-     * 测试 ResetPasswordForm - 密码缺少数字
-     */
-    public function testResetPasswordFormPasswordNoDigit()
-    {
-        $form = new ResetPasswordForm();
-        $form->token = str_repeat('a', 32);
-        $form->password = 'PasswordAbc!@#'; // 没有数字，>=12字符
-        
-        $this->assertFalse($form->validate(), "Form should be invalid");
-        $this->assertArrayHasKey('password', $form->errors);
-        $this->assertStringContainsString('数字', $form->getFirstError('password'));
-    }
-    
-    /**
-     * 测试 ResetPasswordForm - 密码缺少特殊字符
-     */
-    public function testResetPasswordFormPasswordNoSpecialChar()
-    {
-        $form = new ResetPasswordForm();
-        $form->token = str_repeat('a', 32);
-        $form->password = 'Password12345'; // 没有特殊字符，>=12字符
-        
-        $this->assertFalse($form->validate(), "Form should be invalid");
-        $this->assertArrayHasKey('password', $form->errors);
-        $this->assertStringContainsString('特殊字符', $form->getFirstError('password'));
+        $this->assertStringContainsString('至少包含 3 类', $form->getFirstError('password'));
     }
     
     /**

@@ -10,34 +10,30 @@ use yii\base\Component;
  * 仅在新用户注册和密码重置时强制执行，老用户登录不受影响。
  * 
  * 策略要求：
- * - 最小长度 12 字符
- * - 至少包含一个大写字母、一个小写字母、一个数字、一个特殊字符
+ * - 长度 8-64 字符
+ * - 大写字母、小写字母、数字、特殊字符中至少包含 3 类
  * - 不在弱密码列表中
+ * - 不包含用户名或邮箱信息（传入上下文时）
  */
 class PasswordPolicyValidator extends Component
 {
     /** @var int 最小密码长度 */
-    public $minLength = 12;
+    public $minLength = 8;
 
     /** @var int 最大密码长度 */
-    public $maxLength = 128;
+    public $maxLength = 64;
 
-    /** @var bool 是否要求大写字母 */
-    public $requireUppercase = true;
+    /** @var int 最少需要满足的字符类别数 */
+    public $minCharacterCategories = 3;
 
-    /** @var bool 是否要求小写字母 */
-    public $requireLowercase = true;
-
-    /** @var bool 是否要求数字 */
-    public $requireDigit = true;
-
-    /** @var bool 是否要求特殊字符 */
-    public $requireSpecialChar = true;
+    /** @var int 用于账号信息匹配的最短标识长度 */
+    public $accountIdentifierMinLength = 3;
 
     /** @var array 弱密码列表 */
     private $weakPasswords = [
-        'password123!', 'Password123!', 'Admin123456!', 'Qwerty123456!',
-        'Abc123456789!', 'Welcome12345!', 'Changeme1234!', 'Letmein12345!',
+        'password123', 'password123!', 'Password123!', 'Admin123456!',
+        'Qwerty123!', 'Qwerty123456!', 'Abc123456789!', 'Welcome12345!',
+        'Changeme1234!', 'Letmein12345!',
         'Master123456!', 'Dragon123456!', 'Monkey123456!', 'Shadow123456!',
         'Sunshine12345', 'Princess1234!', 'Football1234!', 'Charlie12345!',
         'Password1234!', 'Passw0rd1234!', 'Iloveyou1234!', 'Trustno12345!',
@@ -49,9 +45,10 @@ class PasswordPolicyValidator extends Component
      * 验证密码是否符合策略
      *
      * @param string $password
+     * @param array $context 可包含 username、email、accountIdentifiers
      * @return array ['valid' => bool, 'errors' => string[]]
      */
-    public function validate(string $password): array
+    public function validate(string $password, array $context = []): array
     {
         $errors = [];
 
@@ -63,30 +60,38 @@ class PasswordPolicyValidator extends Component
             $errors[] = "密码长度不能超过 {$this->maxLength} 个字符";
         }
 
-        if ($this->requireUppercase && !preg_match('/[A-Z]/', $password)) {
-            $errors[] = '密码必须包含至少一个大写字母';
-        }
-
-        if ($this->requireLowercase && !preg_match('/[a-z]/', $password)) {
-            $errors[] = '密码必须包含至少一个小写字母';
-        }
-
-        if ($this->requireDigit && !preg_match('/\d/', $password)) {
-            $errors[] = '密码必须包含至少一个数字';
-        }
-
-        if ($this->requireSpecialChar && !preg_match('/[\W_]/', $password)) {
-            $errors[] = '密码必须包含至少一个特殊字符';
+        $categoryCount = $this->countCharacterCategories($password);
+        if ($categoryCount < $this->minCharacterCategories) {
+            $errors[] = '密码必须在大写字母、小写字母、数字、特殊字符中至少包含 3 类';
         }
 
         if ($this->isWeakPassword($password)) {
             $errors[] = '该密码过于常见，请选择更安全的密码';
         }
 
+        if ($this->containsAccountIdentifier($password, $context)) {
+            $errors[] = '密码不能包含用户名或邮箱信息';
+        }
+
         return [
             'valid' => empty($errors),
             'errors' => $errors,
         ];
+    }
+
+    /**
+     * 计算密码包含的字符类别数量
+     */
+    public function countCharacterCategories(string $password): int
+    {
+        $categories = [
+            preg_match('/[A-Z]/', $password),
+            preg_match('/[a-z]/', $password),
+            preg_match('/\d/', $password),
+            preg_match('/[\W_]/', $password),
+        ];
+
+        return count(array_filter($categories));
     }
 
     /**
@@ -104,10 +109,72 @@ class PasswordPolicyValidator extends Component
     }
 
     /**
+     * 检查密码是否包含用户名、邮箱或邮箱前缀
+     */
+    public function containsAccountIdentifier(string $password, array $context = []): bool
+    {
+        $identifiers = $this->normalizeAccountIdentifiers($context);
+        if (empty($identifiers)) {
+            return false;
+        }
+
+        $lowerPassword = mb_strtolower($password);
+        foreach ($identifiers as $identifier) {
+            if (mb_strpos($lowerPassword, $identifier) !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function normalizeAccountIdentifiers(array $context): array
+    {
+        $values = [];
+
+        foreach (['username', 'email'] as $key) {
+            if (!empty($context[$key]) && is_string($context[$key])) {
+                $values[] = $context[$key];
+            }
+        }
+
+        if (!empty($context['accountIdentifiers']) && is_array($context['accountIdentifiers'])) {
+            foreach ($context['accountIdentifiers'] as $identifier) {
+                if (is_string($identifier)) {
+                    $values[] = $identifier;
+                }
+            }
+        }
+
+        $normalized = [];
+        foreach ($values as $value) {
+            $lower = mb_strtolower(trim($value));
+            if ($lower === '') {
+                continue;
+            }
+
+            $this->addIdentifier($normalized, $lower);
+            $parts = explode('@', $lower, 2);
+            if (!empty($parts[0])) {
+                $this->addIdentifier($normalized, $parts[0]);
+            }
+        }
+
+        return array_values(array_unique($normalized));
+    }
+
+    private function addIdentifier(array &$identifiers, string $identifier): void
+    {
+        if (mb_strlen($identifier) >= $this->accountIdentifierMinLength) {
+            $identifiers[] = $identifier;
+        }
+    }
+
+    /**
      * 获取密码策略描述（用于提示用户）
      */
     public function getPolicyDescription(): string
     {
-        return "密码要求：至少 {$this->minLength} 个字符，包含大写字母、小写字母、数字和特殊字符";
+        return "密码要求：{$this->minLength}-{$this->maxLength} 个字符，大写字母、小写字母、数字、特殊字符中至少包含 {$this->minCharacterCategories} 类";
     }
 }

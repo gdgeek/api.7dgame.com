@@ -7,6 +7,7 @@ use yii\db\Expression;
 use yii\caching\TagDependency;
 use mdm\admin\models\Assignment;
 use mdm\admin\components\Configs;
+use common\components\security\PasswordPolicyValidator;
 use Yii;
 use yii\behaviors\TimestampBehavior;
 use yii\web\IdentityInterface;
@@ -363,8 +364,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
             [['auth_key'], 'string', 'max' => 32],
             [['username'], 'required'],
             [['username', 'password_reset_token'], 'unique'],
-            [['password'], 'string', 'min' => 6, 'max' => 20, 'message' => 'Password must be between 6 and 20 characters.'],
-            ['password', 'match', 'pattern' => '/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{6,}$/', 'message' => 'Password must contain at least one lowercase letter, one uppercase letter, one digit, and one special character.'],
+            ['password', 'validatePasswordPolicy', 'skipOnEmpty' => true],
        
         ];
         if ($this->new_version) {
@@ -373,6 +373,28 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
 
         return $rules;
 
+    }
+
+    /**
+     * 使用统一密码策略验证新密码。登录校验不调用该方法，历史密码不受影响。
+     */
+    public function validatePasswordPolicy($attribute, $params)
+    {
+        if ($this->hasErrors($attribute)) {
+            return;
+        }
+
+        $validator = new PasswordPolicyValidator();
+        $result = $validator->validate((string)$this->$attribute, [
+            'username' => $this->username,
+            'email' => $this->email,
+        ]);
+
+        if (!$result['valid']) {
+            foreach ($result['errors'] as $error) {
+                $this->addError($attribute, $error);
+            }
+        }
     }
 
     /**

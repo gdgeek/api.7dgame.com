@@ -8,6 +8,7 @@ use api\modules\v1\models\UserOrganization;
 use api\modules\v1\components\RateLimiter;
 use api\modules\v1\components\PluginUserRolePolicy;
 use api\modules\v1\services\EmailService;
+use common\components\security\PasswordPolicyValidator;
 use mdm\admin\components\AccessControl;
 use bizley\jwt\JwtHttpBearerAuth;
 use yii\filters\auth\CompositeAuth;
@@ -213,6 +214,30 @@ class PluginUserController extends \yii\rest\Controller
         $email = trim((string)($value ?? ''));
 
         return $email === '' ? null : $email;
+    }
+
+    /**
+     * 使用主后端统一密码策略验证新密码。旧密码登录/比对不调用该方法。
+     */
+    protected function getPasswordPolicyErrors($password, ?string $username = null, ?string $email = null): array
+    {
+        $validator = new PasswordPolicyValidator();
+        $result = $validator->validate((string)$password, [
+            'username' => $username,
+            'email' => $email,
+        ]);
+
+        return $result['valid'] ? [] : $result['errors'];
+    }
+
+    protected function passwordPolicyErrorResponse(array $errors): array
+    {
+        Yii::$app->response->statusCode = 400;
+        return [
+            'code' => 4003,
+            'message' => '密码不符合要求',
+            'errors' => $errors,
+        ];
     }
 
     /**
@@ -465,6 +490,11 @@ class PluginUserController extends \yii\rest\Controller
             return ['code' => 4001, 'message' => '用户名和密码不能为空'];
         }
 
+        $passwordErrors = $this->getPasswordPolicyErrors($password, (string)$username, $email);
+        if (!empty($passwordErrors)) {
+            return $this->passwordPolicyErrorResponse($passwordErrors);
+        }
+
         $existing = User::findOne(['username' => $username]);
         if ($existing) {
             Yii::$app->response->statusCode = 409;
@@ -568,8 +598,9 @@ class PluginUserController extends \yii\rest\Controller
             }
 
             // 校验 password
-            if (strlen($password) < 6) {
-                $results[] = ['index' => $index, 'username' => $username, 'success' => false, 'error' => '密码不少于6位'];
+            $passwordErrors = $this->getPasswordPolicyErrors($password, $username, $email);
+            if (!empty($passwordErrors)) {
+                $results[] = ['index' => $index, 'username' => $username, 'success' => false, 'error' => implode('；', $passwordErrors)];
                 $failedCount++;
                 continue;
             }
@@ -694,6 +725,18 @@ class PluginUserController extends \yii\rest\Controller
         if (is_array($organizationIds) && isset($organizationIds['error'])) {
             return $organizationIds['error'];
         }
+
+        if (!empty($bodyParams['password'])) {
+            $passwordErrors = $this->getPasswordPolicyErrors(
+                $bodyParams['password'],
+                $user->username,
+                $user->email
+            );
+            if (!empty($passwordErrors)) {
+                return $this->passwordPolicyErrorResponse($passwordErrors);
+            }
+        }
+
         [$requestedProfileUpdate, $dirtyAttributes] = $this->collectManagedUserDirtyAttributes($user, $bodyParams);
         $updated = $requestedProfileUpdate;
         if ($organizationIds !== null) {
@@ -1220,6 +1263,11 @@ class PluginUserController extends \yii\rest\Controller
         if (User::findOne(['email' => $email])) {
             Yii::$app->response->statusCode = 409;
             return ['code' => 4002, 'message' => '该邮箱已注册'];
+        }
+
+        $passwordErrors = $this->getPasswordPolicyErrors($password, (string)$username, $email);
+        if (!empty($passwordErrors)) {
+            return $this->passwordPolicyErrorResponse($passwordErrors);
         }
 
         // Redis 原子递减名额

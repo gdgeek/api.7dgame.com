@@ -15,6 +15,8 @@ use yii\web\User as WebUser;
 
 final class PluginUserControllerOrganizationTest extends TestCase
 {
+    private const SAFE_PASSWORD = 'N9#VaultSafe';
+
     private const OPERATOR_USERNAME = 'plugin-user-org-operator';
     private const DETAIL_TARGET_USERNAME = 'plugin-user-org-detail-target';
     private const UPDATE_TARGET_USERNAME = 'plugin-user-org-update-target';
@@ -86,7 +88,7 @@ final class PluginUserControllerOrganizationTest extends TestCase
         Yii::$app->set('request', new PluginUserTestRequest([], [
             'username' => self::CREATE_TARGET_USERNAME,
             'nickname' => 'Created Nickname',
-            'password' => 'secret123',
+            'password' => self::SAFE_PASSWORD,
             'email' => 'created@example.com',
             'status' => 10,
             'organization_ids' => [$organizationA->id, $organizationB->id],
@@ -123,7 +125,7 @@ final class PluginUserControllerOrganizationTest extends TestCase
         $this->bootAuthenticatedOperator($operator->id, ['create-user']);
         Yii::$app->set('request', new PluginUserTestRequest([], [
             'username' => self::CREATE_TARGET_USERNAME,
-            'password' => 'secret123',
+            'password' => self::SAFE_PASSWORD,
             'email' => 'created@example.com',
             'status' => 10,
             'organization_ids' => [999999],
@@ -218,14 +220,14 @@ final class PluginUserControllerOrganizationTest extends TestCase
                 [
                     'username' => self::BATCH_TARGET_USERNAMES[0],
                     'nickname' => 'Batch Target 1',
-                    'password' => 'secret123',
+                    'password' => self::SAFE_PASSWORD,
                     'role' => 'user',
                     'status' => 10,
                 ],
                 [
                     'username' => self::BATCH_TARGET_USERNAMES[1],
                     'nickname' => 'Batch Target 2',
-                    'password' => 'secret123',
+                    'password' => self::SAFE_PASSWORD,
                     'role' => 'user',
                     'status' => 10,
                 ],
@@ -263,14 +265,14 @@ final class PluginUserControllerOrganizationTest extends TestCase
                 [
                     'username' => self::BATCH_TARGET_USERNAMES[0],
                     'nickname' => 'Batch Target 1',
-                    'password' => 'secret123',
+                    'password' => self::SAFE_PASSWORD,
                     'role' => 'user',
                     'status' => 10,
                 ],
                 [
                     'username' => self::BATCH_TARGET_USERNAMES[1],
                     'nickname' => 'Batch Target 2',
-                    'password' => 'secret123',
+                    'password' => self::SAFE_PASSWORD,
                     'role' => 'user',
                     'status' => 10,
                 ],
@@ -312,7 +314,7 @@ final class PluginUserControllerOrganizationTest extends TestCase
                 [
                     'username' => self::BATCH_TARGET_USERNAMES[0],
                     'nickname' => 'Batch Target 1',
-                    'password' => 'secret123',
+                    'password' => self::SAFE_PASSWORD,
                     'role' => 'user',
                     'status' => 10,
                 ],
@@ -463,7 +465,7 @@ final class PluginUserControllerOrganizationTest extends TestCase
         $user->nickname = $username;
         $user->email = $email;
         $user->auth_key = Yii::$app->security->generateRandomString();
-        $user->password_hash = Yii::$app->security->generatePasswordHash('secret123');
+        $user->password_hash = Yii::$app->security->generatePasswordHash(self::SAFE_PASSWORD);
         $user->status = 10;
         $user->created_at = time();
         $user->updated_at = time();

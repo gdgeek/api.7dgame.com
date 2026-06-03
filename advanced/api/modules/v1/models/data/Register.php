@@ -1,6 +1,7 @@
 <?php
 namespace api\modules\v1\models\data;
 use api\modules\v1\models\User;
+use common\components\security\PasswordPolicyValidator;
 use Yii;
 use yii\base\Model;
 
@@ -22,13 +23,35 @@ class Register extends Model
   {
     return [
       ['username', 'match', 'pattern' => '/^[a-zA-Z0-9_@.-]+$/', 'message' => 'Username can only contain letters, numbers, underscores, hyphens, @, and .'],
-      ['password', 'string', 'min' => 4, 'max' => 20, 'message' => 'User Name must be between 4 and 20 characters long.'],
       [['username', 'password'], 'required'],
-      ['password', 'string', 'min' => 8, 'max' => 20, 'message' => 'Password must be between 8 and 20 characters long.'],
-      
-      ['password', 'match', 'pattern' => '/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/', 'message' => 'Password must contain at least one lowercase letter, one uppercase letter, one digit, and one special character, and be at least 8 characters long.'],
+      ['password', 'string', 'min' => 8, 'max' => 64,
+        'tooShort' => '密码长度不能少于 8 个字符',
+        'tooLong' => '密码长度不能超过 64 个字符'],
+      ['password', 'validatePasswordPolicy'],
       
     ];
+  }
+
+  /**
+  * 使用统一密码策略验证新密码。
+  */
+  public function validatePasswordPolicy($attribute, $params)
+  {
+    if ($this->hasErrors($attribute)) {
+      return;
+    }
+
+    $validator = new PasswordPolicyValidator();
+    $result = $validator->validate($this->$attribute, [
+      'username' => $this->username,
+      'email' => $this->username,
+    ]);
+
+    if (!$result['valid']) {
+      foreach ($result['errors'] as $error) {
+        $this->addError($attribute, $error);
+      }
+    }
   }
   
   /**
