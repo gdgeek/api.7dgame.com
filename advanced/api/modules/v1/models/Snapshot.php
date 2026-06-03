@@ -90,10 +90,10 @@ class Snapshot extends \yii\db\ActiveRecord
     {
         foreach (['metas', 'resources', 'space', 'managers'] as $attribute) {
             if (is_array($this->$attribute) || is_object($this->$attribute)) {
-                $this->$attribute = json_encode(
-                    self::jsonReadyValue($this->$attribute),
-                    JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
-                );
+                $value = self::jsonReadyValue($this->$attribute);
+                $this->$attribute = self::isNativeJsonColumn($attribute)
+                    ? $value
+                    : json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             }
         }
 
@@ -291,6 +291,12 @@ class Snapshot extends \yii\db\ActiveRecord
         }
 
         return $value;
+    }
+
+    private static function isNativeJsonColumn(string $attribute): bool
+    {
+        $column = static::getTableSchema()->getColumn($attribute);
+        return $column !== null && $column->type === \yii\db\Schema::TYPE_JSON;
     }
 
 }
