@@ -6,6 +6,7 @@ use api\modules\v1\models\Snapshot;
 use PHPUnit\Framework\TestCase;
 use Yii;
 use yii\db\Connection;
+use yii\db\Schema;
 
 final class SnapshotTest extends TestCase
 {
@@ -208,55 +209,7 @@ final class SnapshotTest extends TestCase
 
     public function testCreateByIdKeepsCollectionFieldsAsArraysAfterSave(): void
     {
-        $this->insertVerse(503, [
-            'type' => 'Verse',
-            'children' => [
-                'modules' => [
-                    [
-                        'type' => 'Module',
-                        'parameters' => [
-                            'meta_id' => 801,
-                            'uuid' => 'module-801',
-                        ],
-                    ],
-                ],
-            ],
-        ]);
-        Yii::$app->db->createCommand()->insert('{{%meta}}', [
-            'id' => 801,
-            'author_id' => 42,
-            'uuid' => 'meta-801',
-            'title' => 'Meta 801',
-            'data' => '{"type":"MetaRoot","children":{"entities":[]}}',
-            'events' => '{"inputs":[],"outputs":[]}',
-            'prefab' => 0,
-        ])->execute();
-        Yii::$app->db->createCommand()->insert('{{%verse_meta}}', [
-            'verse_id' => 503,
-            'meta_id' => 801,
-        ])->execute();
-
-        $this->insertFile(201, 'model.glb', 'model-key');
-        $this->insertFile(202, 'model.jpg', 'model-image-key', 'image/jpeg');
-        Yii::$app->db->createCommand()->insert('{{%resource}}', [
-            'id' => 901,
-            'name' => 'model.glb',
-            'type' => 'polygen',
-            'author_id' => 42,
-            'file_id' => 201,
-            'image_id' => 202,
-            'info' => '{"size":{"x":1,"y":2,"z":3}}',
-            'uuid' => 'resource-901',
-        ])->execute();
-        Yii::$app->db->createCommand()->insert('{{%meta_resource}}', [
-            'meta_id' => 801,
-            'resource_id' => 901,
-        ])->execute();
-        Yii::$app->db->createCommand()->insert('{{%manager}}', [
-            'verse_id' => 503,
-            'type' => 'score',
-            'data' => '{"value":10}',
-        ])->execute();
+        $this->insertSnapshotContractVerse(503);
 
         $snapshot = Snapshot::CreateById(503);
         $snapshot->detachBehaviors();
@@ -273,6 +226,140 @@ final class SnapshotTest extends TestCase
         $this->assertSame(901, $array['resources'][0]['id']);
         $this->assertIsArray($array['managers']);
         $this->assertSame('score', $array['managers'][0]['type']);
+    }
+
+    public function testNativeJsonSnapshotColumnsAreNotDoubleEncodedBeforeSave(): void
+    {
+        $this->markSnapshotColumnsAsNativeJson(['metas', 'resources', 'space', 'managers']);
+
+        $snapshot = new Snapshot(['verse_id' => 601]);
+        $snapshot->metas = [
+            [
+                'id' => 801,
+                'data' => ['type' => 'MetaRoot'],
+            ],
+        ];
+        $snapshot->resources = [
+            [
+                'id' => 901,
+                'file' => ['id' => 201],
+            ],
+        ];
+        $snapshot->space = [
+            'type' => 'immersal',
+            'mesh' => ['id' => 301],
+        ];
+        $snapshot->managers = [
+            [
+                'type' => 'score',
+                'data' => ['value' => 10],
+            ],
+        ];
+
+        $this->assertTrue($snapshot->beforeValidate());
+        $this->assertIsArray($snapshot->metas);
+        $this->assertSame('MetaRoot', $snapshot->metas[0]['data']['type']);
+        $this->assertIsArray($snapshot->resources);
+        $this->assertSame(201, $snapshot->resources[0]['file']['id']);
+        $this->assertIsArray($snapshot->space);
+        $this->assertSame('immersal', $snapshot->space['type']);
+        $this->assertIsArray($snapshot->managers);
+        $this->assertSame(10, $snapshot->managers[0]['data']['value']);
+    }
+
+    public function testTakePhotoResponseContractKeepsStructuredSnapshotFields(): void
+    {
+        $this->insertSnapshotContractVerse(504);
+
+        $snapshot = Snapshot::CreateById(504);
+        $snapshot->detachBehaviors();
+        $snapshot->created_at = '2026-05-05 13:30:00';
+        $this->assertTrue($snapshot->save());
+
+        $response = $snapshot->toArray([], Snapshot::TAKE_PHOTO_EXTRA_FIELDS);
+
+        $this->assertEqualsCanonicalizing(Snapshot::TAKE_PHOTO_EXTRA_FIELDS, array_keys($response));
+        $this->assertIsInt($response['id']);
+        $this->assertSame('Verse 504', $response['name']);
+        $this->assertSame('Snapshot test verse', $response['description']);
+        $this->assertSame('verse-504', $response['uuid']);
+        $this->assertIsString($response['code']);
+        $this->assertIsString($response['data']);
+        $this->assertJson($response['data']);
+
+        $this->assertIsArray($response['metas']);
+        $this->assertSame(801, $response['metas'][0]['id']);
+        $this->assertSame('entity', $response['metas'][0]['type']);
+        $this->assertIsString($response['metas'][0]['data']);
+        $this->assertJson($response['metas'][0]['data']);
+        $this->assertIsString($response['metas'][0]['events']);
+        $this->assertJson($response['metas'][0]['events']);
+
+        $this->assertIsArray($response['resources']);
+        $this->assertSame(901, $response['resources'][0]['id']);
+        $this->assertSame('polygen', $response['resources'][0]['type']);
+        $this->assertSame(201, $response['resources'][0]['file']['id']);
+        $this->assertSame(202, $response['resources'][0]['image']['id']);
+
+        $this->assertIsArray($response['space']);
+        $this->assertSame('immersal', $response['space']['type']);
+        $this->assertSame(302, $response['space']['image']['id']);
+        $this->assertSame(301, $response['space']['mesh']['id']);
+        $this->assertSame(303, $response['space']['file']['id']);
+        $this->assertArrayNotHasKey('managers', $response);
+    }
+
+    public function testServerSnapshotExpandContractSurvivesSaveAndJsonEncoding(): void
+    {
+        $this->insertSnapshotContractVerse(505);
+        $serverSnapshotExpand = [
+            'id',
+            'name',
+            'description',
+            'data',
+            'metas',
+            'resources',
+            'code',
+            'uuid',
+            'image',
+            'managers',
+            'verse_id',
+        ];
+
+        $snapshot = Snapshot::CreateById(505);
+        $snapshot->detachBehaviors();
+        $snapshot->created_at = '2026-05-05 13:30:00';
+        $this->assertTrue($snapshot->save());
+
+        $reloaded = Snapshot::findOne(['verse_id' => 505]);
+        $this->assertNotNull($reloaded);
+        $response = $reloaded->toArray([], $serverSnapshotExpand);
+        $wireResponse = json_decode(json_encode($response, JSON_THROW_ON_ERROR), true, 512, JSON_THROW_ON_ERROR);
+
+        $this->assertEqualsCanonicalizing($serverSnapshotExpand, array_keys($wireResponse));
+        $this->assertSame(505, $wireResponse['verse_id']);
+        $this->assertSame('Verse 505', $wireResponse['name']);
+        $this->assertSame('Snapshot test verse', $wireResponse['description']);
+        $this->assertSame('verse-505', $wireResponse['uuid']);
+        $this->assertIsString($wireResponse['data']);
+        $this->assertJson($wireResponse['data']);
+
+        $this->assertIsArray($wireResponse['metas']);
+        $this->assertSame(801, $wireResponse['metas'][0]['id']);
+        $this->assertIsString($wireResponse['metas'][0]['data']);
+        $this->assertJson($wireResponse['metas'][0]['data']);
+        $this->assertIsString($wireResponse['metas'][0]['events']);
+        $this->assertJson($wireResponse['metas'][0]['events']);
+
+        $this->assertIsArray($wireResponse['resources']);
+        $this->assertSame(901, $wireResponse['resources'][0]['id']);
+        $this->assertSame(201, $wireResponse['resources'][0]['file']['id']);
+        $this->assertSame(202, $wireResponse['resources'][0]['image']['id']);
+
+        $this->assertIsArray($wireResponse['managers']);
+        $this->assertSame('score', $wireResponse['managers'][0]['type']);
+        $this->assertIsString($wireResponse['managers'][0]['data']);
+        $this->assertJson($wireResponse['managers'][0]['data']);
     }
 
     private function insertVerse(int $id, ?array $data = null): void
@@ -303,5 +390,90 @@ final class SnapshotTest extends TestCase
             'size' => 12345,
             'key' => $key,
         ])->execute();
+    }
+
+    private function insertSnapshotContractVerse(int $verseId): void
+    {
+        $this->insertVerse($verseId, [
+            'type' => 'Verse',
+            'children' => [
+                'modules' => [
+                    [
+                        'type' => 'Module',
+                        'parameters' => [
+                            'meta_id' => 801,
+                            'uuid' => 'module-801',
+                        ],
+                    ],
+                ],
+            ],
+            'settings' => [
+                'gravity' => 9.8,
+            ],
+        ]);
+        Yii::$app->db->createCommand()->insert('{{%meta}}', [
+            'id' => 801,
+            'author_id' => 42,
+            'uuid' => 'meta-801',
+            'title' => 'Meta 801',
+            'data' => '{"type":"MetaRoot","children":{"entities":[{"uuid":"entity-1"}]}}',
+            'events' => '{"inputs":[{"key":"start"}],"outputs":[]}',
+            'prefab' => 0,
+            'code' => 'print("meta 801")',
+        ])->execute();
+        Yii::$app->db->createCommand()->insert('{{%verse_meta}}', [
+            'verse_id' => $verseId,
+            'meta_id' => 801,
+        ])->execute();
+
+        $this->insertFile(201, 'model.glb', 'model-key');
+        $this->insertFile(202, 'model.jpg', 'model-image-key', 'image/jpeg');
+        Yii::$app->db->createCommand()->insert('{{%resource}}', [
+            'id' => 901,
+            'name' => 'model.glb',
+            'type' => 'polygen',
+            'author_id' => 42,
+            'file_id' => 201,
+            'image_id' => 202,
+            'info' => '{"size":{"x":1,"y":2,"z":3}}',
+            'uuid' => 'resource-901',
+        ])->execute();
+        Yii::$app->db->createCommand()->insert('{{%meta_resource}}', [
+            'meta_id' => 801,
+            'resource_id' => 901,
+        ])->execute();
+        Yii::$app->db->createCommand()->insert('{{%manager}}', [
+            'verse_id' => $verseId,
+            'type' => 'score',
+            'data' => '{"value":10}',
+        ])->execute();
+
+        $this->insertFile(301, 'space-mesh.glb', 'space-mesh-key', 'model/gltf-binary');
+        $this->insertFile(302, 'space-thumbnail.png', 'space-thumbnail-key', 'image/png');
+        $this->insertFile(303, 'space-runtime.bytes', 'space-runtime-key', 'application/octet-stream');
+        Yii::$app->db->createCommand()->insert('{{%space}}', [
+            'id' => 701,
+            'name' => 'Contract Space',
+            'user_id' => 42,
+            'mesh_id' => 301,
+            'image_id' => 302,
+            'file_id' => 303,
+            'data' => json_encode([
+                'provider' => 'immersal',
+            ]),
+        ])->execute();
+        Yii::$app->db->createCommand()->insert('{{%verse_space}}', [
+            'verse_id' => $verseId,
+            'space_id' => 701,
+        ])->execute();
+    }
+
+    private function markSnapshotColumnsAsNativeJson(array $attributes): void
+    {
+        $tableSchema = Snapshot::getTableSchema();
+        foreach ($attributes as $attribute) {
+            $this->assertArrayHasKey($attribute, $tableSchema->columns);
+            $tableSchema->columns[$attribute]->type = Schema::TYPE_JSON;
+        }
     }
 }
