@@ -5,6 +5,7 @@ namespace api\modules\v1\controllers;
 use api\common\models\UserDataForm;
 use api\modules\v1\models\User;
 use api\modules\v1\models\UserInfo;
+use api\modules\v1\services\UserManagementService;
 
 use api\modules\v1\models\UserCreation;
 use mdm\admin\components\AccessControl;
@@ -23,6 +24,8 @@ use OpenApi\Annotations as OA;
  */
 class UserController extends \yii\rest\Controller
 {
+    private ?UserManagementService $userManagementService = null;
+
     public function behaviors()
     {
 
@@ -69,29 +72,17 @@ class UserController extends \yii\rest\Controller
     private function getUserData()
     {
         $user =  Yii::$app->user->identity;
-        $emailVerified = !empty($user->email_verified_at);
-        $emailBind = null;
-        if (!empty($user->email)) {
-            $emailBind = [
-                'email' => $user->email,
-                'verified' => $emailVerified,
-                'verifiedAt' => $user->email_verified_at,
-                'verifiedAtFormatted' => $user->email_verified_at ? date('Y-m-d H:i:s', $user->email_verified_at) : null,
-            ];
-        }
-      
-        return [
-            'id' => $user->id,
-            'userData' => $user->data,
-            'userInfo' => $user->userInfo,
-            'roles' => $user->roles,
-            'organizations' => User::normalizeOrganizations($user->organizations ?? []),
-            'email' => $user->email,
-            'emailVerified' => $emailVerified,
-            'emailVerifiedAt' => $user->email_verified_at,
-            'emailBind' => $emailBind,
-        ];
+        return $this->userManagementService()->buildCurrentUserPayload($user);
 
+    }
+
+    private function userManagementService(): UserManagementService
+    {
+        if ($this->userManagementService === null) {
+            $this->userManagementService = new UserManagementService();
+        }
+
+        return $this->userManagementService;
     }
     public function actionCreation()
     {
