@@ -7,7 +7,7 @@ use yii\base\Component;
 
 class UserManagementService extends Component
 {
-    public function buildCurrentUserPayload(User $user): array
+    public function buildCurrentUserPayload($user): array
     {
         $emailVerified = !empty($user->email_verified_at);
         $emailBind = null;
