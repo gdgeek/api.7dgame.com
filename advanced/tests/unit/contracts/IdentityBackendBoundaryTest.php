@@ -116,11 +116,30 @@ final class IdentityBackendBoundaryTest extends TestCase
         $this->assertStringContainsString('revokeUserSessions($userId)', $passwordService);
     }
 
-    public function testStageOneDoesNotIntroduceStandaloneMicroservice(): void
+    public function testCurrentBackendDoesNotDependOnStandaloneIdentityService(): void
     {
-        $repositoryRoot = dirname(__DIR__, 5);
+        $files = [
+            'api/modules/v1/services/IdentityService.php',
+            'api/modules/v1/services/SessionService.php',
+            'api/modules/v1/services/AuthorizationService.php',
+            'api/modules/v1/controllers/AuthController.php',
+            '../files/api/config/main.php',
+        ];
 
-        $this->assertDirectoryDoesNotExist($repositoryRoot . '/services/identity-service');
-        $this->assertFileDoesNotExist($repositoryRoot . '/services/identity-service/docker-compose.yml');
+        $combined = '';
+        foreach ($files as $relativePath) {
+            $combined .= "\n" . $this->read($relativePath);
+        }
+
+        foreach ([
+            'Keycloak',
+            'IDENTITY_SERVICE_URL',
+            'services/identity-service',
+            '/api-auth',
+            '.well-known/openid-configuration',
+            'JWKS',
+        ] as $needle) {
+            $this->assertStringNotContainsString($needle, $combined);
+        }
     }
 }
