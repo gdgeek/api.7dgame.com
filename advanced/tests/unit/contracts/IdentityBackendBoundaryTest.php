@@ -28,6 +28,7 @@ final class IdentityBackendBoundaryTest extends TestCase
             'api/modules/v1/services/EmailAccountService.php',
             'api/modules/v1/services/UserManagementService.php',
             'api/modules/v1/services/AuthorizationService.php',
+            'api/modules/v1/services/LoginAuditReporter.php',
         ] as $relativePath) {
             $this->assertFileExists($this->path($relativePath));
         }
@@ -140,6 +141,43 @@ final class IdentityBackendBoundaryTest extends TestCase
             'JWKS',
         ] as $needle) {
             $this->assertStringNotContainsString($needle, $combined);
+        }
+    }
+
+    public function testLoginAuditIsOptionalAndBypassOnly(): void
+    {
+        $identityService = $this->read('api/modules/v1/services/IdentityService.php');
+        $reporter = $this->read('api/modules/v1/services/LoginAuditReporter.php');
+
+        foreach ([
+            'LoginAuditReporter',
+            'reportSuccessfulLogin($user',
+            '$token = $this->sessionService()->issueToken($user, $context);',
+            'return $token;',
+        ] as $needle) {
+            $this->assertStringContainsString($needle, $identityService);
+        }
+
+        foreach ([
+            'IDENTITY_LOGIN_AUDIT_ENABLED',
+            'IDENTITY_LOGIN_AUDIT_URL',
+            'IDENTITY_LOGIN_AUDIT_TOKEN',
+            'CURLOPT_CONNECTTIMEOUT_MS',
+            'CURLOPT_TIMEOUT_MS',
+            'catch (\\Throwable $exception)',
+            'return;',
+            'identity.loginAudit',
+        ] as $needle) {
+            $this->assertStringContainsString($needle, $reporter);
+        }
+
+        foreach ([
+            'password',
+            'accessToken',
+            'refreshToken',
+            'Authorization',
+        ] as $needle) {
+            $this->assertStringNotContainsString("'{$needle}' =>", $reporter);
         }
     }
 }

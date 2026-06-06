@@ -9,6 +9,7 @@ use yii\web\BadRequestHttpException;
 class IdentityService extends Component
 {
     private ?SessionService $sessionService = null;
+    private ?LoginAuditReporter $loginAuditReporter = null;
 
     public function login($username, $password, array $context = []): array
     {
@@ -27,7 +28,11 @@ class IdentityService extends Component
             throw new BadRequestHttpException("wrong password");
         }
 
-        return $this->sessionService()->issueToken($user, $context);
+        $context['session_id'] = $context['session_id'] ?? \Yii::$app->security->generateRandomString(32);
+        $token = $this->sessionService()->issueToken($user, $context);
+        $this->loginAuditReporter()->reportSuccessfulLogin($user, (string)$username, $context);
+
+        return $token;
     }
 
     public function refresh($refreshToken, array $context = []): array
@@ -62,5 +67,14 @@ class IdentityService extends Component
         }
 
         return $this->sessionService;
+    }
+
+    public function loginAuditReporter(): LoginAuditReporter
+    {
+        if ($this->loginAuditReporter === null) {
+            $this->loginAuditReporter = new LoginAuditReporter();
+        }
+
+        return $this->loginAuditReporter;
     }
 }

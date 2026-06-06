@@ -88,6 +88,7 @@ final class IdentitySurfaceContractTest extends TestCase
             'User::findByUsername($username)',
             'no user',
             'wrong password',
+            'reportSuccessfulLogin($user',
             'refreshToken is required',
             'consumeRefreshToken($refreshToken)',
             'save error',
