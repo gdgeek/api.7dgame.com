@@ -5,7 +5,7 @@ namespace api\modules\v1\controllers;
 use Yii;
 use yii\rest\Controller;
 use yii\web\Response;
-use api\modules\v1\services\EmailVerificationService;
+use api\modules\v1\services\EmailAccountService;
 use api\modules\v1\models\SendVerificationForm;
 use api\modules\v1\models\VerifyEmailForm;
 use api\modules\v1\models\EmailCodeForm;
@@ -27,7 +27,7 @@ use bizley\jwt\JwtHttpBearerAuth;
 class EmailController extends Controller
 {
     /**
-     * @var EmailVerificationService 邮箱验证服务
+     * @var EmailAccountService 邮箱账号服务
      */
     protected $emailService;
 
@@ -37,7 +37,7 @@ class EmailController extends Controller
     public function init()
     {
         parent::init();
-        $this->emailService = new EmailVerificationService();
+        $this->emailService = new EmailAccountService();
     }
 
     /**

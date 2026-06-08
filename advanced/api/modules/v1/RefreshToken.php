@@ -7,7 +7,7 @@ class RefreshToken extends \yii\redis\ActiveRecord
     
     public function attributes()
     {
-        return ['id', 'user_id', 'key', 'expires_at'];
+        return ['id', 'user_id', 'key', 'session_id', 'user_agent', 'ip', 'created_at', 'expires_at', 'revoked_at'];
     }
 
     public function beforeSave($insert)
@@ -18,6 +18,9 @@ class RefreshToken extends \yii\redis\ActiveRecord
 
         if (empty($this->expires_at)) {
             $this->expires_at = time() + self::expirySeconds();
+        }
+        if (empty($this->created_at)) {
+            $this->created_at = time();
         }
 
         return true;
@@ -37,6 +40,11 @@ class RefreshToken extends \yii\redis\ActiveRecord
     public function isExpired(): bool
     {
         return !empty($this->expires_at) && (int)$this->expires_at <= time();
+    }
+
+    public function isRevoked(): bool
+    {
+        return !empty($this->revoked_at);
     }
 
 }

@@ -4,6 +4,7 @@ namespace api\modules\v1\controllers;
 
 use api\modules\v1\models\User;
 use api\modules\v1\components\RateLimiter;
+use api\modules\v1\services\AuthorizationService;
 use api\modules\v1\services\EmailService;
 use mdm\admin\components\AccessControl;
 use bizley\jwt\JwtHttpBearerAuth;
@@ -20,6 +21,8 @@ use yii\web\Response;
  */
 class PluginController extends \yii\rest\Controller
 {
+    private ?AuthorizationService $authorizationService = null;
+
     /**
      * {@inheritdoc}
      * 使用标准 JWT 认证 + RBAC 权限控制
@@ -68,9 +71,18 @@ class PluginController extends \yii\rest\Controller
     {
         /** @var User $user */
         $user = Yii::$app->user->identity;
-        $roles = array_keys(Yii::$app->authManager->getRolesByUser($user->id));
+        $roles = $this->authorizationService()->getRoleNamesByUserId((int)$user->id);
 
         return ['user' => $user, 'roles' => $roles];
+    }
+
+    protected function authorizationService(): AuthorizationService
+    {
+        if ($this->authorizationService === null) {
+            $this->authorizationService = new AuthorizationService();
+        }
+
+        return $this->authorizationService;
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace api\modules\v1\models;
 
 use api\modules\v1\RefreshToken;
+use api\modules\v1\services\SessionService;
 use yii\db\Expression;
 use yii\caching\TagDependency;
 use mdm\admin\models\Assignment;
@@ -76,7 +77,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
     public static function findIdentityByAccessToken($token, $type = null)
     {
         $claims = Yii::$app->jwt->parse($token)->claims();
-        $uid = $claims->get('uid');
+        $uid = static::userIdFromClaims($claims);
         $user = static::findIdentity($uid);
         return $user;
     }
@@ -141,29 +142,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
 
     public static function findByRefreshToken($refreshToken)
     {
-        $tokenHash = RefreshToken::hashToken($refreshToken);
-        $token = RefreshToken::find()->where(['key' => $tokenHash])->one();
-
-        // Backward-compatible one-time migration for existing plaintext tokens.
-        if (!$token) {
-            $token = RefreshToken::find()->where(['key' => $refreshToken])->one();
-        }
-
-        if (!$token) {
-            throw new \yii\web\UnauthorizedHttpException('Refresh token is invalid.');
-        }
-        if ($token->isExpired()) {
-            $token->delete();
-            throw new \yii\web\UnauthorizedHttpException('Refresh token is expired.');
-        }
-
-        $user = static::findIdentity($token->user_id);
-        if (!$user) {
-            $token->delete();
-            throw new \yii\web\UnauthorizedHttpException('User is not found.');
-        }
-        $token->delete();
-        return $user;
+        return (new SessionService())->consumeRefreshToken($refreshToken);
     }
     public function getRefreshToken()
     {
@@ -171,22 +150,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
     }
     public function token()
     {
-        $token = new RefreshToken();
-        $token->user_id = $this->id;
-
-        $refreshToken = Yii::$app->security->generateRandomString(64);
-        $token->key = RefreshToken::hashToken($refreshToken);
-        $token->expires_at = time() + RefreshToken::expirySeconds();
-        if (!$token->save()) {
-            throw new \yii\web\ServerErrorHttpException('Failed to create refresh token.');
-        }
-        $now = new \DateTimeImmutable('now', new \DateTimeZone(\Yii::$app->timeZone));
-        $expires = $now->modify('+3 hour');
-        return [
-            'accessToken' => $this->generateAccessToken($now, $expires),
-            'expires' => $expires->format('Y-m-d H:i:s'),
-            'refreshToken' => $refreshToken,
-        ];
+        return (new SessionService())->issueToken($this);
     }
     public function getAuth()
     {
@@ -239,7 +203,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
     }
 
     //生成token
-    public function generateAccessToken($now = null, $expires = null)
+    public function generateAccessToken($now = null, $expires = null, ?string $sessionId = null, ?string $jti = null)
     {
 
         if ($now == null) {
@@ -248,12 +212,28 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
         if ($expires == null) {
             $expires = $now->modify('+3 hour');
         }
+        if ($sessionId === null) {
+            $sessionId = Yii::$app->security->generateRandomString(32);
+        }
+        if ($jti === null) {
+            $jti = Yii::$app->security->generateRandomString(32);
+        }
+        $audience = getenv('JWT_AUDIENCE') ?: null;
+        if ($audience === null && Yii::$app->has('jwt_parameter')) {
+            $audience = Yii::$app->jwt_parameter->audience;
+        }
+        $audience = $audience ?: Yii::$app->request->hostInfo;
+
         $token = Yii::$app->jwt->getBuilder()
             ->issuedBy(Yii::$app->request->hostInfo)
+            ->permittedFor((string)$audience)
+            ->identifiedBy((string)$jti)
+            ->relatedTo((string)$this->id)
             ->issuedAt($now) // Configures the time that the token was issue (iat claim)
             ->canOnlyBeUsedAfter($now)
             ->expiresAt($expires) // Configures the expiration time of the token (exp claim)
             ->withClaim('uid', $this->id) // Configures a new claim, called "uid"
+            ->withClaim('session_id', $sessionId)
             ->getToken(
                 Yii::$app->jwt->getConfiguration()->signer(),
                 Yii::$app->jwt->getConfiguration()->signingKey()
@@ -278,7 +258,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
     public static function tokenToId($token)
     {
         $claims = Yii::$app->jwt->parse($token)->claims();
-        $uid = $claims->get('uid');
+        $uid = static::userIdFromClaims($claims);
         return $uid;
     }
     /**
@@ -288,10 +268,22 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
     public static function findByToken($token)
     {
         $claims = Yii::$app->jwt->parse($token)->claims();
-        $uid = $claims->get('uid');
+        $uid = static::userIdFromClaims($claims);
         $user = static::findIdentity($uid);
         // $user->token = $token;
         return $user;
+    }
+
+    private static function userIdFromClaims($claims): ?int
+    {
+        if (method_exists($claims, 'has') && $claims->has('uid')) {
+            return (int)$claims->get('uid');
+        }
+        if (method_exists($claims, 'has') && $claims->has('sub')) {
+            return (int)$claims->get('sub');
+        }
+
+        return (int)$claims->get('uid');
     }
 
 

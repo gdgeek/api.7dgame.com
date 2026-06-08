@@ -2,10 +2,8 @@
 
 namespace api\modules\v1\controllers;
 
-use api\modules\v1\models\UserLinked;
+use api\modules\v1\services\IdentityService;
 use common\components\security\RateLimitBehavior;
-use yii\web\BadRequestHttpException;
-use api\modules\v1\models\User;
 use Yii;
 use OpenApi\Annotations as OA;
 
@@ -17,6 +15,7 @@ use OpenApi\Annotations as OA;
  */
 class AuthController extends \yii\rest\Controller
 {
+    private ?IdentityService $identityService = null;
 
    // public $modelClass = 'app\modules\v1\models\Player';
     public function behaviors()
@@ -35,6 +34,21 @@ class AuthController extends \yii\rest\Controller
 
         return $behaviors;
     }
+
+    protected function identityService(): IdentityService
+    {
+        if ($this->identityService === null) {
+            $this->identityService = new IdentityService();
+        }
+
+        return $this->identityService;
+    }
+
+    protected function requestContext(): array
+    {
+        return $this->identityService()->sessionService()->contextFromRequest(Yii::$app->request);
+    }
+
     /**
      * 刷新访问令牌
      * 
@@ -61,24 +75,12 @@ class AuthController extends \yii\rest\Controller
      *     @OA\Response(response=400, description="请求错误")
      * )
      */
-    public function actionRefresh(){
-
+    public function actionRefresh()
+    {
         $refreshToken = Yii::$app->request->post("refreshToken");
-        if(!is_string($refreshToken) || $refreshToken === ''){
-            throw new BadRequestHttpException("refreshToken is required");
-        }
-        $user = User::findByRefreshToken($refreshToken);
-        if(!$user instanceof User){
-            throw new BadRequestHttpException("no user");
-        }
-       
-        
-        if($user->validate()){
-            $user->save();
-        }else{
-            throw new BadRequestHttpException("save error");
-        }
-        return ['success' => true, 'message' => "refresh", 'token'=> $user->token()];
+        $token = $this->identityService()->refresh($refreshToken, $this->requestContext());
+
+        return ['success' => true, 'message' => "refresh", 'token'=> $token];
 
     }
 
@@ -110,28 +112,27 @@ class AuthController extends \yii\rest\Controller
      *     @OA\Response(response=400, description="登录失败")
      * )
      */
-    public function actionLogin(){
-        
+    public function actionLogin()
+    {
         $username = Yii::$app->request->post("username");
-        if (!$username) {
-            throw new BadRequestHttpException("username is required");
-        }
         $password = Yii::$app->request->post("password");
-        if (!$password) {
-            throw new BadRequestHttpException("password is required");
-        }
+        $token = $this->identityService()->login($username, $password, $this->requestContext());
 
-        $user = User::findByUsername($username);
-        if(!$user){
-            throw new BadRequestHttpException("no user");
-        }
-        if(!$user->validatePassword($password)){
-            throw new BadRequestHttpException("wrong password");
-        }
-
-       
-        return ['success' => true, 'message' => "login", 'token'=> $user->token()];
+        return ['success' => true, 'message' => "login", 'token'=> $token];
     }
 
+    public function actionLogout()
+    {
+        $refreshToken = Yii::$app->request->post("refreshToken");
+        if (!is_string($refreshToken) || $refreshToken === '') {
+            $refreshToken = null;
+        }
+
+        return [
+            'success' => true,
+            'message' => 'logout',
+            'revoked' => $this->identityService()->logout($refreshToken),
+        ];
+    }
 
 }

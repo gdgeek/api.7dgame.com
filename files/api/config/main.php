@@ -224,6 +224,8 @@ return [
                     'extraPatterns' => [
                         'POST login' => 'login',
                         'POST refresh' => 'refresh',
+                        'POST logout' => 'logout',
+                        'DELETE logout' => 'logout',
                     ],
                 ],
                 [

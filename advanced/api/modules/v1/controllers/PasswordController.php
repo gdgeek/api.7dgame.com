@@ -5,7 +5,7 @@ namespace api\modules\v1\controllers;
 use Yii;
 use yii\rest\Controller;
 use yii\web\Response;
-use api\modules\v1\services\PasswordResetService;
+use api\modules\v1\services\PasswordAccountService;
 use api\modules\v1\models\RequestPasswordResetForm;
 use api\modules\v1\models\ResetPasswordForm;
 use api\modules\v1\models\ChangePasswordForm;
@@ -25,7 +25,7 @@ use bizley\jwt\JwtHttpBearerAuth;
 class PasswordController extends Controller
 {
     /**
-     * @var PasswordResetService 密码重置服务
+     * @var PasswordAccountService 密码账号服务
      */
     protected $passwordService;
 
@@ -35,7 +35,7 @@ class PasswordController extends Controller
     public function init()
     {
         parent::init();
-        $this->passwordService = new PasswordResetService();
+        $this->passwordService = new PasswordAccountService();
     }
 
     /**
