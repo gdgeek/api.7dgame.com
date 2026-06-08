@@ -688,14 +688,25 @@ class PluginUserController extends \yii\rest\Controller
             $successCount++;
         }
 
+        $responseData = [
+            'total' => count($users),
+            'success' => $successCount,
+            'failed' => $failedCount,
+            'results' => $results,
+        ];
+
+        if ($successCount === 0 && $failedCount > 0) {
+            Yii::$app->response->statusCode = 400;
+            return [
+                'code' => 4003,
+                'message' => '批量创建失败，请查看失败详情',
+                'data' => $responseData,
+            ];
+        }
+
         return [
             'code' => 0,
-            'data' => [
-                'total' => count($users),
-                'success' => $successCount,
-                'failed' => $failedCount,
-                'results' => $results,
-            ],
+            'data' => $responseData,
         ];
     }
 
