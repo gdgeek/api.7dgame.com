@@ -29,6 +29,7 @@ final class IdentityBackendBoundaryTest extends TestCase
             'api/modules/v1/services/UserManagementService.php',
             'api/modules/v1/services/AuthorizationService.php',
             'api/modules/v1/services/LoginAuditReporter.php',
+            'api/modules/v1/services/IdentityProviderClient.php',
         ] as $relativePath) {
             $this->assertFileExists($this->path($relativePath));
         }
@@ -141,6 +142,46 @@ final class IdentityBackendBoundaryTest extends TestCase
             'JWKS',
         ] as $needle) {
             $this->assertStringNotContainsString($needle, $combined);
+        }
+    }
+
+    public function testIdentityProviderProxyIsGuardedAndLegacyByDefault(): void
+    {
+        $identityService = $this->read('api/modules/v1/services/IdentityService.php');
+        $identityProviderClient = $this->read('api/modules/v1/services/IdentityProviderClient.php');
+        $params = $this->read('../files/common/config/params.php');
+
+        foreach ([
+            'AUTH_PROVIDER',
+            "return \$provider === 'identity' ? 'identity' : 'legacy';",
+            'identityProviderClient()->login',
+            'identityProviderClient()->refresh',
+            'identityProviderClient()->logout',
+            'IDENTITY_AUTH_LEGACY_REFRESH_FALLBACK',
+            'legacyRefresh($refreshToken',
+            'Identity refresh failed; trying legacy refresh fallback.',
+        ] as $needle) {
+            $this->assertStringContainsString($needle, $identityService);
+        }
+
+        foreach ([
+            'IDENTITY_AUTH_BASE_URL',
+            'IDENTITY_AUTH_TIMEOUT_MS',
+            'IDENTITY_AUTH_CONNECT_TIMEOUT_MS',
+            '/v1/auth/login',
+            '/v1/auth/refresh',
+            '/v1/auth/logout',
+            'CURLOPT_CONNECTTIMEOUT_MS',
+            'CURLOPT_TIMEOUT_MS',
+        ] as $needle) {
+            $this->assertStringContainsString($needle, $identityProviderClient);
+        }
+
+        foreach ([
+            "'AUTH_PROVIDER' => getenv('AUTH_PROVIDER') ?: 'legacy'",
+            "'IDENTITY_AUTH_LEGACY_REFRESH_FALLBACK' => getenv('IDENTITY_AUTH_LEGACY_REFRESH_FALLBACK') ?: 'true'",
+        ] as $needle) {
+            $this->assertStringContainsString($needle, $params);
         }
     }
 

@@ -10,6 +10,7 @@ class IdentityService extends Component
 {
     private ?SessionService $sessionService = null;
     private ?LoginAuditReporter $loginAuditReporter = null;
+    private ?IdentityProviderClient $identityProviderClient = null;
 
     public function login($username, $password, array $context = []): array
     {
@@ -20,6 +21,52 @@ class IdentityService extends Component
             throw new BadRequestHttpException("password is required");
         }
 
+        if ($this->authProvider() === 'identity') {
+            return $this->identityProviderClient()->login((string)$username, (string)$password, $context);
+        }
+
+        return $this->legacyLogin($username, $password, $context);
+    }
+
+    public function refresh($refreshToken, array $context = []): array
+    {
+        if (!is_string($refreshToken) || $refreshToken === '') {
+            throw new BadRequestHttpException("refreshToken is required");
+        }
+
+        if ($this->authProvider() === 'identity') {
+            try {
+                return $this->identityProviderClient()->refresh($refreshToken, $context);
+            } catch (\Throwable $exception) {
+                if (!$this->legacyRefreshFallbackEnabled()) {
+                    throw $exception;
+                }
+
+                \Yii::warning(
+                    'Identity refresh failed; trying legacy refresh fallback.',
+                    'identity.auth'
+                );
+            }
+        }
+
+        return $this->legacyRefresh($refreshToken, $context);
+    }
+
+    public function logout(?string $refreshToken): bool
+    {
+        if ($this->authProvider() === 'identity') {
+            try {
+                return $this->identityProviderClient()->logout($refreshToken);
+            } catch (\Throwable $exception) {
+                \Yii::warning('Identity logout failed; falling back to local revoke.', 'identity.auth');
+            }
+        }
+
+        return $this->sessionService()->revokeRefreshToken($refreshToken);
+    }
+
+    private function legacyLogin($username, $password, array $context = []): array
+    {
         $user = User::findByUsername($username);
         if (!$user) {
             throw new BadRequestHttpException("no user");
@@ -35,12 +82,8 @@ class IdentityService extends Component
         return $token;
     }
 
-    public function refresh($refreshToken, array $context = []): array
+    private function legacyRefresh(string $refreshToken, array $context = []): array
     {
-        if (!is_string($refreshToken) || $refreshToken === '') {
-            throw new BadRequestHttpException("refreshToken is required");
-        }
-
         $user = $this->sessionService()->consumeRefreshToken($refreshToken);
         if (!$user instanceof User) {
             throw new BadRequestHttpException("no user");
@@ -53,11 +96,6 @@ class IdentityService extends Component
         }
 
         return $this->sessionService()->issueToken($user, $context);
-    }
-
-    public function logout(?string $refreshToken): bool
-    {
-        return $this->sessionService()->revokeRefreshToken($refreshToken);
     }
 
     public function sessionService(): SessionService
@@ -76,5 +114,57 @@ class IdentityService extends Component
         }
 
         return $this->loginAuditReporter;
+    }
+
+    public function identityProviderClient(): IdentityProviderClient
+    {
+        if ($this->identityProviderClient === null) {
+            $this->identityProviderClient = new IdentityProviderClient();
+        }
+
+        return $this->identityProviderClient;
+    }
+
+    private function authProvider(): string
+    {
+        $provider = $this->stringConfig('AUTH_PROVIDER') ?? 'legacy';
+        $provider = strtolower($provider);
+
+        return $provider === 'identity' ? 'identity' : 'legacy';
+    }
+
+    private function legacyRefreshFallbackEnabled(): bool
+    {
+        return $this->boolConfig('IDENTITY_AUTH_LEGACY_REFRESH_FALLBACK', true);
+    }
+
+    private function stringConfig(string $key): ?string
+    {
+        $value = getenv($key);
+        if ($value === false && isset(\Yii::$app->params['identityAuth'][$key])) {
+            $value = \Yii::$app->params['identityAuth'][$key];
+        }
+        if ($value === false || $value === null) {
+            return null;
+        }
+
+        $trimmed = trim((string)$value);
+        return $trimmed === '' ? null : $trimmed;
+    }
+
+    private function boolConfig(string $key, bool $default): bool
+    {
+        $value = getenv($key);
+        if ($value === false && isset(\Yii::$app->params['identityAuth'][$key])) {
+            $value = \Yii::$app->params['identityAuth'][$key];
+        }
+        if ($value === false || $value === null || $value === '') {
+            return $default;
+        }
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        return in_array(strtolower((string)$value), ['1', 'true', 'yes', 'on'], true);
     }
 }

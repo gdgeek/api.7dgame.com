@@ -33,6 +33,13 @@ $params = [
             ],
         ],
     ],
+    'identityAuth' => [
+        'AUTH_PROVIDER' => getenv('AUTH_PROVIDER') ?: 'legacy',
+        'IDENTITY_AUTH_BASE_URL' => getenv('IDENTITY_AUTH_BASE_URL') ?: null,
+        'IDENTITY_AUTH_TIMEOUT_MS' => getenv('IDENTITY_AUTH_TIMEOUT_MS') ?: 1500,
+        'IDENTITY_AUTH_CONNECT_TIMEOUT_MS' => getenv('IDENTITY_AUTH_CONNECT_TIMEOUT_MS') ?: 300,
+        'IDENTITY_AUTH_LEGACY_REFRESH_FALLBACK' => getenv('IDENTITY_AUTH_LEGACY_REFRESH_FALLBACK') ?: 'true',
+    ],
 ];
 
 $title = getenv('MRPP_TITLE');
