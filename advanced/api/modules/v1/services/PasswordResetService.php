@@ -7,7 +7,6 @@ use yii\base\Component;
 use api\modules\v1\components\RateLimiter;
 use api\modules\v1\components\RedisKeyManager;
 use api\modules\v1\models\User;
-use api\modules\v1\RefreshToken;
 use yii\web\TooManyRequestsHttpException;
 use yii\web\BadRequestHttpException;
 
@@ -320,7 +319,7 @@ class PasswordResetService extends Component
     protected function invalidateUserSessions(int $userId): bool
     {
         try {
-            $deletedCount = RefreshToken::deleteAll(['user_id' => $userId]);
+            $deletedCount = (new SessionService())->revokeUserSessions($userId);
             Yii::info("Invalidated {$deletedCount} sessions for user ID: {$userId}", __METHOD__);
             return true;
         } catch (\Exception $e) {
