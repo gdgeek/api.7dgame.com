@@ -83,6 +83,7 @@ return [
             'rules' => [
                 // 健康检查路由（无需认证）
                 'GET health' => 'health/index',
+                'HEAD health' => 'health/index',
                 'GET storage/<bucket>/<key:.+>' => 'storage/file',
                 'HEAD storage/<bucket>/<key:.+>' => 'storage/file',
                 
