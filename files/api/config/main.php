@@ -230,6 +230,14 @@ return [
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/internal-identity',
+                    'pluralize' => false,
+                    'extraPatterns' => [
+                        'POST revoke-sessions' => 'revoke-sessions',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/email',
                     'pluralize' => false,
                     'extraPatterns' => [

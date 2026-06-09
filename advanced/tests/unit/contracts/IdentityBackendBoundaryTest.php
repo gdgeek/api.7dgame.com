@@ -30,6 +30,8 @@ final class IdentityBackendBoundaryTest extends TestCase
             'api/modules/v1/services/AuthorizationService.php',
             'api/modules/v1/services/LoginAuditReporter.php',
             'api/modules/v1/services/IdentityProviderClient.php',
+            'api/modules/v1/services/AccountLifecycleProxyService.php',
+            'api/modules/v1/controllers/InternalIdentityController.php',
         ] as $relativePath) {
             $this->assertFileExists($this->path($relativePath));
         }
@@ -61,6 +63,9 @@ final class IdentityBackendBoundaryTest extends TestCase
     {
         $sessionService = $this->read('api/modules/v1/services/SessionService.php');
         $refreshToken = $this->read('api/modules/v1/RefreshToken.php');
+        $internalIdentityController = $this->read('api/modules/v1/controllers/InternalIdentityController.php');
+        $config = $this->read('../files/api/config/main.php');
+        $params = $this->read('../files/common/config/params.php');
 
         foreach ([
             'RefreshToken::hashToken($refreshToken)',
@@ -84,6 +89,20 @@ final class IdentityBackendBoundaryTest extends TestCase
         ] as $needle) {
             $this->assertStringContainsString($needle, $refreshToken);
         }
+
+        foreach ([
+            'X-Identity-Internal-Token',
+            'IDENTITY_ACCOUNT_INTERNAL_TOKEN',
+            'IDENTITY_INTERNAL_API_TOKEN',
+            'revokeUserSessions((int)$legacyUserId)',
+            'legacyUserId must be a positive integer.',
+        ] as $needle) {
+            $this->assertStringContainsString($needle, $internalIdentityController);
+        }
+
+        $this->assertStringContainsString("'controller' => 'v1/internal-identity'", $config);
+        $this->assertStringContainsString("'POST revoke-sessions' => 'revoke-sessions'", $config);
+        $this->assertStringContainsString("'IDENTITY_ACCOUNT_INTERNAL_TOKEN' => getenv('IDENTITY_ACCOUNT_INTERNAL_TOKEN')", $params);
     }
 
     public function testJwtClaimsRemainBackwardCompatibleAndAddModernClaims(): void
@@ -219,6 +238,93 @@ final class IdentityBackendBoundaryTest extends TestCase
             'Authorization',
         ] as $needle) {
             $this->assertStringNotContainsString("'{$needle}' =>", $reporter);
+        }
+    }
+
+    public function testAccountLifecycleProxyIsScopedGuardedAndLegacyByDefault(): void
+    {
+        $proxyService = $this->read('api/modules/v1/services/AccountLifecycleProxyService.php');
+        $identityProviderClient = $this->read('api/modules/v1/services/IdentityProviderClient.php');
+        $passwordController = $this->read('api/modules/v1/controllers/PasswordController.php');
+        $emailController = $this->read('api/modules/v1/controllers/EmailController.php');
+        $wechatController = $this->read('api/modules/v1/controllers/WechatController.php');
+        $pluginUserController = $this->read('api/modules/v1/controllers/PluginUserController.php');
+        $params = $this->read('../files/common/config/params.php');
+
+        foreach ([
+            'IDENTITY_ACCOUNT_LIFECYCLE_PROVIDER',
+            "return \$provider === 'identity' ? 'identity' : 'legacy';",
+            'IDENTITY_ACCOUNT_LIFECYCLE_ENABLED',
+            'IDENTITY_ACCOUNT_LIFECYCLE_FALLBACK',
+            'IDENTITY_ACCOUNT_REGISTER_ENABLED',
+            'IDENTITY_ACCOUNT_PASSWORD_ENABLED',
+            'IDENTITY_ACCOUNT_EMAIL_ENABLED',
+            'IDENTITY_ACCOUNT_INVITATION_ENABLED',
+            'X-Identity-Lifecycle-Proxy',
+            'proxyCurrentRequest',
+            'shouldFallbackFromProxyResult',
+        ] as $needle) {
+            $this->assertStringContainsString($needle, $proxyService);
+        }
+
+        foreach ([
+            'proxyAccountLifecycle',
+            'CURLOPT_CUSTOMREQUEST',
+            'http_build_query($query)',
+            'Authorization: ',
+        ] as $needle) {
+            $this->assertStringContainsString($needle, $identityProviderClient);
+        }
+
+        foreach ([
+            "proxyCurrentRequest('password'",
+            '/v1/password/request-reset',
+            '/v1/password/verify-code',
+            '/v1/password/reset',
+            '/v1/password/change',
+        ] as $needle) {
+            $this->assertStringContainsString($needle, $passwordController);
+        }
+
+        foreach ([
+            "proxyCurrentRequest('email'",
+            '/v1/email/send-verification',
+            '/v1/email/verify',
+            '/v1/email/status',
+            '/v1/email/send-change-confirmation',
+            '/v1/email/verify-change-confirmation',
+            '/v1/email/unbind',
+            '/v1/email/cooldown',
+        ] as $needle) {
+            $this->assertStringContainsString($needle, $emailController);
+        }
+
+        $this->assertStringContainsString("proxyCurrentRequest('register'", $wechatController);
+        $this->assertStringContainsString('/v1/wechat/register', $wechatController);
+
+        foreach ([
+            "proxyCurrentRequest('invitation'",
+            '/v1/plugin-user/invitations',
+            '/v1/plugin-user/create-invitation',
+            '/v1/plugin-user/delete-invitation',
+            '/v1/plugin-user/check-invitation',
+            '/v1/plugin-user/invitation-records',
+            '/v1/plugin-user/register-send-code',
+            '/v1/plugin-user/register',
+        ] as $needle) {
+            $this->assertStringContainsString($needle, $pluginUserController);
+        }
+
+        foreach ([
+            "'IDENTITY_ACCOUNT_LIFECYCLE_PROVIDER' => getenv('IDENTITY_ACCOUNT_LIFECYCLE_PROVIDER') ?: 'legacy'",
+            "'IDENTITY_ACCOUNT_LIFECYCLE_ENABLED' => getenv('IDENTITY_ACCOUNT_LIFECYCLE_ENABLED') ?: 'false'",
+            "'IDENTITY_ACCOUNT_LIFECYCLE_FALLBACK' => getenv('IDENTITY_ACCOUNT_LIFECYCLE_FALLBACK') ?: 'true'",
+            "'IDENTITY_ACCOUNT_REGISTER_ENABLED' => getenv('IDENTITY_ACCOUNT_REGISTER_ENABLED') ?: 'false'",
+            "'IDENTITY_ACCOUNT_PASSWORD_ENABLED' => getenv('IDENTITY_ACCOUNT_PASSWORD_ENABLED') ?: 'false'",
+            "'IDENTITY_ACCOUNT_EMAIL_ENABLED' => getenv('IDENTITY_ACCOUNT_EMAIL_ENABLED') ?: 'false'",
+            "'IDENTITY_ACCOUNT_INVITATION_ENABLED' => getenv('IDENTITY_ACCOUNT_INVITATION_ENABLED') ?: 'false'",
+        ] as $needle) {
+            $this->assertStringContainsString($needle, $params);
         }
     }
 }

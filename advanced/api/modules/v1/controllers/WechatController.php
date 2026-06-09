@@ -5,6 +5,7 @@ namespace api\modules\v1\controllers;
 use yii\web\BadRequestHttpException;
 use api\modules\v1\models\Wechat;
 use api\modules\v1\models\User;
+use api\modules\v1\services\AccountLifecycleProxyService;
 use Yii;
 use OpenApi\Annotations as OA;
 
@@ -16,6 +17,7 @@ use OpenApi\Annotations as OA;
  */
 class WechatController extends \yii\rest\Controller
 {
+    private ?AccountLifecycleProxyService $accountLifecycleProxy = null;
 
    // public $modelClass = 'app\modules\v1\models\Player';
     public function behaviors()
@@ -128,6 +130,10 @@ class WechatController extends \yii\rest\Controller
      * )
      */
     public function actionRegister(){
+        if (($proxy = $this->proxyAccountLifecycle('/v1/wechat/register')) !== null) {
+            return $proxy['body'];
+        }
+
         if ($disabled = $this->disabledWechatResponse()) {
             return $disabled;
         }
@@ -167,6 +173,15 @@ class WechatController extends \yii\rest\Controller
             return ['success' => true, 'message' => "register", 'uid'=>$user->id, 'token'=> $user->token()];
            
         }
+    }
+
+    private function proxyAccountLifecycle(string $path): ?array
+    {
+        if ($this->accountLifecycleProxy === null) {
+            $this->accountLifecycleProxy = new AccountLifecycleProxyService();
+        }
+
+        return $this->accountLifecycleProxy->proxyCurrentRequest('register', $path);
     }
   
 

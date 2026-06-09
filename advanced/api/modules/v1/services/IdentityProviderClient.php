@@ -38,6 +38,16 @@ class IdentityProviderClient extends Component
         return (bool)($response['revoked'] ?? true);
     }
 
+    public function proxyAccountLifecycle(
+        string $method,
+        string $path,
+        ?array $payload = null,
+        array $query = [],
+        array $context = []
+    ): array {
+        return $this->requestJson($method, $path, $payload, $query, $context, true);
+    }
+
     private function tokenFromResponse(array $response): array
     {
         if (!isset($response['token']) || !is_array($response['token'])) {
@@ -49,6 +59,20 @@ class IdentityProviderClient extends Component
 
     private function postJson(string $path, array $payload, array $context): array
     {
+        $response = $this->requestJson('POST', $path, $payload, [], $context, false);
+
+        return $response['body'];
+    }
+
+    private function requestJson(
+        string $method,
+        string $path,
+        ?array $payload,
+        array $query,
+        array $context,
+        bool $preserveHttpErrors
+    ): array
+    {
         if (!function_exists('curl_init')) {
             throw new ServerErrorHttpException('curl extension is required for identity provider proxy.');
         }
@@ -58,25 +82,40 @@ class IdentityProviderClient extends Component
             throw new ServerErrorHttpException('IDENTITY_AUTH_BASE_URL is required when AUTH_PROVIDER=identity.');
         }
 
-        $body = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-        if ($body === false) {
-            throw new BadRequestHttpException('Identity provider payload encoding failed.');
+        $body = null;
+        if (!in_array(strtoupper($method), ['GET', 'HEAD'], true)) {
+            $body = json_encode($payload ?? [], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            if ($body === false) {
+                throw new BadRequestHttpException('Identity provider payload encoding failed.');
+            }
         }
 
         $headers = [
-            'Content-Type: application/json',
             'Accept: application/json',
         ];
+        if ($body !== null) {
+            $headers[] = 'Content-Type: application/json';
+        }
         if (!empty($context['ip'])) {
             $headers[] = 'X-Forwarded-For: ' . $context['ip'];
         }
         if (!empty($context['user_agent'])) {
             $headers[] = 'User-Agent: ' . $context['user_agent'];
         }
+        if (!empty($context['authorization'])) {
+            $headers[] = 'Authorization: ' . $context['authorization'];
+        }
 
-        $handle = curl_init(rtrim($baseUrl, '/') . $path);
-        curl_setopt($handle, CURLOPT_POST, true);
-        curl_setopt($handle, CURLOPT_POSTFIELDS, $body);
+        $url = rtrim($baseUrl, '/') . $path;
+        if (!empty($query)) {
+            $url .= '?' . http_build_query($query);
+        }
+
+        $handle = curl_init($url);
+        curl_setopt($handle, CURLOPT_CUSTOMREQUEST, strtoupper($method));
+        if ($body !== null) {
+            curl_setopt($handle, CURLOPT_POSTFIELDS, $body);
+        }
         curl_setopt($handle, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($handle, CURLOPT_CONNECTTIMEOUT_MS, $this->connectTimeoutMs());
         curl_setopt($handle, CURLOPT_TIMEOUT_MS, $this->timeoutMs());
@@ -97,6 +136,10 @@ class IdentityProviderClient extends Component
             throw new ServerErrorHttpException('Identity provider response is not valid JSON.');
         }
 
+        if ($preserveHttpErrors) {
+            return ['status' => $status, 'body' => $decoded];
+        }
+
         if ($status === 401) {
             throw new UnauthorizedHttpException($decoded['message'] ?? 'Identity provider rejected the request.');
         }
@@ -107,7 +150,7 @@ class IdentityProviderClient extends Component
             throw new ServerErrorHttpException('Identity provider server error.');
         }
 
-        return $decoded;
+        return ['status' => $status, 'body' => $decoded];
     }
 
     private function baseUrl(): ?string
