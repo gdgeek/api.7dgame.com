@@ -91,6 +91,7 @@ final class IdentitySurfaceContractTest extends TestCase
             'reportSuccessfulLogin($user',
             'refreshToken is required',
             'consumeRefreshToken($refreshToken)',
+            'IDENTITY_AUTH_LEGACY_REFRESH_FALLBACK',
             'save error',
         ] as $needle) {
             $this->assertStringContainsString($needle, $identityService);

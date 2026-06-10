@@ -5,6 +5,7 @@ namespace api\modules\v1\controllers;
 use Yii;
 use yii\rest\Controller;
 use yii\web\Response;
+use api\modules\v1\services\AccountLifecycleProxyService;
 use api\modules\v1\services\EmailAccountService;
 use api\modules\v1\models\SendVerificationForm;
 use api\modules\v1\models\VerifyEmailForm;
@@ -30,6 +31,7 @@ class EmailController extends Controller
      * @var EmailAccountService 邮箱账号服务
      */
     protected $emailService;
+    private ?AccountLifecycleProxyService $accountLifecycleProxy = null;
 
     /**
      * 初始化控制器
@@ -73,6 +75,10 @@ class EmailController extends Controller
      */
     public function actionSendVerification()
     {
+        if (($proxy = $this->proxyAccountLifecycle('/v1/email/send-verification')) !== null) {
+            return $proxy['body'];
+        }
+
         $form = new SendVerificationForm();
         $form->load(Yii::$app->request->post(), '');
 
@@ -127,6 +133,10 @@ class EmailController extends Controller
      */
     public function actionVerify()
     {
+        if (($proxy = $this->proxyAccountLifecycle('/v1/email/verify')) !== null) {
+            return $proxy['body'];
+        }
+
         $form = new VerifyEmailForm();
         $form->load(Yii::$app->request->post(), '');
 
@@ -281,6 +291,10 @@ class EmailController extends Controller
      */
     public function actionStatus()
     {
+        if (($proxy = $this->proxyAccountLifecycle('/v1/email/status')) !== null) {
+            return $proxy['body'];
+        }
+
         $user = $this->getUser();
 
 
@@ -308,6 +322,10 @@ class EmailController extends Controller
      */
     public function actionSendChangeConfirmation()
     {
+        if (($proxy = $this->proxyAccountLifecycle('/v1/email/send-change-confirmation')) !== null) {
+            return $proxy['body'];
+        }
+
         $user = $this->getUser();
 
 
@@ -381,6 +399,9 @@ class EmailController extends Controller
      */
     public function actionVerifyChangeConfirmation()
     {
+        if (($proxy = $this->proxyAccountLifecycle('/v1/email/verify-change-confirmation')) !== null) {
+            return $proxy['body'];
+        }
 
         $user = $this->getUser();
 
@@ -449,6 +470,9 @@ class EmailController extends Controller
      */
     public function actionUnbind()
     {
+        if (($proxy = $this->proxyAccountLifecycle('/v1/email/unbind')) !== null) {
+            return $proxy['body'];
+        }
 
         $user = $this->getUser();
 
@@ -537,6 +561,9 @@ class EmailController extends Controller
      */
     public function actionCooldown()
     {
+        if (($proxy = $this->proxyAccountLifecycle('/v1/email/cooldown')) !== null) {
+            return $proxy['body'];
+        }
 
         $user = $this->getUser();
         $email = Yii::$app->request->get('email');
@@ -583,5 +610,14 @@ class EmailController extends Controller
         }
 
         return null;
+    }
+
+    private function proxyAccountLifecycle(string $path): ?array
+    {
+        if ($this->accountLifecycleProxy === null) {
+            $this->accountLifecycleProxy = new AccountLifecycleProxyService();
+        }
+
+        return $this->accountLifecycleProxy->proxyCurrentRequest('email', $path);
     }
 }

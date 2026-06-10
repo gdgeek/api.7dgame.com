@@ -5,6 +5,7 @@ namespace api\modules\v1\controllers;
 use Yii;
 use yii\rest\Controller;
 use yii\web\Response;
+use api\modules\v1\services\AccountLifecycleProxyService;
 use api\modules\v1\services\PasswordAccountService;
 use api\modules\v1\models\RequestPasswordResetForm;
 use api\modules\v1\models\ResetPasswordForm;
@@ -28,6 +29,7 @@ class PasswordController extends Controller
      * @var PasswordAccountService 密码账号服务
      */
     protected $passwordService;
+    private ?AccountLifecycleProxyService $accountLifecycleProxy = null;
 
     /**
      * 初始化控制器
@@ -84,6 +86,10 @@ class PasswordController extends Controller
      */
     public function actionRequestReset()
     {
+        if (($proxy = $this->proxyAccountLifecycle('/v1/password/request-reset')) !== null) {
+            return $proxy['body'];
+        }
+
         $form = new RequestPasswordResetForm();
         $form->load(Yii::$app->request->post(), '');
 
@@ -147,6 +153,10 @@ class PasswordController extends Controller
      */
     public function actionVerifyCode()
     {
+        if (($proxy = $this->proxyAccountLifecycle('/v1/password/verify-code')) !== null) {
+            return $proxy['body'];
+        }
+
         $form = new VerifyResetCodeForm();
         $form->load(Yii::$app->request->post(), '');
 
@@ -211,6 +221,10 @@ class PasswordController extends Controller
      */
     public function actionReset()
     {
+        if (($proxy = $this->proxyAccountLifecycle('/v1/password/reset')) !== null) {
+            return $proxy['body'];
+        }
+
         $form = new ResetPasswordForm();
         $form->load(Yii::$app->request->post(), '');
 
@@ -330,6 +344,10 @@ class PasswordController extends Controller
      */
     public function actionChange()
     {
+        if (($proxy = $this->proxyAccountLifecycle('/v1/password/change')) !== null) {
+            return $proxy['body'];
+        }
+
         $user = Yii::$app->user->identity;
         if (!$user) {
             Yii::$app->response->statusCode = 401;
@@ -415,5 +433,14 @@ class PasswordController extends Controller
         }
 
         return null;
+    }
+
+    private function proxyAccountLifecycle(string $path): ?array
+    {
+        if ($this->accountLifecycleProxy === null) {
+            $this->accountLifecycleProxy = new AccountLifecycleProxyService();
+        }
+
+        return $this->accountLifecycleProxy->proxyCurrentRequest('password', $path);
     }
 }
