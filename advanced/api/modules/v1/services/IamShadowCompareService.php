@@ -2,7 +2,6 @@
 
 namespace api\modules\v1\services;
 
-use api\modules\v1\models\User;
 use Yii;
 use yii\base\Component;
 
@@ -10,7 +9,7 @@ class IamShadowCompareService extends Component
 {
     private ?IdentityProviderClient $identityProviderClient = null;
 
-    public function compareCurrentUserPayload(User $user, array $payload): void
+    public function compareCurrentUserPayload(object $user, array $payload): void
     {
         if (!$this->shouldCompare()) {
             return;
@@ -45,7 +44,7 @@ class IamShadowCompareService extends Component
         });
     }
 
-    public function comparePluginVerifyToken(User $user, array $roles, array $organizations, ?string $authorizationHeader): void
+    public function comparePluginVerifyToken(object $user, array $roles, array $organizations, ?string $authorizationHeader): void
     {
         if (!$this->shouldCompare()) {
             return;
@@ -95,7 +94,7 @@ class IamShadowCompareService extends Component
         });
     }
 
-    public function comparePermission(User $user, string $permission, bool $legacyAllowed): void
+    public function comparePermission(object $user, string $permission, bool $legacyAllowed): void
     {
         if (!$this->shouldCompare()) {
             return;
