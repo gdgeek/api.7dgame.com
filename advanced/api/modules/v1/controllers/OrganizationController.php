@@ -4,6 +4,7 @@ namespace api\modules\v1\controllers;
 
 use api\modules\v1\models\Organization;
 use api\modules\v1\models\UserOrganization;
+use api\modules\v1\services\IamShadowCompareService;
 use bizley\jwt\JwtHttpBearerAuth;
 use mdm\admin\components\AccessControl;
 use Yii;
@@ -13,6 +14,8 @@ use yii\web\Response;
 
 class OrganizationController extends Controller
 {
+    private ?IamShadowCompareService $iamShadowCompareService = null;
+
     public function behaviors()
     {
         $behaviors = parent::behaviors();
@@ -215,7 +218,10 @@ class OrganizationController extends Controller
             ];
         }
 
-        if (!Yii::$app->authManager->checkAccess($user->id, $permission)) {
+        $allowed = Yii::$app->authManager->checkAccess($user->id, $permission);
+        $this->iamShadowCompareService()->comparePermission($user, $permission, (bool)$allowed);
+
+        if (!$allowed) {
             Yii::$app->response->statusCode = 403;
             return [
                 'code' => 2003,
@@ -224,6 +230,15 @@ class OrganizationController extends Controller
         }
 
         return null;
+    }
+
+    private function iamShadowCompareService(): IamShadowCompareService
+    {
+        if ($this->iamShadowCompareService === null) {
+            $this->iamShadowCompareService = new IamShadowCompareService();
+        }
+
+        return $this->iamShadowCompareService;
     }
 
     private function resolveBindingIds(): array

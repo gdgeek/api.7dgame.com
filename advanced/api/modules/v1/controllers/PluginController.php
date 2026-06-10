@@ -6,6 +6,7 @@ use api\modules\v1\models\User;
 use api\modules\v1\components\RateLimiter;
 use api\modules\v1\services\AuthorizationService;
 use api\modules\v1\services\EmailService;
+use api\modules\v1\services\IamShadowCompareService;
 use mdm\admin\components\AccessControl;
 use bizley\jwt\JwtHttpBearerAuth;
 use yii\filters\auth\CompositeAuth;
@@ -22,6 +23,7 @@ use yii\web\Response;
 class PluginController extends \yii\rest\Controller
 {
     private ?AuthorizationService $authorizationService = null;
+    private ?IamShadowCompareService $iamShadowCompareService = null;
 
     /**
      * {@inheritdoc}
@@ -85,6 +87,15 @@ class PluginController extends \yii\rest\Controller
         return $this->authorizationService;
     }
 
+    protected function iamShadowCompareService(): IamShadowCompareService
+    {
+        if ($this->iamShadowCompareService === null) {
+            $this->iamShadowCompareService = new IamShadowCompareService();
+        }
+
+        return $this->iamShadowCompareService;
+    }
+
     /**
      * GET /v1/plugin/verify-token
      * 验证 JWT Token 并返回用户信息
@@ -102,6 +113,14 @@ class PluginController extends \yii\rest\Controller
         /** @var User $user */
         $user = $result['user'];
         $roles = $result['roles'];
+        $organizations = User::normalizeOrganizations($user->organizations ?? []);
+
+        $this->iamShadowCompareService()->comparePluginVerifyToken(
+            $user,
+            $roles,
+            $organizations,
+            Yii::$app->request->headers->get('Authorization')
+        );
 
         return [
             'code' => 0,
@@ -111,7 +130,7 @@ class PluginController extends \yii\rest\Controller
                 'username' => $user->username,
                 'nickname' => $user->nickname,
                 'roles' => $roles,
-                'organizations' => User::normalizeOrganizations($user->organizations ?? []),
+                'organizations' => $organizations,
             ],
         ];
     }
