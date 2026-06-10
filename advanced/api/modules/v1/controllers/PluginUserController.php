@@ -8,6 +8,7 @@ use api\modules\v1\models\UserOrganization;
 use api\modules\v1\components\RateLimiter;
 use api\modules\v1\components\PluginUserRolePolicy;
 use api\modules\v1\services\EmailService;
+use api\modules\v1\services\AccountLifecycleProxyService;
 use common\components\security\PasswordPolicyValidator;
 use mdm\admin\components\AccessControl;
 use bizley\jwt\JwtHttpBearerAuth;
@@ -35,6 +36,7 @@ class PluginUserController extends \yii\rest\Controller
     private const VALID_ROLES = ['root', 'admin', 'manager', 'user'];
     private const BASE_ROLE = 'user';
     private const ELEVATED_ROLES = ['root', 'admin', 'manager'];
+    private ?AccountLifecycleProxyService $accountLifecycleProxy = null;
 
     /**
      * {@inheritdoc}
@@ -688,14 +690,25 @@ class PluginUserController extends \yii\rest\Controller
             $successCount++;
         }
 
+        $responseData = [
+            'total' => count($users),
+            'success' => $successCount,
+            'failed' => $failedCount,
+            'results' => $results,
+        ];
+
+        if ($successCount === 0 && $failedCount > 0) {
+            Yii::$app->response->statusCode = 400;
+            return [
+                'code' => 4003,
+                'message' => '批量创建失败，请查看失败详情',
+                'data' => $responseData,
+            ];
+        }
+
         return [
             'code' => 0,
-            'data' => [
-                'total' => count($users),
-                'success' => $successCount,
-                'failed' => $failedCount,
-                'results' => $results,
-            ],
+            'data' => $responseData,
         ];
     }
 
@@ -896,6 +909,10 @@ class PluginUserController extends \yii\rest\Controller
      */
     public function actionInvitations()
     {
+        if (($proxy = $this->proxyAccountLifecycle('/v1/plugin-user/invitations')) !== null) {
+            return $proxy['body'];
+        }
+
         Yii::$app->response->format = Response::FORMAT_JSON;
         $result = $this->resolveUserWithPermission('manage-invitations');
         if (isset($result['error'])) {
@@ -969,6 +986,10 @@ class PluginUserController extends \yii\rest\Controller
      */
     public function actionCreateInvitation()
     {
+        if (($proxy = $this->proxyAccountLifecycle('/v1/plugin-user/create-invitation')) !== null) {
+            return $proxy['body'];
+        }
+
         Yii::$app->response->format = Response::FORMAT_JSON;
         $result = $this->resolveUserWithPermission('manage-invitations');
         if (isset($result['error'])) {
@@ -1030,6 +1051,10 @@ class PluginUserController extends \yii\rest\Controller
      */
     public function actionDeleteInvitation()
     {
+        if (($proxy = $this->proxyAccountLifecycle('/v1/plugin-user/delete-invitation')) !== null) {
+            return $proxy['body'];
+        }
+
         Yii::$app->response->format = Response::FORMAT_JSON;
         $result = $this->resolveUserWithPermission('manage-invitations');
         if (isset($result['error'])) {
@@ -1055,6 +1080,10 @@ class PluginUserController extends \yii\rest\Controller
      */
     public function actionCheckInvitation()
     {
+        if (($proxy = $this->proxyAccountLifecycle('/v1/plugin-user/check-invitation')) !== null) {
+            return $proxy['body'];
+        }
+
         Yii::$app->response->format = Response::FORMAT_JSON;
         $code = Yii::$app->request->get('code');
         $key = 'invite:' . $code;
@@ -1093,6 +1122,10 @@ class PluginUserController extends \yii\rest\Controller
      */
     public function actionInvitationRecords()
     {
+        if (($proxy = $this->proxyAccountLifecycle('/v1/plugin-user/invitation-records')) !== null) {
+            return $proxy['body'];
+        }
+
         Yii::$app->response->format = Response::FORMAT_JSON;
         $result = $this->resolveUserWithPermission('manage-invitations');
         if (isset($result['error'])) {
@@ -1118,6 +1151,10 @@ class PluginUserController extends \yii\rest\Controller
      */
     public function actionRegisterSendCode()
     {
+        if (($proxy = $this->proxyAccountLifecycle('/v1/plugin-user/register-send-code')) !== null) {
+            return $proxy['body'];
+        }
+
         Yii::$app->response->format = Response::FORMAT_JSON;
         $request = Yii::$app->request;
         $inviteCode = $request->getBodyParam('inviteCode');
@@ -1203,6 +1240,10 @@ class PluginUserController extends \yii\rest\Controller
      */
     public function actionRegister()
     {
+        if (($proxy = $this->proxyAccountLifecycle('/v1/plugin-user/register')) !== null) {
+            return $proxy['body'];
+        }
+
         Yii::$app->response->format = Response::FORMAT_JSON;
         $request = Yii::$app->request;
         $inviteCode = $request->getBodyParam('inviteCode');
@@ -1332,5 +1373,14 @@ class PluginUserController extends \yii\rest\Controller
             Yii::$app->response->statusCode = 500;
             return ['code' => 5000, 'message' => '注册失败: ' . $e->getMessage()];
         }
+    }
+
+    private function proxyAccountLifecycle(string $path): ?array
+    {
+        if ($this->accountLifecycleProxy === null) {
+            $this->accountLifecycleProxy = new AccountLifecycleProxyService();
+        }
+
+        return $this->accountLifecycleProxy->proxyCurrentRequest('invitation', $path);
     }
 }

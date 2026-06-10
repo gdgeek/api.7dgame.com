@@ -304,6 +304,43 @@ final class PluginUserControllerOrganizationTest extends TestCase
         }
     }
 
+    public function testBatchCreateUsersReturnsErrorWhenEveryUserFailsPasswordPolicy(): void
+    {
+        $operator = $this->createUser(self::OPERATOR_USERNAME, 'operator@example.com');
+
+        $this->bootAuthenticatedOperator($operator->id, ['create-user']);
+        Yii::$app->set('request', new PluginUserTestRequest([], [
+            'users' => [
+                [
+                    'username' => self::BATCH_TARGET_USERNAMES[0],
+                    'nickname' => 'Batch Target 1',
+                    'password' => '123456',
+                    'role' => 'user',
+                    'status' => 10,
+                ],
+                [
+                    'username' => self::BATCH_TARGET_USERNAMES[1],
+                    'nickname' => 'Batch Target 2',
+                    'password' => '123456',
+                    'role' => 'user',
+                    'status' => 10,
+                ],
+            ],
+        ]));
+        Yii::$app->set('response', new Response());
+
+        $controller = new PluginUserController('plugin-user', Yii::$app->getModule('v1'));
+        $result = $controller->actionBatchCreateUsers();
+
+        $this->assertSame(400, Yii::$app->response->statusCode);
+        $this->assertSame(4003, $result['code']);
+        $this->assertSame(0, $result['data']['success']);
+        $this->assertSame(2, $result['data']['failed']);
+        $this->assertStringContainsString('密码长度不能少于 8 个字符', $result['data']['results'][0]['error']);
+        $this->assertNull(User::findOne(['username' => self::BATCH_TARGET_USERNAMES[0]]));
+        $this->assertNull(User::findOne(['username' => self::BATCH_TARGET_USERNAMES[1]]));
+    }
+
     public function testBatchCreateUsersRejectsUnknownSharedOrganizationIds(): void
     {
         $operator = $this->createUser(self::OPERATOR_USERNAME, 'operator@example.com');
