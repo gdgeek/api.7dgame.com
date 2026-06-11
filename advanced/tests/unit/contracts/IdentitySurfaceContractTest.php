@@ -121,6 +121,8 @@ final class IdentitySurfaceContractTest extends TestCase
             "'roles' => \$user->roles",
             "'organizations' => User::normalizeOrganizations",
             "'emailBind' => \$emailBind",
+            'IamShadowCompareService',
+            'compareCurrentUserPayload($user, $payload)',
         ] as $needle) {
             $this->assertStringContainsString($needle, $userManagementService);
         }
@@ -132,7 +134,9 @@ final class IdentitySurfaceContractTest extends TestCase
             "'id' => \$user->id",
             "'username' => \$user->username",
             "'roles' => \$roles",
-            "'organizations' => User::normalizeOrganizations",
+            "'organizations' => \$organizations",
+            'IamShadowCompareService',
+            'comparePluginVerifyToken(',
             "'verify-token' => ['GET']",
         ] as $needle) {
             $this->assertStringContainsString($needle, $pluginController);

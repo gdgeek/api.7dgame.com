@@ -48,6 +48,31 @@ class IdentityProviderClient extends Component
         return $this->requestJson($method, $path, $payload, $query, $context, true);
     }
 
+    public function iamUserView(int $legacyUserId): ?array
+    {
+        return $this->internalIamData('GET', '/internal/iam/users/' . $legacyUserId);
+    }
+
+    public function iamRolesView(int $legacyUserId): ?array
+    {
+        return $this->internalIamData('GET', '/internal/iam/users/' . $legacyUserId . '/roles');
+    }
+
+    public function iamPermissionsView(int $legacyUserId): ?array
+    {
+        return $this->internalIamData('GET', '/internal/iam/users/' . $legacyUserId . '/permissions');
+    }
+
+    public function iamOrganizationsView(int $legacyUserId): ?array
+    {
+        return $this->internalIamData('GET', '/internal/iam/users/' . $legacyUserId . '/organizations');
+    }
+
+    public function iamPluginVerifyToken(string $token): ?array
+    {
+        return $this->internalIamData('POST', '/internal/iam/plugin/verify-token', ['token' => $token]);
+    }
+
     private function tokenFromResponse(array $response): array
     {
         if (!isset($response['token']) || !is_array($response['token'])) {
@@ -104,6 +129,9 @@ class IdentityProviderClient extends Component
         }
         if (!empty($context['authorization'])) {
             $headers[] = 'Authorization: ' . $context['authorization'];
+        }
+        if (!empty($context['identity_internal_token'])) {
+            $headers[] = 'X-Identity-Internal-Token: ' . $context['identity_internal_token'];
         }
 
         $url = rtrim($baseUrl, '/') . $path;
@@ -166,6 +194,34 @@ class IdentityProviderClient extends Component
     private function connectTimeoutMs(): int
     {
         return $this->intConfig('IDENTITY_AUTH_CONNECT_TIMEOUT_MS', 300, 50, 5000);
+    }
+
+    private function internalIamData(string $method, string $path, ?array $payload = null): ?array
+    {
+        $token = $this->internalToken();
+        if ($token === null) {
+            Yii::warning('Identity IAM shadow compare skipped because internal token is not configured.', 'identity.iamShadowCompare');
+            return null;
+        }
+
+        $response = $this->requestJson($method, $path, $payload, [], [
+            'identity_internal_token' => $token,
+        ], true);
+
+        $status = (int)($response['status'] ?? 0);
+        if ($status >= 400) {
+            Yii::warning('Identity IAM shadow compare endpoint returned HTTP ' . $status . '.', 'identity.iamShadowCompare');
+            return null;
+        }
+
+        $body = $response['body'] ?? [];
+        return is_array($body) && isset($body['data']) && is_array($body['data']) ? $body['data'] : null;
+    }
+
+    private function internalToken(): ?string
+    {
+        return $this->stringConfig('IDENTITY_IAM_INTERNAL_API_TOKEN')
+            ?? $this->stringConfig('IDENTITY_INTERNAL_API_TOKEN');
     }
 
     private function stringConfig(string $key): ?string

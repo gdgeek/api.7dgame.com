@@ -7,6 +7,8 @@ use yii\base\Component;
 
 class UserManagementService extends Component
 {
+    private ?IamShadowCompareService $iamShadowCompareService = null;
+
     public function buildCurrentUserPayload($user): array
     {
         $emailVerified = !empty($user->email_verified_at);
@@ -20,7 +22,7 @@ class UserManagementService extends Component
             ];
         }
 
-        return [
+        $payload = [
             'id' => $user->id,
             'userData' => $user->data,
             'userInfo' => $user->userInfo,
@@ -31,5 +33,18 @@ class UserManagementService extends Component
             'emailVerifiedAt' => $user->email_verified_at,
             'emailBind' => $emailBind,
         ];
+
+        $this->iamShadowCompareService()->compareCurrentUserPayload($user, $payload);
+
+        return $payload;
+    }
+
+    private function iamShadowCompareService(): IamShadowCompareService
+    {
+        if ($this->iamShadowCompareService === null) {
+            $this->iamShadowCompareService = new IamShadowCompareService();
+        }
+
+        return $this->iamShadowCompareService;
     }
 }
