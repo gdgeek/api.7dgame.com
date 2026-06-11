@@ -30,6 +30,7 @@ final class IdentityBackendBoundaryTest extends TestCase
             'api/modules/v1/services/AuthorizationService.php',
             'api/modules/v1/services/LoginAuditReporter.php',
             'api/modules/v1/services/IdentityProviderClient.php',
+            'api/modules/v1/services/IamShadowCompareService.php',
             'api/modules/v1/services/AccountLifecycleProxyService.php',
             'api/modules/v1/controllers/InternalIdentityController.php',
         ] as $relativePath) {
@@ -128,12 +129,23 @@ final class IdentityBackendBoundaryTest extends TestCase
         $emailController = $this->read('api/modules/v1/controllers/EmailController.php');
         $userController = $this->read('api/modules/v1/controllers/UserController.php');
         $pluginController = $this->read('api/modules/v1/controllers/PluginController.php');
+        $organizationController = $this->read('api/modules/v1/controllers/OrganizationController.php');
+        $userManagementService = $this->read('api/modules/v1/services/UserManagementService.php');
+        $authorizationService = $this->read('api/modules/v1/services/AuthorizationService.php');
         $passwordService = $this->read('api/modules/v1/services/PasswordResetService.php');
 
         $this->assertStringContainsString('PasswordAccountService', $passwordController);
         $this->assertStringContainsString('EmailAccountService', $emailController);
         $this->assertStringContainsString('UserManagementService', $userController);
         $this->assertStringContainsString('AuthorizationService', $pluginController);
+        $this->assertStringContainsString('IamShadowCompareService', $pluginController);
+        $this->assertStringContainsString('IamShadowCompareService', $organizationController);
+        $this->assertStringContainsString('IamShadowCompareService', $userManagementService);
+        $this->assertStringContainsString('IamShadowCompareService', $authorizationService);
+        $this->assertStringContainsString('compareCurrentUserPayload($user, $payload)', $userManagementService);
+        $this->assertStringContainsString('compareRolesByUserId($userId, $roles', $authorizationService);
+        $this->assertStringContainsString('comparePluginVerifyToken(', $pluginController);
+        $this->assertStringContainsString('comparePermission($user, $permission, (bool)$allowed)', $organizationController);
         $this->assertStringContainsString('revokeUserSessions($userId)', $passwordService);
     }
 
@@ -199,6 +211,52 @@ final class IdentityBackendBoundaryTest extends TestCase
         foreach ([
             "'AUTH_PROVIDER' => getenv('AUTH_PROVIDER') ?: 'legacy'",
             "'IDENTITY_AUTH_LEGACY_REFRESH_FALLBACK' => getenv('IDENTITY_AUTH_LEGACY_REFRESH_FALLBACK') ?: 'true'",
+        ] as $needle) {
+            $this->assertStringContainsString($needle, $params);
+        }
+    }
+
+    public function testIamShadowCompareIsInternalGuardedAndLegacyByDefault(): void
+    {
+        $identityProviderClient = $this->read('api/modules/v1/services/IdentityProviderClient.php');
+        $iamShadowCompare = $this->read('api/modules/v1/services/IamShadowCompareService.php');
+        $params = $this->read('../files/common/config/params.php');
+
+        foreach ([
+            'iamUserView(int $legacyUserId)',
+            'iamRolesView(int $legacyUserId)',
+            'iamPermissionsView(int $legacyUserId)',
+            'iamOrganizationsView(int $legacyUserId)',
+            'iamPluginVerifyToken(string $token)',
+            "'X-Identity-Internal-Token: '",
+            'IDENTITY_IAM_INTERNAL_API_TOKEN',
+            'IDENTITY_INTERNAL_API_TOKEN',
+            '/internal/iam/users/',
+            '/internal/iam/plugin/verify-token',
+        ] as $needle) {
+            $this->assertStringContainsString($needle, $identityProviderClient);
+        }
+
+        foreach ([
+            'IDENTITY_IAM_PROVIDER',
+            'IDENTITY_IAM_SHADOW_COMPARE',
+            'IDENTITY_IAM_FALLBACK',
+            "return in_array(\$provider, ['identity', 'identity-shadow'], true) ? \$provider : 'legacy';",
+            "provider() === 'identity-shadow'",
+            'identity.iamShadowCompare',
+            "hash('sha256'",
+            'legacyHash',
+            'identityHash',
+            'fallbackEnabled()',
+        ] as $needle) {
+            $this->assertStringContainsString($needle, $iamShadowCompare);
+        }
+
+        foreach ([
+            "'IDENTITY_IAM_PROVIDER' => getenv('IDENTITY_IAM_PROVIDER') ?: 'legacy'",
+            "'IDENTITY_IAM_SHADOW_COMPARE' => getenv('IDENTITY_IAM_SHADOW_COMPARE') ?: 'false'",
+            "'IDENTITY_IAM_FALLBACK' => getenv('IDENTITY_IAM_FALLBACK') ?: 'true'",
+            "'IDENTITY_IAM_INTERNAL_API_TOKEN' => getenv('IDENTITY_IAM_INTERNAL_API_TOKEN')",
         ] as $needle) {
             $this->assertStringContainsString($needle, $params);
         }
