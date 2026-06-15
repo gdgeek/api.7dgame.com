@@ -9,8 +9,10 @@ use yii\filters\auth\CompositeAuth;
 use yii\helpers\ArrayHelper;
 use yii\web\UploadedFile;
 use Yii;
+use api\modules\v1\RefreshToken;
 use api\modules\v1\models\UserLinked;
 use yii\web\BadRequestHttpException;
+use yii\web\ServerErrorHttpException;
 use api\modules\v1\models\User;
 use OpenApi\Annotations as OA;
 
@@ -86,10 +88,16 @@ class ToolsController extends \yii\rest\Controller
             $linked->user_id = $user->id;
         }
         $token = $user->getRefreshToken()->one();
-        if(!$token){
-            $token = $user->token();
+        if ($token && !empty($token->key)) {
+            $linked->key = $token->key;
+        } else {
+            $issuedToken = $user->token();
+            $refreshToken = is_array($issuedToken) ? ($issuedToken['refreshToken'] ?? null) : null;
+            if (!is_string($refreshToken) || $refreshToken === '') {
+                throw new ServerErrorHttpException('Failed to issue refresh token.');
+            }
+            $linked->key = RefreshToken::hashToken($refreshToken);
         }
-        $linked->key = $token->key;
         if(!$linked->validate()){
             throw new BadRequestHttpException("validate error");
         }
