@@ -16,7 +16,8 @@
   <a href="#项目结构">项目结构</a> •
   <a href="#开发指南">开发指南</a> •
   <a href="#docker-部署">Docker</a> •
-  <a href="QUICK_REFERENCE.md">快速参考 ⭐</a>
+  <a href="QUICK_REFERENCE.md">快速参考 ⭐</a> •
+  <a href="docs/CAPABILITIES.md">系统能力 📋</a>
 </p>
 
 ---
@@ -565,6 +566,7 @@ export SWAGGER_ENABLED=false
 
 ### 📖 完整文档索引
 - [📁 文档中心](docs/README.md) - 所有文档的索引和导航 ⭐
+- [📋 系统能力概览](docs/CAPABILITIES.md) - 了解本系统能做什么 ⭐
 
 ### 🔒 安全文档
 - [安全审查总结](docs/security/SECURITY_AUDIT_SUMMARY.md) - 后端安全审查报告
