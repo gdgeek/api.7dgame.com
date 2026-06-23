@@ -539,50 +539,54 @@ final class PluginCampusControllerTest extends TestCase
         if ($user->id === null) {
             throw new \RuntimeException('Campus user fixture must be saved before content fixtures are created.');
         }
-        $previousIdentity = Yii::$app->user?->identity ?? null;
-        if (Yii::$app->has('user')) {
-            Yii::$app->user->setIdentity($user);
-        }
 
-        $file = new File([
-            'url' => 'https://example.com/campus-test.glb',
-            'filename' => 'campus-test.glb',
-            'key' => 'campus-test.glb',
-            'user_id' => $user->id,
+        $previousUserComponent = Yii::$app->get('user', false);
+        $webUser = new WebUser([
+            'identityClass' => User::class,
+            'enableSession' => false,
         ]);
-        $file->save(false);
+        $webUser->setIdentity($user);
+        Yii::$app->set('user', $webUser);
 
-        $resource = new Resource([
-            'name' => 'Campus Test Resource',
-            'type' => 'polygen',
-            'uuid' => 'campus-test-resource-' . $user->id,
-            'file_id' => $file->id,
-            'author_id' => $user->id,
-            'updater_id' => $user->id,
-        ]);
-        $resource->save(false);
+        try {
+            $file = new File([
+                'url' => 'https://example.com/campus-test.glb',
+                'filename' => 'campus-test.glb',
+                'key' => 'campus-test.glb',
+                'user_id' => $user->id,
+            ]);
+            $file->save(false);
 
-        $verse = new Verse([
-            'name' => 'Campus Test Verse',
-            'uuid' => 'campus-test-verse-' . $user->id,
-            'author_id' => $user->id,
-            'updater_id' => $user->id,
-        ]);
-        $verse->save(false);
+            $resource = new Resource([
+                'name' => 'Campus Test Resource',
+                'type' => 'polygen',
+                'uuid' => 'campus-test-resource-' . $user->id,
+                'file_id' => $file->id,
+                'author_id' => $user->id,
+                'updater_id' => $user->id,
+            ]);
+            $resource->save(false);
 
-        $meta = new Meta([
-            'title' => 'Campus Test Meta',
-            'uuid' => 'campus-test-meta-' . $user->id,
-            'author_id' => $user->id,
-            'updater_id' => $user->id,
-        ]);
-        $meta->save(false);
+            $verse = new Verse([
+                'name' => 'Campus Test Verse',
+                'uuid' => 'campus-test-verse-' . $user->id,
+                'author_id' => $user->id,
+                'updater_id' => $user->id,
+            ]);
+            $verse->save(false);
 
-        (new VerseMeta(['verse_id' => $verse->id, 'meta_id' => $meta->id]))->save(false);
-        (new MetaResource(['meta_id' => $meta->id, 'resource_id' => $resource->id]))->save(false);
+            $meta = new Meta([
+                'title' => 'Campus Test Meta',
+                'uuid' => 'campus-test-meta-' . $user->id,
+                'author_id' => $user->id,
+                'updater_id' => $user->id,
+            ]);
+            $meta->save(false);
 
-        if (Yii::$app->has('user')) {
-            Yii::$app->user->setIdentity($previousIdentity);
+            (new VerseMeta(['verse_id' => $verse->id, 'meta_id' => $meta->id]))->save(false);
+            (new MetaResource(['meta_id' => $meta->id, 'resource_id' => $resource->id]))->save(false);
+        } finally {
+            Yii::$app->set('user', $previousUserComponent);
         }
     }
 
