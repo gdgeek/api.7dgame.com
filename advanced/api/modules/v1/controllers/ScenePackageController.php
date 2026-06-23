@@ -238,7 +238,7 @@ class ScenePackageController extends Controller
      * @return array
      * @throws BadRequestHttpException
      */
-    private function parseZipUpload(): array
+    protected function parseZipUpload(): array
     {
         $uploadedFile = \yii\web\UploadedFile::getInstanceByName('file');
 
@@ -272,7 +272,7 @@ class ScenePackageController extends Controller
      * @param array $data
      * @throws BadRequestHttpException
      */
-    private function validateVersion(array $data): void
+    protected function validateVersion(array $data): void
     {
         $currentVersion = Version::getCurrentVersionNumber();
         $packageVersion = (int) ($data['verse']['version'] ?? 0);
@@ -290,7 +290,7 @@ class ScenePackageController extends Controller
      * @param mixed $data
      * @throws BadRequestHttpException
      */
-    private function validateImportData($data): void
+    protected function validateImportData($data): void
     {
         if (!is_array($data) || empty($data)) {
             throw new BadRequestHttpException('Missing required field: verse');
@@ -386,7 +386,7 @@ class ScenePackageController extends Controller
      * @param array $data
      * @throws UnprocessableEntityHttpException
      */
-    private function validateFileIds(array $data): void
+    protected function validateFileIds(array $data): void
     {
         if (!isset($data['resourceFileMappings']) || !is_array($data['resourceFileMappings'])) {
             return;

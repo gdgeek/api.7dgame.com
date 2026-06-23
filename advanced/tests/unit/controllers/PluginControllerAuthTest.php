@@ -3,6 +3,7 @@
 namespace tests\unit\controllers;
 
 use api\modules\v1\controllers\PluginController;
+use api\modules\v1\controllers\PluginCampusController;
 use api\modules\v1\controllers\PluginUserController;
 use bizley\jwt\JwtHttpBearerAuth;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -27,6 +28,7 @@ class PluginControllerAuthTest extends TestCase
     {
         return [
             'plugin-controller' => [PluginController::class],
+            'plugin-campus-controller' => [PluginCampusController::class],
             'plugin-user-controller' => [PluginUserController::class],
         ];
     }

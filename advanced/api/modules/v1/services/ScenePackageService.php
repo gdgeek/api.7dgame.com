@@ -8,6 +8,7 @@ use api\modules\v1\models\Meta;
 use api\modules\v1\models\MetaCode;
 use api\modules\v1\models\MetaResource;
 use api\modules\v1\models\Resource;
+use api\modules\v1\models\User;
 use api\modules\v1\models\Verse;
 use api\modules\v1\models\VerseCode;
 use api\modules\v1\models\Version;
@@ -97,15 +98,31 @@ class ScenePackageService extends Component
      * 任何步骤失败将抛出异常触发事务回滚。
      *
      * @param array $data 解析后的场景数据
+     * @param int|null $targetUserId 可选目标用户。为空时保持原有“导入到当前登录用户”行为。
      * @return array {verseId, metaIdMap, resourceIdMap}
      * @throws \Exception 任何失败将触发事务回滚
      */
-    public function importScene(array $data): array
+    public function importScene(array $data, ?int $targetUserId = null): array
     {
-        $db = Yii::$app->db;
-        $transaction = $db->beginTransaction();
+        $originalIdentity = null;
+        $switchedIdentity = false;
 
+        if ($targetUserId !== null) {
+            $targetUser = User::findOne($targetUserId);
+            if ($targetUser === null) {
+                throw new \InvalidArgumentException("Target user not found: {$targetUserId}");
+            }
+
+            $originalIdentity = Yii::$app->user->identity ?? null;
+            Yii::$app->user->setIdentity($targetUser);
+            $switchedIdentity = true;
+        }
+
+        $transaction = null;
         try {
+            $db = Yii::$app->db;
+            $transaction = $db->beginTransaction();
+
             $verseData = $data['verse'];
             $metasData = $data['metas'] ?? [];
             $resourceFileMappings = $data['resourceFileMappings'] ?? [];
@@ -422,9 +439,15 @@ class ScenePackageService extends Component
                 'resourceIdMap' => $resourceIdMap,
                 'fileIdMap' => $fileIdMap,
             ];
-        } catch (\Exception $e) {
-            $transaction->rollBack();
+        } catch (\Throwable $e) {
+            if ($transaction !== null && $transaction->isActive) {
+                $transaction->rollBack();
+            }
             throw $e;
+        } finally {
+            if ($switchedIdentity) {
+                Yii::$app->user->setIdentity($originalIdentity);
+            }
         }
     }
 
