@@ -297,8 +297,10 @@ class ScenePackageServiceTest extends TestCase
         $reflection = new \ReflectionMethod($service, 'importScene');
         $params = $reflection->getParameters();
 
-        $this->assertCount(1, $params, 'importScene should accept exactly one parameter');
+        $this->assertCount(2, $params, 'importScene should accept import data and an optional target user ID');
         $this->assertEquals('data', $params[0]->getName(), 'Parameter should be named "data"');
+        $this->assertEquals('targetUserId', $params[1]->getName(), 'Second parameter should be named "targetUserId"');
+        $this->assertTrue($params[1]->allowsNull(), 'targetUserId should be nullable to preserve existing import behavior');
     }
 
     /**

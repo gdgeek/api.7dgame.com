@@ -158,6 +158,27 @@ return [
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/plugin-campus',
+                    'pluralize' => false,
+                    'only' => [
+                        'users',
+                        'password',
+                        'clear-content-preview',
+                        'clear-content',
+                        'import-scene-zip',
+                        'upload-resource',
+                    ],
+                    'extraPatterns' => [
+                        'GET users' => 'users',
+                        'POST users/password' => 'password',
+                        'POST users/clear-content-preview' => 'clear-content-preview',
+                        'POST users/clear-content' => 'clear-content',
+                        'POST users/import-scene-zip' => 'import-scene-zip',
+                        'POST users/upload-resource' => 'upload-resource',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/organization',
                     'pluralize' => false,
                     'only' => ['list', 'create', 'update', 'bind-user', 'unbind-user'],
