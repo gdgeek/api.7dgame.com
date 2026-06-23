@@ -45,10 +45,12 @@ final class PluginCampusControllerTest extends TestCase
     private $originalAuthManager;
     private $originalRequestComponent;
     private $originalResponseComponent;
+    private string $fixtureSuffix = '';
 
     protected function setUp(): void
     {
         parent::setUp();
+        $this->fixtureSuffix = '-' . bin2hex(random_bytes(4));
         $this->originalUserComponent = Yii::$app->get('user', false);
         $this->originalAuthManager = Yii::$app->get('authManager', false);
         $this->originalRequestComponent = Yii::$app->get('request', false);
@@ -125,11 +127,11 @@ final class PluginCampusControllerTest extends TestCase
         $usernames = array_column($result['data'], 'username');
 
         $this->assertSame(0, $result['code']);
-        $this->assertContains('campus-target-manager', $usernames);
-        $this->assertContains('campus-target-user', $usernames);
-        $this->assertNotContains('campus-peer-admin', $usernames);
-        $this->assertNotContains('campus-root-target', $usernames);
-        $this->assertNotContains('campus-outside-user', $usernames);
+        $this->assertContains($manager->username, $usernames);
+        $this->assertContains($student->username, $usernames);
+        $this->assertNotContains($peerAdmin->username, $usernames);
+        $this->assertNotContains($rootTarget->username, $usernames);
+        $this->assertNotContains($outside->username, $usernames);
     }
 
     public function testAdminCanUpdateSameOrganizationManagerPasswordOnly(): void
@@ -212,8 +214,8 @@ final class PluginCampusControllerTest extends TestCase
         $usernames = array_column($result['data'], 'username');
 
         $this->assertSame(0, $result['code']);
-        $this->assertContains('campus-target-user', $usernames);
-        $this->assertNotContains('campus-manager-operator', $usernames);
+        $this->assertContains($student->username, $usernames);
+        $this->assertNotContains($manager->username, $usernames);
     }
 
     public function testCampusUserListRequiresOrganizationScope(): void
@@ -479,12 +481,15 @@ final class PluginCampusControllerTest extends TestCase
     private function createOrganizations(): array
     {
         $organizations = [];
-        foreach (self::ORGANIZATION_NAMES as $name) {
+        foreach (self::ORGANIZATION_NAMES as $baseName) {
+            $name = $this->fixtureOrganizationName($baseName);
             $organization = new Organization([
                 'title' => $name,
                 'name' => $name,
             ]);
-            $organization->save(false);
+            if (!$organization->save(false) || $organization->id === null) {
+                throw new \RuntimeException('Failed to create campus organization fixture: ' . $name);
+            }
             $organizations[] = $organization;
         }
 
@@ -493,6 +498,7 @@ final class PluginCampusControllerTest extends TestCase
 
     private function createUser(string $username): User
     {
+        $username = $this->fixtureUsername($username);
         $user = new User();
         $user->username = $username;
         $user->nickname = $username;
@@ -502,9 +508,21 @@ final class PluginCampusControllerTest extends TestCase
         $user->status = 10;
         $user->created_at = time();
         $user->updated_at = time();
-        $user->save(false);
+        if (!$user->save(false) || $user->id === null) {
+            throw new \RuntimeException('Failed to create campus user fixture: ' . $username);
+        }
 
         return $user;
+    }
+
+    private function fixtureUsername(string $baseName): string
+    {
+        return $baseName . $this->fixtureSuffix;
+    }
+
+    private function fixtureOrganizationName(string $baseName): string
+    {
+        return $baseName . $this->fixtureSuffix;
     }
 
     private function bindOrganization(int $userId, int $organizationId): void
@@ -518,6 +536,9 @@ final class PluginCampusControllerTest extends TestCase
 
     private function createUserContent(User $user): void
     {
+        if ($user->id === null) {
+            throw new \RuntimeException('Campus user fixture must be saved before content fixtures are created.');
+        }
         $previousIdentity = Yii::$app->user?->identity ?? null;
         if (Yii::$app->has('user')) {
             Yii::$app->user->setIdentity($user);
@@ -581,9 +602,15 @@ final class PluginCampusControllerTest extends TestCase
 
     private function cleanupFixtures(): void
     {
+        $userConditions = ['or'];
+        foreach (self::USERNAMES as $username) {
+            $userConditions[] = ['username' => $username];
+            $userConditions[] = ['like', 'username', $username . '-%', false];
+        }
+
         $userIds = User::find()
             ->select('id')
-            ->where(['username' => self::USERNAMES])
+            ->where($userConditions)
             ->column();
 
         if (!empty($userIds)) {
@@ -610,7 +637,13 @@ final class PluginCampusControllerTest extends TestCase
             User::deleteAll(['id' => $userIds]);
         }
 
-        Organization::deleteAll(['name' => self::ORGANIZATION_NAMES]);
+        $organizationConditions = ['or'];
+        foreach (self::ORGANIZATION_NAMES as $name) {
+            $organizationConditions[] = ['name' => $name];
+            $organizationConditions[] = ['like', 'name', $name . '-%', false];
+        }
+
+        Organization::deleteAll($organizationConditions);
     }
 }
 

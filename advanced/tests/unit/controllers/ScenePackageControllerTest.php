@@ -590,24 +590,24 @@ class ScenePackageControllerTest extends TestCase
     }
 
     // =========================================================================
-    // Private method existence and accessibility tests
+    // Reusable helper method existence and accessibility tests
     // =========================================================================
 
     /**
-     * Test that the controller has all required private helper methods.
+     * Test that the controller has all required reusable helper methods.
      */
-    public function testControllerHasPrivateHelperMethods(): void
+    public function testControllerHasProtectedHelperMethods(): void
     {
         $reflection = new \ReflectionClass(ScenePackageController::class);
 
         $this->assertTrue($reflection->hasMethod('parseZipUpload'));
-        $this->assertTrue($reflection->getMethod('parseZipUpload')->isPrivate());
+        $this->assertTrue($reflection->getMethod('parseZipUpload')->isProtected());
 
         $this->assertTrue($reflection->hasMethod('validateImportData'));
-        $this->assertTrue($reflection->getMethod('validateImportData')->isPrivate());
+        $this->assertTrue($reflection->getMethod('validateImportData')->isProtected());
 
         $this->assertTrue($reflection->hasMethod('validateFileIds'));
-        $this->assertTrue($reflection->getMethod('validateFileIds')->isPrivate());
+        $this->assertTrue($reflection->getMethod('validateFileIds')->isProtected());
     }
 
     /**
