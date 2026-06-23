@@ -553,6 +553,9 @@ final class PluginCampusControllerTest extends TestCase
                 'url' => 'https://example.com/campus-test.glb',
                 'filename' => 'campus-test.glb',
                 'key' => 'campus-test.glb',
+                'md5' => md5('campus-test-glb-' . $user->id),
+                'size' => 128,
+                'type' => 'model/gltf-binary',
                 'user_id' => $user->id,
             ]);
             $file->save(false);
