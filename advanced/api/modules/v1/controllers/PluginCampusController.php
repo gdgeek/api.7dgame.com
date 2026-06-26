@@ -46,6 +46,12 @@ class PluginCampusController extends ScenePackageController
         'user' => 1,
     ];
 
+    private const BATCH_PROTECTED_TARGET_ROLES = [
+        'root',
+        'admin',
+        'manager',
+    ];
+
     private const RESOURCE_TYPES = [
         'polygen',
         'voxel',
@@ -284,12 +290,16 @@ class PluginCampusController extends ScenePackageController
             }
         }
 
+        $skippedTargets = $targetContext['skipped_targets'] ?? [];
+
         return [
             'code' => 0,
             'message' => 'ok',
             'data' => [
                 'success_count' => $successCount,
                 'failed_count' => $failedCount,
+                'skipped_count' => count($skippedTargets),
+                'skipped_targets' => $skippedTargets,
                 'results' => $results,
             ],
         ];
@@ -307,10 +317,17 @@ class PluginCampusController extends ScenePackageController
             return $targetContext['error'];
         }
 
+        $preview = $this->buildClearContentPreview($targetContext['users']);
+        $skippedTargets = $targetContext['skipped_targets'] ?? [];
+
         return [
             'code' => 0,
             'message' => 'ok',
-            'data' => $this->buildClearContentPreview($targetContext['users']),
+            'data' => [
+                ...$preview,
+                'skipped_count' => count($skippedTargets),
+                'skipped_targets' => $skippedTargets,
+            ],
         ];
     }
 
@@ -354,12 +371,16 @@ class PluginCampusController extends ScenePackageController
             }
         }
 
+        $skippedTargets = $targetContext['skipped_targets'] ?? [];
+
         return [
             'code' => 0,
             'message' => 'ok',
             'data' => [
                 'success_count' => $successCount,
                 'failed_count' => $failedCount,
+                'skipped_count' => count($skippedTargets),
+                'skipped_targets' => $skippedTargets,
                 'results' => $results,
             ],
         ];
@@ -410,12 +431,16 @@ class PluginCampusController extends ScenePackageController
             }
         }
 
+        $skippedTargets = $targetContext['skipped_targets'] ?? [];
+
         return [
             'code' => 0,
             'message' => 'ok',
             'data' => [
                 'success_count' => $successCount,
                 'failed_count' => $failedCount,
+                'skipped_count' => count($skippedTargets),
+                'skipped_targets' => $skippedTargets,
                 'results' => $results,
             ],
         ];
@@ -457,12 +482,16 @@ class PluginCampusController extends ScenePackageController
             }
         }
 
+        $skippedTargets = $targetContext['skipped_targets'] ?? [];
+
         return [
             'code' => 0,
             'message' => 'ok',
             'data' => [
                 'success_count' => $successCount,
                 'failed_count' => $failedCount,
+                'skipped_count' => count($skippedTargets),
+                'skipped_targets' => $skippedTargets,
                 'results' => $results,
             ],
         ];
@@ -544,16 +573,65 @@ class PluginCampusController extends ScenePackageController
             }
         }
 
+        $operationScope = $this->resolveOperationScope($requestedUserIds);
+        $skippedTargets = [];
+        if ($operationScope === 'batch') {
+            $filterResult = $this->filterBatchProtectedTargets($targets);
+            $targets = $filterResult['targets'];
+            $skippedTargets = $filterResult['skipped_targets'];
+        }
+
         if (empty($targets)) {
             Yii::$app->response->statusCode = 422;
-            return ['error' => ['code' => 4221, 'message' => '没有可操作的目标账号']];
+            return ['error' => ['code' => 4221, 'message' => $operationScope === 'batch' ? '统一操作没有可操作的普通用户' : '没有可操作的目标账号']];
         }
 
         return [
             'actor' => $actorContext['user'],
             'roles' => $actorContext['roles'],
             'organization_id' => $organizationId,
+            'operation_scope' => $operationScope,
+            'skipped_targets' => $skippedTargets,
             'users' => $targets,
+        ];
+    }
+
+    private function resolveOperationScope(array $requestedUserIds): string
+    {
+        $scope = strtolower(trim((string)Yii::$app->request->getBodyParam('operation_scope', '')));
+        if (in_array($scope, ['batch', 'bulk', 'all'], true)) {
+            return 'batch';
+        }
+        if (in_array($scope, ['single', 'row'], true)) {
+            return 'single';
+        }
+
+        return count($requestedUserIds) === 1 ? 'single' : 'batch';
+    }
+
+    private function filterBatchProtectedTargets(array $targets): array
+    {
+        $allowedTargets = [];
+        $skippedTargets = [];
+
+        foreach ($targets as $user) {
+            $roles = $this->getRoleNamesByUserId((int)$user->id);
+            if ($this->hasAnyRole($roles, self::BATCH_PROTECTED_TARGET_ROLES)) {
+                $skippedTargets[] = [
+                    'user_id' => (int)$user->id,
+                    'username' => $user->username,
+                    'role' => $this->highestRole($roles),
+                    'reason' => '统一操作不处理 root/admin/manager 账号',
+                ];
+                continue;
+            }
+
+            $allowedTargets[] = $user;
+        }
+
+        return [
+            'targets' => $allowedTargets,
+            'skipped_targets' => $skippedTargets,
         ];
     }
 
