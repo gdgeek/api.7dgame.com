@@ -50,16 +50,11 @@ RUN mkdir -p /var/www/html/advanced/backend/runtime \
     /var/www/html/advanced/console/runtime \
     /var/www/html/advanced/api/runtime \
     /var/www/html/advanced/api/web/assets \
-    /var/www/html/advanced/storage/raw \
-    /var/www/html/advanced/storage/store \
-    /var/www/html/advanced/storage/temp \
-    /var/www/html/advanced/storage/derived \
     && chmod -R 777 /var/www/html/advanced/backend/runtime \
     && chmod -R 777 /var/www/html/advanced/backend/web/assets \
     && chmod -R 777 /var/www/html/advanced/console/runtime \
     && chmod -R 777 /var/www/html/advanced/api/runtime \
-    && chmod -R 777 /var/www/html/advanced/api/web/assets \
-    && chmod -R 777 /var/www/html/advanced/storage
+    && chmod -R 777 /var/www/html/advanced/api/web/assets
 
 COPY files/api/config/main-local.php /var/www/html/advanced/api/config/
 COPY files/api/config/params-local.php /var/www/html/advanced/api/config/
