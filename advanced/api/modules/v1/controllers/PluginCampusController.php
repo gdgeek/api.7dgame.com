@@ -855,12 +855,7 @@ class PluginCampusController extends ScenePackageController
             return $filePayload[$key] ?? Yii::$app->request->getBodyParam($key, $default);
         };
 
-        $storage = new Storage();
-        if (!$storage->init()) {
-            throw new ServerErrorHttpException('文件系统初始化失败');
-        }
-
-        $key = $storage->normalizeKey($value('key', ''));
+        $key = $this->normalizeResourceStorageKey($value('key', ''));
         $filename = $this->normalizeUploadFilename($value('filename', basename($key)));
         $md5 = strtolower(trim((string)$value('md5', '')));
         $size = $this->parsePositiveInt($value('size', null));
@@ -876,11 +871,12 @@ class PluginCampusController extends ScenePackageController
             $filename
         );
         $this->assertResourceMetadataPolicy($filename, $resourceType, $key, $md5, $size);
+        $imagePayload = $this->normalizeResourceImagePayload($filePayload['image'] ?? Yii::$app->request->getBodyParam('image', null));
 
         return [
             'bucket' => 'store',
             'key' => $key,
-            'url' => $storage->publicUrl('store', $key),
+            'url' => $this->normalizeResourceUrl($value('url', '')),
             'filename' => $filename,
             'size' => $size,
             'md5' => $md5,
@@ -888,6 +884,7 @@ class PluginCampusController extends ScenePackageController
             'resource_name' => $resourceName,
             'resource_type' => $resourceType,
             'info' => $this->normalizeResourceInfo(Yii::$app->request->getBodyParam('info', null)),
+            'image' => $imagePayload,
         ];
     }
 
@@ -899,27 +896,10 @@ class PluginCampusController extends ScenePackageController
         try {
             Yii::$app->user->setIdentity($user);
 
-            $file = File::find()
-                ->where([
-                    'user_id' => (int)$user->id,
-                    'key' => $upload['key'],
-                ])
-                ->orderBy(['id' => SORT_DESC])
-                ->one();
-
-            if ($file === null) {
-                $file = new File([
-                    'url' => $upload['url'],
-                    'filename' => $upload['filename'],
-                    'key' => $upload['key'],
-                    'md5' => $upload['md5'],
-                    'type' => $upload['mime_type'],
-                    'size' => $upload['size'],
-                    'user_id' => (int)$user->id,
-                ]);
-                if (!$file->save()) {
-                    throw new \RuntimeException('创建文件记录失败: ' . json_encode($file->getErrors(), JSON_UNESCAPED_UNICODE));
-                }
+            $file = $this->findOrCreateCampusFileForUser($user, $upload);
+            $imageFile = null;
+            if (isset($upload['image']) && is_array($upload['image'])) {
+                $imageFile = $this->findOrCreateCampusFileForUser($user, $upload['image']);
             }
 
             $resource = new Resource([
@@ -928,6 +908,7 @@ class PluginCampusController extends ScenePackageController
                 'uuid' => UuidHelper::uuid(),
                 'info' => $upload['info'],
                 'file_id' => (int)$file->id,
+                'image_id' => $imageFile ? (int)$imageFile->id : null,
                 'author_id' => (int)$user->id,
                 'updater_id' => (int)$user->id,
             ]);
@@ -939,6 +920,7 @@ class PluginCampusController extends ScenePackageController
 
             return [
                 'file_id' => (int)$file->id,
+                'image_id' => $imageFile ? (int)$imageFile->id : null,
                 'resource_id' => (int)$resource->id,
                 'resource_name' => $resource->name,
                 'resource_type' => $resource->type,
@@ -953,6 +935,66 @@ class PluginCampusController extends ScenePackageController
         }
     }
 
+    private function normalizeResourceImagePayload(mixed $imagePayload): ?array
+    {
+        if ($imagePayload === null || $imagePayload === '' || $imagePayload === []) {
+            return null;
+        }
+        if (!is_array($imagePayload)) {
+            throw new BadRequestHttpException('缩略图信息格式不合法');
+        }
+
+        $key = $this->normalizeResourceStorageKey($imagePayload['key'] ?? '');
+        $filename = $this->normalizeUploadFilename($imagePayload['filename'] ?? basename($key));
+        $md5 = strtolower(trim((string)($imagePayload['md5'] ?? '')));
+        $size = $this->parsePositiveInt($imagePayload['size'] ?? null);
+        if ($size === null) {
+            throw new BadRequestHttpException('非法缩略图大小');
+        }
+
+        $this->assertResourceMetadataPolicy($filename, 'picture', $key, $md5, $size);
+
+        return [
+            'bucket' => 'store',
+            'key' => $key,
+            'url' => $this->normalizeResourceUrl($imagePayload['url'] ?? ''),
+            'filename' => $filename,
+            'size' => $size,
+            'md5' => $md5,
+            'mime_type' => $this->normalizeMimeType($imagePayload['mime_type'] ?? 'image/png'),
+        ];
+    }
+
+    private function findOrCreateCampusFileForUser(User $user, array $upload): File
+    {
+        $file = File::find()
+            ->where([
+                'user_id' => (int)$user->id,
+                'key' => $upload['key'],
+            ])
+            ->orderBy(['id' => SORT_DESC])
+            ->one();
+
+        if ($file !== null) {
+            return $file;
+        }
+
+        $file = new File([
+            'url' => $upload['url'],
+            'filename' => $upload['filename'],
+            'key' => $upload['key'],
+            'md5' => $upload['md5'],
+            'type' => $upload['mime_type'],
+            'size' => $upload['size'],
+            'user_id' => (int)$user->id,
+        ]);
+        if (!$file->save()) {
+            throw new \RuntimeException('创建文件记录失败: ' . json_encode($file->getErrors(), JSON_UNESCAPED_UNICODE));
+        }
+
+        return $file;
+    }
+
     private function normalizeUploadFilename(mixed $filename): string
     {
         $filename = trim((string)$filename);
@@ -964,6 +1006,41 @@ class PluginCampusController extends ScenePackageController
         }
 
         return $this->limitString($filename, 255);
+    }
+
+    private function normalizeResourceStorageKey(mixed $key): string
+    {
+        $normalized = trim((string)$key);
+        $normalized = str_replace('\\', '/', $normalized);
+        $normalized = preg_replace('#/+#', '/', $normalized) ?? '';
+        $normalized = ltrim($normalized, '/');
+
+        if ($normalized === '' || preg_match('/[\x00-\x1F\x7F]/', $normalized)) {
+            throw new BadRequestHttpException('非法资源存储 key');
+        }
+
+        $parts = explode('/', $normalized);
+        foreach ($parts as $part) {
+            if ($part === '' || $part === '.' || $part === '..') {
+                throw new BadRequestHttpException('非法资源存储 key');
+            }
+        }
+
+        if (strlen($normalized) > 255) {
+            throw new BadRequestHttpException('资源存储 key 过长');
+        }
+
+        return $normalized;
+    }
+
+    private function normalizeResourceUrl(mixed $url): string
+    {
+        $normalized = trim((string)$url);
+        if ($normalized === '' || preg_match('/[\x00-\x1F\x7F]/', $normalized)) {
+            throw new BadRequestHttpException('缺少资源文件 URL');
+        }
+
+        return $normalized;
     }
 
     private function normalizeResourceName(mixed $name): string
