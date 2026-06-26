@@ -159,6 +159,58 @@ final class PluginCampusControllerTest extends TestCase
         $this->assertTrue(Yii::$app->security->validatePassword(self::NEW_PASSWORD, $manager->password_hash));
     }
 
+    public function testBatchPasswordSkipsManagerTargetsButSingleOperationAllowsThem(): void
+    {
+        [$north] = $this->createOrganizations();
+        $admin = $this->createUser('campus-admin-operator');
+        $manager = $this->createUser('campus-target-manager');
+        $student = $this->createUser('campus-target-user');
+
+        foreach ([$admin, $manager, $student] as $user) {
+            $this->bindOrganization((int)$user->id, (int)$north->id);
+        }
+
+        $roleMap = [
+            $admin->id => ['user', 'admin'],
+            $manager->id => ['user', 'manager'],
+            $student->id => ['user'],
+        ];
+
+        $this->bootActor($admin, $roleMap, [], [
+            'organization_id' => (int)$north->id,
+            'user_ids' => [(int)$manager->id],
+            'operation_scope' => 'single',
+            'password' => self::NEW_PASSWORD,
+        ]);
+        $singleResult = $this->controller()->actionPassword();
+        $manager->refresh();
+
+        $this->assertSame(0, $singleResult['code']);
+        $this->assertSame(1, $singleResult['data']['success_count']);
+        $this->assertTrue(Yii::$app->security->validatePassword(self::NEW_PASSWORD, $manager->password_hash));
+
+        $manager->password_hash = Yii::$app->security->generatePasswordHash(self::SAFE_PASSWORD);
+        $manager->save(false, ['password_hash']);
+
+        Yii::$app->set('response', new Response());
+        Yii::$app->set('request', new PluginCampusTestRequest([], [
+            'organization_id' => (int)$north->id,
+            'user_ids' => [(int)$manager->id, (int)$student->id],
+            'operation_scope' => 'batch',
+            'password' => self::NEW_PASSWORD,
+        ]));
+        $batchResult = $this->controller()->actionPassword();
+        $manager->refresh();
+        $student->refresh();
+
+        $this->assertSame(0, $batchResult['code']);
+        $this->assertSame(1, $batchResult['data']['success_count']);
+        $this->assertSame(1, $batchResult['data']['skipped_count']);
+        $this->assertSame($manager->username, $batchResult['data']['skipped_targets'][0]['username']);
+        $this->assertTrue(Yii::$app->security->validatePassword(self::SAFE_PASSWORD, $manager->password_hash));
+        $this->assertTrue(Yii::$app->security->validatePassword(self::NEW_PASSWORD, $student->password_hash));
+    }
+
     public function testAdminCannotUpdatePeerAdminOrOutsideOrganizationUser(): void
     {
         [$north, $south] = $this->createOrganizations();
