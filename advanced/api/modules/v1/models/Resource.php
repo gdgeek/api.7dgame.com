@@ -46,6 +46,7 @@ use yii\caching\TagDependency;
 class Resource extends \yii\db\ActiveRecord
 
 {
+    public const DEFAULT_POLYGEN_INFO = '{"size":{"x":1,"y":1,"z":1},"center":{"x":0,"y":0,"z":0},"anim":[],"faces":0}';
 
 
     public function  afterSave($insert, $changedAttributes)
@@ -53,6 +54,16 @@ class Resource extends \yii\db\ActiveRecord
         parent::afterSave($insert, $changedAttributes);
         TagDependency::invalidate(Yii::$app->cache, 'resource_cache');
     }
+
+    public function beforeValidate()
+    {
+        if ($this->type === 'polygen' && self::isEmptyInfo($this->info)) {
+            $this->info = self::DEFAULT_POLYGEN_INFO;
+        }
+
+        return parent::beforeValidate();
+    }
+
     public function behaviors()
     {
         return [
@@ -198,6 +209,9 @@ class Resource extends \yii\db\ActiveRecord
         return [
             'id',
             'info'=>function($model){
+                if($model->type === 'polygen' && self::isEmptyInfo($model->info)){
+                    return self::DEFAULT_POLYGEN_INFO;
+                }
                 if(!is_string($model->info) && !is_null($model->info)){
                     return json_encode($model->info);
                 }
@@ -215,6 +229,23 @@ class Resource extends \yii\db\ActiveRecord
             },
 
         ];
+    }
+
+    private static function isEmptyInfo($info): bool
+    {
+        if ($info === null || $info === '') {
+            return true;
+        }
+
+        if (is_array($info)) {
+            return count($info) === 0;
+        }
+
+        if (is_object($info)) {
+            return count(get_object_vars($info)) === 0;
+        }
+
+        return false;
     }
 
 }
