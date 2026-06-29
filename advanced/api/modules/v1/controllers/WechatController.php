@@ -9,6 +9,7 @@ use api\modules\v1\models\User;
 use api\modules\v1\services\AccountLifecycleProxyService;
 use Yii;
 use OpenApi\Annotations as OA;
+use yii\web\ServerErrorHttpException;
 
 /**
  * @OA\Tag(
@@ -64,15 +65,32 @@ class WechatController extends \yii\rest\Controller
         }
 
         $wechat = Yii::$app->wechat;
-        $app = $wechat->officialAccount();
+        $app = $wechat->application();
+        $api = $app->getClient();
         $lifetime = 6 * 24 * 3600;
         $token = Yii::$app->security->generateRandomString();
-        $result = $app->qrcode->temporary($token, $lifetime);
-        $url = $app->qrcode->url($result['ticket']);
+        $payload = [
+            "expire_seconds" => $lifetime,
+            "action_name" => "QR_STR_SCENE",
+            "action_info" => [
+                "scene" => ["scene_str" => $token],
+            ],
+        ];
+
+        $response = $api->post('/cgi-bin/qrcode/create', ['body' => json_encode($payload, JSON_UNESCAPED_UNICODE)]);
+        $result = $response->toArray();
+        if (!isset($result['ticket'])) {
+            Yii::error(['wechatQrcode' => $result], 'wechat.login');
+            throw new ServerErrorHttpException('wechat qrcode ticket missing');
+        }
+
+        $ticket = (string)$result['ticket'];
+        $url = 'https://mp.weixin.qq.com/cgi-bin/showqrcode?ticket=' . rawurlencode($ticket);
 
         return [
             'qrcode' => [
                 'url' => $url,
+                'ticket' => $ticket,
             ],
             'token' => $token,
             'lifetime' => $lifetime,
