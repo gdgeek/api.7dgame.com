@@ -65,6 +65,26 @@ class IdentityService extends Component
         return $this->sessionService()->revokeRefreshToken($refreshToken);
     }
 
+    public function issueUserToken(User $user, array $context = []): array
+    {
+        if ($this->authProvider() === 'identity') {
+            try {
+                return $this->identityProviderClient()->issueUserToken((int)$user->id, $context);
+            } catch (\Throwable $exception) {
+                if (!$this->legacyRefreshFallbackEnabled()) {
+                    throw $exception;
+                }
+
+                \Yii::warning(
+                    'Identity user token issuance failed; issuing legacy token fallback.',
+                    'identity.auth'
+                );
+            }
+        }
+
+        return $this->sessionService()->issueToken($user, $context);
+    }
+
     private function legacyLogin($username, $password, array $context = []): array
     {
         $user = User::findByUsername($username);

@@ -106,6 +106,51 @@ final class IdentityBackendBoundaryTest extends TestCase
         $this->assertStringContainsString("'IDENTITY_ACCOUNT_INTERNAL_TOKEN' => getenv('IDENTITY_ACCOUNT_INTERNAL_TOKEN')", $params);
     }
 
+    public function testQrUserLinkedIssuesDedicatedRefreshTokenInsteadOfStoredHash(): void
+    {
+        $toolsController = $this->read('api/modules/v1/controllers/ToolsController.php');
+        $identityService = $this->read('api/modules/v1/services/IdentityService.php');
+        $identityProviderClient = $this->read('api/modules/v1/services/IdentityProviderClient.php');
+        $params = $this->read('../files/common/config/params.php');
+
+        foreach ([
+            'IdentityService',
+            'issueUserToken($user, $this->requestContext())',
+            '$linked->key = RefreshToken::hashToken($refreshToken);',
+            "'key'=> \$refreshToken",
+        ] as $needle) {
+            $this->assertStringContainsString($needle, $toolsController);
+        }
+
+        foreach ([
+            '$user->getRefreshToken()->one()',
+            '$linked->key = $token->key',
+        ] as $needle) {
+            $this->assertStringNotContainsString($needle, $toolsController);
+        }
+
+        foreach ([
+            'public function issueUserToken(User $user',
+            'identityProviderClient()->issueUserToken((int)$user->id',
+            'Identity user token issuance failed; issuing legacy token fallback.',
+            'sessionService()->issueToken($user',
+        ] as $needle) {
+            $this->assertStringContainsString($needle, $identityService);
+        }
+
+        foreach ([
+            'public function issueUserToken(int $legacyUserId',
+            '/internal/auth/issue-user-token',
+            'IDENTITY_INTERNAL_API_TOKEN is required for identity user token issuance.',
+            'IDENTITY_TOKEN_ISSUANCE_INTERNAL_API_TOKEN',
+            'IDENTITY_ACCOUNT_INTERNAL_TOKEN',
+        ] as $needle) {
+            $this->assertStringContainsString($needle, $identityProviderClient);
+        }
+
+        $this->assertStringContainsString("'IDENTITY_TOKEN_ISSUANCE_INTERNAL_API_TOKEN' => getenv('IDENTITY_TOKEN_ISSUANCE_INTERNAL_API_TOKEN')", $params);
+    }
+
     public function testJwtClaimsRemainBackwardCompatibleAndAddModernClaims(): void
     {
         $user = $this->read('api/modules/v1/models/User.php');
@@ -357,8 +402,22 @@ final class IdentityBackendBoundaryTest extends TestCase
             $this->assertStringContainsString($needle, $emailController);
         }
 
-        $this->assertStringContainsString("proxyCurrentRequest('register'", $wechatController);
-        $this->assertStringContainsString('/v1/wechat/register', $wechatController);
+        foreach ([
+            "proxyCurrentRequest('register'",
+            '/v1/wechat/register',
+            'use common\\models\\Wx;',
+            'public function actionQrcode()',
+            '$app->qrcode->temporary($token, $lifetime)',
+            "'qrcode' => [",
+            "'url' => \$url",
+            'public function actionRefresh()',
+            "'message' => \$this->wechatUser(\$wechat) ? \"signin\" : \"signup\"",
+            'private function findWechatRecord(string $token)',
+            "Wechat::findOne(['token' => \$token])",
+            "Wx::find()->where(['token' => \$token])->one()",
+        ] as $needle) {
+            $this->assertStringContainsString($needle, $wechatController);
+        }
 
         foreach ([
             "proxyCurrentRequest('invitation'",
