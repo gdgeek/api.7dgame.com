@@ -402,8 +402,22 @@ final class IdentityBackendBoundaryTest extends TestCase
             $this->assertStringContainsString($needle, $emailController);
         }
 
-        $this->assertStringContainsString("proxyCurrentRequest('register'", $wechatController);
-        $this->assertStringContainsString('/v1/wechat/register', $wechatController);
+        foreach ([
+            "proxyCurrentRequest('register'",
+            '/v1/wechat/register',
+            'use common\\models\\Wx;',
+            'public function actionQrcode()',
+            '$app->qrcode->temporary($token, $lifetime)',
+            "'qrcode' => [",
+            "'url' => \$url",
+            'public function actionRefresh()',
+            "'message' => \$this->wechatUser(\$wechat) ? \"signin\" : \"signup\"",
+            'private function findWechatRecord(string $token)',
+            "Wechat::findOne(['token' => \$token])",
+            "Wx::find()->where(['token' => \$token])->one()",
+        ] as $needle) {
+            $this->assertStringContainsString($needle, $wechatController);
+        }
 
         foreach ([
             "proxyCurrentRequest('invitation'",
