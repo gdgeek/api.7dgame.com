@@ -344,6 +344,31 @@ final class IdentityBackendBoundaryTest extends TestCase
         }
     }
 
+    public function testWechatRuntimeConfigIsAvailableInDockerImage(): void
+    {
+        $commonConfig = $this->read('../files/common/config/main-local.php');
+        $apacheConfig = $this->read('../docker/000-default.conf');
+
+        foreach ([
+            "'wechat' => [",
+            "'class' => \\common\\components\\WeChat::class",
+            "'app_id' => getenv('WECHAT_APP_ID')",
+            "getenv('WECHAT_APPID')",
+            "'secret' => getenv('WECHAT_SECRET')",
+            "'token' => getenv('WECHAT_TOKEN')",
+        ] as $needle) {
+            $this->assertStringContainsString($needle, $commonConfig);
+        }
+
+        foreach ([
+            'PassEnv WECHAT_APP_ID WECHAT_APPID WECHAT_SECRET WECHAT_TOKEN',
+            'PassEnv WECHAT_MCH_ID WECHAT_PAY_PRIVATE_KEY WECHAT_PAY_CERTIFICATE WECHAT_PAY_SECRET_KEY',
+            'PassEnv WECHAT_PAY_NOTIFY_URL WECHAT_PAY_URL',
+        ] as $needle) {
+            $this->assertStringContainsString($needle, $apacheConfig);
+        }
+    }
+
     public function testAccountLifecycleProxyIsScopedGuardedAndLegacyByDefault(): void
     {
         $proxyService = $this->read('api/modules/v1/services/AccountLifecycleProxyService.php');

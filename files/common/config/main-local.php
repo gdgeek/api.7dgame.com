@@ -16,6 +16,18 @@ return [
                 ],
             ],
         ],
+        'wechat' => [
+            'class' => \common\components\WeChat::class,
+            'app_id' => getenv('WECHAT_APP_ID') ?: getenv('WECHAT_APPID') ?: null,
+            'secret' => getenv('WECHAT_SECRET') ?: null,
+            'token' => getenv('WECHAT_TOKEN') ?: null,
+            'mch_id' => getenv('WECHAT_MCH_ID') ?: null,
+            'private_key' => getenv('WECHAT_PAY_PRIVATE_KEY') ?: null,
+            'certificate' => getenv('WECHAT_PAY_CERTIFICATE') ?: null,
+            'secret_key' => getenv('WECHAT_PAY_SECRET_KEY') ?: null,
+            'pay_notify_url' => getenv('WECHAT_PAY_NOTIFY_URL') ?: null,
+            'pay_url' => getenv('WECHAT_PAY_URL') ?: null,
+        ],
         'db' => [
             'class' => 'common\components\CynosDbConnection',
             //'class' => 'yii\db\Connection',
