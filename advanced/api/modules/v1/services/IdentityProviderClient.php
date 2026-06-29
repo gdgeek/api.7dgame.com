@@ -38,6 +38,22 @@ class IdentityProviderClient extends Component
         return (bool)($response['revoked'] ?? true);
     }
 
+    public function issueUserToken(int $legacyUserId, array $context = []): array
+    {
+        $token = $this->internalAuthToken();
+        if ($token === null) {
+            throw new ServerErrorHttpException('IDENTITY_INTERNAL_API_TOKEN is required for identity user token issuance.');
+        }
+
+        $response = $this->postJson('/internal/auth/issue-user-token', [
+            'legacyUserId' => $legacyUserId,
+        ], array_merge($context, [
+            'identity_internal_token' => $token,
+        ]));
+
+        return $this->tokenFromResponse($response);
+    }
+
     public function proxyAccountLifecycle(
         string $method,
         string $path,
@@ -198,7 +214,7 @@ class IdentityProviderClient extends Component
 
     private function internalIamData(string $method, string $path, ?array $payload = null): ?array
     {
-        $token = $this->internalToken();
+        $token = $this->internalIamToken();
         if ($token === null) {
             Yii::warning('Identity IAM shadow compare skipped because internal token is not configured.', 'identity.iamShadowCompare');
             return null;
@@ -218,7 +234,14 @@ class IdentityProviderClient extends Component
         return is_array($body) && isset($body['data']) && is_array($body['data']) ? $body['data'] : null;
     }
 
-    private function internalToken(): ?string
+    private function internalAuthToken(): ?string
+    {
+        return $this->stringConfig('IDENTITY_TOKEN_ISSUANCE_INTERNAL_API_TOKEN')
+            ?? $this->stringConfig('IDENTITY_ACCOUNT_INTERNAL_TOKEN')
+            ?? $this->stringConfig('IDENTITY_INTERNAL_API_TOKEN');
+    }
+
+    private function internalIamToken(): ?string
     {
         return $this->stringConfig('IDENTITY_IAM_INTERNAL_API_TOKEN')
             ?? $this->stringConfig('IDENTITY_INTERNAL_API_TOKEN');

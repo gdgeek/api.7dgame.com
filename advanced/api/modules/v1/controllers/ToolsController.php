@@ -11,6 +11,7 @@ use yii\web\UploadedFile;
 use Yii;
 use api\modules\v1\RefreshToken;
 use api\modules\v1\models\UserLinked;
+use api\modules\v1\services\IdentityService;
 use yii\web\BadRequestHttpException;
 use yii\web\ServerErrorHttpException;
 use api\modules\v1\models\User;
@@ -24,6 +25,7 @@ use OpenApi\Annotations as OA;
  */
 class ToolsController extends \yii\rest\Controller
 {
+    private ?IdentityService $identityService = null;
 
     public function behaviors()
     {
@@ -45,6 +47,20 @@ class ToolsController extends \yii\rest\Controller
         ];
 
         return $behaviors;
+    }
+
+    protected function identityService(): IdentityService
+    {
+        if ($this->identityService === null) {
+            $this->identityService = new IdentityService();
+        }
+
+        return $this->identityService;
+    }
+
+    protected function requestContext(): array
+    {
+        return $this->identityService()->sessionService()->contextFromRequest(Yii::$app->request);
     }
 
    /**
@@ -87,17 +103,13 @@ class ToolsController extends \yii\rest\Controller
             $linked = new UserLinked();
             $linked->user_id = $user->id;
         }
-        $token = $user->getRefreshToken()->one();
-        if ($token && !empty($token->key)) {
-            $linked->key = $token->key;
-        } else {
-            $issuedToken = $user->token();
-            $refreshToken = is_array($issuedToken) ? ($issuedToken['refreshToken'] ?? null) : null;
-            if (!is_string($refreshToken) || $refreshToken === '') {
-                throw new ServerErrorHttpException('Failed to issue refresh token.');
-            }
-            $linked->key = RefreshToken::hashToken($refreshToken);
+        $issuedToken = $this->identityService()->issueUserToken($user, $this->requestContext());
+        $refreshToken = is_array($issuedToken) ? ($issuedToken['refreshToken'] ?? null) : null;
+        if (!is_string($refreshToken) || $refreshToken === '') {
+            throw new ServerErrorHttpException('Failed to issue refresh token.');
         }
+
+        $linked->key = RefreshToken::hashToken($refreshToken);
         if(!$linked->validate()){
             throw new BadRequestHttpException("validate error");
         }
@@ -105,7 +117,7 @@ class ToolsController extends \yii\rest\Controller
             throw new BadRequestHttpException("save error");
         }
       
-        return ['success' => true, 'message' => "user-linked", 'key'=> $linked->key];
+        return ['success' => true, 'message' => "user-linked", 'key'=> $refreshToken];
        
     }
 }
