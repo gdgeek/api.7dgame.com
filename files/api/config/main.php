@@ -235,6 +235,8 @@ return [
                     'controller' => 'v1/wechat',
                     'pluralize' => false,
                     'extraPatterns' => [
+                        'GET qrcode' => 'qrcode',
+                        'GET refresh' => 'refresh',
                         'POST register' => 'register',
                         'POST login' => 'login',
                     ],

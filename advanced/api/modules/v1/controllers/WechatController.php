@@ -3,6 +3,7 @@
 namespace api\modules\v1\controllers;
 
 use yii\web\BadRequestHttpException;
+use common\models\Wx;
 use api\modules\v1\models\Wechat;
 use api\modules\v1\models\User;
 use api\modules\v1\services\AccountLifecycleProxyService;
@@ -56,6 +57,51 @@ class WechatController extends \yii\rest\Controller
         ];
     }
 
+    public function actionQrcode()
+    {
+        if ($disabled = $this->disabledWechatResponse()) {
+            return $disabled;
+        }
+
+        $wechat = Yii::$app->wechat;
+        $app = $wechat->officialAccount();
+        $lifetime = 6 * 24 * 3600;
+        $token = Yii::$app->security->generateRandomString();
+        $result = $app->qrcode->temporary($token, $lifetime);
+        $url = $app->qrcode->url($result['ticket']);
+
+        return [
+            'qrcode' => [
+                'url' => $url,
+            ],
+            'token' => $token,
+            'lifetime' => $lifetime,
+        ];
+    }
+
+    public function actionRefresh()
+    {
+        if ($disabled = $this->disabledWechatResponse()) {
+            return $disabled;
+        }
+
+        $token = Yii::$app->request->get("token");
+        if (!$token) {
+            throw new BadRequestHttpException("token is required");
+        }
+
+        $wechat = $this->findWechatRecord((string)$token);
+        if (!$wechat) {
+            return ['success' => false, 'message' => "pending"];
+        }
+
+        return [
+            'success' => true,
+            'message' => $this->wechatUser($wechat) ? "signin" : "signup",
+            'token' => $token,
+        ];
+    }
+
     /**
      * @OA\Post(
      *     path="/v1/wechat/login",
@@ -89,13 +135,14 @@ class WechatController extends \yii\rest\Controller
         if (!$token) {
             throw new BadRequestHttpException("token is required");
         }
-        $wechat = Wechat::findOne(['token'=>$token]);
+        $wechat = $this->findWechatRecord((string)$token);
         if (!$wechat) {
             throw new BadRequestHttpException("no wechat");
 
         }
-        if($wechat->user){
-            return ['success' => true, 'message' => "login", 'token'=> $wechat->user->token()];
+        $user = $this->wechatUser($wechat);
+        if($user){
+            return ['success' => true, 'message' => "login", 'token'=> $user->token()];
         }else{
             throw new BadRequestHttpException('Login failed');
         }
@@ -150,15 +197,19 @@ class WechatController extends \yii\rest\Controller
             throw new BadRequestHttpException("password is required");
         }
 
-        $wechat = Wechat::findOne(['token'=>$token]);
+        $wechat = $this->findWechatRecord((string)$token);
         if (!$wechat) {
             throw new BadRequestHttpException("no wechat");
         }
-        if($wechat->user){
+        $linkedUser = $this->wechatUser($wechat);
+        if($linkedUser){
 
-            throw new BadRequestHttpException("already registered,". $wechat->user->id);
+            throw new BadRequestHttpException("already registered,". $linkedUser->id);
         }else{
             $user = User::create($username, $password);
+            if ($wechat instanceof Wx && $wechat->wx_openid) {
+                $user->wx_openid = $wechat->wx_openid;
+            }
             if(!$user->validate()){
                 throw new BadRequestHttpException(json_encode($user->errors));
             }
@@ -173,6 +224,22 @@ class WechatController extends \yii\rest\Controller
             return ['success' => true, 'message' => "register", 'uid'=>$user->id, 'token'=> $user->token()];
            
         }
+    }
+
+    private function findWechatRecord(string $token)
+    {
+        $wechat = Wechat::findOne(['token' => $token]);
+        if ($wechat) {
+            return $wechat;
+        }
+
+        return Wx::find()->where(['token' => $token])->one();
+    }
+
+    private function wechatUser($wechat): ?User
+    {
+        $user = $wechat->user ?? null;
+        return $user instanceof User ? $user : null;
     }
 
     private function proxyAccountLifecycle(string $path): ?array

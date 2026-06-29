@@ -38,6 +38,8 @@ final class IdentitySurfaceContractTest extends TestCase
             "'POST verify' => 'verify'",
             "'POST unbind' => 'unbind'",
             "'controller' => 'v1/wechat'",
+            "'GET qrcode' => 'qrcode'",
+            "'GET refresh' => 'refresh'",
             "'POST login' => 'login'",
             "'POST register' => 'register'",
             "'controller' => 'v1/plugin'",
