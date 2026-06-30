@@ -106,7 +106,7 @@ final class IdentityBackendBoundaryTest extends TestCase
         $this->assertStringContainsString("'IDENTITY_ACCOUNT_INTERNAL_TOKEN' => getenv('IDENTITY_ACCOUNT_INTERNAL_TOKEN')", $params);
     }
 
-    public function testQrUserLinkedIssuesDedicatedRefreshTokenInsteadOfStoredHash(): void
+    public function testQrUserLinkedIssuesLegacyRefreshTokenInsteadOfStoredHash(): void
     {
         $toolsController = $this->read('api/modules/v1/controllers/ToolsController.php');
         $identityService = $this->read('api/modules/v1/services/IdentityService.php');
@@ -115,7 +115,7 @@ final class IdentityBackendBoundaryTest extends TestCase
 
         foreach ([
             'IdentityService',
-            'issueUserToken($user, $this->requestContext())',
+            'sessionService()->issueToken($user, $this->requestContext())',
             '$linked->key = RefreshToken::hashToken($refreshToken);',
             "'key'=> \$refreshToken",
         ] as $needle) {

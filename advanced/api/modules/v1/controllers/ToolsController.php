@@ -103,7 +103,7 @@ class ToolsController extends \yii\rest\Controller
             $linked = new UserLinked();
             $linked->user_id = $user->id;
         }
-        $issuedToken = $this->identityService()->issueUserToken($user, $this->requestContext());
+        $issuedToken = $this->identityService()->sessionService()->issueToken($user, $this->requestContext());
         $refreshToken = is_array($issuedToken) ? ($issuedToken['refreshToken'] ?? null) : null;
         if (!is_string($refreshToken) || $refreshToken === '') {
             throw new ServerErrorHttpException('Failed to issue refresh token.');
