@@ -134,6 +134,12 @@ final class IdentityBackendBoundaryTest extends TestCase
             'identityProviderClient()->issueUserToken((int)$user->id',
             'Identity user token issuance failed; issuing legacy token fallback.',
             'sessionService()->issueToken($user',
+            'normalizeRefreshTokenInput($refreshToken)',
+            "preg_match('/(?:^|[?&])web_([^&#\\s]+)/'",
+            'refreshFromLinkedLoginCode(',
+            "UserLinked::find()->where(['key' => \$linkedKey])->one()",
+            'looksLikeLegacyLinkedKey($linkedKey)',
+            '$linked->key = RefreshToken::hashToken($nextRefreshToken);',
         ] as $needle) {
             $this->assertStringContainsString($needle, $identityService);
         }
