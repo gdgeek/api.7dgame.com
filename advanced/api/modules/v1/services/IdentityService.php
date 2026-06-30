@@ -58,11 +58,7 @@ class IdentityService extends Component
         try {
             return $this->legacyRefresh($refreshToken, $context);
         } catch (UnauthorizedHttpException $exception) {
-            $linkedToken = $this->refreshFromLinkedLoginCode(
-                $refreshToken,
-                $context,
-                (bool)$normalized['from_login_code']
-            );
+            $linkedToken = $this->refreshFromLinkedLoginCode($refreshToken, $context);
             if ($linkedToken !== null) {
                 return $linkedToken;
             }
@@ -156,14 +152,20 @@ class IdentityService extends Component
         ];
     }
 
-    private function refreshFromLinkedLoginCode(string $linkedKey, array $context, bool $fromLoginCode): ?array
+    private function refreshFromLinkedLoginCode(string $linkedKey, array $context): ?array
     {
-        // Older clients may strip the web_ marker before sending the login code.
-        if (!$fromLoginCode && !$this->looksLikeLegacyLinkedKey($linkedKey)) {
+        $linkedKey = trim($linkedKey);
+        if ($linkedKey === '') {
             return null;
         }
 
-        $linked = UserLinked::find()->where(['key' => $linkedKey])->one();
+        $lookupKeys = [$linkedKey];
+        $hashedLinkedKey = RefreshToken::hashToken($linkedKey);
+        if (!hash_equals($linkedKey, $hashedLinkedKey)) {
+            $lookupKeys[] = $hashedLinkedKey;
+        }
+
+        $linked = UserLinked::find()->where(['key' => $lookupKeys])->one();
         if (!$linked instanceof UserLinked) {
             return null;
         }
@@ -182,12 +184,6 @@ class IdentityService extends Component
 
         return $issuedToken;
     }
-
-    private function looksLikeLegacyLinkedKey(string $token): bool
-    {
-        return preg_match('/\A[a-f0-9]{64}\z/i', $token) === 1;
-    }
-
     public function sessionService(): SessionService
     {
         if ($this->sessionService === null) {
