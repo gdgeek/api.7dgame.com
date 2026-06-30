@@ -137,8 +137,8 @@ final class IdentityBackendBoundaryTest extends TestCase
             'normalizeRefreshTokenInput($refreshToken)',
             "preg_match('/(?:^|[?&])web_([^&#\\s]+)/'",
             'refreshFromLinkedLoginCode(',
-            "UserLinked::find()->where(['key' => \$linkedKey])->one()",
-            'looksLikeLegacyLinkedKey($linkedKey)',
+            '$hashedLinkedKey = RefreshToken::hashToken($linkedKey);',
+            "UserLinked::find()->where(['key' => \$lookupKeys])->one()",
             '$linked->key = RefreshToken::hashToken($nextRefreshToken);',
         ] as $needle) {
             $this->assertStringContainsString($needle, $identityService);
