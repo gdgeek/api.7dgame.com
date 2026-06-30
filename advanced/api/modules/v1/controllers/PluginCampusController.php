@@ -978,6 +978,8 @@ class PluginCampusController extends ScenePackageController
             $imageFile = null;
             if (isset($upload['image']) && is_array($upload['image'])) {
                 $imageFile = $this->findOrCreateCampusFileForUser($user, $upload['image']);
+            } elseif ($this->shouldUseResourceFileAsCampusImage($upload['resource_type'])) {
+                $imageFile = $file;
             }
 
             $resource = new Resource([
@@ -1071,6 +1073,11 @@ class PluginCampusController extends ScenePackageController
         }
 
         return $file;
+    }
+
+    private function shouldUseResourceFileAsCampusImage(string $resourceType): bool
+    {
+        return in_array($resourceType, ['picture', 'video'], true);
     }
 
     private function normalizeUploadFilename(mixed $filename): string

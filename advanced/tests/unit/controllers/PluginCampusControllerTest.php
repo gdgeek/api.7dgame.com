@@ -444,6 +444,42 @@ final class PluginCampusControllerTest extends TestCase
         $this->assertSame((int)$admin->id, (int)Yii::$app->user->id);
     }
 
+    public function testCampusPictureResourceInitializesImageFromResourceFile(): void
+    {
+        [$north] = $this->createOrganizations();
+        $admin = $this->createUser('campus-admin-operator');
+        $student = $this->createUser('campus-target-user');
+        $this->bindOrganization((int)$admin->id, (int)$north->id);
+        $this->bindOrganization((int)$student->id, (int)$north->id);
+
+        $this->bootActor($admin, [
+            $admin->id => ['user', 'admin'],
+            $student->id => ['user'],
+        ]);
+
+        $controller = $this->controller();
+        $method = new \ReflectionMethod($controller, 'createCampusResourceForUser');
+        $created = $method->invoke($controller, $student, [
+            'url' => 'https://example.com/campus-picture.png',
+            'filename' => 'campus-picture.png',
+            'key' => 'picture/d41d8cd98f00b204e9800998ecf8427e.png',
+            'md5' => 'd41d8cd98f00b204e9800998ecf8427e',
+            'mime_type' => 'image/png',
+            'size' => 128,
+            'resource_name' => 'Campus Uploaded Picture',
+            'resource_type' => 'picture',
+            'info' => '{"size":{"x":800,"y":600}}',
+        ]);
+
+        $resource = Resource::findOne($created['resource_id']);
+
+        $this->assertNotNull($resource);
+        $this->assertSame($created['file_id'], $created['image_id']);
+        $this->assertSame((int)$created['file_id'], (int)$resource->image_id);
+        $this->assertSame('{"size":{"x":800,"y":600}}', $resource->info);
+        $this->assertSame((int)$admin->id, (int)Yii::$app->user->id);
+    }
+
     public function testCampusResourceUploadPolicyAllowsExpectedResourceTypes(): void
     {
         $controller = $this->controller();
