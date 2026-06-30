@@ -72,7 +72,7 @@ class PluginCampusController extends ScenePackageController
         'video' => ['mp4', 'webm', 'mov'],
         'audio' => ['mp3', 'wav', 'ogg', 'm4a'],
         'particle' => ['json'],
-        'file' => ['pdf', 'zip', 'rar', '7z'],
+        'file' => ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'txt', 'md', 'csv', 'zip', 'rar', '7z'],
     ];
 
     private const DANGEROUS_RESOURCE_EXTENSIONS = [
