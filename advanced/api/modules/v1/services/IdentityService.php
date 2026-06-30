@@ -3,8 +3,11 @@
 namespace api\modules\v1\services;
 
 use api\modules\v1\models\User;
+use api\modules\v1\models\UserLinked;
+use api\modules\v1\RefreshToken;
 use yii\base\Component;
 use yii\web\BadRequestHttpException;
+use yii\web\UnauthorizedHttpException;
 
 class IdentityService extends Component
 {
@@ -34,6 +37,9 @@ class IdentityService extends Component
             throw new BadRequestHttpException("refreshToken is required");
         }
 
+        $normalized = $this->normalizeRefreshTokenInput($refreshToken);
+        $refreshToken = $normalized['token'];
+
         if ($this->authProvider() === 'identity') {
             try {
                 return $this->identityProviderClient()->refresh($refreshToken, $context);
@@ -49,7 +55,16 @@ class IdentityService extends Component
             }
         }
 
-        return $this->legacyRefresh($refreshToken, $context);
+        try {
+            return $this->legacyRefresh($refreshToken, $context);
+        } catch (UnauthorizedHttpException $exception) {
+            $linkedToken = $this->refreshFromLinkedLoginCode($refreshToken, $context);
+            if ($linkedToken !== null) {
+                return $linkedToken;
+            }
+
+            throw $exception;
+        }
     }
 
     public function logout(?string $refreshToken): bool
@@ -118,6 +133,57 @@ class IdentityService extends Component
         return $this->sessionService()->issueToken($user, $context);
     }
 
+    private function normalizeRefreshTokenInput(string $refreshToken): array
+    {
+        $token = trim($refreshToken);
+        $fromLoginCode = false;
+
+        if (preg_match('/(?:^|[?&])web_([^&#\s]+)/', $token, $matches) === 1) {
+            $token = $matches[1];
+            $fromLoginCode = true;
+        } elseif (str_starts_with($token, 'web_')) {
+            $token = substr($token, 4);
+            $fromLoginCode = true;
+        }
+
+        return [
+            'token' => $token,
+            'from_login_code' => $fromLoginCode,
+        ];
+    }
+
+    private function refreshFromLinkedLoginCode(string $linkedKey, array $context): ?array
+    {
+        $linkedKey = trim($linkedKey);
+        if ($linkedKey === '') {
+            return null;
+        }
+
+        $lookupKeys = [$linkedKey];
+        $hashedLinkedKey = RefreshToken::hashToken($linkedKey);
+        if (!hash_equals($linkedKey, $hashedLinkedKey)) {
+            $lookupKeys[] = $hashedLinkedKey;
+        }
+
+        $linked = UserLinked::find()->where(['key' => $lookupKeys])->one();
+        if (!$linked instanceof UserLinked) {
+            return null;
+        }
+
+        $user = User::findIdentity((int)$linked->user_id);
+        if (!$user instanceof User) {
+            return null;
+        }
+
+        $issuedToken = $this->issueUserToken($user, $context);
+        $nextRefreshToken = is_array($issuedToken) ? ($issuedToken['refreshToken'] ?? null) : null;
+        if (is_string($nextRefreshToken) && $nextRefreshToken !== '') {
+            $linked->key = RefreshToken::hashToken($nextRefreshToken);
+            $linked->save(false);
+        }
+
+        return $issuedToken;
+    }
     public function sessionService(): SessionService
     {
         if ($this->sessionService === null) {
