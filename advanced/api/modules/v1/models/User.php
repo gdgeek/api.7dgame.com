@@ -359,10 +359,6 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
             ['password', 'validatePasswordPolicy', 'skipOnEmpty' => true],
        
         ];
-        if ($this->new_version) {
-            $rules[] = ['username', 'email', 'message' => 'The email format is invalid.'];
-        }
-
         return $rules;
 
     }
