@@ -341,6 +341,24 @@ final class PluginUserControllerOrganizationTest extends TestCase
         $this->assertNull(User::findOne(['username' => self::BATCH_TARGET_USERNAMES[1]]));
     }
 
+    public function testDeleteUserRejectsDeletingCurrentAuthenticatedUser(): void
+    {
+        $operator = $this->createUser(self::OPERATOR_USERNAME, 'operator@example.com');
+
+        $this->bootAuthenticatedOperator($operator->id, ['delete-user']);
+        Yii::$app->set('request', new PluginUserTestRequest([], [
+            'id' => $operator->id,
+        ]));
+        Yii::$app->set('response', new Response());
+
+        $controller = new PluginUserController('plugin-user', Yii::$app->getModule('v1'));
+        $result = $controller->actionDeleteUser();
+
+        $this->assertSame(403, Yii::$app->response->statusCode);
+        $this->assertSame(2007, $result['code']);
+        $this->assertNotNull(User::findOne($operator->id));
+    }
+
     public function testBatchCreateUsersRejectsUnknownSharedOrganizationIds(): void
     {
         $operator = $this->createUser(self::OPERATOR_USERNAME, 'operator@example.com');
