@@ -815,6 +815,11 @@ class PluginUserController extends \yii\rest\Controller
         }
 
         $id = Yii::$app->request->getBodyParam('id');
+        if ((int)$id === (int)$result['user']->id) {
+            Yii::$app->response->statusCode = 403;
+            return ['code' => 2007, 'message' => '不能删除当前登录用户'];
+        }
+
         $user = User::findOne($id);
         if (!$user) {
             Yii::$app->response->statusCode = 404;
