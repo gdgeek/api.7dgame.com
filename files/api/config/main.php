@@ -300,6 +300,7 @@ return [
                     'controller' => 'v1/tools',
                     'pluralize' => false,
                     'extraPatterns' => [
+                        'GET user-linked/status' => 'user-linked-status',
                         'GET user-linked' => 'user-linked',
                     ],
                 ],
