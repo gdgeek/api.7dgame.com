@@ -17,6 +17,7 @@ use yii\db\Expression;
  */
 class UserLinked extends \yii\db\ActiveRecord
 {
+    public const LOGIN_CODE_TTL_SECONDS = 60;
 
         public function behaviors()
     {
@@ -75,5 +76,21 @@ class UserLinked extends \yii\db\ActiveRecord
     public function getUser()
     {
         return $this->hasOne(User::className(), ['id' => 'user_id']);
+    }
+
+    public function loginCodeExpiresAt(): int
+    {
+        $createdAt = strtotime((string)$this->created_at);
+        if ($createdAt === false) {
+            return 0;
+        }
+
+        return $createdAt + self::LOGIN_CODE_TTL_SECONDS;
+    }
+
+    public function isLoginCodeExpired(): bool
+    {
+        $expiresAt = $this->loginCodeExpiresAt();
+        return $expiresAt <= 0 || $expiresAt <= time();
     }
 }

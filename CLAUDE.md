@@ -50,7 +50,7 @@ advanced/
       models/            # API-layer models (extend or wrap common models)
       components/        # module-specific components (RefreshToken, etc.)
     web/swagger-ui/      # Swagger UI static assets
-    config/              # api app config (main.php, params.php)
+    config/              # runtime-mounted api app config target, not the source of truth
   common/
     models/              # shared AR models
     components/          # shared services & utilities
@@ -62,8 +62,8 @@ advanced/
     unit/                # PHPUnit + Codeception unit tests
     integration/         # Codeception integration tests
     manual/              # manual verification scripts (test_*.php)
-files/                   # -local.php config snapshots (checked-in templates)
-  api/config/            # main.php (routes), params.php (JWT config, etc.)
+files/                   # checked-in config source
+  api/config/            # API config source: main.php (routes), params.php (JWT config, etc.)
   common/config/         # main-local.php (DB DSN), params-local.php
 docker/                  # Dockerfile, nginx configs, init.sql
 ```
@@ -78,7 +78,7 @@ api/config/main.php            ← routes, components (CORS, rateLimiter, urlMan
 api/config/main-local.php
 ```
 
-The `files/` directory contains checked-in templates for the `-local.php` files. In Docker, these are mounted/copied to `advanced/*/config/`.
+The `files/` directory is the checked-in source for backend config. In particular, API routes, `urlManager`, CORS, rateLimiter, and related API config must be edited under `files/api/config/` (`files/api/config/main.php` for routes). `advanced/api/config/` is a runtime mount/copy target, not the source of truth.
 
 ### Authentication Flow
 
