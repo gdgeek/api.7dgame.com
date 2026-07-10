@@ -40,6 +40,15 @@ class IdentityService extends Component
         $normalized = $this->normalizeRefreshTokenInput($refreshToken);
         $refreshToken = $normalized['token'];
 
+        if ($normalized['from_login_code']) {
+            $linkedToken = $this->refreshFromLinkedLoginCode($refreshToken, $context);
+            if ($linkedToken !== null) {
+                return $linkedToken;
+            }
+
+            throw new UnauthorizedHttpException('Login code is invalid or expired.');
+        }
+
         if ($this->authProvider() === 'identity') {
             try {
                 return $this->identityProviderClient()->refresh($refreshToken, $context);
@@ -170,17 +179,16 @@ class IdentityService extends Component
             return null;
         }
 
+        if ($linked->isLoginCodeExpired()) {
+            return null;
+        }
+
         $user = User::findIdentity((int)$linked->user_id);
         if (!$user instanceof User) {
             return null;
         }
 
         $issuedToken = $this->issueUserToken($user, $context);
-        $nextRefreshToken = is_array($issuedToken) ? ($issuedToken['refreshToken'] ?? null) : null;
-        if (is_string($nextRefreshToken) && $nextRefreshToken !== '') {
-            $linked->key = RefreshToken::hashToken($nextRefreshToken);
-            $linked->save(false);
-        }
 
         return $issuedToken;
     }

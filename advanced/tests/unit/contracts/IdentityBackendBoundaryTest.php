@@ -106,18 +106,27 @@ final class IdentityBackendBoundaryTest extends TestCase
         $this->assertStringContainsString("'IDENTITY_ACCOUNT_INTERNAL_TOKEN' => getenv('IDENTITY_ACCOUNT_INTERNAL_TOKEN')", $params);
     }
 
-    public function testQrUserLinkedIssuesLegacyRefreshTokenInsteadOfStoredHash(): void
+    public function testQrUserLinkedIssuesShortLivedReusableLoginCode(): void
     {
         $toolsController = $this->read('api/modules/v1/controllers/ToolsController.php');
         $identityService = $this->read('api/modules/v1/services/IdentityService.php');
         $identityProviderClient = $this->read('api/modules/v1/services/IdentityProviderClient.php');
+        $userLinked = $this->read('api/modules/v1/models/UserLinked.php');
+        $apiConfig = $this->read('../files/api/config/main.php');
         $params = $this->read('../files/common/config/params.php');
 
         foreach ([
             'IdentityService',
-            'sessionService()->issueToken($user, $this->requestContext())',
-            '$linked->key = RefreshToken::hashToken($refreshToken);',
-            "'key'=> \$refreshToken",
+            'generateRandomString(64)',
+            '$linked->key = RefreshToken::hashToken($loginCode);',
+            'UserLinked::LOGIN_CODE_TTL_SECONDS',
+            "'key'=> \$loginCode",
+            'public function actionUserLinkedStatus()',
+            'RefreshToken::hashToken($key)',
+            "'active' => \$active",
+            "'reason' => \$reason",
+            "'expires_at' => \$expiresAt",
+            "'expires_in' => max(0, \$expiresAt - time())",
         ] as $needle) {
             $this->assertStringContainsString($needle, $toolsController);
         }
@@ -125,6 +134,7 @@ final class IdentityBackendBoundaryTest extends TestCase
         foreach ([
             '$user->getRefreshToken()->one()',
             '$linked->key = $token->key',
+            'sessionService()->issueToken($user, $this->requestContext())',
         ] as $needle) {
             $this->assertStringNotContainsString($needle, $toolsController);
         }
@@ -135,13 +145,32 @@ final class IdentityBackendBoundaryTest extends TestCase
             'Identity user token issuance failed; issuing legacy token fallback.',
             'sessionService()->issueToken($user',
             'normalizeRefreshTokenInput($refreshToken)',
+            "if (\$normalized['from_login_code'])",
+            'Login code is invalid or expired.',
             "preg_match('/(?:^|[?&])web_([^&#\\s]+)/'",
             'refreshFromLinkedLoginCode(',
             '$hashedLinkedKey = RefreshToken::hashToken($linkedKey);',
             "UserLinked::find()->where(['key' => \$lookupKeys])->one()",
-            '$linked->key = RefreshToken::hashToken($nextRefreshToken);',
+            '$linked->isLoginCodeExpired()',
         ] as $needle) {
             $this->assertStringContainsString($needle, $identityService);
+        }
+
+        foreach ([
+            'findRefreshTokenRecord($linkedKey)',
+            '$refreshToken->isExpired()',
+            '$refreshToken->isRevoked()',
+            '$linked->key = RefreshToken::hashToken($nextRefreshToken);',
+        ] as $needle) {
+            $this->assertStringNotContainsString($needle, $identityService);
+        }
+
+        foreach ([
+            'public const LOGIN_CODE_TTL_SECONDS = 60;',
+            'loginCodeExpiresAt()',
+            'isLoginCodeExpired()',
+        ] as $needle) {
+            $this->assertStringContainsString($needle, $userLinked);
         }
 
         foreach ([
@@ -154,6 +183,7 @@ final class IdentityBackendBoundaryTest extends TestCase
             $this->assertStringContainsString($needle, $identityProviderClient);
         }
 
+        $this->assertStringContainsString("'GET user-linked/status' => 'user-linked-status'", $apiConfig);
         $this->assertStringContainsString("'IDENTITY_TOKEN_ISSUANCE_INTERNAL_API_TOKEN' => getenv('IDENTITY_TOKEN_ISSUANCE_INTERNAL_API_TOKEN')", $params);
     }
 

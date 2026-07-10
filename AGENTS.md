@@ -13,6 +13,11 @@
 - `docs/`：API、Docker、功能说明文档。
 - `files/`：环境相关配置快照。
 
+## API 配置源规则
+- 后端 API 路由、`urlManager`、CORS、rateLimiter 等配置以 `files/api/config/` 为准。
+- 新增或修改 API 路由时，必须写入 `files/api/config/main.php`，不要把 `advanced/api/config/` 当作源文件目录。
+- `advanced/api/config/` 是本地/容器运行时由 `files/api/config/` 挂载或同步生成的目标位置；只有运行时即时验证需要时，才同步临时副本。
+
 ## 构建、测试与开发命令
 默认在仓库根目录执行：
 - `./scripts/docker/start-docker.sh`：一键初始化并启动本地环境。

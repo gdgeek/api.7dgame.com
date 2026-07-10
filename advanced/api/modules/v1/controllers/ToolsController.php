@@ -13,7 +13,6 @@ use api\modules\v1\RefreshToken;
 use api\modules\v1\models\UserLinked;
 use api\modules\v1\services\IdentityService;
 use yii\web\BadRequestHttpException;
-use yii\web\ServerErrorHttpException;
 use api\modules\v1\models\User;
 use OpenApi\Annotations as OA;
 
@@ -87,37 +86,113 @@ class ToolsController extends \yii\rest\Controller
 
     //把 Yii::$app->user->identity 转换成 User 类型
 
-        $identity = Yii::$app->user->identity;
-        if ($identity instanceof User) {
-            $user = $identity;
-            // 现在 $user 是 User 类型
-        } else {
-            throw new \yii\web\UnauthorizedHttpException('Invalid user identity');
-        }
-        if(!$user){
-            throw new BadRequestHttpException("no user");
-        }
+        $user = $this->currentUser();
         $linked = UserLinked::find()->where(['user_id' => $user->id])->one();
         
         if(!$linked){
             $linked = new UserLinked();
             $linked->user_id = $user->id;
         }
-        $issuedToken = $this->identityService()->sessionService()->issueToken($user, $this->requestContext());
-        $refreshToken = is_array($issuedToken) ? ($issuedToken['refreshToken'] ?? null) : null;
-        if (!is_string($refreshToken) || $refreshToken === '') {
-            throw new ServerErrorHttpException('Failed to issue refresh token.');
-        }
-
-        $linked->key = RefreshToken::hashToken($refreshToken);
+        $loginCode = Yii::$app->security->generateRandomString(64);
+        $linked->key = RefreshToken::hashToken($loginCode);
         if(!$linked->validate()){
             throw new BadRequestHttpException("validate error");
         }
         if(!$linked->save()){
             throw new BadRequestHttpException("save error");
         }
-      
-        return ['success' => true, 'message' => "user-linked", 'key'=> $refreshToken];
+
+        $expiresAt = time() + UserLinked::LOGIN_CODE_TTL_SECONDS;
+
+        return [
+            'success' => true,
+            'message' => "user-linked",
+            'key'=> $loginCode,
+            'expires_at' => $expiresAt,
+            'expires_in' => max(0, $expiresAt - time()),
+        ];
        
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/v1/tools/user-linked/status",
+     *     summary="用户关联密钥状态",
+     *     description="检查当前二维码登录码是否仍然有效，不会生成新的登录码",
+     *     tags={"Tools"},
+     *     security={{"Bearer": {}}},
+     *     @OA\Parameter(
+     *         name="key",
+     *         in="query",
+     *         required=true,
+     *         description="当前二维码中的登录码，可带 web_ 前缀",
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Response(response=200, description="检查成功"),
+     *     @OA\Response(response=400, description="请求错误"),
+     *     @OA\Response(response=401, description="未授权")
+     * )
+     */
+    public function actionUserLinkedStatus()
+    {
+        $user = $this->currentUser();
+        $key = $this->normalizeLinkedKey((string)Yii::$app->request->get('key', ''));
+        if ($key === '') {
+            throw new BadRequestHttpException("key is required");
+        }
+
+        $linked = UserLinked::find()->where(['user_id' => $user->id])->one();
+        $active = false;
+        $reason = 'not_found';
+        $expiresAt = null;
+
+        if ($linked instanceof UserLinked && hash_equals((string)$linked->key, RefreshToken::hashToken($key))) {
+            $expiresAt = $linked->loginCodeExpiresAt();
+            if ($linked->isLoginCodeExpired()) {
+                $reason = 'expired';
+            } else {
+                $active = true;
+                $reason = 'active';
+            }
+        }
+
+        $response = [
+            'success' => true,
+            'message' => 'user-linked-status',
+            'active' => $active,
+            'reason' => $reason,
+        ];
+
+        if ($expiresAt !== null) {
+            $response['expires_at'] = $expiresAt;
+            $response['expires_in'] = max(0, $expiresAt - time());
+        }
+
+        return $response;
+    }
+
+    private function currentUser(): User
+    {
+        $identity = Yii::$app->user->identity;
+        if ($identity instanceof User) {
+            return $identity;
+        }
+
+        throw new \yii\web\UnauthorizedHttpException('Invalid user identity');
+    }
+
+    private function normalizeLinkedKey(string $key): string
+    {
+        $key = trim($key);
+
+        if (preg_match('/(?:^|[?&])web_([^&#\s]+)/', $key, $matches) === 1) {
+            return $matches[1];
+        }
+
+        if (strpos($key, 'web_') === 0) {
+            return substr($key, 4);
+        }
+
+        return $key;
     }
 }
