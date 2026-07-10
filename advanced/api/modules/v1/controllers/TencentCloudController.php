@@ -9,8 +9,11 @@ use TencentCloud\Sts\V20180813\Models\GetFederationTokenRequest;
 // 导入可选配置类
 use TencentCloud\Sts\V20180813\StsClient;
 use Yii;
+use bizley\jwt\JwtHttpBearerAuth;
+use mdm\admin\components\AccessControl;
+use yii\filters\auth\CompositeAuth;
 use yii\rest\Controller;
-use yii\rest\ActiveController;
+use yii\web\BadRequestHttpException;
 use OpenApi\Annotations as OA;
 
 /**
@@ -26,12 +29,30 @@ class TencentCloudController extends Controller
     public function behaviors()
     {
         $behaviors = parent::behaviors();
+
+        $behaviors['authenticator'] = [
+            'class' => CompositeAuth::class,
+            'authMethods' => [JwtHttpBearerAuth::class],
+            'except' => ['options'],
+        ];
+        $behaviors['access'] = [
+            'class' => AccessControl::class,
+            // COS uploads are a normal authenticated-user capability.  Make
+            // that intent explicit rather than relying on global RBAC route
+            // defaults, while still rejecting anonymous requests.
+            'rules' => [
+                [
+                    'allow' => true,
+                    'roles' => ['@'],
+                ],
+            ],
+        ];
         
         // add CORS filter
         $behaviors['corsFilter'] = [
             'class' => \yii\filters\Cors::class,
             'cors' => [
-                'Origin' => ['*'],
+                'Origin' => $this->corsOrigins(),
                 'Access-Control-Request-Method' => ['GET'],
                 'Access-Control-Request-Headers' => ['*'],
                 'Access-Control-Allow-Credentials' => null,
@@ -133,9 +154,23 @@ class TencentCloudController extends Controller
         if ($this->isLocalDeployment()) {
             return $this->featureDisabled('cos-storage');
         }
-        //如果$bucket为空，则使用默认值
-        if (empty($bucket)) {
-            $bucket = Yii::$app->secret->cloud['bucket'];
+        $cloud = Yii::$app->secret->cloud;
+        // Never let a client turn this endpoint into an arbitrary-bucket STS
+        // issuer.  The configured public/private buckets are the only valid
+        // targets, and their configured region is authoritative.
+        $allowedBuckets = array_filter([
+            $cloud['bucket'] ?? null,
+            $cloud['public']['bucket'] ?? null,
+            $cloud['private']['bucket'] ?? null,
+        ]);
+        $bucket = $bucket ?: ($cloud['bucket'] ?? $cloud['public']['bucket'] ?? null);
+        if (!$bucket || !in_array($bucket, $allowedBuckets, true)) {
+            throw new BadRequestHttpException('Unsupported COS bucket.');
+        }
+        if (isset($cloud['public']['bucket'], $cloud['public']['region']) && $bucket === $cloud['public']['bucket']) {
+            $region = $cloud['public']['region'];
+        } elseif (isset($cloud['private']['bucket'], $cloud['private']['region']) && $bucket === $cloud['private']['bucket']) {
+            $region = $cloud['private']['region'];
         }
         $cred = new Credential(Yii::$app->secret->id, Yii::$app->secret->key);
         
@@ -206,6 +241,15 @@ class TencentCloudController extends Controller
             'message' => '该功能在本地部署模式下不可用',
             'feature' => $feature,
         ];
+    }
+
+    private function corsOrigins(): array
+    {
+        $configured = getenv('CORS_ALLOWED_ORIGINS');
+        if (!$configured) {
+            return [];
+        }
+        return array_values(array_filter(array_map('trim', explode(',', $configured))));
     }
     
 }

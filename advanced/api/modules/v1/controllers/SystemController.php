@@ -496,8 +496,13 @@ class SystemController extends Controller
                 ],
                 [
                     'allow' => true,
-                    'actions' => ['upgrade', 'take-photo', 'test'],
-                    'roles' => ['@'], // 需要登录用户
+                    'actions' => ['upgrade', 'test'],
+                    'roles' => ['root'],
+                ],
+                [
+                    'allow' => true,
+                    'actions' => ['take-photo'],
+                    'roles' => ['@'],
                 ],
             ],
         ];
