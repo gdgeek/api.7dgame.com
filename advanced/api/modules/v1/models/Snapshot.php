@@ -197,6 +197,12 @@ class Snapshot extends \yii\db\ActiveRecord
             throw new \yii\web\NotFoundHttpException('Verse not found');
         }
 
+        if (!self::hasPublishableSceneContent($verse->data)) {
+            throw new \yii\web\BadRequestHttpException(
+                'The scene is empty. Add at least one entity before publishing.'
+            );
+        }
+
 
         $snapshot = Snapshot::find()->where(['verse_id' => $verse_id])->one();
         if (!$snapshot) {
@@ -228,6 +234,22 @@ class Snapshot extends \yii\db\ActiveRecord
         $snapshot->resources = $verse->getResources();
         $snapshot->space = self::buildSpaceSnapshot($verse->space);
         return $snapshot;
+    }
+
+    private static function hasPublishableSceneContent(mixed $data): bool
+    {
+        if (is_string($data)) {
+            try {
+                $data = json_decode($data, true, 512, JSON_THROW_ON_ERROR);
+            } catch (\JsonException) {
+                return false;
+            }
+        } elseif (is_object($data)) {
+            $data = (array) $data;
+        }
+
+        $modules = $data['children']['modules'] ?? null;
+        return is_array($modules) && count($modules) > 0;
     }
 
     private static function buildSpaceSnapshot(?Space $space): ?array
