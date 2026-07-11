@@ -1,7 +1,8 @@
+# Local development stack only.  Production deployments use driver/start.sh
+# with an explicitly named compose file and externally managed secrets.
 version: '3.8'
 
 services:
-  # Backend Application Service
   app:
     build:
       context: .
@@ -9,15 +10,15 @@ services:
     restart: always
     environment:
       - MYSQL_HOST=db
-      - MYSQL_DB=bujiaban
-      - MYSQL_USERNAME=bujiaban
-      - MYSQL_PASSWORD=local_dev_password
+      - MYSQL_DB=${MYSQL_DATABASE:-bujiaban}
+      - MYSQL_USERNAME=${MYSQL_USER:-bujiaban}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-local_dev_password}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_DB=0
       - JWT_KEY=/var/www/.ssh/jwt-key.pem
     ports:
-      - "8082:80"
+      - "127.0.0.1:8082:80"
     depends_on:
       - db
       - redis
@@ -26,9 +27,8 @@ services:
       - ./files/backend/config/:/var/www/html/advanced/backend/config/
       - ./files/common/config/:/var/www/html/advanced/common/config/
       - ./files/console/config/:/var/www/html/advanced/console/config/
-      - ./jwt_keys:/var/www/.ssh/
+      - ./jwt_keys:/var/www/.ssh/:ro
 
-  # API Service
   api:
     build:
       context: .
@@ -36,25 +36,24 @@ services:
     restart: always
     environment:
       - MYSQL_HOST=db
-      - MYSQL_DB=bujiaban
-      - MYSQL_USERNAME=bujiaban
-      - MYSQL_PASSWORD=local_dev_password
+      - MYSQL_DB=${MYSQL_DATABASE:-bujiaban}
+      - MYSQL_USERNAME=${MYSQL_USER:-bujiaban}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-local_dev_password}
       - JWT_KEY=/var/www/.ssh/jwt-key.pem
-      - SECRET_ID=your_secret_id_here
-      - SECRET_KEY=your_secret_key_here
-      - COS_BUCKETS_PUBLIC_BUCKET=your-bucket-name
-      - COS_BUCKETS_PUBLIC_REGION=ap-nanjing
-      - COS_BUCKETS_PRIVATE_BUCKET=your-private-bucket
-      - COS_BUCKETS_PRIVATE_REGION=ap-nanjing
-      - MAILER_USERNAME=dev@bujiaban.com
-      - MAILER_PASSWORD=RGewSjMs9m8V9EP6
+      - SECRET_ID=${SECRET_ID:-}
+      - SECRET_KEY=${SECRET_KEY:-}
+      - COS_BUCKETS_PUBLIC_BUCKET=${COS_BUCKETS_PUBLIC_BUCKET:-}
+      - COS_BUCKETS_PUBLIC_REGION=${COS_BUCKETS_PUBLIC_REGION:-ap-nanjing}
+      - COS_BUCKETS_PRIVATE_BUCKET=${COS_BUCKETS_PRIVATE_BUCKET:-}
+      - COS_BUCKETS_PRIVATE_REGION=${COS_BUCKETS_PRIVATE_REGION:-ap-nanjing}
+      - MAILER_USERNAME=${MAILER_USERNAME:-dev@bujiaban.com}
+      - MAILER_PASSWORD=${MAILER_PASSWORD:-}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_DB=0
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://localhost:3004,http://localhost:3005,http://localhost:3008}
     ports:
-      - "8081:80"
-    security_opt:
-      - seccomp:unconfined
+      - "127.0.0.1:8081:80"
     depends_on:
       - db
       - redis
@@ -63,43 +62,40 @@ services:
       - ./files/api/config/:/var/www/html/advanced/api/config/
       - ./files/common/config/:/var/www/html/advanced/common/config/
       - ./files/console/config/:/var/www/html/advanced/console/config/
-      - ./jwt_keys:/var/www/.ssh/
+      - ./jwt_keys:/var/www/.ssh/:ro
 
-  # MySQL Database
   db:
     image: mysql:8.0
     command: --sql-mode="NO_ENGINE_SUBSTITUTION" --default-authentication-plugin=mysql_native_password
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: bujiaban
-      MYSQL_USER: bujiaban
-      MYSQL_PASSWORD: local_dev_password
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-bujiaban}
+      MYSQL_USER: ${MYSQL_USER:-bujiaban}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-local_dev_password}
     ports:
-      - "3306:3306"
+      - "127.0.0.1:3306:3306"
     volumes:
       - db_data:/var/lib/mysql
       - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql
 
-  # phpMyAdmin for database management
   phpmyadmin:
     image: phpmyadmin/phpmyadmin:latest
     restart: always
     environment:
       PMA_HOST: db
-      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
       UPLOAD_LIMIT: 50M
     ports:
-      - "8080:80"
+      - "127.0.0.1:8080:80"
     depends_on:
       - db
 
-  # Redis Cache
   redis:
     image: redis:alpine
     restart: always
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
 
