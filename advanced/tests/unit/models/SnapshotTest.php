@@ -7,6 +7,7 @@ use PHPUnit\Framework\TestCase;
 use Yii;
 use yii\db\Connection;
 use yii\db\Schema;
+use yii\web\BadRequestHttpException;
 
 final class SnapshotTest extends TestCase
 {
@@ -207,6 +208,25 @@ final class SnapshotTest extends TestCase
         $this->assertNull($array['space']);
     }
 
+    public function testCreateByIdRejectsAnEmptyScene(): void
+    {
+        $this->insertVerse(506, ['children' => ['modules' => []]]);
+
+        $this->expectException(BadRequestHttpException::class);
+        $this->expectExceptionMessage('The scene is empty');
+
+        Snapshot::CreateById(506);
+    }
+
+    public function testCreateByIdRejectsMalformedSceneData(): void
+    {
+        $this->insertVerseData(507, 'not-json');
+
+        $this->expectException(BadRequestHttpException::class);
+
+        Snapshot::CreateById(507);
+    }
+
     public function testCreateByIdKeepsCollectionFieldsAsArraysAfterSave(): void
     {
         $this->insertSnapshotContractVerse(503);
@@ -364,11 +384,19 @@ final class SnapshotTest extends TestCase
 
     private function insertVerse(int $id, ?array $data = null): void
     {
+        $this->insertVerseData(
+            $id,
+            json_encode($data ?? ['children' => ['modules' => [['id' => 1]]]])
+        );
+    }
+
+    private function insertVerseData(int $id, string $data): void
+    {
         Yii::$app->db->createCommand()->insert('{{%verse}}', [
             'id' => $id,
             'author_id' => 42,
             'name' => 'Verse ' . $id,
-            'data' => json_encode($data ?? ['children' => ['modules' => []]]),
+            'data' => $data,
             'uuid' => 'verse-' . $id,
             'description' => 'Snapshot test verse',
         ])->execute();
