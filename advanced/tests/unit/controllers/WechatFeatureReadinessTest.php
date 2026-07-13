@@ -5,17 +5,21 @@ namespace tests\unit\controllers;
 use api\modules\v1\controllers\WechatController;
 use PHPUnit\Framework\TestCase;
 use Yii;
+use yii\base\Component;
+use yii\web\HttpException;
 use yii\web\Response;
 
 final class WechatFeatureReadinessTest extends TestCase
 {
     private array $originalEnv = [];
     private $originalResponseComponent;
+    private $originalWechatComponent;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->originalResponseComponent = Yii::$app->get('response', false);
+        $this->originalWechatComponent = Yii::$app->get('wechat', false);
         Yii::$app->set('response', new Response());
         foreach (['DEPLOYMENT_MODE', 'ENABLE_WECHAT_LOGIN', 'WECHAT_APP_ID', 'WECHAT_APPID', 'WECHAT_SECRET', 'WECHAT_TOKEN'] as $name) {
             $value = getenv($name);
@@ -30,6 +34,7 @@ final class WechatFeatureReadinessTest extends TestCase
             $value === null ? putenv($name) : putenv($name . '=' . $value);
         }
         Yii::$app->set('response', $this->originalResponseComponent);
+        Yii::$app->set('wechat', $this->originalWechatComponent);
         parent::tearDown();
     }
 
@@ -58,5 +63,32 @@ final class WechatFeatureReadinessTest extends TestCase
 
         $this->assertSame(501, Yii::$app->response->statusCode);
         $this->assertSame('FEATURE_DISABLED', $response['code']);
+    }
+
+    public function testQrcodeProviderFailureReturnsServiceUnavailable(): void
+    {
+        putenv('DEPLOYMENT_MODE=cloud');
+        putenv('ENABLE_WECHAT_LOGIN=true');
+        putenv('WECHAT_APP_ID=wx-app-id');
+        putenv('WECHAT_SECRET=wx-secret');
+        putenv('WECHAT_TOKEN=wx-token');
+        Yii::$app->set('wechat', new FailingWechatComponent());
+
+        $controller = new WechatController('wechat', Yii::$app->getModule('v1'));
+
+        try {
+            $controller->actionQrcode();
+            $this->fail('Expected the provider failure to return HTTP 503');
+        } catch (HttpException $error) {
+            $this->assertSame(503, $error->statusCode);
+        }
+    }
+}
+
+final class FailingWechatComponent extends Component
+{
+    public function application(): void
+    {
+        throw new \RuntimeException('provider unavailable');
     }
 }
