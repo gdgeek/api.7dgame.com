@@ -10,7 +10,7 @@ use TencentCloud\Sts\V20180813\Models\GetFederationTokenRequest;
 use TencentCloud\Sts\V20180813\StsClient;
 use Yii;
 use bizley\jwt\JwtHttpBearerAuth;
-use mdm\admin\components\AccessControl;
+use yii\filters\AccessControl;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\Controller;
 use yii\web\BadRequestHttpException;
