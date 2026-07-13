@@ -9,7 +9,7 @@ use api\modules\v1\models\User;
 use api\modules\v1\services\AccountLifecycleProxyService;
 use Yii;
 use OpenApi\Annotations as OA;
-use yii\web\ServiceUnavailableHttpException;
+use yii\web\HttpException;
 
 /**
  * @OA\Tag(
@@ -93,11 +93,11 @@ class WechatController extends \yii\rest\Controller
             $result = $response->toArray();
         } catch (\Throwable $error) {
             Yii::error(['wechatQrcodeError' => $error->getMessage()], 'wechat.login');
-            throw new ServiceUnavailableHttpException('wechat qrcode service unavailable');
+            throw new HttpException(503, 'wechat qrcode service unavailable');
         }
         if (!isset($result['ticket'])) {
             Yii::error(['wechatQrcode' => $result], 'wechat.login');
-            throw new ServiceUnavailableHttpException('wechat qrcode ticket missing');
+            throw new HttpException(503, 'wechat qrcode ticket missing');
         }
 
         $ticket = (string)$result['ticket'];
