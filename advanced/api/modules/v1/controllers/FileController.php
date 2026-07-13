@@ -11,6 +11,8 @@ use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
 use yii\web\ServerErrorHttpException;
 use OpenApi\Annotations as OA;
+use yii\web\ForbiddenHttpException;
+use yii\web\NotFoundHttpException;
 
 /**
  * FileController — 文件记录管理控制器（纯数据库 CRUD）
@@ -36,6 +38,7 @@ class FileController extends ActiveController
     {
         $actions = parent::actions();
         unset($actions['create']);
+        unset($actions['update']);
         return $actions;
     }
 
@@ -133,9 +136,39 @@ class FileController extends ActiveController
     public function actionIndex()
     {
         $activeData = new ActiveDataProvider([
-            'query' => \common\models\Project::find()->where(['user_id' => Yii::$app->user->id]),
+            'query' => File::find()->where(['user_id' => Yii::$app->user->id]),
             'pagination' => false,
         ]);
         return $activeData;
+    }
+
+    public function checkAccess($action, $model = null, $params = [])
+    {
+        if (
+            $model instanceof File
+            && in_array($action, ['update', 'delete'], true)
+            && (int) $model->user_id !== (int) Yii::$app->user->id
+        ) {
+            throw new ForbiddenHttpException('You are not allowed to access this file');
+        }
+    }
+
+    public function actionUpdate($id)
+    {
+        $model = File::findOne($id);
+        if (!$model) {
+            throw new NotFoundHttpException('File not found');
+        }
+
+        $this->checkAccess('update', $model);
+        $userId = $model->user_id;
+        $model->load(Yii::$app->request->bodyParams, '');
+        $model->user_id = $userId;
+
+        if ($model->save() === false && !$model->hasErrors()) {
+            throw new ServerErrorHttpException('Failed to update the file');
+        }
+
+        return $model;
     }
 }

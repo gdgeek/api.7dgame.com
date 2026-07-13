@@ -72,7 +72,24 @@ class VerseController extends ActiveController
     {
         $actions = parent::actions();
         unset($actions['index']);
+        unset($actions['update']);
         return $actions;
+    }
+
+    public function actionUpdate($id)
+    {
+        $model = $this->findVerse($id);
+        $this->checkAccess('update', $model);
+
+        $authorId = $model->author_id;
+        $model->load(Yii::$app->request->bodyParams, '');
+        $model->author_id = $authorId;
+
+        if ($model->save() === false && !$model->hasErrors()) {
+            throw new \yii\web\ServerErrorHttpException('Failed to update the scene');
+        }
+
+        return $model;
     }
     /**
      * @OA\Get(
@@ -236,6 +253,8 @@ class VerseController extends ActiveController
      */
     public function actionUpdateCode($id)
     {
+        $verse = $this->findVerse($id);
+        $this->checkAccess('update', $verse);
         $post = Yii::$app->request->post();
         $model = new VerseCodeTool($id);
         $model->load($post, '');
@@ -289,8 +308,8 @@ class VerseController extends ActiveController
         if (!$verse) {
             throw new NotFoundHttpException('Verse not found');
         }
+        $this->checkAccess('update', $verse);
 
-     
         // 获取或创建 public 属性
         $property = Property::findOne(['key' => 'public']);
         if (!$property) {
@@ -364,8 +383,7 @@ class VerseController extends ActiveController
         if (!$verse) {
             throw new NotFoundHttpException('Verse not found');
         }
-
-
+        $this->checkAccess('update', $verse);
 
         // 获取 public 属性
         $property = Property::findOne(['key' => 'public']);
@@ -433,6 +451,7 @@ class VerseController extends ActiveController
         if (!$verse) {
             throw new NotFoundHttpException('Verse not found');
         }
+        $this->checkAccess('update', $verse);
 
         $tags = Tags::findOne($tags_id);
         if (!$tags) {
@@ -501,6 +520,7 @@ class VerseController extends ActiveController
         if (!$verse) {
             throw new NotFoundHttpException('Verse not found');
         }
+        $this->checkAccess('update', $verse);
 
         $model = VerseTags::find()->where(['verse_id' => $id, 'tags_id' => $tags_id])->one();
         if ($model) {
@@ -561,6 +581,8 @@ class VerseController extends ActiveController
      */
     public function actionTakePhoto($id)
     {
+        $verse = $this->findVerse($id);
+        $this->checkAccess('update', $verse);
         $snapshot = Snapshot::CreateById($id);
         if ($snapshot->validate()) {
             $snapshot->save();
@@ -568,6 +590,30 @@ class VerseController extends ActiveController
             throw new Exception(json_encode($snapshot->errors), 400);
         }
         return $snapshot->toArray([], Snapshot::TAKE_PHOTO_EXTRA_FIELDS);
+    }
+
+    public function checkAccess($action, $model = null, $params = [])
+    {
+        if (!$model instanceof Verse) {
+            return;
+        }
+
+        if ($action === 'view' && !$model->viewable) {
+            throw new ForbiddenHttpException('You are not allowed to view this scene');
+        }
+
+        if (in_array($action, ['update', 'delete'], true) && !$model->editable) {
+            throw new ForbiddenHttpException('You are not allowed to modify this scene');
+        }
+    }
+
+    private function findVerse($id): Verse
+    {
+        $verse = Verse::findOne($id);
+        if (!$verse) {
+            throw new NotFoundHttpException('Verse not found');
+        }
+        return $verse;
     }
 
     /**
