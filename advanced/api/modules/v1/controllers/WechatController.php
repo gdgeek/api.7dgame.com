@@ -9,7 +9,7 @@ use api\modules\v1\models\User;
 use api\modules\v1\services\AccountLifecycleProxyService;
 use Yii;
 use OpenApi\Annotations as OA;
-use yii\web\ServerErrorHttpException;
+use yii\web\ServiceUnavailableHttpException;
 
 /**
  * @OA\Tag(
@@ -47,7 +47,7 @@ class WechatController extends \yii\rest\Controller
 
     private function disabledWechatResponse()
     {
-        if ($this->featureEnabled('ENABLE_WECHAT_LOGIN')) {
+        if ($this->featureEnabled('ENABLE_WECHAT_LOGIN') && $this->wechatConfigured()) {
             return null;
         }
         Yii::$app->response->statusCode = 501;
@@ -58,30 +58,46 @@ class WechatController extends \yii\rest\Controller
         ];
     }
 
+    private function wechatConfigured(): bool
+    {
+        $appId = getenv('WECHAT_APP_ID') ?: getenv('WECHAT_APPID');
+        $secret = getenv('WECHAT_SECRET');
+        $token = getenv('WECHAT_TOKEN');
+
+        return is_string($appId) && trim($appId) !== ''
+            && is_string($secret) && trim($secret) !== ''
+            && is_string($token) && trim($token) !== '';
+    }
+
     public function actionQrcode()
     {
         if ($disabled = $this->disabledWechatResponse()) {
             return $disabled;
         }
 
-        $wechat = Yii::$app->wechat;
-        $app = $wechat->application();
-        $api = $app->getClient();
-        $lifetime = 6 * 24 * 3600;
-        $token = Yii::$app->security->generateRandomString();
-        $payload = [
-            "expire_seconds" => $lifetime,
-            "action_name" => "QR_STR_SCENE",
-            "action_info" => [
-                "scene" => ["scene_str" => $token],
-            ],
-        ];
+        try {
+            $wechat = Yii::$app->wechat;
+            $app = $wechat->application();
+            $api = $app->getClient();
+            $lifetime = 6 * 24 * 3600;
+            $token = Yii::$app->security->generateRandomString();
+            $payload = [
+                "expire_seconds" => $lifetime,
+                "action_name" => "QR_STR_SCENE",
+                "action_info" => [
+                    "scene" => ["scene_str" => $token],
+                ],
+            ];
 
-        $response = $api->post('/cgi-bin/qrcode/create', ['body' => json_encode($payload, JSON_UNESCAPED_UNICODE)]);
-        $result = $response->toArray();
+            $response = $api->post('/cgi-bin/qrcode/create', ['body' => json_encode($payload, JSON_UNESCAPED_UNICODE)]);
+            $result = $response->toArray();
+        } catch (\Throwable $error) {
+            Yii::error(['wechatQrcodeError' => $error->getMessage()], 'wechat.login');
+            throw new ServiceUnavailableHttpException('wechat qrcode service unavailable');
+        }
         if (!isset($result['ticket'])) {
             Yii::error(['wechatQrcode' => $result], 'wechat.login');
-            throw new ServerErrorHttpException('wechat qrcode ticket missing');
+            throw new ServiceUnavailableHttpException('wechat qrcode ticket missing');
         }
 
         $ticket = (string)$result['ticket'];

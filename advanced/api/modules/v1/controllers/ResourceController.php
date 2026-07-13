@@ -4,6 +4,7 @@ namespace api\modules\v1\controllers;
 
 use api\modules\v1\models\ResourceSearch;
 use api\modules\v1\models\Resource;
+use api\modules\v1\models\File;
 use mdm\admin\components\AccessControl;
 use bizley\jwt\JwtHttpBearerAuth;
 use Yii;
@@ -11,6 +12,9 @@ use yii\filters\auth\CompositeAuth;
 use yii\helpers\HtmlPurifier;
 use yii\rest\ActiveController;
 use OpenApi\Annotations as OA;
+use yii\web\ForbiddenHttpException;
+use yii\web\NotFoundHttpException;
+use yii\web\ServerErrorHttpException;
 
 use yii\caching\TagDependency;
 
@@ -65,7 +69,29 @@ class ResourceController extends ActiveController
         $actions = parent::actions();
         unset($actions['index']);
         unset($actions['view']);
+        unset($actions['create']);
+        unset($actions['update']);
         return $actions;
+    }
+
+    public function actionCreate()
+    {
+        $model = new Resource();
+        $model->load(Yii::$app->request->bodyParams, '');
+        $model->author_id = (int) Yii::$app->user->id;
+        $this->ensureOwnedFiles($model);
+
+        if ($model->save()) {
+            Yii::$app->response->statusCode = 201;
+            return $model;
+        }
+
+        if (!$model->hasErrors()) {
+            throw new ServerErrorHttpException('Failed to create the resource');
+        }
+
+        Yii::$app->response->statusCode = 422;
+        return $model;
     }
     
     /**
@@ -93,7 +119,63 @@ class ResourceController extends ActiveController
      */
     public function actionView($id)
     {
-        return Resource::find()->where(['id'=>$id])->one();
+        $model = Resource::findOne($id);
+        if (!$model) {
+            throw new NotFoundHttpException('Resource not found');
+        }
+        $this->checkAccess('view', $model);
+        return $model;
+    }
+
+    public function checkAccess($action, $model = null, $params = [])
+    {
+        if (
+            $model instanceof Resource
+            && in_array($action, ['update', 'delete'], true)
+            && (int) $model->author_id !== (int) Yii::$app->user->id
+        ) {
+            throw new ForbiddenHttpException('You are not allowed to access this resource');
+        }
+    }
+
+    public function actionUpdate($id)
+    {
+        $model = Resource::findOne($id);
+        if (!$model) {
+            throw new NotFoundHttpException('Resource not found');
+        }
+
+        $this->checkAccess('update', $model);
+        $authorId = $model->author_id;
+        $model->load(Yii::$app->request->bodyParams, '');
+        $model->author_id = $authorId;
+        $this->ensureOwnedFiles($model);
+
+        if ($model->save() === false && !$model->hasErrors()) {
+            throw new ServerErrorHttpException('Failed to update the resource');
+        }
+
+        return $model;
+    }
+
+    protected function ensureOwnedFiles(Resource $model): void
+    {
+        $fileIds = array_values(array_unique(array_filter([
+            (int) $model->file_id,
+            (int) $model->image_id,
+        ])));
+
+        if ($fileIds === []) {
+            return;
+        }
+
+        $ownedCount = File::find()
+            ->where(['id' => $fileIds, 'user_id' => (int) Yii::$app->user->id])
+            ->count();
+
+        if ((int) $ownedCount !== count($fileIds)) {
+            throw new ForbiddenHttpException('Resources may only use files owned by the current user');
+        }
     }
 
     /**

@@ -5,14 +5,18 @@ namespace tests\unit\controllers;
 use api\modules\v1\controllers\SystemController;
 use PHPUnit\Framework\TestCase;
 use Yii;
+use yii\web\Response;
 
 final class SystemDeploymentTest extends TestCase
 {
     private array $originalEnv = [];
+    private $originalResponseComponent;
 
     protected function setUp(): void
     {
         parent::setUp();
+        $this->originalResponseComponent = Yii::$app->get('response', false);
+        Yii::$app->set('response', new Response());
         $this->originalEnv = [];
         foreach ($this->deploymentEnvNames() as $name) {
             $value = getenv($name);
@@ -31,6 +35,7 @@ final class SystemDeploymentTest extends TestCase
                 putenv($name . '=' . $value);
             }
         }
+        Yii::$app->set('response', $this->originalResponseComponent);
         parent::tearDown();
     }
 
@@ -42,6 +47,24 @@ final class SystemDeploymentTest extends TestCase
         $this->assertSame('cos', $data['storageDriver']);
         $this->assertTrue($data['features']['cosStorage']);
         $this->assertSame('no-store', Yii::$app->response->headers->get('Cache-Control'));
+        $this->assertFalse($data['features']['wechatLogin']);
+    }
+
+    public function testWechatLoginRequiresFlagAndCredentials(): void
+    {
+        putenv('ENABLE_WECHAT_LOGIN=true');
+        putenv('WECHAT_APP_ID=wx-app-id');
+        putenv('WECHAT_SECRET=wx-secret');
+        putenv('WECHAT_TOKEN=wx-token');
+
+        $this->assertTrue($this->deployment()['features']['wechatLogin']);
+
+        putenv('WECHAT_SECRET');
+        $this->assertFalse($this->deployment()['features']['wechatLogin']);
+
+        putenv('WECHAT_SECRET=wx-secret');
+        putenv('WECHAT_TOKEN');
+        $this->assertFalse($this->deployment()['features']['wechatLogin']);
     }
 
     public function testLocalDeploymentUsesLocalStorageDefaults(): void
@@ -121,6 +144,10 @@ final class SystemDeploymentTest extends TestCase
             'ENABLE_COS_IMAGE_PROCESSING',
             'ENABLE_AI_3D_GENERATOR',
             'ENABLE_WECHAT_LOGIN',
+            'WECHAT_APP_ID',
+            'WECHAT_APPID',
+            'WECHAT_SECRET',
+            'WECHAT_TOKEN',
             'ENABLE_APPLE_LOGIN',
             'ENABLE_GEO_IP_LOCALE',
             'ENABLE_ANALYTICS',

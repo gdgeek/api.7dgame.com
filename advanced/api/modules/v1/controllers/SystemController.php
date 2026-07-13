@@ -43,13 +43,28 @@ class SystemController extends Controller
                 'cosStorage' => $this->featureEnabled('ENABLE_COS_STORAGE', !$local),
                 'cosImageProcessing' => $this->featureEnabled('ENABLE_COS_IMAGE_PROCESSING', !$local),
                 'ai3dGenerator' => $this->featureEnabled('ENABLE_AI_3D_GENERATOR', !$local),
-                'wechatLogin' => $this->featureEnabled('ENABLE_WECHAT_LOGIN', !$local),
+                'wechatLogin' => $this->wechatLoginEnabled($local),
                 'appleLogin' => $this->featureEnabled('ENABLE_APPLE_LOGIN', !$local),
                 'geoIpLocale' => $this->featureEnabled('ENABLE_GEO_IP_LOCALE', !$local),
                 'analytics' => $this->featureEnabled('ENABLE_ANALYTICS', !$local),
                 'externalCdn' => $this->featureEnabled('ENABLE_EXTERNAL_CDN', !$local),
             ],
         ];
+    }
+
+    private function wechatLoginEnabled(bool $local): bool
+    {
+        if (!$this->featureEnabled('ENABLE_WECHAT_LOGIN', !$local)) {
+            return false;
+        }
+
+        $appId = getenv('WECHAT_APP_ID') ?: getenv('WECHAT_APPID');
+        $secret = getenv('WECHAT_SECRET');
+        $token = getenv('WECHAT_TOKEN');
+
+        return is_string($appId) && trim($appId) !== ''
+            && is_string($secret) && trim($secret) !== ''
+            && is_string($token) && trim($token) !== '';
     }
 
     /**
