@@ -12,6 +12,9 @@ use yii\rest\ActiveController;
 use yii\base\Exception;
 use yii\web\BadRequestHttpException;
 use OpenApi\Annotations as OA;
+use yii\web\ForbiddenHttpException;
+use yii\web\NotFoundHttpException;
+use api\modules\v1\models\Meta;
 
 /**
  * @OA\Tag(
@@ -100,7 +103,12 @@ class MetaController extends ActiveController
         $searchModel = new MetaSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
         $dataProvider->query->andWhere(['id' => $id, 'prefab' => 0]);
-        return $dataProvider->query->one();
+        $model = $dataProvider->query->one();
+        if (!$model) {
+            throw new NotFoundHttpException('Meta not found');
+        }
+        $this->checkAccess('view', $model);
+        return $model;
     }
 
     /**
@@ -129,7 +137,11 @@ class MetaController extends ActiveController
      */
     public function actionDelete($id)
     {
-        $model = \api\modules\v1\models\Meta::findOne($id);
+        $model = Meta::findOne($id);
+        if (!$model) {
+            throw new NotFoundHttpException('Meta not found');
+        }
+        $this->checkAccess('delete', $model);
         if ($model->prefab == 1) {
             throw new \yii\web\ForbiddenHttpException('You can not delete this item');
         }
@@ -171,8 +183,14 @@ class MetaController extends ActiveController
      */
     public function actionUpdate($id)
     {
-        $model = \api\modules\v1\models\Meta::findOne($id);
+        $model = Meta::findOne($id);
+        if (!$model) {
+            throw new NotFoundHttpException('Meta not found');
+        }
+        $this->checkAccess('update', $model);
+        $authorId = $model->author_id;
         $model->load(Yii::$app->getRequest()->getBodyParams(), '');
+        $model->author_id = $authorId;
         $model->prefab = 0;
         if ($model->save()) {
             return $model;
@@ -208,8 +226,9 @@ class MetaController extends ActiveController
      */
     public function actionCreate()
     {
-        $model = new \api\modules\v1\models\Meta();
+        $model = new Meta();
         $model->load(Yii::$app->getRequest()->getBodyParams(), '');
+        $model->author_id = (int) Yii::$app->user->id;
         $model->prefab = 0;
         if ($model->save()) {
             return $model;
@@ -293,26 +312,39 @@ class MetaController extends ActiveController
      *     @OA\Response(response=404, description="Meta 不存在")
      * )
      */
-    public function actionUpdateCode($id){
-        
-        
+    public function actionUpdateCode($id)
+    {
+        $meta = Meta::findOne($id);
+        if (!$meta) {
+            throw new NotFoundHttpException('Meta not found');
+        }
+        $this->checkAccess('update', $meta);
+
         $post = Yii::$app->request->post();
         $model = new MetaCodeTool($id);
-        $post = Yii::$app->request->post();
-        
-        
-         $post = Yii::$app->request->post();
         $model->load($post, '');
 
-       // throw new Exception(json_encode($model));
         if ($model->validate()) {
             $model->save();
-        }else{
+        } else {
             throw new Exception(json_encode($model->errors), 400);
         }
         return $model;
+    }
 
-        
+    public function checkAccess($action, $model = null, $params = [])
+    {
+        if (!$model instanceof Meta) {
+            return;
+        }
+
+        if ($action === 'view' && !$model->viewable) {
+            throw new ForbiddenHttpException('You are not allowed to view this entity');
+        }
+
+        if (in_array($action, ['update', 'delete'], true) && !$model->editable) {
+            throw new ForbiddenHttpException('You are not allowed to modify this entity');
+        }
     }
     
 }

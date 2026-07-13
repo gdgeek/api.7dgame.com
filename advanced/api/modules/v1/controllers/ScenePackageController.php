@@ -381,10 +381,15 @@ class ScenePackageController extends Controller
     }
 
     /**
-     * Validate that all fileId references exist.
+     * Validate that all fileId references exist and belong to the current user.
+     *
+     * File records do not have public/shared visibility semantics. Public scene
+     * packages carry their file data and create new records during import, while
+     * resourceFileMappings refer to files uploaded by the importing user.
      *
      * @param array $data
      * @throws UnprocessableEntityHttpException
+     * @throws ForbiddenHttpException
      */
     protected function validateFileIds(array $data): void
     {
@@ -394,8 +399,12 @@ class ScenePackageController extends Controller
 
         foreach ($data['resourceFileMappings'] as $mapping) {
             $fileId = $mapping['fileId'];
-            if (File::findOne($fileId) === null) {
+            $file = File::findOne($fileId);
+            if ($file === null) {
                 throw new UnprocessableEntityHttpException("File not found for fileId: {$fileId}");
+            }
+            if ((int) $file->user_id !== (int) Yii::$app->user->id) {
+                throw new ForbiddenHttpException("You are not authorized to use fileId: {$fileId}");
             }
         }
     }

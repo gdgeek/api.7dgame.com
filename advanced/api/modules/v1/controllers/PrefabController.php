@@ -1,6 +1,7 @@
 <?php
 namespace api\modules\v1\controllers;
 
+use api\modules\v1\models\Meta;
 use api\modules\v1\models\MetaSearch;
 use mdm\admin\components\AccessControl;
 use bizley\jwt\JwtHttpBearerAuth;
@@ -8,6 +9,8 @@ use Yii;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
 use OpenApi\Annotations as OA;
+use yii\web\ForbiddenHttpException;
+use yii\web\NotFoundHttpException;
 
 /**
  * @OA\Tag(
@@ -93,10 +96,12 @@ class PrefabController extends ActiveController
      */
     public function actionView($id)
     {
-        $searchModel = new MetaSearch();
-        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-        $dataProvider->query->andWhere(['id' => $id, 'prefab' => 1]);
-        return $dataProvider->query->one();
+        $model = Meta::findOne(['id' => $id, 'prefab' => 1]);
+        if (!$model) {
+            throw new NotFoundHttpException('Prefab not found');
+        }
+        $this->checkAccess('view', $model);
+        return $model;
     }
 
     /**
@@ -125,10 +130,8 @@ class PrefabController extends ActiveController
      */
     public function actionDelete($id)
     {
-        $model = \api\modules\v1\models\Meta::findOne($id);
-        if ($model->prefab == 0) {
-          throw new \yii\web\ForbiddenHttpException('You can not delete this item');
-        }
+        $model = $this->findPrefab($id);
+        $this->checkAccess('delete', $model);
         $model->delete();
         return $model;
     }
@@ -167,8 +170,11 @@ class PrefabController extends ActiveController
      */
     public function actionUpdate($id)
     {
-        $model = \api\modules\v1\models\Meta::findOne($id);
+        $model = $this->findPrefab($id);
+        $this->checkAccess('update', $model);
+        $authorId = $model->author_id;
         $model->load(Yii::$app->getRequest()->getBodyParams(), '');
+        $model->author_id = $authorId;
         $model->prefab = 1;
         if ($model->save()) {
             return $model;
@@ -204,8 +210,9 @@ class PrefabController extends ActiveController
      */
     public function actionCreate()
     {
-        $model = new \api\modules\v1\models\Meta();
+        $model = new Meta();
         $model->load(Yii::$app->getRequest()->getBodyParams(), '');
+        $model->author_id = (int) Yii::$app->user->id;
         $model->prefab = 1;
         if ($model->save()) {
             return $model;
@@ -252,5 +259,29 @@ class PrefabController extends ActiveController
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
         $dataProvider->query->andWhere(['prefab' => 1]);
         return $dataProvider;
+    }
+
+    public function checkAccess($action, $model = null, $params = [])
+    {
+        if (!$model instanceof Meta) {
+            return;
+        }
+
+        if ($action === 'view' && !$model->viewable) {
+            throw new ForbiddenHttpException('You are not allowed to view this prefab');
+        }
+
+        if (in_array($action, ['update', 'delete'], true) && !$model->editable) {
+            throw new ForbiddenHttpException('You are not allowed to modify this prefab');
+        }
+    }
+
+    private function findPrefab($id): Meta
+    {
+        $model = Meta::findOne(['id' => $id, 'prefab' => 1]);
+        if (!$model) {
+            throw new NotFoundHttpException('Prefab not found');
+        }
+        return $model;
     }
 }

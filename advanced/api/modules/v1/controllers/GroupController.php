@@ -3,12 +3,16 @@
 namespace api\modules\v1\controllers;
 
 use api\modules\v1\models\Group;
+use api\modules\v1\models\Verse;
 use mdm\admin\components\AccessControl;
 use yii\filters\auth\CompositeAuth;
 use bizley\jwt\JwtHttpBearerAuth;
 use yii\rest\ActiveController;
 use Yii;
 use OpenApi\Annotations as OA;
+use yii\web\ForbiddenHttpException;
+use yii\web\NotFoundHttpException;
+use yii\web\ServerErrorHttpException;
 
 /**
  * @OA\Tag(
@@ -19,6 +23,13 @@ use OpenApi\Annotations as OA;
 class GroupController extends ActiveController
 {
     public $modelClass = 'api\modules\v1\models\Group';
+
+    public function actions()
+    {
+        $actions = parent::actions();
+        unset($actions['update']);
+        return $actions;
+    }
 
     public function behaviors()
     {
@@ -292,6 +303,7 @@ class GroupController extends ActiveController
         if (!$group) {
             throw new \yii\web\NotFoundHttpException('Group not found.');
         }
+        $this->ensureGroupMember($group);
 
         $transaction = Yii::$app->db->beginTransaction();
         try {
@@ -372,6 +384,12 @@ class GroupController extends ActiveController
             throw new \yii\web\NotFoundHttpException('Verse not found in this group.');
         }
 
+        $verse = Verse::findOne($verseId);
+        if (!$verse) {
+            throw new NotFoundHttpException('Verse not found.');
+        }
+        $this->ensureVerseRemovalAllowed($group, $verse);
+
         $transaction = Yii::$app->db->beginTransaction();
         try {
             // 删除 GroupVerse 关联
@@ -385,9 +403,8 @@ class GroupController extends ActiveController
                 ->count();
 
             // 如果没有其他引用，删除 Verse 本身
-            if ($otherLinks == 0) {
-                $verse = \api\modules\v1\models\Verse::findOne($verseId);
-                if ($verse && !$verse->delete()) {
+            if ($otherLinks == 0 && $this->shouldDeleteOrphanedVerse($verse)) {
+                if (!$verse->delete()) {
                     throw new \yii\web\ServerErrorHttpException('Failed to delete verse.');
                 }
             }
@@ -400,5 +417,55 @@ class GroupController extends ActiveController
             $transaction->rollBack();
             throw $e;
         }
+    }
+
+    public function actionUpdate($id)
+    {
+        $model = Group::findOne($id);
+        if (!$model) {
+            throw new NotFoundHttpException('Group not found.');
+        }
+
+        $this->checkAccess('update', $model);
+        $userId = $model->user_id;
+        $model->load(Yii::$app->request->bodyParams, '');
+        $model->user_id = $userId;
+
+        if ($model->save() === false && !$model->hasErrors()) {
+            throw new ServerErrorHttpException('Failed to update the group.');
+        }
+
+        return $model;
+    }
+
+    public function checkAccess($action, $model = null, $params = [])
+    {
+        if (
+            $model instanceof Group
+            && in_array($action, ['update', 'delete'], true)
+            && (int) $model->user_id !== (int) Yii::$app->user->id
+        ) {
+            throw new ForbiddenHttpException('Only the group owner can modify this group.');
+        }
+    }
+
+    protected function ensureGroupMember(Group $group): void
+    {
+        if (!$group->joined) {
+            throw new ForbiddenHttpException('You must join the group before changing its scenes.');
+        }
+    }
+
+    protected function ensureVerseRemovalAllowed(Group $group, Verse $verse): void
+    {
+        $userId = (int) Yii::$app->user->id;
+        if ((int) $group->user_id !== $userId && (int) $verse->author_id !== $userId) {
+            throw new ForbiddenHttpException('Only the group owner or scene author may remove this scene.');
+        }
+    }
+
+    protected function shouldDeleteOrphanedVerse(Verse $verse): bool
+    {
+        return (int) $verse->author_id === (int) Yii::$app->user->id;
     }
 }
