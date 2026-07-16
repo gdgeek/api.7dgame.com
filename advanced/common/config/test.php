@@ -6,7 +6,7 @@ return [
             'dsn' => 'mysql:host=localhost;dbname=yii2_advanced_test',
         ],
         'mailer' => [
-            'class' => 'yii\swiftmailer\Mailer',
+            'class' => 'yii\symfonymailer\Mailer',
             'viewPath' => '@common/mail',
             'useFileTransport' => true,
         ],

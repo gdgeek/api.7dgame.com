@@ -111,6 +111,15 @@ class EmailController extends Controller
                     'retry_after' => $e->statusCode === 429 ? $this->getRetryAfter($e) : null,
                 ],
             ];
+        } catch (\yii\web\ServerErrorHttpException $e) {
+            Yii::$app->response->statusCode = 500;
+            return [
+                'success' => false,
+                'error' => [
+                    'code' => 'EMAIL_DELIVERY_FAILED',
+                    'message' => $e->getMessage(),
+                ],
+            ];
         } catch (\Exception $e) {
             Yii::error("Failed to send verification code: " . $e->getMessage(), __METHOD__);
             Yii::$app->response->statusCode = 500;
@@ -202,6 +211,15 @@ class EmailController extends Controller
                 'success' => false,
                 'error' => [
                     'code' => 'INVALID_CODE',
+                    'message' => $e->getMessage(),
+                ],
+            ];
+        } catch (\yii\web\ServerErrorHttpException $e) {
+            Yii::$app->response->statusCode = 500;
+            return [
+                'success' => false,
+                'error' => [
+                    'code' => 'BIND_FAILED',
                     'message' => $e->getMessage(),
                 ],
             ];
@@ -374,6 +392,15 @@ class EmailController extends Controller
                 'success' => false,
                 'error' => [
                     'code' => 'INVALID_STATE',
+                    'message' => $e->getMessage(),
+                ],
+            ];
+        } catch (\yii\web\ServerErrorHttpException $e) {
+            Yii::$app->response->statusCode = 500;
+            return [
+                'success' => false,
+                'error' => [
+                    'code' => 'EMAIL_DELIVERY_FAILED',
                     'message' => $e->getMessage(),
                 ],
             ];

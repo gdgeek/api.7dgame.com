@@ -31,7 +31,7 @@ $config = \yii\helpers\ArrayHelper::merge(
             ],
             // Ensure mailer uses file transport for testing
             'mailer' => [
-                'class' => 'yii\swiftmailer\Mailer',
+                'class' => 'yii\symfonymailer\Mailer',
                 'viewPath' => '@common/mail',
                 'useFileTransport' => true,
             ],
