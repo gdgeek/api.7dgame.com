@@ -3,6 +3,7 @@
 namespace tests\unit\services;
 
 use PHPUnit\Framework\TestCase;
+use api\modules\v1\services\EmailService;
 use api\modules\v1\services\EmailVerificationService;
 use api\modules\v1\models\User;
 use api\modules\v1\components\RedisKeyManager;
@@ -40,6 +41,16 @@ class EmailVerificationServicePropertyTest extends TestCase
         }
         
         $this->service = new EmailVerificationService();
+        $this->service->setEmailDeliveryService(new class extends EmailService {
+            public function sendVerificationCode(
+                string $email,
+                string $code,
+                string $locale = 'en-US',
+                array $i18n = []
+            ): bool {
+                return true;
+            }
+        });
         
         // 清理测试数据
         $this->cleanupTestData();
@@ -47,6 +58,9 @@ class EmailVerificationServicePropertyTest extends TestCase
     
     protected function tearDown(): void
     {
+        if (isset(Yii::$app->user) && !Yii::$app->user->isGuest) {
+            Yii::$app->user->logout(false);
+        }
         parent::tearDown();
         $this->cleanupTestData();
     }
@@ -83,7 +97,6 @@ class EmailVerificationServicePropertyTest extends TestCase
             // 使用反射访问 protected 方法
             $reflection = new \ReflectionClass($this->service);
             $method = $reflection->getMethod('generateVerificationCode');
-            $method->setAccessible(true);
             
             $code = $method->invoke($this->service);
             
@@ -277,6 +290,7 @@ class EmailVerificationServicePropertyTest extends TestCase
     public function testProperty8VerificationSuccessCleanup()
     {
         $email = 'cleanup@example.com';
+        User::deleteAll(['email' => $email]);
         
         // 创建测试用户
         $user = new User();
@@ -285,6 +299,7 @@ class EmailVerificationServicePropertyTest extends TestCase
         $user->setPassword('Test123!@#');
         $user->generateAuthKey();
         $user->save(false);
+        $this->assertTrue(Yii::$app->user->login($user));
         
         // 发送验证码
         $this->service->sendVerificationCode($email);
@@ -342,7 +357,6 @@ class EmailVerificationServicePropertyTest extends TestCase
         
         $reflection = new \ReflectionClass($this->service);
         $method = $reflection->getMethod('generateVerificationCode');
-        $method->setAccessible(true);
         
         for ($i = 0; $i < $iterations; $i++) {
             $code = $method->invoke($this->service);
