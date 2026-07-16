@@ -50,10 +50,6 @@ new \yii\console\Application([
             'class' => 'yii\web\Request',
             'hostInfo' => 'http://localhost',
             'scriptUrl' => '',
-            'cookieValidationKey' => 'test-cookie-validation-key',
-        ],
-        'response' => [
-            'class' => 'yii\web\Response',
         ],
         'authManager' => [
             'class' => 'yii\rbac\DbManager',

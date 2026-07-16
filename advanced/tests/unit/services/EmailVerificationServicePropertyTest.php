@@ -27,6 +27,12 @@ class EmailVerificationServicePropertyTest extends TestCase
      * @var \yii\redis\Connection
      */
     protected $redis;
+
+    protected $originalUserComponent;
+
+    protected $userComponentReplaced = false;
+
+    protected $testUser;
     
     protected function setUp(): void
     {
@@ -58,8 +64,11 @@ class EmailVerificationServicePropertyTest extends TestCase
     
     protected function tearDown(): void
     {
-        if (isset(Yii::$app->user) && !Yii::$app->user->isGuest) {
-            Yii::$app->user->logout(false);
+        if ($this->userComponentReplaced) {
+            Yii::$app->set('user', $this->originalUserComponent);
+        }
+        if ($this->testUser !== null) {
+            $this->testUser->delete();
         }
         parent::tearDown();
         $this->cleanupTestData();
@@ -299,7 +308,21 @@ class EmailVerificationServicePropertyTest extends TestCase
         $user->setPassword('Test123!@#');
         $user->generateAuthKey();
         $user->save(false);
-        $this->assertTrue(Yii::$app->user->login($user));
+        $this->testUser = $user;
+
+        $this->originalUserComponent = Yii::$app->has('user', true)
+            ? Yii::$app->get('user')
+            : null;
+        $this->userComponentReplaced = true;
+        Yii::$app->set('user', new class((int)$user->id) extends \yii\base\Component {
+            public $id;
+
+            public function __construct(int $id, array $config = [])
+            {
+                $this->id = $id;
+                parent::__construct($config);
+            }
+        });
         
         // 发送验证码
         $this->service->sendVerificationCode($email);
@@ -336,8 +359,6 @@ class EmailVerificationServicePropertyTest extends TestCase
         $attemptsExists = $this->redis->executeCommand('EXISTS', [$attemptsKey]);
         $this->assertEquals(0, $attemptsExists, "Attempts key should be deleted");
         
-        // 清理测试用户
-        $user->delete();
     }
     
     /**
