@@ -54,6 +54,12 @@ new \yii\console\Application([
         'authManager' => [
             'class' => 'yii\rbac\DbManager',
         ],
+        'user' => [
+            'class' => 'yii\web\User',
+            'identityClass' => 'api\modules\v1\models\User',
+            'enableSession' => false,
+            'loginUrl' => null,
+        ],
         'jwt' => [
             'class' => 'bizley\jwt\Jwt',
             'signer' => 'HS256',
@@ -66,7 +72,7 @@ new \yii\console\Application([
             'database' => 1, // Use database 1 for testing
         ],
         'mailer' => [
-            'class' => 'yii\swiftmailer\Mailer',
+            'class' => 'yii\symfonymailer\Mailer',
             'viewPath' => '@common/mail',
             'useFileTransport' => true,
         ],

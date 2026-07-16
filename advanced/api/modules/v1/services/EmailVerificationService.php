@@ -9,6 +9,7 @@ use api\modules\v1\components\RedisKeyManager;
 use api\modules\v1\models\User;
 use yii\web\TooManyRequestsHttpException;
 use yii\web\BadRequestHttpException;
+use yii\web\ServerErrorHttpException;
 use yii\db\IntegrityException;
 
 /**
@@ -64,6 +65,11 @@ class EmailVerificationService extends Component
      * @var \yii\redis\Connection Redis 连接
      */
     protected $redis;
+
+    /**
+     * @var EmailService|null 可替换的投递服务，便于可靠测试失败分支
+     */
+    private $emailDeliveryService;
     
     /**
      * 初始化服务
@@ -73,6 +79,20 @@ class EmailVerificationService extends Component
         parent::init();
         $this->rateLimiter = new RateLimiter();
         $this->redis = Yii::$app->redis;
+    }
+
+    public function setEmailDeliveryService(EmailService $emailDeliveryService): void
+    {
+        $this->emailDeliveryService = $emailDeliveryService;
+    }
+
+    protected function getEmailDeliveryService(): EmailService
+    {
+        if ($this->emailDeliveryService === null) {
+            $this->emailDeliveryService = new EmailService();
+        }
+
+        return $this->emailDeliveryService;
     }
     
     /**
@@ -102,14 +122,24 @@ class EmailVerificationService extends Component
         ]);
         $this->redis->executeCommand('SETEX', [$codeKey, self::CODE_TTL, $data]);
         
-        // 发送邮件
-        $emailService = new EmailService();
-        $emailSent = $emailService->sendVerificationCode($email, $code, $locale, $i18n);
-        
+        // 发送邮件。只有真实投递成功后，接口才能报告成功并进入冷却期。
+        try {
+            $emailSent = $this->getEmailDeliveryService()->sendVerificationCode(
+                $email,
+                $code,
+                $locale,
+                $i18n
+            );
+        } catch (\Throwable $exception) {
+            $this->redis->executeCommand('DEL', [$codeKey]);
+            Yii::error("Verification email delivery raised an exception for {$email}: " . $exception->getMessage(), __METHOD__);
+            throw new ServerErrorHttpException('发送验证码失败，请稍后重试', 0, $exception);
+        }
+
         if (!$emailSent) {
-            Yii::warning("Failed to send verification email to {$email}, but code was stored in Redis", __METHOD__);
-            // 即使邮件发送失败，也返回成功，因为验证码已经存储
-            // 这样可以避免因邮件服务问题导致整个功能不可用
+            $this->redis->executeCommand('DEL', [$codeKey]);
+            Yii::error("Failed to deliver verification email to {$email}", __METHOD__);
+            throw new ServerErrorHttpException('发送验证码失败，请稍后重试');
         }
         
         // 记录速率限制
@@ -154,8 +184,10 @@ class EmailVerificationService extends Component
     {
         $this->assertCodeValid($email, $code);
         
-        // 验证成功，标记邮箱为已验证
-        $this->markEmailAsVerified($email, $changeToken);
+        // 验证成功后必须确认数据库真实写入，不能只凭验证码正确就报告绑定成功。
+        if (!$this->markEmailAsVerified($email, $changeToken)) {
+            throw new ServerErrorHttpException('邮箱绑定失败，请稍后重试');
+        }
         
         // 清理 Redis 数据
         $this->clearVerificationData($email);
@@ -193,24 +225,28 @@ class EmailVerificationService extends Component
     }
 
     /**
-     * 基于旧邮箱二次确认令牌解绑邮箱
+     * 基于当前邮箱验证码解绑邮箱
      *
      * @param User $user 当前用户
-     * @param string $changeToken 旧邮箱验证后签发的令牌
+     * @param string|null $code 当前邮箱收到的验证码；未验证邮箱可不传
      * @return bool
      * @throws BadRequestHttpException
      */
-    public function unbindCurrentEmail(User $user, string $changeToken): bool
+    public function unbindCurrentEmail(User $user, ?string $code): bool
     {
         if (empty($user->email)) {
             throw new BadRequestHttpException('当前账号未绑定邮箱');
         }
 
-        if (!$user->isEmailVerified()) {
-            throw new BadRequestHttpException('当前邮箱未验证，无法执行解绑');
+        if ($user->isEmailVerified()) {
+            if ($code === null || trim($code) === '') {
+                throw new BadRequestHttpException('请输入当前邮箱收到的验证码');
+            }
+
+            $this->assertCodeValid($user->email, trim($code));
+            $this->clearVerificationData($user->email);
         }
 
-        $this->assertEmailChangeTokenValid((int)$user->id, $changeToken);
         $this->clearEmailChangeToken((int)$user->id);
 
         $user->email = null;
@@ -296,9 +332,9 @@ class EmailVerificationService extends Component
      */
     protected function markEmailAsVerified(string $email, ?string $changeToken = null): bool
     {
-        // 检查是否是控制台应用或用户组件不存在
-        if (Yii::$app instanceof \yii\console\Application || !isset(Yii::$app->user)) {
-            Yii::warning("Cannot mark email as verified: not in web application context", __METHOD__);
+        // 仅在存在明确登录身份时写入，测试/维护命令也可注入受控身份。
+        if (!isset(Yii::$app->user)) {
+            Yii::warning("Cannot mark email as verified: user component is unavailable", __METHOD__);
             return false;
         }
         

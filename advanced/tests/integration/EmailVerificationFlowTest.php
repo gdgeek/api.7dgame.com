@@ -77,6 +77,7 @@ class EmailVerificationFlowTest extends TestCase
         
         // 创建测试用户
         $this->createTestUser();
+        Yii::$app->user->setIdentity($this->testUser);
         
         // 清理测试数据
         $this->cleanupTestData();
@@ -91,6 +92,7 @@ class EmailVerificationFlowTest extends TestCase
         
         // 删除测试用户
         if ($this->testUser !== null) {
+            Yii::$app->user->setIdentity(null);
             $this->testUser->delete();
         }
     }
@@ -225,7 +227,7 @@ class EmailVerificationFlowTest extends TestCase
         $mailContent = $this->getLatestMailContent();
         $this->assertNotNull($mailContent, 'Email was not sent');
         $this->assertStringContainsString($this->testEmail, $mailContent, 'Email does not contain recipient address');
-        $this->assertStringContainsString('验证码', $mailContent, 'Email does not contain verification code text');
+        $this->assertStringContainsString('Verification code', $mailContent, 'Email does not contain verification code text');
         
         // Step 3: 验证 Redis 中是否存储验证码
         $codeKey = RedisKeyManager::getVerificationCodeKey($this->testEmail);
@@ -374,42 +376,68 @@ class EmailVerificationFlowTest extends TestCase
     }
     
     /**
-     * 测试邮件发送失败不影响流程
-     * 
-     * 即使邮件发送失败，验证码仍然存储在 Redis 中，用户可以继续验证
+     * 测试邮件发送失败会终止流程
+     *
+     * 投递失败时必须删除验证码并抛出错误，不能向客户端伪装成功。
      */
-    public function testEmailSendFailureDoesNotBlockFlow()
+    public function testEmailSendFailureRejectsFlow()
     {
-        // 临时禁用邮件发送（通过修改配置）
-        $originalMailer = Yii::$app->mailer;
-        
-        // 创建一个会失败的 mailer mock
-        $mockMailer = $this->createMock(\yii\swiftmailer\Mailer::class);
-        $mockMailer->method('compose')->willReturn($mockMailer);
-        $mockMailer->method('setFrom')->willReturn($mockMailer);
-        $mockMailer->method('setTo')->willReturn($mockMailer);
-        $mockMailer->method('setSubject')->willReturn($mockMailer);
-        $mockMailer->method('send')->willReturn(false);
-        
-        Yii::$app->set('mailer', $mockMailer);
-        
+        $failedDelivery = new class extends EmailService {
+            public function sendVerificationCode(
+                string $email,
+                string $code,
+                string $locale = 'en-US',
+                array $i18n = []
+            ): bool {
+                return false;
+            }
+        };
+        $this->verificationService->setEmailDeliveryService($failedDelivery);
+
         try {
-            // 发送验证码（邮件会失败，但应该返回成功）
-            $result = $this->verificationService->sendVerificationCode($this->testEmail);
-            $this->assertTrue($result, 'Should return true even if email fails');
-            
-            // 验证码应该仍然存储在 Redis 中
-            $code = $this->getVerificationCodeFromRedis($this->testEmail);
-            $this->assertNotNull($code, 'Code should be stored in Redis even if email fails');
-            
-            // 用户应该能够使用验证码
-            $verifyResult = $this->verificationService->verifyCode($this->testEmail, $code);
-            $this->assertTrue($verifyResult, 'Should be able to verify code even if email failed');
-            
-        } finally {
-            // 恢复原始 mailer
-            Yii::$app->set('mailer', $originalMailer);
+            $this->verificationService->sendVerificationCode($this->testEmail);
+            $this->fail('Delivery failure must not be reported as success');
+        } catch (\yii\web\ServerErrorHttpException $exception) {
+            $this->assertStringContainsString('发送验证码失败', $exception->getMessage());
         }
+
+        $code = $this->getVerificationCodeFromRedis($this->testEmail);
+        $this->assertNull($code, 'Code must be deleted when the email was not delivered');
+    }
+
+    public function testVerifiedEmailCanBeUnboundWithCurrentEmailCode()
+    {
+        $this->testUser->email_verified_at = time();
+        $this->testUser->save(false, ['email_verified_at']);
+
+        $code = '482731';
+        $codeKey = RedisKeyManager::getVerificationCodeKey($this->testEmail);
+        $this->redis->executeCommand('SETEX', [
+            $codeKey,
+            EmailVerificationService::CODE_TTL,
+            json_encode(['code' => $code, 'created_at' => time()]),
+        ]);
+
+        $this->assertTrue(
+            $this->verificationService->unbindCurrentEmail($this->testUser, $code)
+        );
+
+        $this->testUser->refresh();
+        $this->assertNull($this->testUser->email);
+        $this->assertNull($this->testUser->email_verified_at);
+        $this->assertSame(0, (int)$this->redis->executeCommand('EXISTS', [$codeKey]));
+    }
+
+    public function testUnverifiedEmailCanBeUnboundWithoutCode()
+    {
+        $this->assertNull($this->testUser->email_verified_at);
+        $this->assertTrue(
+            $this->verificationService->unbindCurrentEmail($this->testUser, null)
+        );
+
+        $this->testUser->refresh();
+        $this->assertNull($this->testUser->email);
+        $this->assertNull($this->testUser->email_verified_at);
     }
     
     /**
@@ -455,6 +483,12 @@ class EmailVerificationFlowTest extends TestCase
             
             // 验证所有用户
             foreach ($testEmails as $email) {
+                foreach ($users as $candidate) {
+                    if ($candidate->email === $email) {
+                        Yii::$app->user->setIdentity($candidate);
+                        break;
+                    }
+                }
                 $result = $this->verificationService->verifyCode($email, $codes[$email]);
                 $this->assertTrue($result, "Failed to verify {$email}");
                 
@@ -464,6 +498,7 @@ class EmailVerificationFlowTest extends TestCase
             }
             
         } finally {
+            Yii::$app->user->setIdentity($this->testUser);
             // 清理测试用户
             foreach ($users as $user) {
                 $user->delete();
@@ -508,6 +543,9 @@ class EmailVerificationFlowTest extends TestCase
                 // 预期的异常
                 $this->assertStringContainsString('验证码', $e->getMessage());
             }
+
+            $attemptsKey = RedisKeyManager::getVerificationAttemptsKey($this->testEmail);
+            $this->redis->executeCommand('DEL', [$attemptsKey]);
         }
     }
     
