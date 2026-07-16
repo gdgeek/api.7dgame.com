@@ -59,7 +59,10 @@ class PasswordController extends Controller
 
         $behaviors['access'] = [
             'class' => AccessControl::class,
-            'except' => ['options', 'request-reset', 'verify-code', 'reset'],
+            // mdmsoft AccessControl uses allowActions for public routes; its
+            // custom isActive() implementation does not honor ActionFilter's
+            // except list.
+            'allowActions' => ['options', 'request-reset', 'verify-code', 'reset'],
         ];
 
 
@@ -128,6 +131,15 @@ class PasswordController extends Controller
                 'success' => false,
                 'error' => [
                     'code' => 'EMAIL_NOT_VERIFIED',
+                    'message' => $e->getMessage(),
+                ],
+            ];
+        } catch (\yii\web\ServerErrorHttpException $e) {
+            Yii::$app->response->statusCode = 500;
+            return [
+                'success' => false,
+                'error' => [
+                    'code' => 'EMAIL_DELIVERY_FAILED',
                     'message' => $e->getMessage(),
                 ],
             ];

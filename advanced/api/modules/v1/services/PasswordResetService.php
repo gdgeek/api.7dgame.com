@@ -9,6 +9,7 @@ use api\modules\v1\components\RedisKeyManager;
 use api\modules\v1\models\User;
 use yii\web\TooManyRequestsHttpException;
 use yii\web\BadRequestHttpException;
+use yii\web\ServerErrorHttpException;
 
 /**
  * 密码重置服务
@@ -55,11 +56,30 @@ class PasswordResetService extends Component
      */
     protected $redis;
 
+    /**
+     * @var EmailService|null 可替换的投递服务，便于可靠测试失败分支
+     */
+    private $emailDeliveryService;
+
     public function init()
     {
         parent::init();
         $this->rateLimiter = new RateLimiter();
         $this->redis = Yii::$app->redis;
+    }
+
+    public function setEmailDeliveryService(EmailService $emailDeliveryService): void
+    {
+        $this->emailDeliveryService = $emailDeliveryService;
+    }
+
+    protected function getEmailDeliveryService(): EmailService
+    {
+        if ($this->emailDeliveryService === null) {
+            $this->emailDeliveryService = new EmailService();
+        }
+
+        return $this->emailDeliveryService;
     }
 
     /**
@@ -94,10 +114,23 @@ class PasswordResetService extends Component
         ]);
         $this->redis->executeCommand('SETEX', [$codeKey, self::CODE_TTL, $codeData]);
 
-        $emailService = new EmailService();
-        $emailSent = $emailService->sendPasswordResetCode($email, $code, $locale, $i18n);
+        try {
+            $emailSent = $this->getEmailDeliveryService()->sendPasswordResetCode(
+                $email,
+                $code,
+                $locale,
+                $i18n
+            );
+        } catch (\Throwable $exception) {
+            $this->redis->executeCommand('DEL', [$codeKey]);
+            Yii::error("Password reset email delivery raised an exception for {$email}: " . $exception->getMessage(), __METHOD__);
+            throw new ServerErrorHttpException('发送验证码失败，请稍后重试', 0, $exception);
+        }
+
         if (!$emailSent) {
-            Yii::warning("Failed to send password reset code email to {$email}, but code was stored in Redis", __METHOD__);
+            $this->redis->executeCommand('DEL', [$codeKey]);
+            Yii::error("Failed to deliver password reset code email to {$email}", __METHOD__);
+            throw new ServerErrorHttpException('发送验证码失败，请稍后重试');
         }
 
         $this->rateLimiter->hit($rateLimitKey, self::RATE_LIMIT_TTL);
