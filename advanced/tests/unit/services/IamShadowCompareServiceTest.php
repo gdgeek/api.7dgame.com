@@ -141,6 +141,54 @@ final class IamShadowCompareServiceTest extends TestCase
         $this->assertSame('match', $completion['outcome']);
     }
 
+    public function testAuthorizationRoleComparisonDoesNotUnionHierarchyLevels(): void
+    {
+        $service = $this->serviceWithClient(new class extends IdentityProviderClient {
+            public function iamRolesView(int $legacyUserId): ?array
+            {
+                return ['roles' => [
+                    ['name' => 'user'],
+                    ['name' => 'manager'],
+                    ['name' => 'admin'],
+                ]];
+            }
+        });
+
+        $entries = $this->captureShadowLogs(function () use ($service): void {
+            $service->compareRolesByUserId(47, ['admin'], 'authorization');
+        });
+
+        $completion = $this->event($entries, 'comparison.completed');
+        $mismatch = $this->firstPayloadWithoutEvent($entries);
+        $this->assertSame(1, $completion['mismatchCount']);
+        $this->assertSame('mismatch', $completion['outcome']);
+        $this->assertSame('authorization.roles', $mismatch['field']);
+        $this->assertSame('p1', $mismatch['severity']);
+        $this->assertSame(1, $mismatch['metadata']['legacyCount']);
+        $this->assertSame(3, $mismatch['metadata']['identityCount']);
+        $this->assertStringNotContainsString('admin', (string)json_encode($entries));
+        $this->assertStringNotContainsString('manager', (string)json_encode($entries));
+    }
+
+    public function testRootRoleComparisonDoesNotInferLowerRoles(): void
+    {
+        $service = $this->serviceWithClient(new class extends IdentityProviderClient {
+            public function iamRolesView(int $legacyUserId): ?array
+            {
+                return ['roles' => [['name' => 'root']]];
+            }
+        });
+
+        $entries = $this->captureShadowLogs(function () use ($service): void {
+            $service->compareRolesByUserId(48, ['root'], 'authorization');
+        });
+
+        $completion = $this->event($entries, 'comparison.completed');
+        $this->assertSame(0, $completion['mismatchCount']);
+        $this->assertSame('match', $completion['outcome']);
+        $this->assertCount(1, $entries);
+    }
+
     public function testPermissionMismatchUsesOnlyHashedSubjectAndPermissionEvidence(): void
     {
         $service = $this->serviceWithClient(new class extends IdentityProviderClient {
