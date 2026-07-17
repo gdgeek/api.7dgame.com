@@ -83,12 +83,16 @@ class EmailController extends Controller
         $form->load(Yii::$app->request->post(), '');
 
         if (!$form->validate()) {
+            $firstErrors = array_values($form->getFirstErrors());
+            $validationMessage = $firstErrors[0] ?? '请求参数验证失败';
+            $emailAlreadyBound = $form->isEmailAlreadyBound();
+
             Yii::$app->response->statusCode = 400;
             return [
                 'success' => false,
                 'error' => [
-                    'code' => 'VALIDATION_ERROR',
-                    'message' => '请求参数验证失败',
+                    'code' => $emailAlreadyBound ? 'EMAIL_ALREADY_BOUND' : 'VALIDATION_ERROR',
+                    'message' => $validationMessage,
                     'details' => $form->errors,
                 ],
             ];

@@ -106,7 +106,11 @@ class EmailVerificationFormsTest extends TestCase
         
         $this->assertFalse($form->validate(), "Form should be invalid when email is already used");
         $this->assertArrayHasKey('email', $form->errors);
-        $this->assertStringContainsString('已被', $form->getFirstError('email'));
+        $this->assertSame(
+            SendVerificationForm::EMAIL_ALREADY_BOUND_MESSAGE,
+            $form->getFirstError('email')
+        );
+        $this->assertTrue($form->isEmailAlreadyBound());
         
         // 清理测试数据
         $existingUser->delete();
