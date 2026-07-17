@@ -15,6 +15,8 @@ use yii\base\Model;
  */
 class SendVerificationForm extends Model
 {
+    public const EMAIL_ALREADY_BOUND_MESSAGE = '该邮箱已被其他账号绑定';
+
     /**
      * @var string 邮箱地址
      */
@@ -46,7 +48,7 @@ class SendVerificationForm extends Model
                 'unique',
                 'targetClass' => User::class,
                 'targetAttribute' => 'email',
-                'message' => '该邮箱已被其他用户使用',
+                'message' => self::EMAIL_ALREADY_BOUND_MESSAGE,
                 'filter' => function ($query) {
                     // 排除当前登录用户（如果存在且不是控制台应用）
                     if (!Yii::$app instanceof \yii\console\Application && 
@@ -62,6 +64,11 @@ class SendVerificationForm extends Model
             ['i18n', 'default', 'value' => []],
             ['i18n', 'validateI18nPayload'],
         ];
+    }
+
+    public function isEmailAlreadyBound(): bool
+    {
+        return $this->getFirstError('email') === self::EMAIL_ALREADY_BOUND_MESSAGE;
     }
 
     public function validateI18nPayload($attribute, $params)
