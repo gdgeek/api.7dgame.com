@@ -71,6 +71,16 @@ return [
                     'maxFileSize' => 1024 * 2,
                     'maxLogFiles' => 20,
                 ],
+                [
+                    'class' => 'common\components\security\SafeFileTarget',
+                    'levels' => ['info', 'warning', 'error'],
+                    'categories' => ['identity.iamShadowCompare'],
+                    'logFile' => 'php://stderr',
+                    'enableRotation' => false,
+                    'logVars' => [],
+                    'exportInterval' => 1,
+                    'prefix' => static fn(): string => '',
+                ],
             ],
         ],
         'errorHandler' => [

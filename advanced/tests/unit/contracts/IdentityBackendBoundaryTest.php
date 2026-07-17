@@ -301,6 +301,7 @@ final class IdentityBackendBoundaryTest extends TestCase
     {
         $identityProviderClient = $this->read('api/modules/v1/services/IdentityProviderClient.php');
         $iamShadowCompare = $this->read('api/modules/v1/services/IamShadowCompareService.php');
+        $apiConfig = require $this->path('../files/api/config/main.php');
         $params = $this->read('../files/common/config/params.php');
 
         foreach ([
@@ -348,6 +349,20 @@ final class IdentityBackendBoundaryTest extends TestCase
         ] as $needle) {
             $this->assertStringContainsString($needle, $params);
         }
+
+        $dockerEvidenceTargets = array_values(array_filter(
+            $apiConfig['components']['log']['targets'] ?? [],
+            static fn(array $target): bool => ($target['categories'] ?? []) === ['identity.iamShadowCompare']
+        ));
+        $this->assertCount(1, $dockerEvidenceTargets);
+        $this->assertSame('common\components\security\SafeFileTarget', $dockerEvidenceTargets[0]['class']);
+        $this->assertSame(['info', 'warning', 'error'], $dockerEvidenceTargets[0]['levels']);
+        $this->assertSame('php://stderr', $dockerEvidenceTargets[0]['logFile']);
+        $this->assertFalse($dockerEvidenceTargets[0]['enableRotation']);
+        $this->assertSame([], $dockerEvidenceTargets[0]['logVars']);
+        $this->assertSame(1, $dockerEvidenceTargets[0]['exportInterval']);
+        $this->assertIsCallable($dockerEvidenceTargets[0]['prefix']);
+        $this->assertSame('', $dockerEvidenceTargets[0]['prefix']());
     }
 
     public function testLoginAuditIsOptionalAndBypassOnly(): void
