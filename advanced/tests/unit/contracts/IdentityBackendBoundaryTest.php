@@ -326,16 +326,23 @@ final class IdentityBackendBoundaryTest extends TestCase
             "provider() === 'identity-shadow'",
             'identity.iamShadowCompare',
             "hash('sha256'",
+            "hash_hmac('sha256'",
             'legacyHash',
             'identityHash',
+            'comparison.completed',
+            'comparison.incomplete',
+            'subjectHash',
             'fallbackEnabled()',
         ] as $needle) {
             $this->assertStringContainsString($needle, $iamShadowCompare);
         }
 
+        $this->assertStringNotContainsString("'legacyUserId' => (int)\$user->id", $iamShadowCompare);
+
         foreach ([
             "'IDENTITY_IAM_PROVIDER' => getenv('IDENTITY_IAM_PROVIDER') ?: 'legacy'",
             "'IDENTITY_IAM_SHADOW_COMPARE' => getenv('IDENTITY_IAM_SHADOW_COMPARE') ?: 'false'",
+            "'IDENTITY_IAM_SHADOW_COMPARE_HASH_SALT' => getenv('IDENTITY_IAM_SHADOW_COMPARE_HASH_SALT') ?: null",
             "'IDENTITY_IAM_FALLBACK' => getenv('IDENTITY_IAM_FALLBACK') ?: 'true'",
             "'IDENTITY_IAM_INTERNAL_API_TOKEN' => getenv('IDENTITY_IAM_INTERNAL_API_TOKEN')",
         ] as $needle) {
