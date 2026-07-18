@@ -60,6 +60,20 @@ class EmailController extends Controller
 
         $behaviors['access'] = [
             'class' => AccessControl::class,
+            // These actions only read or mutate the authenticated user's own
+            // email lifecycle state. JWT authentication above remains
+            // mandatory; route-level RBAC is reserved for administrative
+            // actions such as email/test.
+            'allowActions' => [
+                'options',
+                'send-verification',
+                'verify',
+                'status',
+                'send-change-confirmation',
+                'verify-change-confirmation',
+                'unbind',
+                'cooldown',
+            ],
         ];
 
 

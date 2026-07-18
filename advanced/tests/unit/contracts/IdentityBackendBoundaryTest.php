@@ -499,6 +499,20 @@ final class IdentityBackendBoundaryTest extends TestCase
         }
 
         foreach ([
+            "'allowActions' => [",
+            "'send-verification'",
+            "'verify'",
+            "'status'",
+            "'send-change-confirmation'",
+            "'verify-change-confirmation'",
+            "'unbind'",
+            "'cooldown'",
+        ] as $needle) {
+            $this->assertStringContainsString($needle, $emailController);
+        }
+        $this->assertStringNotContainsString("'test',", $emailController);
+
+        foreach ([
             "proxyCurrentRequest('register'",
             '/v1/wechat/register',
             'use common\\models\\Wx;',
