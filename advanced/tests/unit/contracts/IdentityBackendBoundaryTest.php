@@ -402,6 +402,19 @@ final class IdentityBackendBoundaryTest extends TestCase
         }
     }
 
+    public function testLegacyUserRolePayloadExcludesDirectPermissionAssignments(): void
+    {
+        foreach ([
+            'api/modules/v1/models/User.php',
+            'api/modules/v1/models/Person.php',
+        ] as $modelPath) {
+            $model = $this->read($modelPath);
+
+            $this->assertStringContainsString('getRolesByUser($this->id)', $model);
+            $this->assertStringNotContainsString('getAssignments($this->id)', $model);
+        }
+    }
+
     public function testWechatRuntimeConfigIsAvailableInDockerImage(): void
     {
         $commonConfig = $this->read('../files/common/config/main-local.php');
