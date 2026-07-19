@@ -16,7 +16,7 @@ class IamAuthorizationReadService extends Component
         string $resourceType = 'api',
         ?string $requestKey = null
     ): bool {
-        if (!$this->integrationEnabled()) {
+        if (!$this->routeIntegrationEnabled()) {
             return $legacyAllowed;
         }
 
@@ -79,7 +79,7 @@ class IamAuthorizationReadService extends Component
         return $this->identityProviderClient;
     }
 
-    private function integrationEnabled(): bool
+    public function routeIntegrationEnabled(): bool
     {
         return $this->boolConfig('IDENTITY_IAM_AUTHZ_ROUTE_INTEGRATION_ENABLED', false);
     }

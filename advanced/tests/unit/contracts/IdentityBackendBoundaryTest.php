@@ -394,6 +394,72 @@ final class IdentityBackendBoundaryTest extends TestCase
         $this->assertSame('', $dockerEvidenceTargets[0]['prefix']());
     }
 
+    public function testIamAuthorizationRouteOwnershipIsScopedToActionLevelGuards(): void
+    {
+        $pluginUserController = $this->read('api/modules/v1/controllers/PluginUserController.php');
+        $organizationController = $this->read('api/modules/v1/controllers/OrganizationController.php');
+        $iamAuthzRead = $this->read('api/modules/v1/services/IamAuthorizationReadService.php');
+
+        foreach ([$pluginUserController, $organizationController] as $controller) {
+            $this->assertStringContainsString(
+                "'except' => \$this->iamAuthorizationReadService()->routeIntegrationEnabled()",
+                $controller
+            );
+            $this->assertStringContainsString(': []', $controller);
+        }
+
+        preg_match('/private const IAM_AUTHZ_INTEGRATED_ACTIONS = \[(.*?)\];/s', $pluginUserController, $pluginMatch);
+        preg_match_all("/'([^']+)'/", $pluginMatch[1] ?? '', $pluginActions);
+        $this->assertSame([
+            'users',
+            'create-user',
+            'batch-create-users',
+            'update-user',
+            'delete-user',
+            'change-role',
+            'invitations',
+            'create-invitation',
+            'delete-invitation',
+            'invitation-records',
+        ], $pluginActions[1] ?? []);
+
+        preg_match('/private const IAM_AUTHZ_INTEGRATED_ACTIONS = \[(.*?)\];/s', $organizationController, $organizationMatch);
+        preg_match_all("/'([^']+)'/", $organizationMatch[1] ?? '', $organizationActions);
+        $this->assertSame(
+            ['list', 'create', 'update', 'bind-user', 'unbind-user'],
+            $organizationActions[1] ?? []
+        );
+
+        foreach ([
+            "resolveUserWithPermission('view-user')",
+            "resolveUserWithPermission('list-users')",
+            "resolveUserWithPermission('create-user')",
+            "resolveUserWithPermission('update-user')",
+            "resolveUserWithPermission('delete-user')",
+            "resolveUserWithPermission('change-role')",
+            "resolveUserWithPermission('manage-invitations')",
+        ] as $guard) {
+            $this->assertStringContainsString($guard, $pluginUserController);
+        }
+
+        foreach ([
+            "requirePermission('organization.list')",
+            "requirePermission('organization.create')",
+            "requirePermission('organization.update')",
+            "requirePermission('organization.bind-user')",
+        ] as $guard) {
+            $this->assertStringContainsString($guard, $organizationController);
+        }
+
+        foreach (['me', 'check-invitation', 'register-send-code', 'register'] as $publicOrLegacyAction) {
+            $this->assertNotContains($publicOrLegacyAction, $pluginActions[1] ?? []);
+        }
+
+        $this->assertStringContainsString('public function routeIntegrationEnabled(): bool', $iamAuthzRead);
+        $this->assertStringContainsString("boolConfig('IDENTITY_IAM_AUTHZ_ROUTE_INTEGRATION_ENABLED', false)", $iamAuthzRead);
+        $this->assertStringNotContainsString('array_merge(', $iamAuthzRead);
+    }
+
     public function testLoginAuditIsOptionalAndBypassOnly(): void
     {
         $identityService = $this->read('api/modules/v1/services/IdentityService.php');

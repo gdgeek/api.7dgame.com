@@ -36,6 +36,7 @@ final class IamAuthorizationReadServiceTest extends TestCase
             }
         });
 
+        $this->assertFalse($service->routeIntegrationEnabled());
         $this->assertTrue($service->decide($this->user(), 'organization.list', true, 'route', 'organization.list'));
         $this->assertFalse($service->decide($this->user(), 'organization.update', false, 'route', 'organization.update'));
     }
@@ -72,6 +73,7 @@ final class IamAuthorizationReadServiceTest extends TestCase
             }
         };
         $service = $this->serviceWithClient($client);
+        $this->assertTrue($service->routeIntegrationEnabled());
 
         $entries = $this->captureAuthzLogs(function () use ($service): void {
             $this->assertTrue($service->decide(

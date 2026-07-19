@@ -37,6 +37,18 @@ class PluginUserController extends \yii\rest\Controller
     private const VALID_ROLES = ['root', 'admin', 'manager', 'user'];
     private const BASE_ROLE = 'user';
     private const ELEVATED_ROLES = ['root', 'admin', 'manager'];
+    private const IAM_AUTHZ_INTEGRATED_ACTIONS = [
+        'users',
+        'create-user',
+        'batch-create-users',
+        'update-user',
+        'delete-user',
+        'change-role',
+        'invitations',
+        'create-invitation',
+        'delete-invitation',
+        'invitation-records',
+    ];
     private ?AccountLifecycleProxyService $accountLifecycleProxy = null;
     private ?IamAuthorizationReadService $iamAuthorizationReadService = null;
 
@@ -62,6 +74,9 @@ class PluginUserController extends \yii\rest\Controller
 
         $behaviors['access'] = [
             'class' => AccessControl::class,
+            'except' => $this->iamAuthorizationReadService()->routeIntegrationEnabled()
+                ? self::IAM_AUTHZ_INTEGRATED_ACTIONS
+                : [],
         ];
 
         return $behaviors;

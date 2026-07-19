@@ -15,6 +15,7 @@ use yii\web\Response;
 
 class OrganizationController extends Controller
 {
+    private const IAM_AUTHZ_INTEGRATED_ACTIONS = ['list', 'create', 'update', 'bind-user', 'unbind-user'];
     private ?IamShadowCompareService $iamShadowCompareService = null;
     private ?IamAuthorizationReadService $iamAuthorizationReadService = null;
 
@@ -36,6 +37,9 @@ class OrganizationController extends Controller
         $behaviors['access'] = [
             'class' => AccessControl::class,
             'allowActions' => ['options'],
+            'except' => $this->iamAuthorizationReadService()->routeIntegrationEnabled()
+                ? self::IAM_AUTHZ_INTEGRATED_ACTIONS
+                : [],
         ];
 
         return $behaviors;
