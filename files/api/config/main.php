@@ -81,6 +81,16 @@ return [
                     'exportInterval' => 1,
                     'prefix' => static fn(): string => '',
                 ],
+                [
+                    'class' => 'common\components\security\SafeFileTarget',
+                    'levels' => ['info', 'warning', 'error'],
+                    'categories' => ['identity.iamAuthzRead'],
+                    'logFile' => 'php://stderr',
+                    'enableRotation' => false,
+                    'logVars' => [],
+                    'exportInterval' => 1,
+                    'prefix' => static fn(): string => '',
+                ],
             ],
         ],
         'errorHandler' => [

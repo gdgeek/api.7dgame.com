@@ -89,6 +89,11 @@ class IdentityProviderClient extends Component
         return $this->internalIamData('POST', '/internal/iam/plugin/verify-token', ['token' => $token]);
     }
 
+    public function iamAuthzResolve(array $input): ?array
+    {
+        return $this->internalIamData('POST', '/internal/iam/authz/resolve', $input);
+    }
+
     private function tokenFromResponse(array $response): array
     {
         if (!isset($response['token']) || !is_array($response['token'])) {

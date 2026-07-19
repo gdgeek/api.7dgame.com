@@ -9,6 +9,7 @@ use api\modules\v1\components\RateLimiter;
 use api\modules\v1\components\PluginUserRolePolicy;
 use api\modules\v1\services\EmailService;
 use api\modules\v1\services\AccountLifecycleProxyService;
+use api\modules\v1\services\IamAuthorizationReadService;
 use common\components\security\PasswordPolicyValidator;
 use mdm\admin\components\AccessControl;
 use bizley\jwt\JwtHttpBearerAuth;
@@ -37,6 +38,7 @@ class PluginUserController extends \yii\rest\Controller
     private const BASE_ROLE = 'user';
     private const ELEVATED_ROLES = ['root', 'admin', 'manager'];
     private ?AccountLifecycleProxyService $accountLifecycleProxy = null;
+    private ?IamAuthorizationReadService $iamAuthorizationReadService = null;
 
     /**
      * {@inheritdoc}
@@ -110,13 +112,30 @@ class PluginUserController extends \yii\rest\Controller
             return $result;
         }
 
-        $allowed = Yii::$app->authManager->checkAccess($result['user']->id, self::PLUGIN_NAME . '.' . $action);
+        $permission = self::PLUGIN_NAME . '.' . $action;
+        $legacyAllowed = Yii::$app->authManager->checkAccess($result['user']->id, $permission);
+        $allowed = $this->iamAuthorizationReadService()->decide(
+            $result['user'],
+            $permission,
+            (bool)$legacyAllowed,
+            'plugin',
+            'plugin-user.' . $action
+        );
         if (!$allowed) {
             Yii::$app->response->statusCode = 403;
             return ['error' => ['code' => 2003, 'message' => '没有权限执行此操作']];
         }
 
         return $result;
+    }
+
+    protected function iamAuthorizationReadService(): IamAuthorizationReadService
+    {
+        if ($this->iamAuthorizationReadService === null) {
+            $this->iamAuthorizationReadService = new IamAuthorizationReadService();
+        }
+
+        return $this->iamAuthorizationReadService;
     }
 
     /**

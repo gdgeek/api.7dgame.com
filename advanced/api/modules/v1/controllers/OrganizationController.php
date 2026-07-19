@@ -4,6 +4,7 @@ namespace api\modules\v1\controllers;
 
 use api\modules\v1\models\Organization;
 use api\modules\v1\models\UserOrganization;
+use api\modules\v1\services\IamAuthorizationReadService;
 use api\modules\v1\services\IamShadowCompareService;
 use bizley\jwt\JwtHttpBearerAuth;
 use mdm\admin\components\AccessControl;
@@ -15,6 +16,7 @@ use yii\web\Response;
 class OrganizationController extends Controller
 {
     private ?IamShadowCompareService $iamShadowCompareService = null;
+    private ?IamAuthorizationReadService $iamAuthorizationReadService = null;
 
     public function behaviors()
     {
@@ -218,8 +220,15 @@ class OrganizationController extends Controller
             ];
         }
 
-        $allowed = Yii::$app->authManager->checkAccess($user->id, $permission);
-        $this->iamShadowCompareService()->comparePermission($user, $permission, (bool)$allowed);
+        $legacyAllowed = Yii::$app->authManager->checkAccess($user->id, $permission);
+        $this->iamShadowCompareService()->comparePermission($user, $permission, (bool)$legacyAllowed);
+        $allowed = $this->iamAuthorizationReadService()->decide(
+            $user,
+            $permission,
+            (bool)$legacyAllowed,
+            'route',
+            $permission
+        );
 
         if (!$allowed) {
             Yii::$app->response->statusCode = 403;
@@ -230,6 +239,15 @@ class OrganizationController extends Controller
         }
 
         return null;
+    }
+
+    private function iamAuthorizationReadService(): IamAuthorizationReadService
+    {
+        if ($this->iamAuthorizationReadService === null) {
+            $this->iamAuthorizationReadService = new IamAuthorizationReadService();
+        }
+
+        return $this->iamAuthorizationReadService;
     }
 
     private function iamShadowCompareService(): IamShadowCompareService
