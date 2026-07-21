@@ -871,6 +871,16 @@ class PluginUserController extends \yii\rest\Controller
     public function actionChangeRole()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
+        $correlationId = $this->roleWriteCorrelationId();
+        $proxiedByIdentity = Yii::$app->request->headers->get('X-Identity-IAM-Role-Write-Proxy') !== null;
+        $this->setRoleWriteRouteEvidence($correlationId, $proxiedByIdentity);
+        Yii::info([
+            'event' => 'legacy.iam.role_write.route',
+            'correlationId' => $correlationId,
+            'route' => 'change-role',
+            'entry' => $proxiedByIdentity ? 'identity-legacy-proxy' : 'legacy-direct',
+        ], 'identity.iamRoleWriteRoute');
+
         $result = $this->resolveUserWithPermission('change-role');
         if (isset($result['error'])) {
             return $result['error'];
@@ -939,6 +949,32 @@ class PluginUserController extends \yii\rest\Controller
                 'roles' => $nextRoles,
             ],
         ];
+    }
+
+    private function roleWriteCorrelationId(): string
+    {
+        $supplied = trim((string)Yii::$app->request->headers->get('X-Identity-IAM-Role-Write-Correlation', ''));
+        if ($supplied !== '' && preg_match('/^[A-Za-z0-9._:-]{8,128}$/', $supplied) === 1) {
+            return $supplied;
+        }
+
+        return bin2hex(random_bytes(16));
+    }
+
+    private function setRoleWriteRouteEvidence(string $correlationId, bool $proxiedByIdentity): void
+    {
+        $headers = Yii::$app->response->headers;
+        $headers->set('X-Identity-IAM-Role-Write', $proxiedByIdentity ? 'legacy-upstream' : 'legacy-direct');
+        $headers->set(
+            'X-Identity-IAM-Role-Write-Decision',
+            $proxiedByIdentity ? 'identity_legacy_proxy_upstream' : 'legacy_api_direct'
+        );
+        $headers->set('X-Identity-IAM-Role-Write-Correlation', $correlationId);
+        $headers->set('X-Identity-IAM-Role-Write-Route', '/api/v1/plugin-user/change-role');
+        $headers->set(
+            'X-Identity-IAM-Role-Write-Entry',
+            $proxiedByIdentity ? 'identity-legacy-proxy' : 'legacy-direct'
+        );
     }
 
     // ==================== 邀请系统 ====================

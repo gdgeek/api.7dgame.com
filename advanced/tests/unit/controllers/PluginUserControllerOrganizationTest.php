@@ -457,10 +457,12 @@ final class PluginUserControllerOrganizationTest extends TestCase
 
         Yii::$app->set('user', $webUser);
         Yii::$app->set('authManager', $authManager);
-        Yii::$app->set('request', new PluginUserTestRequest([], [
+        $request = new PluginUserTestRequest([], [
             'id' => $target->id,
             'role' => 'manager',
-        ]));
+        ]);
+        $request->headers->set('X-Identity-IAM-Role-Write-Correlation', 'phase4-route-correlation');
+        Yii::$app->set('request', $request);
         Yii::$app->set('response', new Response());
 
         $controller = new PluginUserController('plugin-user', Yii::$app->getModule('v1'));
@@ -470,6 +472,10 @@ final class PluginUserControllerOrganizationTest extends TestCase
         $this->assertSame(['user', 'manager'], $result['data']['roles']);
         $this->assertSame([['admin', (int)$target->id]], $authManager->revoked);
         $this->assertSame([['user', (int)$target->id], ['manager', (int)$target->id]], $authManager->assigned);
+        $this->assertSame('legacy-direct', Yii::$app->response->headers->get('X-Identity-IAM-Role-Write'));
+        $this->assertSame('legacy_api_direct', Yii::$app->response->headers->get('X-Identity-IAM-Role-Write-Decision'));
+        $this->assertSame('phase4-route-correlation', Yii::$app->response->headers->get('X-Identity-IAM-Role-Write-Correlation'));
+        $this->assertSame('/api/v1/plugin-user/change-role', Yii::$app->response->headers->get('X-Identity-IAM-Role-Write-Route'));
     }
 
     private function bootAuthenticatedOperator(int $userId, array $allowedActions): void

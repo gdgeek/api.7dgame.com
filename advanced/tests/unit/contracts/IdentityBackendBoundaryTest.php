@@ -394,6 +394,34 @@ final class IdentityBackendBoundaryTest extends TestCase
         $this->assertSame('', $dockerEvidenceTargets[0]['prefix']());
     }
 
+    public function testRoleWriteRouteEvidenceIsCorrelatedAndDockerVisible(): void
+    {
+        $pluginUserController = $this->read('api/modules/v1/controllers/PluginUserController.php');
+        $apiConfig = require $this->path('../files/api/config/main.php');
+
+        foreach ([
+            'X-Identity-IAM-Role-Write-Correlation',
+            'X-Identity-IAM-Role-Write-Proxy',
+            'X-Identity-IAM-Role-Write-Route',
+            'X-Identity-IAM-Role-Write-Entry',
+            'identity.iamRoleWriteRoute',
+            'legacy_api_direct',
+            'identity_legacy_proxy_upstream',
+        ] as $needle) {
+            $this->assertStringContainsString($needle, $pluginUserController);
+        }
+
+        $targets = array_values(array_filter(
+            $apiConfig['components']['log']['targets'] ?? [],
+            static fn(array $target): bool => ($target['categories'] ?? []) === ['identity.iamRoleWriteRoute']
+        ));
+        $this->assertCount(1, $targets);
+        $this->assertSame('common\components\security\SafeFileTarget', $targets[0]['class']);
+        $this->assertSame('php://stderr', $targets[0]['logFile']);
+        $this->assertSame([], $targets[0]['logVars']);
+        $this->assertSame(1, $targets[0]['exportInterval']);
+    }
+
     public function testIamAuthorizationRouteOwnershipIsScopedToActionLevelGuards(): void
     {
         $pluginUserController = $this->read('api/modules/v1/controllers/PluginUserController.php');
