@@ -31,6 +31,7 @@ final class IdentityBackendBoundaryTest extends TestCase
             'api/modules/v1/services/LoginAuditReporter.php',
             'api/modules/v1/services/IdentityProviderClient.php',
             'api/modules/v1/services/IamShadowCompareService.php',
+            'api/modules/v1/services/IamAuthorizationReadService.php',
             'api/modules/v1/services/AccountLifecycleProxyService.php',
             'api/modules/v1/controllers/InternalIdentityController.php',
         ] as $relativePath) {
@@ -226,7 +227,8 @@ final class IdentityBackendBoundaryTest extends TestCase
         $this->assertStringContainsString('compareCurrentUserPayload($user, $payload)', $userManagementService);
         $this->assertStringContainsString('compareRolesByUserId($userId, $roles', $authorizationService);
         $this->assertStringContainsString('comparePluginVerifyToken(', $pluginController);
-        $this->assertStringContainsString('comparePermission($user, $permission, (bool)$allowed)', $organizationController);
+        $this->assertStringContainsString('comparePermission($user, $permission, (bool)$legacyAllowed)', $organizationController);
+        $this->assertStringContainsString('iamAuthorizationReadService()->decide(', $organizationController);
         $this->assertStringContainsString('revokeUserSessions($userId)', $passwordService);
     }
 
@@ -301,6 +303,10 @@ final class IdentityBackendBoundaryTest extends TestCase
     {
         $identityProviderClient = $this->read('api/modules/v1/services/IdentityProviderClient.php');
         $iamShadowCompare = $this->read('api/modules/v1/services/IamShadowCompareService.php');
+        $iamAuthzRead = $this->read('api/modules/v1/services/IamAuthorizationReadService.php');
+        $pluginUserController = $this->read('api/modules/v1/controllers/PluginUserController.php');
+        $organizationController = $this->read('api/modules/v1/controllers/OrganizationController.php');
+        $apiConfig = require $this->path('../files/api/config/main.php');
         $params = $this->read('../files/common/config/params.php');
 
         foreach ([
@@ -314,6 +320,7 @@ final class IdentityBackendBoundaryTest extends TestCase
             'IDENTITY_INTERNAL_API_TOKEN',
             '/internal/iam/users/',
             '/internal/iam/plugin/verify-token',
+            '/internal/iam/authz/resolve',
         ] as $needle) {
             $this->assertStringContainsString($needle, $identityProviderClient);
         }
@@ -326,21 +333,159 @@ final class IdentityBackendBoundaryTest extends TestCase
             "provider() === 'identity-shadow'",
             'identity.iamShadowCompare',
             "hash('sha256'",
+            "hash_hmac('sha256'",
             'legacyHash',
             'identityHash',
+            'comparison.completed',
+            'comparison.incomplete',
+            'subjectHash',
             'fallbackEnabled()',
         ] as $needle) {
             $this->assertStringContainsString($needle, $iamShadowCompare);
         }
 
+        $this->assertStringNotContainsString("'legacyUserId' => (int)\$user->id", $iamShadowCompare);
+
+        foreach ([
+            'IDENTITY_IAM_AUTHZ_ROUTE_INTEGRATION_ENABLED',
+            'IDENTITY_IAM_AUTHZ_FALLBACK_ENABLED',
+            'authorization.route-decision',
+            'authorization.route-decision-unavailable',
+            'identity.iamAuthzRead',
+            'iamAuthzResolve',
+        ] as $needle) {
+            $this->assertStringContainsString($needle, $iamAuthzRead);
+        }
+        $this->assertStringContainsString('IamAuthorizationReadService', $pluginUserController);
+        $this->assertStringContainsString('IamAuthorizationReadService', $organizationController);
+        $this->assertStringContainsString("'IDENTITY_IAM_AUTHZ_ROUTE_INTEGRATION_ENABLED' => getenv('IDENTITY_IAM_AUTHZ_ROUTE_INTEGRATION_ENABLED') ?: 'false'", $params);
+        $this->assertStringContainsString("'IDENTITY_IAM_AUTHZ_FALLBACK_ENABLED' => getenv('IDENTITY_IAM_AUTHZ_FALLBACK_ENABLED') ?: 'true'", $params);
+
         foreach ([
             "'IDENTITY_IAM_PROVIDER' => getenv('IDENTITY_IAM_PROVIDER') ?: 'legacy'",
             "'IDENTITY_IAM_SHADOW_COMPARE' => getenv('IDENTITY_IAM_SHADOW_COMPARE') ?: 'false'",
+            "'IDENTITY_IAM_SHADOW_COMPARE_HASH_SALT' => getenv('IDENTITY_IAM_SHADOW_COMPARE_HASH_SALT') ?: null",
             "'IDENTITY_IAM_FALLBACK' => getenv('IDENTITY_IAM_FALLBACK') ?: 'true'",
             "'IDENTITY_IAM_INTERNAL_API_TOKEN' => getenv('IDENTITY_IAM_INTERNAL_API_TOKEN')",
         ] as $needle) {
             $this->assertStringContainsString($needle, $params);
         }
+
+        $dockerEvidenceTargets = array_values(array_filter(
+            $apiConfig['components']['log']['targets'] ?? [],
+            static fn(array $target): bool => ($target['categories'] ?? []) === ['identity.iamShadowCompare']
+        ));
+        $this->assertCount(1, $dockerEvidenceTargets);
+        $this->assertSame('common\components\security\SafeFileTarget', $dockerEvidenceTargets[0]['class']);
+        $this->assertSame(['info', 'warning', 'error'], $dockerEvidenceTargets[0]['levels']);
+        $this->assertSame('php://stderr', $dockerEvidenceTargets[0]['logFile']);
+
+        $authzEvidenceTargets = array_values(array_filter(
+            $apiConfig['components']['log']['targets'] ?? [],
+            static fn(array $target): bool => ($target['categories'] ?? []) === ['identity.iamAuthzRead']
+        ));
+        $this->assertCount(1, $authzEvidenceTargets);
+        $this->assertSame('common\components\security\SafeFileTarget', $authzEvidenceTargets[0]['class']);
+        $this->assertSame('php://stderr', $authzEvidenceTargets[0]['logFile']);
+        $this->assertFalse($dockerEvidenceTargets[0]['enableRotation']);
+        $this->assertSame([], $dockerEvidenceTargets[0]['logVars']);
+        $this->assertSame(1, $dockerEvidenceTargets[0]['exportInterval']);
+        $this->assertIsCallable($dockerEvidenceTargets[0]['prefix']);
+        $this->assertSame('', $dockerEvidenceTargets[0]['prefix']());
+    }
+
+    public function testRoleWriteRouteEvidenceIsCorrelatedAndDockerVisible(): void
+    {
+        $pluginUserController = $this->read('api/modules/v1/controllers/PluginUserController.php');
+        $apiConfig = require $this->path('../files/api/config/main.php');
+
+        foreach ([
+            'X-Identity-IAM-Role-Write-Correlation',
+            'X-Identity-IAM-Role-Write-Proxy',
+            'X-Identity-IAM-Role-Write-Route',
+            'X-Identity-IAM-Role-Write-Entry',
+            'identity.iamRoleWriteRoute',
+            'legacy_api_direct',
+            'identity_legacy_proxy_upstream',
+        ] as $needle) {
+            $this->assertStringContainsString($needle, $pluginUserController);
+        }
+
+        $targets = array_values(array_filter(
+            $apiConfig['components']['log']['targets'] ?? [],
+            static fn(array $target): bool => ($target['categories'] ?? []) === ['identity.iamRoleWriteRoute']
+        ));
+        $this->assertCount(1, $targets);
+        $this->assertSame('common\components\security\SafeFileTarget', $targets[0]['class']);
+        $this->assertSame('php://stderr', $targets[0]['logFile']);
+        $this->assertSame([], $targets[0]['logVars']);
+        $this->assertSame(1, $targets[0]['exportInterval']);
+    }
+
+    public function testIamAuthorizationRouteOwnershipIsScopedToActionLevelGuards(): void
+    {
+        $pluginUserController = $this->read('api/modules/v1/controllers/PluginUserController.php');
+        $organizationController = $this->read('api/modules/v1/controllers/OrganizationController.php');
+        $iamAuthzRead = $this->read('api/modules/v1/services/IamAuthorizationReadService.php');
+
+        foreach ([$pluginUserController, $organizationController] as $controller) {
+            $this->assertStringContainsString(
+                "'except' => \$this->iamAuthorizationReadService()->routeIntegrationEnabled()",
+                $controller
+            );
+            $this->assertStringContainsString(': []', $controller);
+        }
+
+        preg_match('/private const IAM_AUTHZ_INTEGRATED_ACTIONS = \[(.*?)\];/s', $pluginUserController, $pluginMatch);
+        preg_match_all("/'([^']+)'/", $pluginMatch[1] ?? '', $pluginActions);
+        $this->assertSame([
+            'users',
+            'create-user',
+            'batch-create-users',
+            'update-user',
+            'delete-user',
+            'change-role',
+            'invitations',
+            'create-invitation',
+            'delete-invitation',
+            'invitation-records',
+        ], $pluginActions[1] ?? []);
+
+        preg_match('/private const IAM_AUTHZ_INTEGRATED_ACTIONS = \[(.*?)\];/s', $organizationController, $organizationMatch);
+        preg_match_all("/'([^']+)'/", $organizationMatch[1] ?? '', $organizationActions);
+        $this->assertSame(
+            ['list', 'create', 'update', 'bind-user', 'unbind-user'],
+            $organizationActions[1] ?? []
+        );
+
+        foreach ([
+            "resolveUserWithPermission('view-user')",
+            "resolveUserWithPermission('list-users')",
+            "resolveUserWithPermission('create-user')",
+            "resolveUserWithPermission('update-user')",
+            "resolveUserWithPermission('delete-user')",
+            "resolveUserWithPermission('change-role')",
+            "resolveUserWithPermission('manage-invitations')",
+        ] as $guard) {
+            $this->assertStringContainsString($guard, $pluginUserController);
+        }
+
+        foreach ([
+            "requirePermission('organization.list')",
+            "requirePermission('organization.create')",
+            "requirePermission('organization.update')",
+            "requirePermission('organization.bind-user')",
+        ] as $guard) {
+            $this->assertStringContainsString($guard, $organizationController);
+        }
+
+        foreach (['me', 'check-invitation', 'register-send-code', 'register'] as $publicOrLegacyAction) {
+            $this->assertNotContains($publicOrLegacyAction, $pluginActions[1] ?? []);
+        }
+
+        $this->assertStringContainsString('public function routeIntegrationEnabled(): bool', $iamAuthzRead);
+        $this->assertStringContainsString("boolConfig('IDENTITY_IAM_AUTHZ_ROUTE_INTEGRATION_ENABLED', false)", $iamAuthzRead);
+        $this->assertStringNotContainsString('array_merge(', $iamAuthzRead);
     }
 
     public function testLoginAuditIsOptionalAndBypassOnly(): void
@@ -377,6 +522,19 @@ final class IdentityBackendBoundaryTest extends TestCase
             'Authorization',
         ] as $needle) {
             $this->assertStringNotContainsString("'{$needle}' =>", $reporter);
+        }
+    }
+
+    public function testLegacyUserRolePayloadExcludesDirectPermissionAssignments(): void
+    {
+        foreach ([
+            'api/modules/v1/models/User.php',
+            'api/modules/v1/models/Person.php',
+        ] as $modelPath) {
+            $model = $this->read($modelPath);
+
+            $this->assertStringContainsString('getRolesByUser($this->id)', $model);
+            $this->assertStringNotContainsString('getAssignments($this->id)', $model);
         }
     }
 
@@ -462,6 +620,20 @@ final class IdentityBackendBoundaryTest extends TestCase
         ] as $needle) {
             $this->assertStringContainsString($needle, $emailController);
         }
+
+        foreach ([
+            "'allowActions' => [",
+            "'send-verification'",
+            "'verify'",
+            "'status'",
+            "'send-change-confirmation'",
+            "'verify-change-confirmation'",
+            "'unbind'",
+            "'cooldown'",
+        ] as $needle) {
+            $this->assertStringContainsString($needle, $emailController);
+        }
+        $this->assertStringNotContainsString("'test',", $emailController);
 
         foreach ([
             "proxyCurrentRequest('register'",
