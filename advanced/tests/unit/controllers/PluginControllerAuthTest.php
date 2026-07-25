@@ -5,6 +5,7 @@ namespace tests\unit\controllers;
 use api\modules\v1\controllers\PluginController;
 use api\modules\v1\controllers\PluginCampusController;
 use api\modules\v1\controllers\PluginUserController;
+use api\modules\v1\controllers\OrganizationController;
 use bizley\jwt\JwtHttpBearerAuth;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -85,5 +86,57 @@ class PluginControllerAuthTest extends TestCase
             $behaviors['access']['allowActions'] ?? [],
             'verify-token should not require an RBAC route assignment after JWT authentication.'
         );
+    }
+
+    public function testIamAuthorizationRouteOwnershipKeepsJwtAndIsDefaultOff(): void
+    {
+        $key = 'IDENTITY_IAM_AUTHZ_ROUTE_INTEGRATION_ENABLED';
+        $previous = getenv($key);
+
+        try {
+            putenv($key . '=false');
+            $pluginDefault = (new PluginUserController('test', null))->behaviors();
+            $organizationDefault = (new OrganizationController('test', null))->behaviors();
+            $this->assertSame([], $pluginDefault['access']['except']);
+            $this->assertSame([], $organizationDefault['access']['except']);
+
+            putenv($key . '=true');
+            $pluginEnabled = (new PluginUserController('test', null))->behaviors();
+            $organizationEnabled = (new OrganizationController('test', null))->behaviors();
+
+            $this->assertSame([
+                'users',
+                'create-user',
+                'batch-create-users',
+                'update-user',
+                'delete-user',
+                'change-role',
+                'invitations',
+                'create-invitation',
+                'delete-invitation',
+                'invitation-records',
+            ], $pluginEnabled['access']['except']);
+            $this->assertSame(
+                ['list', 'create', 'update', 'bind-user', 'unbind-user'],
+                $organizationEnabled['access']['except']
+            );
+
+            $this->assertSame(
+                $pluginDefault['authenticator']['except'],
+                $pluginEnabled['authenticator']['except'],
+                'Scoped route ownership must not widen JWT authentication exceptions.'
+            );
+            $this->assertSame(
+                $organizationDefault['authenticator']['except'],
+                $organizationEnabled['authenticator']['except'],
+                'Organization route ownership must not widen JWT authentication exceptions.'
+            );
+        } finally {
+            if ($previous === false) {
+                putenv($key);
+            } else {
+                putenv($key . '=' . $previous);
+            }
+        }
     }
 }

@@ -117,8 +117,7 @@ class Person extends \yii\db\ActiveRecord
     public function getRoles()
     {
         $manager = Configs::authManager();
-        $assignments = $manager->getAssignments($this->id);
-        return array_values(array_map(function ($value) {return $value->roleName;}, $assignments));
+        return array_keys($manager->getRolesByUser($this->id));
     }
 
     /**

@@ -9,6 +9,7 @@ use api\modules\v1\components\RateLimiter;
 use api\modules\v1\components\PluginUserRolePolicy;
 use api\modules\v1\services\EmailService;
 use api\modules\v1\services\AccountLifecycleProxyService;
+use api\modules\v1\services\IamAuthorizationReadService;
 use common\components\security\PasswordPolicyValidator;
 use mdm\admin\components\AccessControl;
 use bizley\jwt\JwtHttpBearerAuth;
@@ -36,7 +37,20 @@ class PluginUserController extends \yii\rest\Controller
     private const VALID_ROLES = ['root', 'admin', 'manager', 'user'];
     private const BASE_ROLE = 'user';
     private const ELEVATED_ROLES = ['root', 'admin', 'manager'];
+    private const IAM_AUTHZ_INTEGRATED_ACTIONS = [
+        'users',
+        'create-user',
+        'batch-create-users',
+        'update-user',
+        'delete-user',
+        'change-role',
+        'invitations',
+        'create-invitation',
+        'delete-invitation',
+        'invitation-records',
+    ];
     private ?AccountLifecycleProxyService $accountLifecycleProxy = null;
+    private ?IamAuthorizationReadService $iamAuthorizationReadService = null;
 
     /**
      * {@inheritdoc}
@@ -60,6 +74,9 @@ class PluginUserController extends \yii\rest\Controller
 
         $behaviors['access'] = [
             'class' => AccessControl::class,
+            'except' => $this->iamAuthorizationReadService()->routeIntegrationEnabled()
+                ? self::IAM_AUTHZ_INTEGRATED_ACTIONS
+                : [],
         ];
 
         return $behaviors;
@@ -110,13 +127,30 @@ class PluginUserController extends \yii\rest\Controller
             return $result;
         }
 
-        $allowed = Yii::$app->authManager->checkAccess($result['user']->id, self::PLUGIN_NAME . '.' . $action);
+        $permission = self::PLUGIN_NAME . '.' . $action;
+        $legacyAllowed = Yii::$app->authManager->checkAccess($result['user']->id, $permission);
+        $allowed = $this->iamAuthorizationReadService()->decide(
+            $result['user'],
+            $permission,
+            (bool)$legacyAllowed,
+            'plugin',
+            'plugin-user.' . $action
+        );
         if (!$allowed) {
             Yii::$app->response->statusCode = 403;
             return ['error' => ['code' => 2003, 'message' => '没有权限执行此操作']];
         }
 
         return $result;
+    }
+
+    protected function iamAuthorizationReadService(): IamAuthorizationReadService
+    {
+        if ($this->iamAuthorizationReadService === null) {
+            $this->iamAuthorizationReadService = new IamAuthorizationReadService();
+        }
+
+        return $this->iamAuthorizationReadService;
     }
 
     /**
@@ -837,6 +871,16 @@ class PluginUserController extends \yii\rest\Controller
     public function actionChangeRole()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
+        $correlationId = $this->roleWriteCorrelationId();
+        $proxiedByIdentity = Yii::$app->request->headers->get('X-Identity-IAM-Role-Write-Proxy') !== null;
+        $this->setRoleWriteRouteEvidence($correlationId, $proxiedByIdentity);
+        Yii::info([
+            'event' => 'legacy.iam.role_write.route',
+            'correlationId' => $correlationId,
+            'route' => 'change-role',
+            'entry' => $proxiedByIdentity ? 'identity-legacy-proxy' : 'legacy-direct',
+        ], 'identity.iamRoleWriteRoute');
+
         $result = $this->resolveUserWithPermission('change-role');
         if (isset($result['error'])) {
             return $result['error'];
@@ -905,6 +949,32 @@ class PluginUserController extends \yii\rest\Controller
                 'roles' => $nextRoles,
             ],
         ];
+    }
+
+    private function roleWriteCorrelationId(): string
+    {
+        $supplied = trim((string)Yii::$app->request->headers->get('X-Identity-IAM-Role-Write-Correlation', ''));
+        if ($supplied !== '' && preg_match('/^[A-Za-z0-9._:-]{8,128}$/', $supplied) === 1) {
+            return $supplied;
+        }
+
+        return bin2hex(random_bytes(16));
+    }
+
+    private function setRoleWriteRouteEvidence(string $correlationId, bool $proxiedByIdentity): void
+    {
+        $headers = Yii::$app->response->headers;
+        $headers->set('X-Identity-IAM-Role-Write', $proxiedByIdentity ? 'legacy-upstream' : 'legacy-direct');
+        $headers->set(
+            'X-Identity-IAM-Role-Write-Decision',
+            $proxiedByIdentity ? 'identity_legacy_proxy_upstream' : 'legacy_api_direct'
+        );
+        $headers->set('X-Identity-IAM-Role-Write-Correlation', $correlationId);
+        $headers->set('X-Identity-IAM-Role-Write-Route', '/api/v1/plugin-user/change-role');
+        $headers->set(
+            'X-Identity-IAM-Role-Write-Entry',
+            $proxiedByIdentity ? 'identity-legacy-proxy' : 'legacy-direct'
+        );
     }
 
     // ==================== 邀请系统 ====================
