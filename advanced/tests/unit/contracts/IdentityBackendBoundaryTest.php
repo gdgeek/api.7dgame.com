@@ -94,6 +94,7 @@ final class IdentityBackendBoundaryTest extends TestCase
 
         foreach ([
             'X-Identity-Internal-Token',
+            'IDENTITY_IAM_INTERNAL_API_TOKEN',
             'IDENTITY_ACCOUNT_INTERNAL_TOKEN',
             'IDENTITY_INTERNAL_API_TOKEN',
             'revokeUserSessions((int)$legacyUserId)',
@@ -104,7 +105,62 @@ final class IdentityBackendBoundaryTest extends TestCase
 
         $this->assertStringContainsString("'controller' => 'v1/internal-identity'", $config);
         $this->assertStringContainsString("'POST revoke-sessions' => 'revoke-sessions'", $config);
+        $this->assertStringContainsString(
+            "'POST iam-shadow/user-info-probe' => 'iam-shadow-user-info-probe'",
+            $config
+        );
         $this->assertStringContainsString("'IDENTITY_ACCOUNT_INTERNAL_TOKEN' => getenv('IDENTITY_ACCOUNT_INTERNAL_TOKEN')", $params);
+    }
+
+    public function testInternalIamShadowUserInfoProbeIsTokenProtectedReadOnlyAndDefaultClosed(): void
+    {
+        $controller = $this->read('api/modules/v1/controllers/InternalIdentityController.php');
+        $config = $this->read('../files/api/config/main.php');
+
+        foreach ([
+            'public function actionIamShadowUserInfoProbe()',
+            '$this->assertIamInternalToken();',
+            '$this->assertShadowCompareEnabled();',
+            'User::findIdentity((int)$legacyUserId)',
+            '$this->userManagementService()->buildCurrentUserPayload($user);',
+            "'context' => 'user.info'",
+            "'comparisonRequested' => true",
+            "getenv('IDENTITY_IAM_SHADOW_COMPARE')",
+            "getenv('IDENTITY_IAM_INTERNAL_API_TOKEN')",
+            "throw new NotFoundHttpException('IAM shadow probe is not configured.')",
+            "throw new NotFoundHttpException('IAM shadow probe is not enabled.')",
+            "'POST iam-shadow/user-info-probe' => 'iam-shadow-user-info-probe'",
+        ] as $needle) {
+            $this->assertStringContainsString($needle, $controller . "\n" . $config);
+        }
+
+        $methodStart = strpos($controller, 'public function actionIamShadowUserInfoProbe()');
+        $methodEnd = strpos($controller, '    private function sessionService()', $methodStart);
+        $this->assertNotFalse($methodStart);
+        $this->assertNotFalse($methodEnd);
+        $methodBody = substr($controller, $methodStart, $methodEnd - $methodStart);
+
+        foreach ([
+            "'user' =>",
+            "'payload' =>",
+            "'roles' =>",
+            "'permissions' =>",
+            "'organizations' =>",
+        ] as $needle) {
+            $this->assertStringNotContainsString($needle, $methodBody);
+        }
+
+        $sessionTokenStart = strpos($controller, '    private function internalToken(): ?string');
+        $sessionTokenEnd = strpos($controller, '    private function iamInternalToken(): ?string', $sessionTokenStart);
+        $this->assertNotFalse($sessionTokenStart);
+        $this->assertNotFalse($sessionTokenEnd);
+        $sessionTokenBody = substr($controller, $sessionTokenStart, $sessionTokenEnd - $sessionTokenStart);
+        $this->assertStringContainsString("getenv('IDENTITY_ACCOUNT_INTERNAL_TOKEN')", $sessionTokenBody);
+        $this->assertStringNotContainsString('IDENTITY_IAM_INTERNAL_API_TOKEN', $sessionTokenBody);
+
+        $iamTokenBody = substr($controller, $sessionTokenEnd);
+        $this->assertStringContainsString("getenv('IDENTITY_IAM_INTERNAL_API_TOKEN')", $iamTokenBody);
+        $this->assertStringNotContainsString('IDENTITY_ACCOUNT_INTERNAL_TOKEN', $iamTokenBody);
     }
 
     public function testQrUserLinkedIssuesShortLivedReusableLoginCode(): void

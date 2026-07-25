@@ -284,6 +284,7 @@ return [
                     'pluralize' => false,
                     'extraPatterns' => [
                         'POST revoke-sessions' => 'revoke-sessions',
+                        'POST iam-shadow/user-info-probe' => 'iam-shadow-user-info-probe',
                     ],
                 ],
                 [
