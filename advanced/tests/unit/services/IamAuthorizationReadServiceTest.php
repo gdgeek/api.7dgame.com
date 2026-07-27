@@ -56,6 +56,7 @@ final class IamAuthorizationReadServiceTest extends TestCase
                         'configuredMode' => 'identity-primary',
                         'rolloutMode' => 'allowlist',
                         'selectedForIdentityPrimary' => true,
+                        'reason' => 'allowlist_subject_selected',
                     ],
                     'outcome' => [
                         'decision' => 'allow',
@@ -92,6 +93,7 @@ final class IamAuthorizationReadServiceTest extends TestCase
 
         $this->assertCount(1, $entries);
         $this->assertSame('authorization.route-decision', $entries[0]['event']);
+        $this->assertSame('allowlist_subject_selected', $entries[0]['reason']);
         $this->assertSame('identity', $entries[0]['responseSource']);
         $this->assertSame('allow', $entries[0]['decision']);
         $encoded = (string)json_encode($entries);
@@ -130,6 +132,46 @@ final class IamAuthorizationReadServiceTest extends TestCase
         });
 
         $this->assertFalse($service->decide($this->user(), 'organization.update', true));
+    }
+
+    public function testLogsRetainedLegacyReasonAsSafeEvidence(): void
+    {
+        $this->setEnvironment('IDENTITY_IAM_AUTHZ_ROUTE_INTEGRATION_ENABLED', 'true');
+        $service = $this->serviceWithClient(new class extends IdentityProviderClient {
+            public function iamAuthzResolve(array $input): ?array
+            {
+                return [
+                    'selection' => [
+                        'subjectHash' => '0123456789abcdef',
+                        'configuredMode' => 'identity-primary',
+                        'rolloutMode' => 'full',
+                        'selectedForIdentityPrimary' => false,
+                        'reason' => 'retained_legacy_subject',
+                    ],
+                    'outcome' => [
+                        'decision' => 'allow',
+                        'responseSource' => 'legacy',
+                        'fallbackUsed' => false,
+                        'failClosed' => false,
+                    ],
+                    'evidence' => [
+                        'permissionHash' => 'fedcba9876543210',
+                        'requestKeyHash' => '0011223344556677',
+                        'severity' => 'none',
+                        'classification' => 'not_compared',
+                    ],
+                ];
+            }
+        });
+
+        $entries = $this->captureAuthzLogs(function () use ($service): void {
+            $this->assertTrue($service->decide($this->user(), 'root-only.permission', true));
+        });
+
+        $this->assertCount(1, $entries);
+        $this->assertSame('retained_legacy_subject', $entries[0]['reason']);
+        $this->assertSame('legacy', $entries[0]['responseSource']);
+        $this->assertFalse($entries[0]['selectedForIdentityPrimary']);
     }
 
     public function testTransportFailureUsesOnlyExplicitFallback(): void
