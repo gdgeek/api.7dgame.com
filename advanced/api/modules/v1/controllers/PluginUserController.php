@@ -134,7 +134,8 @@ class PluginUserController extends \yii\rest\Controller
             $permission,
             (bool)$legacyAllowed,
             'plugin',
-            'plugin-user.' . $action
+            'plugin-user.' . $action,
+            'api.plugin-user.global-rbac'
         );
         if (!$allowed) {
             Yii::$app->response->statusCode = 403;

@@ -14,10 +14,20 @@ class IamAuthorizationReadService extends Component
         string $permission,
         bool $legacyAllowed,
         string $resourceType = 'api',
-        ?string $requestKey = null
+        ?string $requestKey = null,
+        ?string $coverageId = null
     ): bool {
         if (!$this->routeIntegrationEnabled()) {
             return $legacyAllowed;
+        }
+
+        $coverage = $this->routeCoverage($coverageId);
+        if ($coverage === 'retained-legacy') {
+            return $legacyAllowed;
+        }
+        if ($coverage !== 'identity-ready') {
+            $this->logUnavailable('IDENTITY_AUTHZ_ROUTE_COVERAGE_UNKNOWN');
+            return false;
         }
 
         try {
@@ -43,13 +53,13 @@ class IamAuthorizationReadService extends Component
 
         if (!is_array($result)) {
             $this->logUnavailable('IDENTITY_AUTHZ_RESPONSE_MISSING');
-            return $this->fallbackEnabled() ? $legacyAllowed : false;
+            return false;
         }
 
         $decision = $result['outcome']['decision'] ?? null;
         if (!in_array($decision, ['allow', 'deny'], true)) {
             $this->logUnavailable('IDENTITY_AUTHZ_DECISION_INVALID');
-            return $this->fallbackEnabled() ? $legacyAllowed : false;
+            return false;
         }
 
         $responseSource = $result['outcome']['responseSource'] ?? null;
@@ -57,7 +67,7 @@ class IamAuthorizationReadService extends Component
         if (!in_array($responseSource, ['legacy', 'identity', 'legacy-fallback', 'fail-closed'], true)
             || !in_array($severity, ['none', 'p0', 'p1', 'info'], true)) {
             $this->logUnavailable('IDENTITY_AUTHZ_EVIDENCE_INVALID');
-            return $this->fallbackEnabled() ? $legacyAllowed : false;
+            return false;
         }
 
         $this->logDecision($result);
@@ -87,6 +97,25 @@ class IamAuthorizationReadService extends Component
     private function fallbackEnabled(): bool
     {
         return $this->boolConfig('IDENTITY_IAM_AUTHZ_FALLBACK_ENABLED', true);
+    }
+
+    private function routeCoverage(?string $coverageId): string
+    {
+        $registry = [
+            'api.plugin-user.global-rbac' => 'identity-ready',
+            'api.organization.global-rbac' => 'identity-ready',
+            'api.object.prefab' => 'retained-legacy',
+            'api.object.verse-space' => 'retained-legacy',
+            'api.object.space' => 'retained-legacy',
+            'api.object.group' => 'retained-legacy',
+            'api.object.meta' => 'retained-legacy',
+            'api.object.verse' => 'retained-legacy',
+            'api.object.resource' => 'retained-legacy',
+            'api.object.file' => 'retained-legacy',
+            'api.plugin-campus.membership' => 'retained-legacy',
+        ];
+
+        return $registry[$coverageId ?? ''] ?? 'unknown';
     }
 
     private function legacyPolicyVersion(): string
