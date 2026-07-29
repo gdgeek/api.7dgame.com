@@ -5,6 +5,7 @@ namespace api\modules\v1\controllers;
 use api\modules\v1\models\Organization;
 use api\modules\v1\models\User;
 use api\modules\v1\models\UserOrganization;
+use api\modules\v1\services\SessionService;
 use api\modules\v1\components\RateLimiter;
 use api\modules\v1\components\PluginUserRolePolicy;
 use api\modules\v1\services\EmailService;
@@ -798,10 +799,14 @@ class PluginUserController extends \yii\rest\Controller
 
         $transaction = Yii::$app->db->beginTransaction();
         try {
+            $passwordChanged = in_array('password_hash', $dirtyAttributes, true);
+
             if (!empty($dirtyAttributes)) {
                 $user->updated_at = time();
                 $dirtyAttributes[] = 'updated_at';
-                $user->save(false, array_values(array_unique($dirtyAttributes)));
+                if (!$user->save(false, array_values(array_unique($dirtyAttributes)))) {
+                    throw new \RuntimeException('Failed to persist plugin user update.');
+                }
             }
 
             if ($organizationIds !== null) {
@@ -810,6 +815,10 @@ class PluginUserController extends \yii\rest\Controller
                     $transaction->rollBack();
                     return $organizationError;
                 }
+            }
+
+            if ($passwordChanged) {
+                (new SessionService())->revokeUserSessions((int)$user->id);
             }
 
             $transaction->commit();
