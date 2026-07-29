@@ -231,7 +231,8 @@ class OrganizationController extends Controller
             $permission,
             (bool)$legacyAllowed,
             'route',
-            $permission
+            $permission,
+            'api.organization.global-rbac'
         );
 
         if (!$allowed) {
