@@ -37,8 +37,8 @@ final class IamAuthorizationReadServiceTest extends TestCase
         });
 
         $this->assertFalse($service->routeIntegrationEnabled());
-        $this->assertTrue($service->decide($this->user(), 'organization.list', true, 'route', 'organization.list'));
-        $this->assertFalse($service->decide($this->user(), 'organization.update', false, 'route', 'organization.update'));
+        $this->assertTrue($service->decide($this->user(), 'organization.list', true, 'route', 'organization.list', 'api.organization.global-rbac'));
+        $this->assertFalse($service->decide($this->user(), 'organization.update', false, 'route', 'organization.update', 'api.organization.global-rbac'));
     }
 
     public function testUsesSingleIdentityDecisionAndLogsOnlySafeEvidence(): void
@@ -82,7 +82,8 @@ final class IamAuthorizationReadServiceTest extends TestCase
                 'user-management.users',
                 true,
                 'plugin',
-                'plugin-user.users'
+                'plugin-user.users',
+                'api.plugin-user.global-rbac'
             ));
         });
 
@@ -131,7 +132,7 @@ final class IamAuthorizationReadServiceTest extends TestCase
             }
         });
 
-        $this->assertFalse($service->decide($this->user(), 'organization.update', true));
+        $this->assertFalse($service->decide($this->user(), 'organization.update', true, 'route', 'organization.update', 'api.organization.global-rbac'));
     }
 
     public function testLogsRetainedLegacyReasonAsSafeEvidence(): void
@@ -165,7 +166,7 @@ final class IamAuthorizationReadServiceTest extends TestCase
         });
 
         $entries = $this->captureAuthzLogs(function () use ($service): void {
-            $this->assertTrue($service->decide($this->user(), 'root-only.permission', true));
+            $this->assertTrue($service->decide($this->user(), 'root-only.permission', true, 'route', 'root-only.permission', 'api.organization.global-rbac'));
         });
 
         $this->assertCount(1, $entries);
@@ -185,10 +186,51 @@ final class IamAuthorizationReadServiceTest extends TestCase
         });
 
         $this->setEnvironment('IDENTITY_IAM_AUTHZ_FALLBACK_ENABLED', 'true');
-        $this->assertTrue($service->decide($this->user(), 'organization.list', true));
+        $this->assertTrue($service->decide($this->user(), 'organization.list', true, 'route', 'organization.list', 'api.organization.global-rbac'));
 
         $this->setEnvironment('IDENTITY_IAM_AUTHZ_FALLBACK_ENABLED', 'false');
-        $this->assertFalse($service->decide($this->user(), 'organization.list', true));
+        $this->assertFalse($service->decide($this->user(), 'organization.list', true, 'route', 'organization.list', 'api.organization.global-rbac'));
+    }
+
+    public function testUnknownCoverageFailsClosedAndRetainedCoverageStaysLegacy(): void
+    {
+        $this->setEnvironment('IDENTITY_IAM_AUTHZ_ROUTE_INTEGRATION_ENABLED', 'true');
+        $client = new class extends IdentityProviderClient {
+            public int $calls = 0;
+
+            public function iamAuthzResolve(array $input): ?array
+            {
+                $this->calls++;
+                throw new \RuntimeException('Coverage gate must run before Identity.');
+            }
+        };
+        $service = $this->serviceWithClient($client);
+
+        $this->assertFalse($service->decide($this->user(), 'unknown.permission', true, 'api', 'unknown'));
+        $this->assertTrue($service->decide($this->user(), 'prefab.update', true, 'api', 'prefab.update', 'api.object.prefab'));
+        $this->assertFalse($service->decide($this->user(), 'prefab.update', false, 'api', 'prefab.update', 'api.object.prefab'));
+        $this->assertSame(0, $client->calls);
+    }
+
+    public function testMalformedIdentityResponseNeverUsesSemanticFallback(): void
+    {
+        $this->setEnvironment('IDENTITY_IAM_AUTHZ_ROUTE_INTEGRATION_ENABLED', 'true');
+        $this->setEnvironment('IDENTITY_IAM_AUTHZ_FALLBACK_ENABLED', 'true');
+        $service = $this->serviceWithClient(new class extends IdentityProviderClient {
+            public function iamAuthzResolve(array $input): ?array
+            {
+                return ['outcome' => ['decision' => 'missing-evidence']];
+            }
+        });
+
+        $this->assertFalse($service->decide(
+            $this->user(),
+            'organization.list',
+            true,
+            'route',
+            'organization.list',
+            'api.organization.global-rbac'
+        ));
     }
 
     private function user(): object
