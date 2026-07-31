@@ -19,14 +19,28 @@ use yii\web\IdentityInterface;
 use yii\web\Request;
 use yii\web\Response;
 use yii\web\UnauthorizedHttpException;
+use yii\web\User as WebUser;
 
 final class VersePreviewContractTest extends TestCase
 {
     private string|false $originalCorsAllowedOrigins;
 
+    private bool $hadUserComponent = false;
+
+    private mixed $originalUserComponent = null;
+
     protected function setUp(): void
     {
         parent::setUp();
+        $this->hadUserComponent = Yii::$app->has('user', true);
+        $this->originalUserComponent = $this->hadUserComponent
+            ? Yii::$app->get('user')
+            : null;
+        Yii::$app->set('user', new WebUser([
+            'identityClass' => PreviewContractIdentity::class,
+            'enableSession' => false,
+            'loginUrl' => null,
+        ]));
         $this->originalCorsAllowedOrigins = getenv('CORS_ALLOWED_ORIGINS');
         putenv(
             'CORS_ALLOWED_ORIGINS=https://preview.example.com, https://host.example.com'
@@ -40,6 +54,10 @@ final class VersePreviewContractTest extends TestCase
         } else {
             putenv('CORS_ALLOWED_ORIGINS=' . $this->originalCorsAllowedOrigins);
         }
+        Yii::$app->set(
+            'user',
+            $this->hadUserComponent ? $this->originalUserComponent : null
+        );
         parent::tearDown();
     }
 
