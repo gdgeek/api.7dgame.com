@@ -9,6 +9,7 @@ use api\modules\v1\models\VerseProperty;
 use api\modules\v1\models\VerseSearch;
 use api\modules\v1\models\data\VerseCodeTool;
 use bizley\jwt\JwtHttpBearerAuth;
+use common\components\security\CorsOriginPolicy;
 use yii\db\ActiveQuery;
 use mdm\admin\components\AccessControl;
 use Yii;
@@ -39,25 +40,19 @@ class VerseController extends ActiveController
         // add CORS filter
         $behaviors['corsFilter'] = [
             'class' => \yii\filters\Cors::class,
-            'cors' => [
-                'Origin' => ['*'],
-                'Access-Control-Request-Method' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],
-                'Access-Control-Request-Headers' => ['*'],
-                'Access-Control-Allow-Credentials' => null,
-                'Access-Control-Max-Age' => 86400,
-                'Access-Control-Expose-Headers' => [
-                    'X-Pagination-Total-Count',
-                    'X-Pagination-Page-Count',
-                    'X-Pagination-Current-Page',
-                    'X-Pagination-Per-Page',
-                ],
-            ],
+            'cors' => CorsOriginPolicy::yiiConfiguration(),
         ];
 
         $behaviors['authenticator'] = [
             'class' => CompositeAuth::class,
             'authMethods' => [
-                JwtHttpBearerAuth::class,
+                [
+                    'class' => JwtHttpBearerAuth::class,
+                    // Malformed, expired and invalid JWTs must all converge on
+                    // CompositeAuth's HTTP 401 path instead of leaking parser
+                    // exceptions as HTTP 500 responses.
+                    'throwException' => false,
+                ],
             ],
             'except' => ['options'],
         ];
@@ -208,12 +203,23 @@ class VerseController extends ActiveController
     {
         $searchModel = new VerseSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-        $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id]);
+        $this->applyCurrentUserFilter(
+            $dataProvider->query,
+            (int) Yii::$app->user->id
+        );
 
         // 处理标签过滤
         $this->applyTagsFilter($dataProvider->query);
 
         return $dataProvider;
+    }
+
+    /**
+     * Keep the My Scenes boundary independent from client-supplied filters.
+     */
+    protected function applyCurrentUserFilter(ActiveQuery $query, int $userId): void
+    {
+        $query->andWhere(['verse.author_id' => $userId]);
     }
 
     /**
