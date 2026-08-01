@@ -67,6 +67,22 @@ class RateLimitBehavior extends ActionFilter
     public $actionStrategies = [];
 
     /**
+     * When enabled, reserve the allowance through one atomic consume() call.
+     * Existing behaviours retain the historical check/record path by default.
+     *
+     * @var bool
+     */
+    public $atomicConsume = false;
+
+    /**
+     * Optional fixed, low-cardinality source for login-code rollout events.
+     * Empty for all existing rate-limit behaviours.
+     *
+     * @var string|null
+     */
+    public $telemetrySource;
+
+    /**
      * Resolve the RateLimiter instance.
      *
      * If $rateLimiter is a string, resolves it as a Yii application component ID.
@@ -151,6 +167,27 @@ class RateLimitBehavior extends ActionFilter
         $strategyConfig = $limiter->getStrategy($strategy);
         $limit = $strategyConfig['limit'];
 
+        if ($this->atomicConsume) {
+            try {
+                $consumption = $limiter->consume($identifier, $strategy);
+            } catch (\Throwable $exception) {
+                $this->recordLoginCodeTelemetry('rate_limit_error');
+                Yii::error('Atomic rate-limit storage is unavailable.', 'rate-limit');
+                throw new ServiceUnavailableHttpException('Rate limit service is temporarily unavailable.');
+            }
+
+            $remaining = (int)$consumption['remaining'];
+            $resetTime = (int)$consumption['reset_at'];
+            $this->setRateLimitHeaders((int)$limit, $remaining, $resetTime);
+
+            if (!$consumption['allowed']) {
+                $this->recordLoginCodeTelemetry('rate_limited');
+                return $this->sendTooManyRequestsResponse((int)$consumption['retry_after']);
+            }
+
+            return parent::beforeAction($action);
+        }
+
         $allowed = $limiter->checkLimit($identifier, $strategy);
 
         if (!$allowed) {
@@ -215,5 +252,14 @@ class RateLimitBehavior extends ActionFilter
         ];
 
         return false;
+    }
+
+    private function recordLoginCodeTelemetry(string $event): void
+    {
+        if (!is_string($this->telemetrySource) || $this->telemetrySource === '') {
+            return;
+        }
+
+        \api\modules\v1\services\LoginCodeTelemetry::record($event, $this->telemetrySource);
     }
 }

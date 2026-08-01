@@ -2,6 +2,7 @@
 
 namespace api\modules\v1\controllers;
 use api\modules\v1\models\UserCreation;
+use api\modules\v1\filters\LoginCodeReadinessBehavior;
 use mdm\admin\components\AccessControl;
 use bizley\jwt\JwtHttpBearerAuth;
 use yii\base\Exception;
@@ -9,9 +10,10 @@ use yii\filters\auth\CompositeAuth;
 use yii\helpers\ArrayHelper;
 use yii\web\UploadedFile;
 use Yii;
-use api\modules\v1\RefreshToken;
-use api\modules\v1\models\UserLinked;
 use api\modules\v1\services\IdentityService;
+use api\modules\v1\services\LoginCodeSettings;
+use api\modules\v1\services\LoginCodeStore;
+use common\components\security\RateLimitBehavior;
 use yii\web\BadRequestHttpException;
 use api\modules\v1\models\User;
 use OpenApi\Annotations as OA;
@@ -25,6 +27,7 @@ use OpenApi\Annotations as OA;
 class ToolsController extends \yii\rest\Controller
 {
     private ?IdentityService $identityService = null;
+    private ?LoginCodeStore $loginCodeStore = null;
 
     public function behaviors()
     {
@@ -45,6 +48,28 @@ class ToolsController extends \yii\rest\Controller
             'class' => AccessControl::class,
         ];
 
+        $loginCodeSettings = LoginCodeSettings::fromApplication();
+        if ($loginCodeSettings->usesRedis()) {
+            $behaviors['loginCodeReadiness'] = [
+                'class' => LoginCodeReadinessBehavior::class,
+                'only' => ['user-linked', 'user-linked-status'],
+            ];
+        }
+
+        // The dedicated limiter is enabled only once a Redis write mode is
+        // explicitly selected. The safe database/database default does not
+        // instantiate or depend on this Redis-backed component.
+        if ($loginCodeSettings->writesRedis()) {
+            $behaviors['loginCodeIssueRateLimiter'] = [
+                'class' => RateLimitBehavior::class,
+                'rateLimiter' => 'loginCodeIssueRateLimiter',
+                'defaultStrategy' => 'user-linked-issue',
+                'only' => ['user-linked'],
+                'atomicConsume' => true,
+                'telemetrySource' => 'main-api-issue',
+            ];
+        }
+
         return $behaviors;
     }
 
@@ -60,6 +85,15 @@ class ToolsController extends \yii\rest\Controller
     protected function requestContext(): array
     {
         return $this->identityService()->sessionService()->contextFromRequest(Yii::$app->request);
+    }
+
+    protected function loginCodeStore(): LoginCodeStore
+    {
+        if ($this->loginCodeStore === null) {
+            $this->loginCodeStore = new LoginCodeStore();
+        }
+
+        return $this->loginCodeStore;
     }
 
    /**
@@ -87,29 +121,14 @@ class ToolsController extends \yii\rest\Controller
     //把 Yii::$app->user->identity 转换成 User 类型
 
         $user = $this->currentUser();
-        $linked = UserLinked::find()->where(['user_id' => $user->id])->one();
-        
-        if(!$linked){
-            $linked = new UserLinked();
-            $linked->user_id = $user->id;
-        }
-        $loginCode = Yii::$app->security->generateRandomString(64);
-        $linked->key = RefreshToken::hashToken($loginCode);
-        if(!$linked->validate()){
-            throw new BadRequestHttpException("validate error");
-        }
-        if(!$linked->save()){
-            throw new BadRequestHttpException("save error");
-        }
-
-        $expiresAt = time() + UserLinked::LOGIN_CODE_TTL_SECONDS;
+        $issued = $this->loginCodeStore()->issue((int)$user->id);
 
         return [
             'success' => true,
             'message' => "user-linked",
-            'key'=> $loginCode,
-            'expires_at' => $expiresAt,
-            'expires_in' => max(0, $expiresAt - time()),
+            'key'=> $issued['key'],
+            'expires_at' => $issued['expires_at'],
+            'expires_in' => $issued['expires_in'],
         ];
        
     }
@@ -136,36 +155,23 @@ class ToolsController extends \yii\rest\Controller
     public function actionUserLinkedStatus()
     {
         $user = $this->currentUser();
-        $key = $this->normalizeLinkedKey((string)Yii::$app->request->get('key', ''));
-        if ($key === '') {
+        $key = (string)Yii::$app->request->get('key', '');
+        if (LoginCodeStore::normalizeInput($key) === '') {
             throw new BadRequestHttpException("key is required");
         }
 
-        $linked = UserLinked::find()->where(['user_id' => $user->id])->one();
-        $active = false;
-        $reason = 'not_found';
-        $expiresAt = null;
-
-        if ($linked instanceof UserLinked && hash_equals((string)$linked->key, RefreshToken::hashToken($key))) {
-            $expiresAt = $linked->loginCodeExpiresAt();
-            if ($linked->isLoginCodeExpired()) {
-                $reason = 'expired';
-            } else {
-                $active = true;
-                $reason = 'active';
-            }
-        }
+        $status = $this->loginCodeStore()->status((int)$user->id, $key);
 
         $response = [
             'success' => true,
             'message' => 'user-linked-status',
-            'active' => $active,
-            'reason' => $reason,
+            'active' => $status['active'],
+            'reason' => $status['reason'],
         ];
 
-        if ($expiresAt !== null) {
-            $response['expires_at'] = $expiresAt;
-            $response['expires_in'] = max(0, $expiresAt - time());
+        if (isset($status['expires_at'])) {
+            $response['expires_at'] = $status['expires_at'];
+            $response['expires_in'] = $status['expires_in'];
         }
 
         return $response;
@@ -179,20 +185,5 @@ class ToolsController extends \yii\rest\Controller
         }
 
         throw new \yii\web\UnauthorizedHttpException('Invalid user identity');
-    }
-
-    private function normalizeLinkedKey(string $key): string
-    {
-        $key = trim($key);
-
-        if (preg_match('/(?:^|[?&])web_([^&#\s]+)/', $key, $matches) === 1) {
-            return $matches[1];
-        }
-
-        if (strpos($key, 'web_') === 0) {
-            return substr($key, 4);
-        }
-
-        return $key;
     }
 }

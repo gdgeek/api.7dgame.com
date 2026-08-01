@@ -29,6 +29,22 @@ class HealthService extends Component
             $checks['redis'] = $this->checkRedis();
         }
 
+        // Login-code readiness is intentionally absent from database/database
+        // mode. It is a separate protocol gate, not a new dependency of the
+        // legacy path.
+        if ($this->requiresLoginCodeRedisCheck() && Yii::$app->has('loginCodeReadiness')) {
+            try {
+                $checks['login_code'] = Yii::$app->get('loginCodeReadiness')->check();
+            } catch (\Throwable $exception) {
+                Yii::error('Login-code readiness health check failed.', 'login-code');
+                $checks['login_code'] = [
+                    'status' => 'down',
+                    'required' => true,
+                    'error' => 'dependency_unavailable',
+                ];
+            }
+        }
+
         $isHealthy = true;
         foreach ($checks as $check) {
             if ($check['status'] === 'down') {
@@ -166,5 +182,18 @@ class HealthService extends Component
         }
 
         return strlen($message) > 100 ? substr($message, 0, 100) . '...' : $message;
+    }
+
+    private function requiresLoginCodeRedisCheck(): bool
+    {
+        $config = Yii::$app->params['loginCode'] ?? null;
+        if (!is_array($config)) {
+            return false;
+        }
+
+        $readMode = strtolower(trim((string)($config['readMode'] ?? 'database')));
+        $writeMode = strtolower(trim((string)($config['writeMode'] ?? 'database')));
+
+        return $readMode !== 'database' || $writeMode !== 'database';
     }
 }

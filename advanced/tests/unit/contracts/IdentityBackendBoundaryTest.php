@@ -163,71 +163,61 @@ final class IdentityBackendBoundaryTest extends TestCase
         $this->assertStringNotContainsString('IDENTITY_ACCOUNT_INTERNAL_TOKEN', $iamTokenBody);
     }
 
-    public function testQrUserLinkedIssuesShortLivedReusableLoginCode(): void
+    public function testQrLoginCodeInfrastructureContract(): void
     {
-        $toolsController = $this->read('api/modules/v1/controllers/ToolsController.php');
-        $identityService = $this->read('api/modules/v1/services/IdentityService.php');
         $identityProviderClient = $this->read('api/modules/v1/services/IdentityProviderClient.php');
-        $userLinked = $this->read('api/modules/v1/models/UserLinked.php');
+        $loginCodeSettings = $this->read('api/modules/v1/services/LoginCodeSettings.php');
+        $loginCodeStore = $this->read('api/modules/v1/services/LoginCodeStore.php');
+        $rateLimitBehavior = $this->read('common/components/security/RateLimitBehavior.php');
+        $rateLimitStorage = $this->read('common/components/security/RedisSlidingWindowRateLimiterStorage.php');
         $apiConfig = $this->read('../files/api/config/main.php');
         $params = $this->read('../files/common/config/params.php');
+        $localApiVhost = $this->read('../docker/api-default.conf');
+        $sharedApiVhost = $this->read('../docker/000-default.conf');
 
         foreach ([
-            'IdentityService',
-            'generateRandomString(64)',
-            '$linked->key = RefreshToken::hashToken($loginCode);',
-            'UserLinked::LOGIN_CODE_TTL_SECONDS',
-            "'key'=> \$loginCode",
-            'public function actionUserLinkedStatus()',
-            'RefreshToken::hashToken($key)',
-            "'active' => \$active",
-            "'reason' => \$reason",
-            "'expires_at' => \$expiresAt",
-            "'expires_in' => max(0, \$expiresAt - time())",
+            "public const READ_DATABASE = 'database';",
+            "public const READ_REDIS_FIRST = 'redis-first';",
+            "public const READ_REDIS = 'redis';",
+            "public const WRITE_DUAL = 'dual';",
+            "public const WRITE_REDIS = 'redis';",
+            'The v1 login-code time windows are protocol constants (60/300/60 seconds).',
+            'LOGIN_CODE_LEGACY_DB_AVAILABLE=false only permits redis/redis mode.',
         ] as $needle) {
-            $this->assertStringContainsString($needle, $toolsController);
+            $this->assertStringContainsString($needle, $loginCodeSettings);
         }
 
         foreach ([
-            '$user->getRefreshToken()->one()',
-            '$linked->key = $token->key',
-            'sessionService()->issueToken($user, $this->requestContext())',
+            "'SET'",
+            "'PX'",
+            "'NX'",
+            "'PTTL'",
+            "'TIME'",
+            'RefreshToken::hashToken($rawCode)',
+            'ACTIVE_PTTL_MILLISECONDS = 240000',
+            "'web-device-login'",
+            "'main-api'",
+            'lockLegacyUser($userId)',
         ] as $needle) {
-            $this->assertStringNotContainsString($needle, $toolsController);
+            $this->assertStringContainsString($needle, $loginCodeStore);
         }
 
         foreach ([
-            'public function issueUserToken(User $user',
-            'identityProviderClient()->issueUserToken((int)$user->id',
-            'Identity user token issuance failed; issuing legacy token fallback.',
-            'sessionService()->issueToken($user',
-            'normalizeRefreshTokenInput($refreshToken)',
-            "if (\$normalized['from_login_code'])",
-            'Login code is invalid or expired.',
-            "preg_match('/(?:^|[?&])web_([^&#\\s]+)/'",
-            'refreshFromLinkedLoginCode(',
-            '$hashedLinkedKey = RefreshToken::hashToken($linkedKey);',
-            "UserLinked::find()->where(['key' => \$lookupKeys])->one()",
-            '$linked->isLoginCodeExpired()',
+            'atomicConsume',
+            'limiter->consume($identifier, $strategy)',
+            'ServiceUnavailableHttpException',
         ] as $needle) {
-            $this->assertStringContainsString($needle, $identityService);
+            $this->assertStringContainsString($needle, $rateLimitBehavior);
         }
 
         foreach ([
-            'findRefreshTokenRecord($linkedKey)',
-            '$refreshToken->isExpired()',
-            '$refreshToken->isRevoked()',
-            '$linked->key = RefreshToken::hashToken($nextRefreshToken);',
+            "'EVAL'",
+            "redis.call('TIME')",
+            "redis.call('ZREMRANGEBYSCORE'",
+            "redis.call('ZADD'",
+            "redis.call('PEXPIRE'",
         ] as $needle) {
-            $this->assertStringNotContainsString($needle, $identityService);
-        }
-
-        foreach ([
-            'public const LOGIN_CODE_TTL_SECONDS = 60;',
-            'loginCodeExpiresAt()',
-            'isLoginCodeExpired()',
-        ] as $needle) {
-            $this->assertStringContainsString($needle, $userLinked);
+            $this->assertStringContainsString($needle, $rateLimitStorage);
         }
 
         foreach ([
@@ -241,7 +231,21 @@ final class IdentityBackendBoundaryTest extends TestCase
         }
 
         $this->assertStringContainsString("'GET user-linked/status' => 'user-linked-status'", $apiConfig);
+        $this->assertStringContainsString("'loginCodeIssueRateLimiter'", $apiConfig);
+        $this->assertStringContainsString("'user-linked-issue'", $apiConfig);
+        $this->assertStringContainsString("'storageClass' => 'common\\components\\security\\RedisSlidingWindowRateLimiterStorage'", $apiConfig);
+        $this->assertStringContainsString("'readMode' => getenv('LOGIN_CODE_READ_MODE')", $params);
+        $this->assertStringContainsString("'writeMode' => getenv('LOGIN_CODE_WRITE_MODE')", $params);
         $this->assertStringContainsString("'IDENTITY_TOKEN_ISSUANCE_INTERNAL_API_TOKEN' => getenv('IDENTITY_TOKEN_ISSUANCE_INTERNAL_API_TOKEN')", $params);
+
+        foreach ([
+            'PassEnv LOGIN_CODE_READ_MODE LOGIN_CODE_WRITE_MODE LOGIN_CODE_REDIS_PREFIX LOGIN_CODE_PROTOCOL_FINGERPRINT',
+            'PassEnv LOGIN_CODE_ACTIVE_WINDOW_SECONDS LOGIN_CODE_RECORD_TTL_SECONDS',
+            'PassEnv LOGIN_CODE_ISSUE_LIMIT LOGIN_CODE_ISSUE_WINDOW_SECONDS LOGIN_CODE_LEGACY_DB_AVAILABLE',
+        ] as $needle) {
+            $this->assertStringContainsString($needle, $localApiVhost);
+            $this->assertStringContainsString($needle, $sharedApiVhost);
+        }
     }
 
     public function testJwtClaimsRemainBackwardCompatibleAndAddModernClaims(): void
