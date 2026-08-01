@@ -376,6 +376,8 @@ final class LoginCodeStoreTest extends TestCase
         $store = $this->dualWriteStore($redis, $rawCode);
         $originalDatabase = \Yii::$app->get('db');
         $logger = \Yii::getLogger();
+        $originalFlushInterval = $logger->flushInterval;
+        $logger->flushInterval = PHP_INT_MAX;
         $messageCountBeforeIssue = count($logger->messages);
         \Yii::$app->set('db', $database);
 
@@ -407,6 +409,7 @@ final class LoginCodeStoreTest extends TestCase
             );
             $this->assertContains('Login-code dual-write database persistence failed.', $this->stringLogMessages($messages));
         } finally {
+            $logger->flushInterval = $originalFlushInterval;
             \Yii::$app->set('db', $originalDatabase);
             $database->close();
         }
@@ -526,6 +529,8 @@ final class LoginCodeStoreTest extends TestCase
         $store = $this->dualWriteStore($redis, $rawCode);
         $originalDatabase = \Yii::$app->get('db');
         $logger = \Yii::getLogger();
+        $originalFlushInterval = $logger->flushInterval;
+        $logger->flushInterval = PHP_INT_MAX;
         $messageCountBeforeIssue = count($logger->messages);
         \Yii::$app->set('db', $database);
 
@@ -560,6 +565,7 @@ final class LoginCodeStoreTest extends TestCase
             $this->assertContains(['event' => 'compensation_failed', 'source' => 'main-api-issue'], $events);
             $this->assertContains(['event' => 'db_write_failed', 'source' => 'main-api-issue'], $events);
         } finally {
+            $logger->flushInterval = $originalFlushInterval;
             \Yii::$app->set('db', $originalDatabase);
             $database->close();
         }
