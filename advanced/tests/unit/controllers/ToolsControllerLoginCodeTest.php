@@ -11,6 +11,7 @@ use PHPUnit\Framework\TestCase;
 use Yii;
 use yii\db\Connection;
 use yii\web\BadRequestHttpException;
+use yii\web\ForbiddenHttpException;
 use yii\web\Request;
 use yii\web\UnauthorizedHttpException;
 use yii\web\User as WebUser;
@@ -125,6 +126,28 @@ final class ToolsControllerLoginCodeTest extends TestCase
         $controller->actionUserLinkedStatus();
     }
 
+    public function testStatusReusesUserLinkedRbacPermission(): void
+    {
+        [$controller] = $this->controllerForCode(str_repeat('f', 64));
+        $this->setCurrentUser(42);
+        $this->setRequestKey(str_repeat('f', 64));
+        $controller->setCanAccessUserLinked(false);
+
+        $this->expectException(ForbiddenHttpException::class);
+
+        $controller->actionUserLinkedStatus();
+    }
+
+    public function testAccessFilterDoesNotRequireASeparateStatusRoute(): void
+    {
+        [$controller] = $this->controllerForCode(str_repeat('f', 64));
+
+        $this->assertSame(
+            ['user-linked-status'],
+            $controller->behaviors()['access']['allowActions'] ?? null,
+        );
+    }
+
     public function testIssueRejectsANonUserIdentity(): void
     {
         [$controller] = $this->controllerForCode(str_repeat('e', 64));
@@ -189,6 +212,8 @@ final class ToolsControllerLoginCodeTest extends TestCase
 
 final class ToolsControllerLoginCodeTestController extends ToolsController
 {
+    private bool $canAccessUserLinked = true;
+
     public function __construct($id, $module, private LoginCodeStore $testStore, array $config = [])
     {
         parent::__construct($id, $module, $config);
@@ -197,6 +222,16 @@ final class ToolsControllerLoginCodeTestController extends ToolsController
     protected function loginCodeStore(): LoginCodeStore
     {
         return $this->testStore;
+    }
+
+    public function setCanAccessUserLinked(bool $canAccess): void
+    {
+        $this->canAccessUserLinked = $canAccess;
+    }
+
+    protected function canAccessUserLinked(): bool
+    {
+        return $this->canAccessUserLinked;
     }
 }
 

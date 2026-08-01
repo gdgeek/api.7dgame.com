@@ -4,6 +4,7 @@ namespace api\modules\v1\controllers;
 use api\modules\v1\models\UserCreation;
 use api\modules\v1\filters\LoginCodeReadinessBehavior;
 use mdm\admin\components\AccessControl;
+use mdm\admin\components\Helper as AdminHelper;
 use bizley\jwt\JwtHttpBearerAuth;
 use yii\base\Exception;
 use yii\filters\auth\CompositeAuth;
@@ -15,6 +16,7 @@ use api\modules\v1\services\LoginCodeSettings;
 use api\modules\v1\services\LoginCodeStore;
 use common\components\security\RateLimitBehavior;
 use yii\web\BadRequestHttpException;
+use yii\web\ForbiddenHttpException;
 use api\modules\v1\models\User;
 use OpenApi\Annotations as OA;
 
@@ -46,6 +48,10 @@ class ToolsController extends \yii\rest\Controller
 
         $behaviors['access'] = [
             'class' => AccessControl::class,
+            // Status is a companion operation to user-linked and deliberately
+            // inherits that existing RBAC route instead of requiring every
+            // develop/production role to receive a new route assignment.
+            'allowActions' => ['user-linked-status'],
         ];
 
         $loginCodeSettings = LoginCodeSettings::fromApplication();
@@ -154,6 +160,10 @@ class ToolsController extends \yii\rest\Controller
      */
     public function actionUserLinkedStatus()
     {
+        if (!$this->canAccessUserLinked()) {
+            throw new ForbiddenHttpException(Yii::t('yii', 'You are not allowed to perform this action.'));
+        }
+
         $user = $this->currentUser();
         $key = (string)Yii::$app->request->get('key', '');
         if (LoginCodeStore::normalizeInput($key) === '') {
@@ -175,6 +185,15 @@ class ToolsController extends \yii\rest\Controller
         }
 
         return $response;
+    }
+
+    protected function canAccessUserLinked(): bool
+    {
+        return AdminHelper::checkRoute(
+            '/v1/tools/user-linked',
+            Yii::$app->request->get(),
+            Yii::$app->user,
+        );
     }
 
     private function currentUser(): User
