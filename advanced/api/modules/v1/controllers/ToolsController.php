@@ -127,7 +127,7 @@ class ToolsController extends \yii\rest\Controller
     //把 Yii::$app->user->identity 转换成 User 类型
 
         $user = $this->currentUser();
-        $issued = $this->loginCodeStore()->issue((int)$user->id);
+        $issued = $this->loginCodeStore()->issue((int)$user->id, $this->loginCodeContext());
 
         return [
             'success' => true,
@@ -204,5 +204,90 @@ class ToolsController extends \yii\rest\Controller
         }
 
         throw new \yii\web\UnauthorizedHttpException('Invalid user identity');
+    }
+
+    /**
+     * Persist only the host from a configured, exact browser origin. The
+     * value is white-label routing metadata and is never an authorization
+     * input. Requests without a trusted Origin keep the legacy empty context.
+     *
+     * @return array{frontend_domain?: string}
+     */
+    private function loginCodeContext(): array
+    {
+        $origin = $this->normalizeFrontendOrigin(
+            (string)Yii::$app->request->getHeaders()->get('Origin', '')
+        );
+        if ($origin === null) {
+            return [];
+        }
+
+        $configured = getenv('CORS_ALLOWED_ORIGINS');
+        if ($configured === false || trim($configured) === '') {
+            return [];
+        }
+
+        $allowed = false;
+        foreach (explode(',', $configured) as $candidate) {
+            if ($this->normalizeFrontendOrigin(trim($candidate)) === $origin) {
+                $allowed = true;
+                break;
+            }
+        }
+        if (!$allowed) {
+            return [];
+        }
+
+        $host = parse_url($origin, PHP_URL_HOST);
+        return is_string($host) && $this->isValidFrontendDomain($host)
+            ? ['frontend_domain' => strtolower($host)]
+            : [];
+    }
+
+    private function normalizeFrontendOrigin(string $candidate): ?string
+    {
+        if (preg_match(
+            '/\A(?<scheme>https?):\/\/(?<host>\[[0-9a-f:.]+\]|[a-z0-9.-]+)(?::(?<port>[0-9]{1,5}))?\z/iD',
+            $candidate,
+            $parts
+        ) !== 1) {
+            return null;
+        }
+
+        $scheme = strtolower($parts['scheme']);
+        $host = strtolower(trim($parts['host'], '[]'));
+        if ($host === '' || str_ends_with($host, '.')) {
+            return null;
+        }
+        if ($scheme === 'http' && !in_array($host, ['localhost', '127.0.0.1', '::1'], true)) {
+            return null;
+        }
+
+        $port = isset($parts['port']) && $parts['port'] !== '' ? (int)$parts['port'] : null;
+        if ($port !== null && ($port < 1 || $port > 65535)) {
+            return null;
+        }
+        if (($scheme === 'https' && $port === 443) || ($scheme === 'http' && $port === 80)) {
+            $port = null;
+        }
+
+        $serializedHost = str_contains($host, ':') ? '[' . $host . ']' : $host;
+        return $scheme . '://' . $serializedHost . ($port === null ? '' : ':' . $port);
+    }
+
+    private function isValidFrontendDomain(string $domain): bool
+    {
+        $domain = strtolower($domain);
+        if ($domain === '' || strlen($domain) > 253 || str_ends_with($domain, '.')) {
+            return false;
+        }
+        if ($domain === 'localhost' || filter_var($domain, FILTER_VALIDATE_IP) !== false) {
+            return true;
+        }
+
+        return preg_match(
+            '/\A(?=.{1,253}\z)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\z/D',
+            $domain
+        ) === 1;
     }
 }

@@ -72,6 +72,22 @@ final class LoginCodeStoreTest extends TestCase
         $this->assertContains('SET', $this->redis->commands());
     }
 
+    public function testFrontendDomainIsStoredAndReturnedAsOptionalMetadata(): void
+    {
+        $issued = $this->store->issue(123, ['frontend_domain' => 'd.dev.xrugc.com']);
+        $resolved = $this->store->resolve($issued['key']);
+
+        $this->assertSame('hit', $resolved['outcome']);
+        $this->assertSame('d.dev.xrugc.com', $resolved['frontend_domain']);
+    }
+
+    public function testInvalidFrontendDomainIsRejectedAtTheIssuerBoundary(): void
+    {
+        $this->expectException(\yii\web\ServerErrorHttpException::class);
+
+        $this->store->issue(123, ['frontend_domain' => 'https://d.dev.xrugc.com']);
+    }
+
     public function testSameUserCanHoldMultipleIndependentCodes(): void
     {
         $first = $this->store->issue(123);

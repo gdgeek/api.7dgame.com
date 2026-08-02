@@ -30,7 +30,8 @@ final class LoginCodeStore
     private const MAX_CODE_GENERATION_ATTEMPTS = 5;
     private const ACTIVE_PTTL_MILLISECONDS = 240000;
     private const CONTEXT_MAX_STRING_BYTES = 128;
-    private const CONTEXT_ALLOWED_FIELDS = ['device', 'source', 'client_version'];
+    private const FRONTEND_DOMAIN_MAX_BYTES = 253;
+    private const CONTEXT_ALLOWED_FIELDS = ['device', 'source', 'client_version', 'frontend_domain'];
 
     /** @var mixed|null */
     private $redis;
@@ -85,7 +86,7 @@ final class LoginCodeStore
     /**
      * Resolve a code for authentication.
      *
-     * @return array{outcome: string, user_id?: int, expires_at?: int, expires_in?: int}
+     * @return array{outcome: string, user_id?: int, expires_at?: int, expires_in?: int, frontend_domain?: string}
      */
     public function resolve(string $rawCode): array
     {
@@ -429,6 +430,7 @@ final class LoginCodeStore
         $record = $this->decodeRecord((string)$payload);
         $expiresAt = (int)$record->expires_at;
         $userId = (int)$record->user_id;
+        $frontendDomain = $this->frontendDomainFromContext($record->context);
 
         if ((int)$record->issued_at > intdiv($nowMilliseconds, 1000)) {
             $this->malformedRecord();
@@ -449,12 +451,18 @@ final class LoginCodeStore
         $expiresIn = (int)ceil(min($timeRemaining, $ttlRemaining) / 1000);
 
         $this->telemetry('redis_hit');
-        return [
+        $result = [
             'outcome' => 'hit',
             'user_id' => $userId,
             'expires_at' => $expiresAt,
             'expires_in' => max(0, $expiresIn),
         ];
+
+        if ($frontendDomain !== null) {
+            $result['frontend_domain'] = $frontendDomain;
+        }
+
+        return $result;
     }
 
     /**
@@ -878,11 +886,53 @@ final class LoginCodeStore
         foreach ($context as $field => $value) {
             if (!is_string($field)
                 || !in_array($field, self::CONTEXT_ALLOWED_FIELDS, true)
-                || !is_string($value)
-                || strlen($value) > self::CONTEXT_MAX_STRING_BYTES) {
+                || !is_string($value)) {
+                throw new ServerErrorHttpException('Unable to issue login code.');
+            }
+
+            if ($field === 'frontend_domain') {
+                if (!$this->isValidFrontendDomain($value)) {
+                    throw new ServerErrorHttpException('Unable to issue login code.');
+                }
+                continue;
+            }
+
+            if (strlen($value) > self::CONTEXT_MAX_STRING_BYTES) {
                 throw new ServerErrorHttpException('Unable to issue login code.');
             }
         }
+    }
+
+    private function frontendDomainFromContext(object $context): ?string
+    {
+        if (!property_exists($context, 'frontend_domain')) {
+            return null;
+        }
+
+        if (!is_string($context->frontend_domain) || !$this->isValidFrontendDomain($context->frontend_domain)) {
+            $this->malformedRecord();
+        }
+
+        return $context->frontend_domain;
+    }
+
+    private function isValidFrontendDomain(string $domain): bool
+    {
+        if ($domain === ''
+            || strlen($domain) > self::FRONTEND_DOMAIN_MAX_BYTES
+            || $domain !== strtolower($domain)
+            || str_ends_with($domain, '.')) {
+            return false;
+        }
+
+        if ($domain === 'localhost' || filter_var($domain, FILTER_VALIDATE_IP) !== false) {
+            return true;
+        }
+
+        return preg_match(
+            '/\A(?=.{1,253}\z)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\z/D',
+            $domain
+        ) === 1;
     }
 
     private function decodeRecord(string $payload): object

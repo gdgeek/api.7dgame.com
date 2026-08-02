@@ -28,6 +28,7 @@ final class ToolsControllerLoginCodeTest extends TestCase
     private mixed $originalDb;
     private mixed $originalRequest;
     private mixed $originalUser;
+    private string|false $originalCorsAllowedOrigins;
     private Connection $db;
 
     protected function setUp(): void
@@ -37,6 +38,7 @@ final class ToolsControllerLoginCodeTest extends TestCase
         $this->originalDb = Yii::$app->get('db', false);
         $this->originalRequest = Yii::$app->get('request', false);
         $this->originalUser = Yii::$app->get('user', false);
+        $this->originalCorsAllowedOrigins = getenv('CORS_ALLOWED_ORIGINS');
 
         $this->db = new Connection(['dsn' => 'sqlite::memory:']);
         Yii::$app->set('db', $this->db);
@@ -54,6 +56,11 @@ final class ToolsControllerLoginCodeTest extends TestCase
         Yii::$app->set('user', $this->originalUser);
         Yii::$app->set('request', $this->originalRequest);
         Yii::$app->set('db', $this->originalDb);
+        if ($this->originalCorsAllowedOrigins === false) {
+            putenv('CORS_ALLOWED_ORIGINS');
+        } else {
+            putenv('CORS_ALLOWED_ORIGINS=' . $this->originalCorsAllowedOrigins);
+        }
 
         parent::tearDown();
     }
@@ -95,6 +102,42 @@ final class ToolsControllerLoginCodeTest extends TestCase
         $this->assertSame($first, $second);
         $this->assertSame(1, $redis->commandCount('SET'));
         $this->assertSame(0, $redis->commandCount('DEL'));
+    }
+
+    public function testIssueStoresTrustedFrontendOriginAsDomainMetadata(): void
+    {
+        [$controller, $redis] = $this->controllerForCode(str_repeat('f', 64));
+        $this->setCurrentUser(42);
+        putenv('CORS_ALLOWED_ORIGINS=https://d.dev.xrugc.com,https://port.xrteeth.com');
+        Yii::$app->request->getHeaders()->set('Origin', 'https://D.DEV.XRUGC.COM:443');
+
+        $controller->actionUserLinked();
+
+        $record = json_decode(
+            array_values($redis->records())[0]['payload'],
+            true,
+            512,
+            JSON_THROW_ON_ERROR
+        );
+        $this->assertSame(['frontend_domain' => 'd.dev.xrugc.com'], $record['context']);
+    }
+
+    public function testIssueOmitsUntrustedFrontendOrigin(): void
+    {
+        [$controller, $redis] = $this->controllerForCode(str_repeat('0', 64));
+        $this->setCurrentUser(42);
+        putenv('CORS_ALLOWED_ORIGINS=https://d.dev.xrugc.com');
+        Yii::$app->request->getHeaders()->set('Origin', 'https://attacker.example');
+
+        $controller->actionUserLinked();
+
+        $record = json_decode(
+            array_values($redis->records())[0]['payload'],
+            true,
+            512,
+            JSON_THROW_ON_ERROR
+        );
+        $this->assertSame([], $record['context']);
     }
 
     public function testStatusHidesAnotherUsersCodeAndOmitsExpiryMetadata(): void
@@ -281,6 +324,12 @@ final class ToolsControllerLoginCodeRedis
     public function commandCount(string $command): int
     {
         return $this->commandCounts[strtoupper($command)] ?? 0;
+    }
+
+    /** @return array<string, array{payload: string, pttl: int}> */
+    public function records(): array
+    {
+        return $this->records;
     }
 
     /** @param array<int, mixed> $arguments */
