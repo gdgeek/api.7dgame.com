@@ -122,6 +122,64 @@ final class ToolsControllerLoginCodeTest extends TestCase
         $this->assertSame(['frontend_domain' => 'd.dev.xrugc.com'], $record['context']);
     }
 
+    public function testIssueStoresTrustedFrontendRefererWhenSameOriginGetOmitsOrigin(): void
+    {
+        [$controller, $redis] = $this->controllerForCode(str_repeat('e', 64));
+        $this->setCurrentUser(42);
+        putenv('CORS_ALLOWED_ORIGINS=https://d.dev.xrugc.com,https://port.xrteeth.com');
+        Yii::$app->request->getHeaders()->set(
+            'Referer',
+            'https://D.DEV.XRUGC.COM:443/home/index?lang=zh-CN#qr'
+        );
+
+        $controller->actionUserLinked();
+
+        $record = json_decode(
+            array_values($redis->records())[0]['payload'],
+            true,
+            512,
+            JSON_THROW_ON_ERROR
+        );
+        $this->assertSame(['frontend_domain' => 'd.dev.xrugc.com'], $record['context']);
+    }
+
+    public function testIssueDoesNotFallbackToRefererWhenExplicitOriginIsUntrusted(): void
+    {
+        [$controller, $redis] = $this->controllerForCode(str_repeat('1', 64));
+        $this->setCurrentUser(42);
+        putenv('CORS_ALLOWED_ORIGINS=https://d.dev.xrugc.com');
+        Yii::$app->request->getHeaders()->set('Origin', 'https://attacker.example');
+        Yii::$app->request->getHeaders()->set('Referer', 'https://d.dev.xrugc.com/home/index');
+
+        $controller->actionUserLinked();
+
+        $record = json_decode(
+            array_values($redis->records())[0]['payload'],
+            true,
+            512,
+            JSON_THROW_ON_ERROR
+        );
+        $this->assertSame([], $record['context']);
+    }
+
+    public function testIssueOmitsUntrustedFrontendReferer(): void
+    {
+        [$controller, $redis] = $this->controllerForCode(str_repeat('2', 64));
+        $this->setCurrentUser(42);
+        putenv('CORS_ALLOWED_ORIGINS=https://d.dev.xrugc.com');
+        Yii::$app->request->getHeaders()->set('Referer', 'https://attacker.example/home/index');
+
+        $controller->actionUserLinked();
+
+        $record = json_decode(
+            array_values($redis->records())[0]['payload'],
+            true,
+            512,
+            JSON_THROW_ON_ERROR
+        );
+        $this->assertSame([], $record['context']);
+    }
+
     public function testIssueOmitsUntrustedFrontendOrigin(): void
     {
         [$controller, $redis] = $this->controllerForCode(str_repeat('0', 64));

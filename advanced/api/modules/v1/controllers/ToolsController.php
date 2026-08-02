@@ -209,15 +209,15 @@ class ToolsController extends \yii\rest\Controller
     /**
      * Persist only the host from a configured, exact browser origin. The
      * value is white-label routing metadata and is never an authorization
-     * input. Requests without a trusted Origin keep the legacy empty context.
+     * input. Same-origin GET requests commonly omit Origin, so an absolute
+     * Referer is accepted only when Origin is absent. An explicit but
+     * untrusted Origin never falls back to Referer.
      *
      * @return array{frontend_domain?: string}
      */
     private function loginCodeContext(): array
     {
-        $origin = $this->normalizeFrontendOrigin(
-            (string)Yii::$app->request->getHeaders()->get('Origin', '')
-        );
+        $origin = $this->requestFrontendOrigin();
         if ($origin === null) {
             return [];
         }
@@ -242,6 +242,37 @@ class ToolsController extends \yii\rest\Controller
         return is_string($host) && $this->isValidFrontendDomain($host)
             ? ['frontend_domain' => strtolower($host)]
             : [];
+    }
+
+    private function requestFrontendOrigin(): ?string
+    {
+        $headers = Yii::$app->request->getHeaders();
+        $originHeader = trim((string)$headers->get('Origin', ''));
+        if ($originHeader !== '') {
+            return $this->normalizeFrontendOrigin($originHeader);
+        }
+
+        $referer = trim((string)$headers->get('Referer', ''));
+        if ($referer === '') {
+            return null;
+        }
+
+        $parts = parse_url($referer);
+        if (!is_array($parts)
+            || isset($parts['user'])
+            || isset($parts['pass'])
+            || !isset($parts['scheme'], $parts['host'])) {
+            return null;
+        }
+
+        $host = (string)$parts['host'];
+        $serializedHost = str_contains($host, ':') ? '[' . trim($host, '[]') . ']' : $host;
+        $candidate = (string)$parts['scheme'] . '://' . $serializedHost;
+        if (isset($parts['port'])) {
+            $candidate .= ':' . (int)$parts['port'];
+        }
+
+        return $this->normalizeFrontendOrigin($candidate);
     }
 
     private function normalizeFrontendOrigin(string $candidate): ?string
