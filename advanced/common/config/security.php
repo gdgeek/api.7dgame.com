@@ -1,4 +1,6 @@
 <?php
+
+use common\components\security\CorsOriginPolicy;
 /**
  * Security Configuration File
  * 
@@ -171,7 +173,7 @@ return [
      */
     'cors' => [
         // Allowed origins (comma-separated in env var)
-        'allowedOrigins' => array_filter(explode(',', getenv('CORS_ALLOWED_ORIGINS') ?: '')),
+        'allowedOrigins' => CorsOriginPolicy::fromEnvironment(),
         
         // Allowed HTTP methods
         'allowedMethods' => ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],

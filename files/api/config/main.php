@@ -1,10 +1,16 @@
 <?php
+
+use common\components\security\CorsOriginPolicy;
+use api\modules\v1\services\LoginCodeReadiness;
+use api\modules\v1\services\LoginCodeSettings;
+
 $params = array_merge(
     require __DIR__ . '/../../common/config/params.php',
     require __DIR__ . '/../../common/config/params-local.php',
     require __DIR__ . '/params.php',
     require __DIR__ . '/params-local.php'
 );
+$loginCodeSettings = new LoginCodeSettings($params['loginCode'] ?? []);
 
 return [
     'id' => 'restful',
@@ -18,30 +24,18 @@ return [
     ],
     'as cors' => [
         'class' => \yii\filters\Cors::class,
-        'cors' => [
-            'Origin' => ['*'],
-            'Access-Control-Request-Method' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],
-            'Access-Control-Request-Headers' => ['*'],
-            'Access-Control-Allow-Credentials' => null,
-            'Access-Control-Max-Age' => 86400,
-            'Access-Control-Expose-Headers' => [
-                'X-Pagination-Total-Count',
-                'X-Pagination-Page-Count',
-                'X-Pagination-Current-Page',
-                'X-Pagination-Per-Page',
-                'X-Identity-IAM-Role-Write',
-                'X-Identity-IAM-Role-Write-Decision',
-                'X-Identity-IAM-Role-Write-Correlation',
-                'X-Identity-IAM-Role-Write-Route',
-                'X-Identity-IAM-Role-Write-Entry',
-                'X-Identity-IAM-Role-Write-Actor',
-                'X-Identity-IAM-Role-Write-Selector-Kind',
-            ],
-        ],
+        'cors' => CorsOriginPolicy::yiiConfiguration(),
     ],
     'components' => [
+        'response' => [
+            'class' => \yii\web\Response::class,
+            'on beforeSend' => [CorsOriginPolicy::class, 'enforceResponseEvent'],
+        ],
         'healthService' => [
             'class' => 'common\components\HealthService',
+        ],
+        'loginCodeReadiness' => [
+            'class' => LoginCodeReadiness::class,
         ],
         'rateLimiter' => [
             'class' => 'common\components\security\RateLimiter',
@@ -49,6 +43,23 @@ return [
                 'ip' => ['limit' => 100, 'window' => 60],
                 'user' => ['limit' => 1000, 'window' => 3600],
                 'login' => ['limit' => 5, 'window' => 900],
+            ],
+        ],
+        // This limiter is intentionally separate from the legacy global
+        // rateLimiter. It is lazy until dual/redis login-code issuance is
+        // enabled, so database/database mode gains no new Redis dependency.
+        'loginCodeIssueRateLimiter' => [
+            'class' => 'common\components\security\RateLimiter',
+            'keyPrefix' => $loginCodeSettings->prefix() . ':issue-rate:',
+            'strategies' => [
+                'user-linked-issue' => [
+                    'limit' => $loginCodeSettings->issueLimit(),
+                    'window' => LoginCodeSettings::ISSUE_WINDOW_SECONDS,
+                ],
+            ],
+            'storageClass' => 'common\components\security\RedisSlidingWindowRateLimiterStorage',
+            'storageConfig' => [
+                'redisComponent' => 'redis',
             ],
         ],
         'request' => [

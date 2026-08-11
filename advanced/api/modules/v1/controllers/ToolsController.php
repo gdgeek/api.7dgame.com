@@ -2,17 +2,21 @@
 
 namespace api\modules\v1\controllers;
 use api\modules\v1\models\UserCreation;
+use api\modules\v1\filters\LoginCodeReadinessBehavior;
 use mdm\admin\components\AccessControl;
+use mdm\admin\components\Helper as AdminHelper;
 use bizley\jwt\JwtHttpBearerAuth;
 use yii\base\Exception;
 use yii\filters\auth\CompositeAuth;
 use yii\helpers\ArrayHelper;
 use yii\web\UploadedFile;
 use Yii;
-use api\modules\v1\RefreshToken;
-use api\modules\v1\models\UserLinked;
 use api\modules\v1\services\IdentityService;
+use api\modules\v1\services\LoginCodeSettings;
+use api\modules\v1\services\LoginCodeStore;
+use common\components\security\RateLimitBehavior;
 use yii\web\BadRequestHttpException;
+use yii\web\ForbiddenHttpException;
 use api\modules\v1\models\User;
 use OpenApi\Annotations as OA;
 
@@ -25,6 +29,7 @@ use OpenApi\Annotations as OA;
 class ToolsController extends \yii\rest\Controller
 {
     private ?IdentityService $identityService = null;
+    private ?LoginCodeStore $loginCodeStore = null;
 
     public function behaviors()
     {
@@ -43,7 +48,33 @@ class ToolsController extends \yii\rest\Controller
 
         $behaviors['access'] = [
             'class' => AccessControl::class,
+            // Status is a companion operation to user-linked and deliberately
+            // inherits that existing RBAC route instead of requiring every
+            // develop/production role to receive a new route assignment.
+            'allowActions' => ['user-linked-status'],
         ];
+
+        $loginCodeSettings = LoginCodeSettings::fromApplication();
+        if ($loginCodeSettings->usesRedis()) {
+            $behaviors['loginCodeReadiness'] = [
+                'class' => LoginCodeReadinessBehavior::class,
+                'only' => ['user-linked', 'user-linked-status'],
+            ];
+        }
+
+        // The dedicated limiter is enabled only once a Redis write mode is
+        // explicitly selected. The safe database/database default does not
+        // instantiate or depend on this Redis-backed component.
+        if ($loginCodeSettings->writesRedis()) {
+            $behaviors['loginCodeIssueRateLimiter'] = [
+                'class' => RateLimitBehavior::class,
+                'rateLimiter' => 'loginCodeIssueRateLimiter',
+                'defaultStrategy' => 'user-linked-issue',
+                'only' => ['user-linked'],
+                'atomicConsume' => true,
+                'telemetrySource' => 'main-api-issue',
+            ];
+        }
 
         return $behaviors;
     }
@@ -60,6 +91,15 @@ class ToolsController extends \yii\rest\Controller
     protected function requestContext(): array
     {
         return $this->identityService()->sessionService()->contextFromRequest(Yii::$app->request);
+    }
+
+    protected function loginCodeStore(): LoginCodeStore
+    {
+        if ($this->loginCodeStore === null) {
+            $this->loginCodeStore = new LoginCodeStore();
+        }
+
+        return $this->loginCodeStore;
     }
 
    /**
@@ -87,29 +127,14 @@ class ToolsController extends \yii\rest\Controller
     //把 Yii::$app->user->identity 转换成 User 类型
 
         $user = $this->currentUser();
-        $linked = UserLinked::find()->where(['user_id' => $user->id])->one();
-        
-        if(!$linked){
-            $linked = new UserLinked();
-            $linked->user_id = $user->id;
-        }
-        $loginCode = Yii::$app->security->generateRandomString(64);
-        $linked->key = RefreshToken::hashToken($loginCode);
-        if(!$linked->validate()){
-            throw new BadRequestHttpException("validate error");
-        }
-        if(!$linked->save()){
-            throw new BadRequestHttpException("save error");
-        }
-
-        $expiresAt = time() + UserLinked::LOGIN_CODE_TTL_SECONDS;
+        $issued = $this->loginCodeStore()->issue((int)$user->id, $this->loginCodeContext());
 
         return [
             'success' => true,
             'message' => "user-linked",
-            'key'=> $loginCode,
-            'expires_at' => $expiresAt,
-            'expires_in' => max(0, $expiresAt - time()),
+            'key'=> $issued['key'],
+            'expires_at' => $issued['expires_at'],
+            'expires_in' => $issued['expires_in'],
         ];
        
     }
@@ -135,40 +160,40 @@ class ToolsController extends \yii\rest\Controller
      */
     public function actionUserLinkedStatus()
     {
+        if (!$this->canAccessUserLinked()) {
+            throw new ForbiddenHttpException(Yii::t('yii', 'You are not allowed to perform this action.'));
+        }
+
         $user = $this->currentUser();
-        $key = $this->normalizeLinkedKey((string)Yii::$app->request->get('key', ''));
-        if ($key === '') {
+        $key = (string)Yii::$app->request->get('key', '');
+        if (LoginCodeStore::normalizeInput($key) === '') {
             throw new BadRequestHttpException("key is required");
         }
 
-        $linked = UserLinked::find()->where(['user_id' => $user->id])->one();
-        $active = false;
-        $reason = 'not_found';
-        $expiresAt = null;
-
-        if ($linked instanceof UserLinked && hash_equals((string)$linked->key, RefreshToken::hashToken($key))) {
-            $expiresAt = $linked->loginCodeExpiresAt();
-            if ($linked->isLoginCodeExpired()) {
-                $reason = 'expired';
-            } else {
-                $active = true;
-                $reason = 'active';
-            }
-        }
+        $status = $this->loginCodeStore()->status((int)$user->id, $key);
 
         $response = [
             'success' => true,
             'message' => 'user-linked-status',
-            'active' => $active,
-            'reason' => $reason,
+            'active' => $status['active'],
+            'reason' => $status['reason'],
         ];
 
-        if ($expiresAt !== null) {
-            $response['expires_at'] = $expiresAt;
-            $response['expires_in'] = max(0, $expiresAt - time());
+        if (isset($status['expires_at'])) {
+            $response['expires_at'] = $status['expires_at'];
+            $response['expires_in'] = $status['expires_in'];
         }
 
         return $response;
+    }
+
+    protected function canAccessUserLinked(): bool
+    {
+        return AdminHelper::checkRoute(
+            '/v1/tools/user-linked',
+            Yii::$app->request->get(),
+            Yii::$app->user,
+        );
     }
 
     private function currentUser(): User
@@ -181,18 +206,119 @@ class ToolsController extends \yii\rest\Controller
         throw new \yii\web\UnauthorizedHttpException('Invalid user identity');
     }
 
-    private function normalizeLinkedKey(string $key): string
+    /**
+     * Persist only the host from a configured, exact browser origin. The
+     * value is white-label routing metadata and is never an authorization
+     * input. Same-origin GET requests commonly omit Origin, so an absolute
+     * Referer is accepted only when Origin is absent. An explicit but
+     * untrusted Origin never falls back to Referer.
+     *
+     * @return array{frontend_domain?: string}
+     */
+    private function loginCodeContext(): array
     {
-        $key = trim($key);
-
-        if (preg_match('/(?:^|[?&])web_([^&#\s]+)/', $key, $matches) === 1) {
-            return $matches[1];
+        $origin = $this->requestFrontendOrigin();
+        if ($origin === null) {
+            return [];
         }
 
-        if (strpos($key, 'web_') === 0) {
-            return substr($key, 4);
+        $configured = getenv('CORS_ALLOWED_ORIGINS');
+        if ($configured === false || trim($configured) === '') {
+            return [];
         }
 
-        return $key;
+        $allowed = false;
+        foreach (explode(',', $configured) as $candidate) {
+            if ($this->normalizeFrontendOrigin(trim($candidate)) === $origin) {
+                $allowed = true;
+                break;
+            }
+        }
+        if (!$allowed) {
+            return [];
+        }
+
+        $host = parse_url($origin, PHP_URL_HOST);
+        return is_string($host) && $this->isValidFrontendDomain($host)
+            ? ['frontend_domain' => strtolower($host)]
+            : [];
+    }
+
+    private function requestFrontendOrigin(): ?string
+    {
+        $headers = Yii::$app->request->getHeaders();
+        $originHeader = trim((string)$headers->get('Origin', ''));
+        if ($originHeader !== '') {
+            return $this->normalizeFrontendOrigin($originHeader);
+        }
+
+        $referer = trim((string)$headers->get('Referer', ''));
+        if ($referer === '') {
+            return null;
+        }
+
+        $parts = parse_url($referer);
+        if (!is_array($parts)
+            || isset($parts['user'])
+            || isset($parts['pass'])
+            || !isset($parts['scheme'], $parts['host'])) {
+            return null;
+        }
+
+        $host = (string)$parts['host'];
+        $serializedHost = str_contains($host, ':') ? '[' . trim($host, '[]') . ']' : $host;
+        $candidate = (string)$parts['scheme'] . '://' . $serializedHost;
+        if (isset($parts['port'])) {
+            $candidate .= ':' . (int)$parts['port'];
+        }
+
+        return $this->normalizeFrontendOrigin($candidate);
+    }
+
+    private function normalizeFrontendOrigin(string $candidate): ?string
+    {
+        if (preg_match(
+            '/\A(?<scheme>https?):\/\/(?<host>\[[0-9a-f:.]+\]|[a-z0-9.-]+)(?::(?<port>[0-9]{1,5}))?\z/iD',
+            $candidate,
+            $parts
+        ) !== 1) {
+            return null;
+        }
+
+        $scheme = strtolower($parts['scheme']);
+        $host = strtolower(trim($parts['host'], '[]'));
+        if ($host === '' || str_ends_with($host, '.')) {
+            return null;
+        }
+        if ($scheme === 'http' && !in_array($host, ['localhost', '127.0.0.1', '::1'], true)) {
+            return null;
+        }
+
+        $port = isset($parts['port']) && $parts['port'] !== '' ? (int)$parts['port'] : null;
+        if ($port !== null && ($port < 1 || $port > 65535)) {
+            return null;
+        }
+        if (($scheme === 'https' && $port === 443) || ($scheme === 'http' && $port === 80)) {
+            $port = null;
+        }
+
+        $serializedHost = str_contains($host, ':') ? '[' . $host . ']' : $host;
+        return $scheme . '://' . $serializedHost . ($port === null ? '' : ':' . $port);
+    }
+
+    private function isValidFrontendDomain(string $domain): bool
+    {
+        $domain = strtolower($domain);
+        if ($domain === '' || strlen($domain) > 253 || str_ends_with($domain, '.')) {
+            return false;
+        }
+        if ($domain === 'localhost' || filter_var($domain, FILTER_VALIDATE_IP) !== false) {
+            return true;
+        }
+
+        return preg_match(
+            '/\A(?=.{1,253}\z)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\z/D',
+            $domain
+        ) === 1;
     }
 }

@@ -1,5 +1,6 @@
 <?php
 
+use api\modules\v1\services\LoginCodeSettings;
 use yii\helpers\Html;
 $params = [
     'adminEmail' => 'dirui@mrpp.com',
@@ -32,6 +33,39 @@ $params = [
                 '@backend/config/main-local.php',
             ],
         ],
+    ],
+    // QR device-login codes. Defaults deliberately leave the current MySQL
+    // path untouched; develop rollout opts into dual/Redis modes explicitly.
+    'loginCode' => [
+        'readMode' => getenv('LOGIN_CODE_READ_MODE') !== false
+            ? getenv('LOGIN_CODE_READ_MODE')
+            : 'database',
+        'writeMode' => getenv('LOGIN_CODE_WRITE_MODE') !== false
+            ? getenv('LOGIN_CODE_WRITE_MODE')
+            : 'database',
+        'prefix' => getenv('LOGIN_CODE_REDIS_PREFIX') !== false
+            ? getenv('LOGIN_CODE_REDIS_PREFIX')
+            : 'auth:login-code:v1',
+        // A deployment-wide expected fingerprint makes a per-service prefix
+        // drift fail at startup before Redis login-code traffic is accepted.
+        'protocolFingerprint' => getenv('LOGIN_CODE_PROTOCOL_FINGERPRINT') !== false
+            ? getenv('LOGIN_CODE_PROTOCOL_FINGERPRINT')
+            : LoginCodeSettings::defaultProtocolFingerprint(),
+        'activeWindowSeconds' => getenv('LOGIN_CODE_ACTIVE_WINDOW_SECONDS') !== false
+            ? getenv('LOGIN_CODE_ACTIVE_WINDOW_SECONDS')
+            : 60,
+        'recordRetentionSeconds' => getenv('LOGIN_CODE_RECORD_TTL_SECONDS') !== false
+            ? getenv('LOGIN_CODE_RECORD_TTL_SECONDS')
+            : 300,
+        'issueLimit' => getenv('LOGIN_CODE_ISSUE_LIMIT') !== false
+            ? getenv('LOGIN_CODE_ISSUE_LIMIT')
+            : 5,
+        'issueWindowSeconds' => getenv('LOGIN_CODE_ISSUE_WINDOW_SECONDS') !== false
+            ? getenv('LOGIN_CODE_ISSUE_WINDOW_SECONDS')
+            : 60,
+        'legacyDbAvailable' => getenv('LOGIN_CODE_LEGACY_DB_AVAILABLE') !== false
+            ? getenv('LOGIN_CODE_LEGACY_DB_AVAILABLE')
+            : true,
     ],
     'identityAuth' => [
         'AUTH_PROVIDER' => getenv('AUTH_PROVIDER') ?: 'legacy',

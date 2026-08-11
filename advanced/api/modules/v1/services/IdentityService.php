@@ -3,8 +3,6 @@
 namespace api\modules\v1\services;
 
 use api\modules\v1\models\User;
-use api\modules\v1\models\UserLinked;
-use api\modules\v1\RefreshToken;
 use yii\base\Component;
 use yii\web\BadRequestHttpException;
 use yii\web\UnauthorizedHttpException;
@@ -14,6 +12,7 @@ class IdentityService extends Component
     private ?SessionService $sessionService = null;
     private ?LoginAuditReporter $loginAuditReporter = null;
     private ?IdentityProviderClient $identityProviderClient = null;
+    private ?LoginCodeStore $loginCodeStore = null;
 
     public function login($username, $password, array $context = []): array
     {
@@ -168,22 +167,12 @@ class IdentityService extends Component
             return null;
         }
 
-        $lookupKeys = [$linkedKey];
-        $hashedLinkedKey = RefreshToken::hashToken($linkedKey);
-        if (!hash_equals($linkedKey, $hashedLinkedKey)) {
-            $lookupKeys[] = $hashedLinkedKey;
-        }
-
-        $linked = UserLinked::find()->where(['key' => $lookupKeys])->one();
-        if (!$linked instanceof UserLinked) {
+        $resolved = $this->loginCodeStore()->resolve($linkedKey);
+        if ($resolved['outcome'] !== 'hit') {
             return null;
         }
 
-        if ($linked->isLoginCodeExpired()) {
-            return null;
-        }
-
-        $user = User::findIdentity((int)$linked->user_id);
+        $user = User::findIdentity((int)$resolved['user_id']);
         if (!$user instanceof User) {
             return null;
         }
@@ -192,6 +181,16 @@ class IdentityService extends Component
 
         return $issuedToken;
     }
+
+    public function loginCodeStore(): LoginCodeStore
+    {
+        if ($this->loginCodeStore === null) {
+            $this->loginCodeStore = new LoginCodeStore();
+        }
+
+        return $this->loginCodeStore;
+    }
+
     public function sessionService(): SessionService
     {
         if ($this->sessionService === null) {
