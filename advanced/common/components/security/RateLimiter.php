@@ -55,6 +55,12 @@ class RateLimiter extends Component
     public $storageConfig = [];
 
     /**
+     * @var string Prefix for storage keys. The legacy default is preserved;
+     * dedicated strategies can use an isolated namespace.
+     */
+    public $keyPrefix = 'rate_limit:';
+
+    /**
      * @var RateLimiterStorageInterface The storage backend instance.
      */
     private $_storage;
@@ -147,6 +153,31 @@ class RateLimiter extends Component
 
         // Add the new timestamp
         $this->_storage->add($key, $now);
+    }
+
+    /**
+     * Atomically reserve one sliding-window allowance.
+     *
+     * This capability is opt-in so existing behaviours retain their current
+     * storage contract. The QR login-code issuer configures a Redis backend
+     * that implements AtomicRateLimiterStorageInterface.
+     *
+     * @return array{allowed: bool, remaining: int, reset_at: int, retry_after: int}
+     */
+    public function consume(string $identifier, string $action): array
+    {
+        $strategy = $this->getStrategy($action);
+        if (!$this->_storage instanceof AtomicRateLimiterStorageInterface) {
+            throw new \yii\base\InvalidConfigException(
+                'The selected rate-limit storage does not support atomic consume().'
+            );
+        }
+
+        return $this->_storage->consume(
+            $this->buildKey($identifier, $action),
+            (int)$strategy['limit'],
+            (int)$strategy['window']
+        );
     }
 
     /**
@@ -264,7 +295,7 @@ class RateLimiter extends Component
      */
     protected function buildKey(string $identifier, string $action): string
     {
-        return "rate_limit:{$action}:{$identifier}";
+        return "{$this->keyPrefix}{$action}:{$identifier}";
     }
 
     /**
