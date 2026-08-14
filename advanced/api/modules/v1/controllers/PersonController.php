@@ -12,6 +12,7 @@ use yii\base\Exception;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
 use yii\web\BadRequestHttpException;
+use yii\web\ForbiddenHttpException;
 use OpenApi\Annotations as OA;
 
 /**
@@ -47,10 +48,12 @@ class PersonController extends ActiveController
         unset($actions['options']);
         unset($actions['delete']);
         unset($actions['index']);
+        unset($actions['view']);
         return $actions;
     }
     public function actionIndex()
     {
+        $this->assertAdministrativeRole();
         $searchModel = new PersonSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
@@ -61,6 +64,25 @@ class PersonController extends ActiveController
         return User::findOne($id);
     }
 
+    public function actionView($id)
+    {
+        $this->assertAdministrativeRole();
+        return $this->findManagedUserById((int) $id);
+    }
+
+    /**
+     * Legacy person management remains server-authoritative even when the
+     * frontend route is hidden or guarded. Only root/admin may read or mutate
+     * this platform-wide surface.
+     */
+    protected function assertAdministrativeRole(): void
+    {
+        $roles = Yii::$app->user->identity->roles ?? [];
+        if (!in_array('root', $roles, true) && !in_array('admin', $roles, true)) {
+            throw new ForbiddenHttpException('权限不足');
+        }
+    }
+
     protected function normalizeOrganizationsForResponse(iterable $organizations): array
     {
         return User::normalizeOrganizations($organizations);
@@ -68,6 +90,7 @@ class PersonController extends ActiveController
 
     public function actionUpdate($id)
     {
+        $this->assertAdministrativeRole();
         $user = $this->findManagedUserById((int) $id);
         if ($user == null) {
             throw new BadRequestHttpException('没有user');
@@ -112,6 +135,7 @@ class PersonController extends ActiveController
     }
     public function actionDelete($id)
     {
+        $this->assertAdministrativeRole();
 
         $user = User::findOne($id);
         if ($user == null) {
@@ -140,6 +164,7 @@ class PersonController extends ActiveController
     }
     public function actionCreate()
     {
+        $this->assertAdministrativeRole();
         $model = new PersonRegister();
 
         $post = Yii::$app->request->post();
@@ -170,6 +195,7 @@ class PersonController extends ActiveController
 
     public function actionAuth()
     {
+        $this->assertAdministrativeRole();
 
         $post = Yii::$app->request->post();
 
