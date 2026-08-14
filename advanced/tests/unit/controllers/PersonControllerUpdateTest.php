@@ -7,6 +7,7 @@ use PHPUnit\Framework\TestCase;
 use Yii;
 use yii\base\BaseObject;
 use yii\web\IdentityInterface;
+use yii\web\ForbiddenHttpException;
 use yii\web\Response;
 use yii\web\User as WebUser;
 
@@ -100,6 +101,60 @@ final class PersonControllerUpdateTest extends TestCase
             ],
         ], $result);
     }
+
+    public function testAdministrativeRoleGateRejectsOrdinaryUser(): void
+    {
+        $webUser = new WebUser([
+            'identityClass' => FakePersonIdentity::class,
+            'enableSession' => false,
+        ]);
+        $webUser->setIdentity(new FakePersonIdentity([
+            'id' => 2,
+            'roles' => ['user'],
+        ]));
+        Yii::$app->set('user', $webUser);
+
+        $controller = new PersonControllerForTest(
+            'people',
+            Yii::$app->getModule('v1'),
+            new FakeManagedPerson([
+                'id' => 9,
+                'username' => 'target@example.com',
+                'nickname' => 'Target',
+                'roles' => ['user'],
+            ])
+        );
+
+        $this->expectException(ForbiddenHttpException::class);
+        $controller->actionView(9);
+    }
+
+    public function testAdministrativeRoleGateAllowsAdmin(): void
+    {
+        $webUser = new WebUser([
+            'identityClass' => FakePersonIdentity::class,
+            'enableSession' => false,
+        ]);
+        $webUser->setIdentity(new FakePersonIdentity([
+            'id' => 1,
+            'roles' => ['admin'],
+        ]));
+        Yii::$app->set('user', $webUser);
+
+        $controller = new PersonControllerForTest(
+            'people',
+            Yii::$app->getModule('v1'),
+            new FakeManagedPerson([
+                'id' => 9,
+                'username' => 'target@example.com',
+                'nickname' => 'Target',
+                'roles' => ['user'],
+            ])
+        );
+
+        $controller->assertAdministrativeRoleForTest();
+        $this->addToAssertionCount(1);
+    }
 }
 
 final class PersonControllerForTest extends PersonController
@@ -117,6 +172,11 @@ final class PersonControllerForTest extends PersonController
     public function normalizeOrganizationsForTest(iterable $organizations): array
     {
         return $this->normalizeOrganizationsForResponse($organizations);
+    }
+
+    public function assertAdministrativeRoleForTest(): void
+    {
+        $this->assertAdministrativeRole();
     }
 }
 
