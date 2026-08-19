@@ -16,6 +16,10 @@ use yii\web\Response;
 class OrganizationController extends Controller
 {
     private const IAM_AUTHZ_INTEGRATED_ACTIONS = ['list', 'create', 'update', 'bind-user', 'unbind-user'];
+    private const IAM_AUTHZ_PROBE_HOST = 'd.dev.xrugc.com';
+    private const IAM_AUTHZ_PROBE_QUERY_KEY = 'iamAuthzProbe';
+    private const IAM_AUTHZ_PROBE_QUERY_VALUE = 'wp3-subject-binding-v1';
+    private const IAM_AUTHZ_PROBE_HEADER = 'X-Identity-IAM-AuthZ-Probe-Evidence';
     private ?IamShadowCompareService $iamShadowCompareService = null;
     private ?IamAuthorizationReadService $iamAuthorizationReadService = null;
 
@@ -234,6 +238,7 @@ class OrganizationController extends Controller
             $permission,
             'api.organization.global-rbac'
         );
+        $this->publishSubjectBindingProbeEvidence($this->iamAuthorizationReadService());
 
         if (!$allowed) {
             Yii::$app->response->statusCode = 403;
@@ -244,6 +249,22 @@ class OrganizationController extends Controller
         }
 
         return null;
+    }
+
+    private function publishSubjectBindingProbeEvidence(IamAuthorizationReadService $service): void
+    {
+        $request = Yii::$app->request;
+        if (strtolower($request->hostName) !== self::IAM_AUTHZ_PROBE_HOST
+            || $request->getQueryParams() !== [self::IAM_AUTHZ_PROBE_QUERY_KEY => self::IAM_AUTHZ_PROBE_QUERY_VALUE]) {
+            return;
+        }
+
+        Yii::$app->response->headers->set(
+            self::IAM_AUTHZ_PROBE_HEADER,
+            $service->subjectBindingProbeEvidence()
+        );
+        Yii::$app->response->headers->set('Cache-Control', 'no-store, private');
+        Yii::$app->response->headers->set('Pragma', 'no-cache');
     }
 
     private function iamAuthorizationReadService(): IamAuthorizationReadService

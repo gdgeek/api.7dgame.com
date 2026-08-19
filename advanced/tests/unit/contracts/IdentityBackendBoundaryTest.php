@@ -544,6 +544,9 @@ final class IdentityBackendBoundaryTest extends TestCase
         }
 
         $this->assertStringContainsString('public function routeIntegrationEnabled(): bool', $iamAuthzRead);
+        $this->assertStringContainsString('public function subjectBindingProbeEvidence(): string', $iamAuthzRead);
+        $this->assertStringContainsString('X-Identity-IAM-AuthZ-Probe-Evidence', $organizationController);
+        $this->assertStringContainsString("'wp3-subject-binding-v1'", $organizationController);
         $this->assertStringContainsString("boolConfig('IDENTITY_IAM_AUTHZ_ROUTE_INTEGRATION_ENABLED', false)", $iamAuthzRead);
         $this->assertStringNotContainsString('array_merge(', $iamAuthzRead);
     }
