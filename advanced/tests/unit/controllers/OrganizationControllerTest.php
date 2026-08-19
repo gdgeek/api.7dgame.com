@@ -45,7 +45,7 @@ final class OrganizationControllerTest extends TestCase
 
         try {
             $request = new Request([
-                'hostInfo' => 'https://d.dev.xrugc.com',
+                'hostInfo' => 'https://api.d.xrteeth.com',
                 'scriptUrl' => '',
             ]);
             $request->setQueryParams(['iamAuthzProbe' => 'wp3-subject-binding-v1']);
@@ -64,8 +64,16 @@ final class OrganizationControllerTest extends TestCase
 
             foreach ([
                 ['host' => 'https://d.xrugc.com', 'query' => ['iamAuthzProbe' => 'wp3-subject-binding-v1']],
-                ['host' => 'https://d.dev.xrugc.com', 'query' => ['iamAuthzProbe' => 'wrong']],
-                ['host' => 'https://d.dev.xrugc.com', 'query' => [
+                [
+                    'host' => 'https://d.dev.xrugc.com',
+                    'query' => ['iamAuthzProbe' => 'wp3-subject-binding-v1'],
+                ],
+                [
+                    'host' => 'https://api.xrteeth.com',
+                    'query' => ['iamAuthzProbe' => 'wp3-subject-binding-v1'],
+                ],
+                ['host' => 'https://api.d.xrteeth.com', 'query' => ['iamAuthzProbe' => 'wrong']],
+                ['host' => 'https://api.d.xrteeth.com', 'query' => [
                     'iamAuthzProbe' => 'wp3-subject-binding-v1',
                     'extra' => '1',
                 ]],

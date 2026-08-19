@@ -16,7 +16,7 @@ use yii\web\Response;
 class OrganizationController extends Controller
 {
     private const IAM_AUTHZ_INTEGRATED_ACTIONS = ['list', 'create', 'update', 'bind-user', 'unbind-user'];
-    private const IAM_AUTHZ_PROBE_HOST = 'd.dev.xrugc.com';
+    private const IAM_AUTHZ_PROBE_API_HOST = 'api.d.xrteeth.com';
     private const IAM_AUTHZ_PROBE_QUERY_KEY = 'iamAuthzProbe';
     private const IAM_AUTHZ_PROBE_QUERY_VALUE = 'wp3-subject-binding-v1';
     private const IAM_AUTHZ_PROBE_HEADER = 'X-Identity-IAM-AuthZ-Probe-Evidence';
@@ -254,7 +254,7 @@ class OrganizationController extends Controller
     private function publishSubjectBindingProbeEvidence(IamAuthorizationReadService $service): void
     {
         $request = Yii::$app->request;
-        if (strtolower($request->hostName) !== self::IAM_AUTHZ_PROBE_HOST
+        if (strtolower($request->hostName) !== self::IAM_AUTHZ_PROBE_API_HOST
             || $request->getQueryParams() !== [self::IAM_AUTHZ_PROBE_QUERY_KEY => self::IAM_AUTHZ_PROBE_QUERY_VALUE]) {
             return;
         }
