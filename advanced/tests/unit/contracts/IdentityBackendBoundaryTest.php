@@ -488,13 +488,21 @@ final class IdentityBackendBoundaryTest extends TestCase
         $organizationController = $this->read('api/modules/v1/controllers/OrganizationController.php');
         $iamAuthzRead = $this->read('api/modules/v1/services/IamAuthorizationReadService.php');
 
-        foreach ([$pluginUserController, $organizationController] as $controller) {
-            $this->assertStringContainsString(
-                "'except' => \$this->iamAuthorizationReadService()->routeIntegrationEnabled()",
-                $controller
-            );
-            $this->assertStringContainsString(': []', $controller);
-        }
+        $this->assertStringContainsString(
+            "'except' => \$this->iamAuthorizationReadService()->routeIntegrationEnabled()",
+            $pluginUserController
+        );
+        $this->assertStringContainsString(': []', $pluginUserController);
+
+        $this->assertStringContainsString(
+            "'except' => (\$this->iamAuthorizationReadService()->routeIntegrationEnabled()",
+            $organizationController
+        );
+        $this->assertStringContainsString(
+            '|| $this->isSubjectBindingProbeRequest())',
+            $organizationController
+        );
+        $this->assertStringContainsString(': []', $organizationController);
 
         preg_match('/private const IAM_AUTHZ_INTEGRATED_ACTIONS = \[(.*?)\];/s', $pluginUserController, $pluginMatch);
         preg_match_all("/'([^']+)'/", $pluginMatch[1] ?? '', $pluginActions);
