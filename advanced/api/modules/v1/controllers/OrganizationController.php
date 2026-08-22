@@ -41,7 +41,13 @@ class OrganizationController extends Controller
         $behaviors['access'] = [
             'class' => AccessControl::class,
             'allowActions' => ['options'],
-            'except' => $this->iamAuthorizationReadService()->routeIntegrationEnabled()
+            // The exact Develop probe must reach requirePermission() even if
+            // AccessControl observes a stale/default-off route value during
+            // pre-action filter construction. requirePermission() remains the
+            // sole authorization decision and still fails closed; this only
+            // guarantees that the safe evidence header can be published.
+            'except' => ($this->iamAuthorizationReadService()->routeIntegrationEnabled()
+                || $this->isSubjectBindingProbeRequest())
                 ? self::IAM_AUTHZ_INTEGRATED_ACTIONS
                 : [],
         ];
@@ -253,9 +259,7 @@ class OrganizationController extends Controller
 
     private function publishSubjectBindingProbeEvidence(IamAuthorizationReadService $service): void
     {
-        $request = Yii::$app->request;
-        if (strtolower($request->hostName) !== self::IAM_AUTHZ_PROBE_API_HOST
-            || $request->getQueryParams() !== [self::IAM_AUTHZ_PROBE_QUERY_KEY => self::IAM_AUTHZ_PROBE_QUERY_VALUE]) {
+        if (!$this->isSubjectBindingProbeRequest()) {
             return;
         }
 
@@ -265,6 +269,13 @@ class OrganizationController extends Controller
         );
         Yii::$app->response->headers->set('Cache-Control', 'no-store, private');
         Yii::$app->response->headers->set('Pragma', 'no-cache');
+    }
+
+    private function isSubjectBindingProbeRequest(): bool
+    {
+        $request = Yii::$app->request;
+        return strtolower($request->hostName) === self::IAM_AUTHZ_PROBE_API_HOST
+            && $request->getQueryParams() === [self::IAM_AUTHZ_PROBE_QUERY_KEY => self::IAM_AUTHZ_PROBE_QUERY_VALUE];
     }
 
     private function iamAuthorizationReadService(): IamAuthorizationReadService

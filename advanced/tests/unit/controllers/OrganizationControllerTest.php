@@ -98,4 +98,40 @@ final class OrganizationControllerTest extends TestCase
             }
         }
     }
+
+    public function testExactSubjectBindingProbeBypassesOnlyThePreActionAccessFilter(): void
+    {
+        $originalRequest = Yii::$app->get('request');
+        $originalRouteIntegration = getenv('IDENTITY_IAM_AUTHZ_ROUTE_INTEGRATION_ENABLED');
+
+        try {
+            putenv('IDENTITY_IAM_AUTHZ_ROUTE_INTEGRATION_ENABLED=false');
+            $request = new Request([
+                'hostInfo' => 'https://api.d.xrteeth.com',
+                'scriptUrl' => '',
+            ]);
+            $request->setQueryParams(['iamAuthzProbe' => 'wp3-subject-binding-v1']);
+            Yii::$app->set('request', $request);
+
+            $controller = new OrganizationController('organization', Yii::$app->getModule('v1'));
+            $behaviors = $controller->behaviors();
+
+            $this->assertSame(
+                ['list', 'create', 'update', 'bind-user', 'unbind-user'],
+                $behaviors['access']['except']
+            );
+
+            $request->setQueryParams([]);
+            $controller = new OrganizationController('organization', Yii::$app->getModule('v1'));
+            $behaviors = $controller->behaviors();
+            $this->assertSame([], $behaviors['access']['except']);
+        } finally {
+            Yii::$app->set('request', $originalRequest);
+            if ($originalRouteIntegration === false) {
+                putenv('IDENTITY_IAM_AUTHZ_ROUTE_INTEGRATION_ENABLED');
+            } else {
+                putenv('IDENTITY_IAM_AUTHZ_ROUTE_INTEGRATION_ENABLED=' . $originalRouteIntegration);
+            }
+        }
+    }
 }
