@@ -244,31 +244,47 @@ class OrganizationController extends Controller
             $permission,
             'api.organization.global-rbac'
         );
-        $this->publishSubjectBindingProbeEvidence($this->iamAuthorizationReadService());
+        $probeEvidence = $this->publishSubjectBindingProbeEvidence(
+            $this->iamAuthorizationReadService()
+        );
 
         if (!$allowed) {
             Yii::$app->response->statusCode = 403;
-            return [
-                'code' => 2003,
-                'message' => '没有权限执行此操作',
-            ];
+            return $this->permissionDeniedResponse($probeEvidence);
         }
 
         return null;
     }
 
-    private function publishSubjectBindingProbeEvidence(IamAuthorizationReadService $service): void
+    private function permissionDeniedResponse(?string $probeEvidence): array
+    {
+        $error = [
+            'code' => 2003,
+            'message' => '没有权限执行此操作',
+        ];
+        // Preserve the exact, categorical probe evidence in the denied
+        // response body as a transport-independent fallback. The normal
+        // response envelope remains unchanged for every non-probe call.
+        if ($probeEvidence !== null) {
+            $error['iamAuthzProbeEvidence'] = $probeEvidence;
+        }
+        return $error;
+    }
+
+    private function publishSubjectBindingProbeEvidence(IamAuthorizationReadService $service): ?string
     {
         if (!$this->isSubjectBindingProbeRequest()) {
-            return;
+            return null;
         }
 
+        $evidence = $service->subjectBindingProbeEvidence();
         Yii::$app->response->headers->set(
             self::IAM_AUTHZ_PROBE_HEADER,
-            $service->subjectBindingProbeEvidence()
+            $evidence
         );
         Yii::$app->response->headers->set('Cache-Control', 'no-store, private');
         Yii::$app->response->headers->set('Pragma', 'no-cache');
+        return $evidence;
     }
 
     private function isSubjectBindingProbeRequest(): bool

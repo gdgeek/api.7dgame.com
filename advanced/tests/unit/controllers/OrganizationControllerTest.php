@@ -53,8 +53,9 @@ final class OrganizationControllerTest extends TestCase
             Yii::$app->set('request', $request);
             Yii::$app->set('response', $response);
 
-            $method->invoke($controller, $service);
+            $published = $method->invoke($controller, $service);
 
+            $this->assertSame('v1;binding=match', $published);
             $this->assertSame(
                 'v1;binding=match',
                 $response->headers->get('X-Identity-IAM-AuthZ-Probe-Evidence')
@@ -84,8 +85,9 @@ final class OrganizationControllerTest extends TestCase
                 Yii::$app->set('request', $request);
                 Yii::$app->set('response', $response);
 
-                $method->invoke($controller, $service);
+                $published = $method->invoke($controller, $service);
 
+                $this->assertNull($published);
                 $this->assertFalse($response->headers->has('X-Identity-IAM-AuthZ-Probe-Evidence'));
                 $this->assertFalse($response->headers->has('Cache-Control'));
             }
@@ -97,6 +99,28 @@ final class OrganizationControllerTest extends TestCase
                 Yii::$app->clear('response');
             }
         }
+    }
+
+    public function testPermissionDeniedResponseAddsOnlyExplicitProbeEvidence(): void
+    {
+        $controller = new OrganizationController('organization', Yii::$app->getModule('v1'));
+        $method = new \ReflectionMethod($controller, 'permissionDeniedResponse');
+
+        $this->assertSame(
+            [
+                'code' => 2003,
+                'message' => '没有权限执行此操作',
+                'iamAuthzProbeEvidence' => 'v1;binding=match',
+            ],
+            $method->invoke($controller, 'v1;binding=match')
+        );
+        $this->assertSame(
+            [
+                'code' => 2003,
+                'message' => '没有权限执行此操作',
+            ],
+            $method->invoke($controller, null)
+        );
     }
 
     public function testExactSubjectBindingProbeBypassesOnlyThePreActionAccessFilter(): void
