@@ -38,18 +38,21 @@ class OrganizationController extends Controller
             'except' => ['options'],
         ];
 
+        $integratedActions = ($this->iamAuthorizationReadService()->routeIntegrationEnabled()
+            || $this->isSubjectBindingProbeRequest())
+            ? self::IAM_AUTHZ_INTEGRATED_ACTIONS
+            : [];
+
         $behaviors['access'] = [
             'class' => AccessControl::class,
-            'allowActions' => ['options'],
             // The exact Develop probe must reach requirePermission() even if
             // AccessControl observes a stale/default-off route value during
             // pre-action filter construction. requirePermission() remains the
             // sole authorization decision and still fails closed; this only
             // guarantees that the safe evidence header can be published.
-            'except' => ($this->iamAuthorizationReadService()->routeIntegrationEnabled()
-                || $this->isSubjectBindingProbeRequest())
-                ? self::IAM_AUTHZ_INTEGRATED_ACTIONS
-                : [],
+            // mdm\admin\components\AccessControl overrides isActive() and
+            // consults allowActions, not ActionFilter::$except.
+            'allowActions' => array_merge(['options'], $integratedActions),
         ];
 
         return $behaviors;

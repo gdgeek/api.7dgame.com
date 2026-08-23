@@ -489,20 +489,43 @@ final class IdentityBackendBoundaryTest extends TestCase
         $iamAuthzRead = $this->read('api/modules/v1/services/IamAuthorizationReadService.php');
 
         $this->assertStringContainsString(
-            "'except' => \$this->iamAuthorizationReadService()->routeIntegrationEnabled()",
+            "'allowActions' => \$this->iamAuthorizationReadService()->routeIntegrationEnabled()",
             $pluginUserController
         );
         $this->assertStringContainsString(': []', $pluginUserController);
 
         $this->assertStringContainsString(
-            "'except' => (\$this->iamAuthorizationReadService()->routeIntegrationEnabled()",
+            "\$integratedActions = (\$this->iamAuthorizationReadService()->routeIntegrationEnabled()",
             $organizationController
         );
         $this->assertStringContainsString(
             '|| $this->isSubjectBindingProbeRequest())',
             $organizationController
         );
-        $this->assertStringContainsString(': []', $organizationController);
+        $this->assertStringContainsString("'allowActions' => array_merge(['options'], \$integratedActions)", $organizationController);
+
+        foreach ([
+            'Invitations',
+            'CreateInvitation',
+            'DeleteInvitation',
+            'InvitationRecords',
+        ] as $action) {
+            preg_match(
+                '/public function action' . $action . '\(\).*?(?=\n    public function action|\z)/s',
+                $pluginUserController,
+                $actionMatch
+            );
+            $actionBody = $actionMatch[0] ?? '';
+            $permissionPosition = strpos($actionBody, "resolveUserWithPermission('manage-invitations')");
+            $proxyPosition = strpos($actionBody, 'proxyAccountLifecycle(');
+            $this->assertNotFalse($permissionPosition, $action . ' must keep an action-level AuthZ decision.');
+            $this->assertNotFalse($proxyPosition, $action . ' must retain the reviewed lifecycle proxy.');
+            $this->assertLessThan(
+                $proxyPosition,
+                $permissionPosition,
+                $action . ' must authorize before invoking the lifecycle proxy.'
+            );
+        }
 
         preg_match('/private const IAM_AUTHZ_INTEGRATED_ACTIONS = \[(.*?)\];/s', $pluginUserController, $pluginMatch);
         preg_match_all("/'([^']+)'/", $pluginMatch[1] ?? '', $pluginActions);

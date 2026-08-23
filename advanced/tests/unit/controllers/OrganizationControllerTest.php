@@ -148,14 +148,16 @@ final class OrganizationControllerTest extends TestCase
             $behaviors = $controller->behaviors();
 
             $this->assertSame(
-                ['list', 'create', 'update', 'bind-user', 'unbind-user'],
-                $behaviors['access']['except']
+                ['options', 'list', 'create', 'update', 'bind-user', 'unbind-user'],
+                $behaviors['access']['allowActions']
             );
+            $this->assertFalse($this->accessFilterIsActive($controller, 'list'));
 
             $request->setQueryParams([]);
             $controller = new OrganizationController('organization', Yii::$app->getModule('v1'));
             $behaviors = $controller->behaviors();
-            $this->assertSame([], $behaviors['access']['except']);
+            $this->assertSame(['options'], $behaviors['access']['allowActions']);
+            $this->assertTrue($this->accessFilterIsActive($controller, 'list'));
         } finally {
             Yii::$app->set('request', $originalRequest);
             if ($originalRouteIntegration === false) {
@@ -163,6 +165,27 @@ final class OrganizationControllerTest extends TestCase
             } else {
                 putenv('IDENTITY_IAM_AUTHZ_ROUTE_INTEGRATION_ENABLED=' . $originalRouteIntegration);
             }
+        }
+    }
+
+    private function accessFilterIsActive(OrganizationController $controller, string $actionId): bool
+    {
+        $originalErrorHandler = Yii::$app->get('errorHandler');
+        $controller->module ??= Yii::$app;
+        try {
+            Yii::$app->set('errorHandler', [
+                'class' => \yii\web\ErrorHandler::class,
+                'errorAction' => 'site/error',
+            ]);
+            $filter = Yii::createObject($controller->behaviors()['access']);
+            $filter->attach($controller);
+            $action = $controller->createAction($actionId);
+            $this->assertNotNull($action);
+
+            $method = new \ReflectionMethod($filter, 'isActive');
+            return (bool)$method->invoke($filter, $action);
+        } finally {
+            Yii::$app->set('errorHandler', $originalErrorHandler);
         }
     }
 }
