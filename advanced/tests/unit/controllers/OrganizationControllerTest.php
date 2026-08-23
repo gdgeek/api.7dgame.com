@@ -45,9 +45,13 @@ final class OrganizationControllerTest extends TestCase
 
         try {
             $request = new Request([
-                'hostInfo' => 'https://api.d.xrteeth.com',
+                // Simulate a reverse proxy whose backend-observed Host is not
+                // the public API host. The exact browser Origin is the stable
+                // boundary contract.
+                'hostInfo' => 'http://api-d',
                 'scriptUrl' => '',
             ]);
+            $request->headers->set('Origin', 'https://d.dev.xrugc.com');
             $request->setQueryParams(['iamAuthzProbe' => 'wp3-subject-binding-v1']);
             $response = new Response();
             Yii::$app->set('request', $request);
@@ -64,22 +68,24 @@ final class OrganizationControllerTest extends TestCase
             $this->assertSame('no-cache', $response->headers->get('Pragma'));
 
             foreach ([
-                ['host' => 'https://d.xrugc.com', 'query' => ['iamAuthzProbe' => 'wp3-subject-binding-v1']],
                 [
-                    'host' => 'https://d.dev.xrugc.com',
+                    'origin' => '',
                     'query' => ['iamAuthzProbe' => 'wp3-subject-binding-v1'],
                 ],
                 [
-                    'host' => 'https://api.xrteeth.com',
+                    'origin' => 'https://d.xrugc.com',
                     'query' => ['iamAuthzProbe' => 'wp3-subject-binding-v1'],
                 ],
-                ['host' => 'https://api.d.xrteeth.com', 'query' => ['iamAuthzProbe' => 'wrong']],
-                ['host' => 'https://api.d.xrteeth.com', 'query' => [
+                ['origin' => 'https://d.dev.xrugc.com', 'query' => ['iamAuthzProbe' => 'wrong']],
+                ['origin' => 'https://d.dev.xrugc.com', 'query' => [
                     'iamAuthzProbe' => 'wp3-subject-binding-v1',
                     'extra' => '1',
                 ]],
             ] as $case) {
-                $request = new Request(['hostInfo' => $case['host'], 'scriptUrl' => '']);
+                $request = new Request(['hostInfo' => 'http://api-d', 'scriptUrl' => '']);
+                if ($case['origin'] !== '') {
+                    $request->headers->set('Origin', $case['origin']);
+                }
                 $request->setQueryParams($case['query']);
                 $response = new Response();
                 Yii::$app->set('request', $request);
@@ -131,9 +137,10 @@ final class OrganizationControllerTest extends TestCase
         try {
             putenv('IDENTITY_IAM_AUTHZ_ROUTE_INTEGRATION_ENABLED=false');
             $request = new Request([
-                'hostInfo' => 'https://api.d.xrteeth.com',
+                'hostInfo' => 'http://api-d',
                 'scriptUrl' => '',
             ]);
+            $request->headers->set('Origin', 'https://d.dev.xrugc.com');
             $request->setQueryParams(['iamAuthzProbe' => 'wp3-subject-binding-v1']);
             Yii::$app->set('request', $request);
 

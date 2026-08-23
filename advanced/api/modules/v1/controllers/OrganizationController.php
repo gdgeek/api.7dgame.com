@@ -16,7 +16,7 @@ use yii\web\Response;
 class OrganizationController extends Controller
 {
     private const IAM_AUTHZ_INTEGRATED_ACTIONS = ['list', 'create', 'update', 'bind-user', 'unbind-user'];
-    private const IAM_AUTHZ_PROBE_API_HOST = 'api.d.xrteeth.com';
+    private const IAM_AUTHZ_PROBE_ORIGIN = 'https://d.dev.xrugc.com';
     private const IAM_AUTHZ_PROBE_QUERY_KEY = 'iamAuthzProbe';
     private const IAM_AUTHZ_PROBE_QUERY_VALUE = 'wp3-subject-binding-v1';
     private const IAM_AUTHZ_PROBE_HEADER = 'X-Identity-IAM-AuthZ-Probe-Evidence';
@@ -290,7 +290,13 @@ class OrganizationController extends Controller
     private function isSubjectBindingProbeRequest(): bool
     {
         $request = Yii::$app->request;
-        return strtolower($request->hostName) === self::IAM_AUTHZ_PROBE_API_HOST
+        // The browser's cross-origin Origin is stable across the trusted
+        // reverse-proxy chain, while the backend-observed Host is not. This
+        // predicate only bypasses the generic pre-action filter; the request
+        // still reaches requirePermission(), which remains the sole AuthZ
+        // decision and fails closed.
+        return $request->getIsGet()
+            && strtolower((string)$request->headers->get('Origin', '')) === self::IAM_AUTHZ_PROBE_ORIGIN
             && $request->getQueryParams() === [self::IAM_AUTHZ_PROBE_QUERY_KEY => self::IAM_AUTHZ_PROBE_QUERY_VALUE];
     }
 
