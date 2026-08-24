@@ -95,14 +95,20 @@ class PluginControllerAuthTest extends TestCase
 
         try {
             putenv($key . '=false');
-            $pluginDefault = (new PluginUserController('test', null))->behaviors();
-            $organizationDefault = (new OrganizationController('test', null))->behaviors();
-            $this->assertSame([], $pluginDefault['access']['except']);
-            $this->assertSame([], $organizationDefault['access']['except']);
+            $pluginDefaultController = new PluginUserController('test', null);
+            $organizationDefaultController = new OrganizationController('test', null);
+            $pluginDefault = $pluginDefaultController->behaviors();
+            $organizationDefault = $organizationDefaultController->behaviors();
+            $this->assertSame([], $pluginDefault['access']['allowActions']);
+            $this->assertSame(['options'], $organizationDefault['access']['allowActions']);
+            $this->assertTrue($this->accessFilterIsActive($pluginDefaultController, 'users'));
+            $this->assertTrue($this->accessFilterIsActive($organizationDefaultController, 'list'));
 
             putenv($key . '=true');
-            $pluginEnabled = (new PluginUserController('test', null))->behaviors();
-            $organizationEnabled = (new OrganizationController('test', null))->behaviors();
+            $pluginEnabledController = new PluginUserController('test', null);
+            $organizationEnabledController = new OrganizationController('test', null);
+            $pluginEnabled = $pluginEnabledController->behaviors();
+            $organizationEnabled = $organizationEnabledController->behaviors();
 
             $this->assertSame([
                 'users',
@@ -115,11 +121,13 @@ class PluginControllerAuthTest extends TestCase
                 'create-invitation',
                 'delete-invitation',
                 'invitation-records',
-            ], $pluginEnabled['access']['except']);
+            ], $pluginEnabled['access']['allowActions']);
             $this->assertSame(
-                ['list', 'create', 'update', 'bind-user', 'unbind-user'],
-                $organizationEnabled['access']['except']
+                ['options', 'list', 'create', 'update', 'bind-user', 'unbind-user'],
+                $organizationEnabled['access']['allowActions']
             );
+            $this->assertFalse($this->accessFilterIsActive($pluginEnabledController, 'users'));
+            $this->assertFalse($this->accessFilterIsActive($organizationEnabledController, 'list'));
 
             $this->assertSame(
                 $pluginDefault['authenticator']['except'],
@@ -137,6 +145,27 @@ class PluginControllerAuthTest extends TestCase
             } else {
                 putenv($key . '=' . $previous);
             }
+        }
+    }
+
+    private function accessFilterIsActive(object $controller, string $actionId): bool
+    {
+        $originalErrorHandler = Yii::$app->get('errorHandler');
+        $controller->module ??= Yii::$app;
+        try {
+            Yii::$app->set('errorHandler', [
+                'class' => \yii\web\ErrorHandler::class,
+                'errorAction' => 'site/error',
+            ]);
+            $filter = Yii::createObject($controller->behaviors()['access']);
+            $filter->attach($controller);
+            $action = $controller->createAction($actionId);
+            $this->assertNotNull($action);
+
+            $method = new \ReflectionMethod($filter, 'isActive');
+            return (bool)$method->invoke($filter, $action);
+        } finally {
+            Yii::$app->set('errorHandler', $originalErrorHandler);
         }
     }
 }

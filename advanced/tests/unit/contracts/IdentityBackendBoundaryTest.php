@@ -488,12 +488,43 @@ final class IdentityBackendBoundaryTest extends TestCase
         $organizationController = $this->read('api/modules/v1/controllers/OrganizationController.php');
         $iamAuthzRead = $this->read('api/modules/v1/services/IamAuthorizationReadService.php');
 
-        foreach ([$pluginUserController, $organizationController] as $controller) {
-            $this->assertStringContainsString(
-                "'except' => \$this->iamAuthorizationReadService()->routeIntegrationEnabled()",
-                $controller
+        $this->assertStringContainsString(
+            "'allowActions' => \$this->iamAuthorizationReadService()->routeIntegrationEnabled()",
+            $pluginUserController
+        );
+        $this->assertStringContainsString(': []', $pluginUserController);
+
+        $this->assertStringContainsString(
+            "\$integratedActions = (\$this->iamAuthorizationReadService()->routeIntegrationEnabled()",
+            $organizationController
+        );
+        $this->assertStringContainsString(
+            '|| $this->isSubjectBindingProbeRequest())',
+            $organizationController
+        );
+        $this->assertStringContainsString("'allowActions' => array_merge(['options'], \$integratedActions)", $organizationController);
+
+        foreach ([
+            'Invitations',
+            'CreateInvitation',
+            'DeleteInvitation',
+            'InvitationRecords',
+        ] as $action) {
+            preg_match(
+                '/public function action' . $action . '\(\).*?(?=\n    public function action|\z)/s',
+                $pluginUserController,
+                $actionMatch
             );
-            $this->assertStringContainsString(': []', $controller);
+            $actionBody = $actionMatch[0] ?? '';
+            $permissionPosition = strpos($actionBody, "resolveUserWithPermission('manage-invitations')");
+            $proxyPosition = strpos($actionBody, 'proxyAccountLifecycle(');
+            $this->assertNotFalse($permissionPosition, $action . ' must keep an action-level AuthZ decision.');
+            $this->assertNotFalse($proxyPosition, $action . ' must retain the reviewed lifecycle proxy.');
+            $this->assertLessThan(
+                $proxyPosition,
+                $permissionPosition,
+                $action . ' must authorize before invoking the lifecycle proxy.'
+            );
         }
 
         preg_match('/private const IAM_AUTHZ_INTEGRATED_ACTIONS = \[(.*?)\];/s', $pluginUserController, $pluginMatch);
@@ -544,6 +575,9 @@ final class IdentityBackendBoundaryTest extends TestCase
         }
 
         $this->assertStringContainsString('public function routeIntegrationEnabled(): bool', $iamAuthzRead);
+        $this->assertStringContainsString('public function subjectBindingProbeEvidence(): string', $iamAuthzRead);
+        $this->assertStringContainsString('X-Identity-IAM-AuthZ-Probe-Evidence', $organizationController);
+        $this->assertStringContainsString("'wp3-subject-binding-v1'", $organizationController);
         $this->assertStringContainsString("boolConfig('IDENTITY_IAM_AUTHZ_ROUTE_INTEGRATION_ENABLED', false)", $iamAuthzRead);
         $this->assertStringNotContainsString('array_merge(', $iamAuthzRead);
     }
