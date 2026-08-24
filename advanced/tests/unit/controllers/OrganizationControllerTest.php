@@ -5,8 +5,11 @@ namespace tests\unit\controllers;
 use api\modules\v1\controllers\OrganizationController;
 use api\modules\v1\models\Organization;
 use api\modules\v1\models\UserOrganization;
+use api\modules\v1\services\IamAuthorizationReadService;
 use PHPUnit\Framework\TestCase;
 use Yii;
+use yii\web\Request;
+use yii\web\Response;
 
 final class OrganizationControllerTest extends TestCase
 {
@@ -17,7 +20,6 @@ final class OrganizationControllerTest extends TestCase
 
         $controller = new OrganizationController('organization', Yii::$app->getModule('v1'));
         $method = new \ReflectionMethod($controller, 'verbs');
-        $method->setAccessible(true);
         $verbs = $method->invoke($controller);
 
         $this->assertSame(['GET'], $verbs['list']);
@@ -25,5 +27,165 @@ final class OrganizationControllerTest extends TestCase
         $this->assertSame(['POST'], $verbs['update']);
         $this->assertSame(['POST'], $verbs['bind-user']);
         $this->assertSame(['POST'], $verbs['unbind-user']);
+    }
+
+    public function testSubjectBindingProbeEvidenceIsPublishedOnlyForExactDevelopRequest(): void
+    {
+        $originalRequest = Yii::$app->get('request');
+        $hadResponse = Yii::$app->has('response');
+        $originalResponse = $hadResponse ? Yii::$app->get('response') : null;
+        $controller = new OrganizationController('organization', Yii::$app->getModule('v1'));
+        $method = new \ReflectionMethod($controller, 'publishSubjectBindingProbeEvidence');
+        $service = new class extends IamAuthorizationReadService {
+            public function subjectBindingProbeEvidence(): string
+            {
+                return 'v1;binding=match';
+            }
+        };
+
+        try {
+            $request = new Request([
+                // Simulate a reverse proxy whose backend-observed Host is not
+                // the public API host. The exact browser Origin is the stable
+                // boundary contract.
+                'hostInfo' => 'http://api-d',
+                'scriptUrl' => '',
+            ]);
+            $request->headers->set('Origin', 'https://d.dev.xrugc.com');
+            $request->setQueryParams(['iamAuthzProbe' => 'wp3-subject-binding-v1']);
+            $response = new Response();
+            Yii::$app->set('request', $request);
+            Yii::$app->set('response', $response);
+
+            $published = $method->invoke($controller, $service);
+
+            $this->assertSame('v1;binding=match', $published);
+            $this->assertSame(
+                'v1;binding=match',
+                $response->headers->get('X-Identity-IAM-AuthZ-Probe-Evidence')
+            );
+            $this->assertSame('no-store, private', $response->headers->get('Cache-Control'));
+            $this->assertSame('no-cache', $response->headers->get('Pragma'));
+
+            foreach ([
+                [
+                    'origin' => '',
+                    'query' => ['iamAuthzProbe' => 'wp3-subject-binding-v1'],
+                ],
+                [
+                    'origin' => 'https://d.xrugc.com',
+                    'query' => ['iamAuthzProbe' => 'wp3-subject-binding-v1'],
+                ],
+                ['origin' => 'https://d.dev.xrugc.com', 'query' => ['iamAuthzProbe' => 'wrong']],
+                ['origin' => 'https://d.dev.xrugc.com', 'query' => [
+                    'iamAuthzProbe' => 'wp3-subject-binding-v1',
+                    'extra' => '1',
+                ]],
+            ] as $case) {
+                $request = new Request(['hostInfo' => 'http://api-d', 'scriptUrl' => '']);
+                if ($case['origin'] !== '') {
+                    $request->headers->set('Origin', $case['origin']);
+                }
+                $request->setQueryParams($case['query']);
+                $response = new Response();
+                Yii::$app->set('request', $request);
+                Yii::$app->set('response', $response);
+
+                $published = $method->invoke($controller, $service);
+
+                $this->assertNull($published);
+                $this->assertFalse($response->headers->has('X-Identity-IAM-AuthZ-Probe-Evidence'));
+                $this->assertFalse($response->headers->has('Cache-Control'));
+            }
+        } finally {
+            Yii::$app->set('request', $originalRequest);
+            if ($hadResponse) {
+                Yii::$app->set('response', $originalResponse);
+            } else {
+                Yii::$app->clear('response');
+            }
+        }
+    }
+
+    public function testPermissionDeniedResponseAddsOnlyExplicitProbeEvidence(): void
+    {
+        $controller = new OrganizationController('organization', Yii::$app->getModule('v1'));
+        $method = new \ReflectionMethod($controller, 'permissionDeniedResponse');
+
+        $this->assertSame(
+            [
+                'code' => 2003,
+                'message' => '没有权限执行此操作',
+                'iamAuthzProbeEvidence' => 'v1;binding=match',
+            ],
+            $method->invoke($controller, 'v1;binding=match')
+        );
+        $this->assertSame(
+            [
+                'code' => 2003,
+                'message' => '没有权限执行此操作',
+            ],
+            $method->invoke($controller, null)
+        );
+    }
+
+    public function testExactSubjectBindingProbeBypassesOnlyThePreActionAccessFilter(): void
+    {
+        $originalRequest = Yii::$app->get('request');
+        $originalRouteIntegration = getenv('IDENTITY_IAM_AUTHZ_ROUTE_INTEGRATION_ENABLED');
+
+        try {
+            putenv('IDENTITY_IAM_AUTHZ_ROUTE_INTEGRATION_ENABLED=false');
+            $request = new Request([
+                'hostInfo' => 'http://api-d',
+                'scriptUrl' => '',
+            ]);
+            $request->headers->set('Origin', 'https://d.dev.xrugc.com');
+            $request->setQueryParams(['iamAuthzProbe' => 'wp3-subject-binding-v1']);
+            Yii::$app->set('request', $request);
+
+            $controller = new OrganizationController('organization', Yii::$app->getModule('v1'));
+            $behaviors = $controller->behaviors();
+
+            $this->assertSame(
+                ['options', 'list', 'create', 'update', 'bind-user', 'unbind-user'],
+                $behaviors['access']['allowActions']
+            );
+            $this->assertFalse($this->accessFilterIsActive($controller, 'list'));
+
+            $request->setQueryParams([]);
+            $controller = new OrganizationController('organization', Yii::$app->getModule('v1'));
+            $behaviors = $controller->behaviors();
+            $this->assertSame(['options'], $behaviors['access']['allowActions']);
+            $this->assertTrue($this->accessFilterIsActive($controller, 'list'));
+        } finally {
+            Yii::$app->set('request', $originalRequest);
+            if ($originalRouteIntegration === false) {
+                putenv('IDENTITY_IAM_AUTHZ_ROUTE_INTEGRATION_ENABLED');
+            } else {
+                putenv('IDENTITY_IAM_AUTHZ_ROUTE_INTEGRATION_ENABLED=' . $originalRouteIntegration);
+            }
+        }
+    }
+
+    private function accessFilterIsActive(OrganizationController $controller, string $actionId): bool
+    {
+        $originalErrorHandler = Yii::$app->get('errorHandler');
+        $controller->module ??= Yii::$app;
+        try {
+            Yii::$app->set('errorHandler', [
+                'class' => \yii\web\ErrorHandler::class,
+                'errorAction' => 'site/error',
+            ]);
+            $filter = Yii::createObject($controller->behaviors()['access']);
+            $filter->attach($controller);
+            $action = $controller->createAction($actionId);
+            $this->assertNotNull($action);
+
+            $method = new \ReflectionMethod($filter, 'isActive');
+            return (bool)$method->invoke($filter, $action);
+        } finally {
+            Yii::$app->set('errorHandler', $originalErrorHandler);
+        }
     }
 }

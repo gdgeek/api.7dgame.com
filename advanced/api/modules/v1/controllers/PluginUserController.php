@@ -75,7 +75,9 @@ class PluginUserController extends \yii\rest\Controller
 
         $behaviors['access'] = [
             'class' => AccessControl::class,
-            'except' => $this->iamAuthorizationReadService()->routeIntegrationEnabled()
+            // mdm\admin\components\AccessControl overrides isActive() and
+            // consults allowActions, not ActionFilter::$except.
+            'allowActions' => $this->iamAuthorizationReadService()->routeIntegrationEnabled()
                 ? self::IAM_AUTHZ_INTEGRATED_ACTIONS
                 : [],
         ];
@@ -994,14 +996,13 @@ class PluginUserController extends \yii\rest\Controller
      */
     public function actionInvitations()
     {
-        if (($proxy = $this->proxyAccountLifecycle('/v1/plugin-user/invitations')) !== null) {
-            return $proxy['body'];
-        }
-
         Yii::$app->response->format = Response::FORMAT_JSON;
         $result = $this->resolveUserWithPermission('manage-invitations');
         if (isset($result['error'])) {
             return $result['error'];
+        }
+        if (($proxy = $this->proxyAccountLifecycle('/v1/plugin-user/invitations')) !== null) {
+            return $proxy['body'];
         }
 
         $redis = Yii::$app->redis;
@@ -1071,14 +1072,13 @@ class PluginUserController extends \yii\rest\Controller
      */
     public function actionCreateInvitation()
     {
-        if (($proxy = $this->proxyAccountLifecycle('/v1/plugin-user/create-invitation')) !== null) {
-            return $proxy['body'];
-        }
-
         Yii::$app->response->format = Response::FORMAT_JSON;
         $result = $this->resolveUserWithPermission('manage-invitations');
         if (isset($result['error'])) {
             return $result['error'];
+        }
+        if (($proxy = $this->proxyAccountLifecycle('/v1/plugin-user/create-invitation')) !== null) {
+            return $proxy['body'];
         }
 
         $request = Yii::$app->request;
@@ -1136,14 +1136,13 @@ class PluginUserController extends \yii\rest\Controller
      */
     public function actionDeleteInvitation()
     {
-        if (($proxy = $this->proxyAccountLifecycle('/v1/plugin-user/delete-invitation')) !== null) {
-            return $proxy['body'];
-        }
-
         Yii::$app->response->format = Response::FORMAT_JSON;
         $result = $this->resolveUserWithPermission('manage-invitations');
         if (isset($result['error'])) {
             return $result['error'];
+        }
+        if (($proxy = $this->proxyAccountLifecycle('/v1/plugin-user/delete-invitation')) !== null) {
+            return $proxy['body'];
         }
 
         $code = Yii::$app->request->getBodyParam('code');
@@ -1207,14 +1206,13 @@ class PluginUserController extends \yii\rest\Controller
      */
     public function actionInvitationRecords()
     {
-        if (($proxy = $this->proxyAccountLifecycle('/v1/plugin-user/invitation-records')) !== null) {
-            return $proxy['body'];
-        }
-
         Yii::$app->response->format = Response::FORMAT_JSON;
         $result = $this->resolveUserWithPermission('manage-invitations');
         if (isset($result['error'])) {
             return $result['error'];
+        }
+        if (($proxy = $this->proxyAccountLifecycle('/v1/plugin-user/invitation-records')) !== null) {
+            return $proxy['body'];
         }
 
         $code = Yii::$app->request->get('code');

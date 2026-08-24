@@ -8,6 +8,7 @@ use yii\base\Component;
 class IamAuthorizationReadService extends Component
 {
     private ?IdentityProviderClient $identityProviderClient = null;
+    private string $subjectBindingProbeEvidence = 'v1;binding=missing';
 
     public function decide(
         object $user,
@@ -17,6 +18,7 @@ class IamAuthorizationReadService extends Component
         ?string $requestKey = null,
         ?string $coverageId = null
     ): bool {
+        $this->subjectBindingProbeEvidence = 'v1;binding=missing';
         if (!$this->routeIntegrationEnabled()) {
             return $legacyAllowed;
         }
@@ -70,6 +72,7 @@ class IamAuthorizationReadService extends Component
             return false;
         }
 
+        $this->subjectBindingProbeEvidence = $this->buildSubjectBindingProbeEvidence($user, $result);
         $this->logDecision($result);
         if ($severity === 'p0'
             || $responseSource === 'fail-closed'
@@ -78,6 +81,11 @@ class IamAuthorizationReadService extends Component
         }
 
         return $decision === 'allow';
+    }
+
+    public function subjectBindingProbeEvidence(): string
+    {
+        return $this->subjectBindingProbeEvidence;
     }
 
     protected function identityProviderClient(): IdentityProviderClient
@@ -178,6 +186,70 @@ class IamAuthorizationReadService extends Component
             'errorCode' => $errorCode,
             'fallbackEnabled' => $this->fallbackEnabled(),
         ], 'identity.iamAuthzRead');
+    }
+
+    private function buildSubjectBindingProbeEvidence(object $user, array $result): string
+    {
+        $selection = is_array($result['selection'] ?? null) ? $result['selection'] : [];
+        $outcome = is_array($result['outcome'] ?? null) ? $result['outcome'] : [];
+        $evidence = is_array($result['evidence'] ?? null) ? $result['evidence'] : [];
+        $safety = is_array($result['safety'] ?? null) ? $result['safety'] : [];
+        $expected = isset($user->id) && (int)$user->id > 0
+            ? substr(hash('sha256', 'legacy:' . (int)$user->id), 0, 16)
+            : '';
+        $actual = $this->safeHash($selection['subjectHash'] ?? null) ?? '';
+        $binding = 'missing';
+        if ($expected !== '' && $actual !== '') {
+            $binding = hash_equals($expected, $actual) ? 'match' : 'mismatch';
+        }
+
+        $value = implode(';', [
+            'v1',
+            'binding=' . $binding,
+            'configured=' . ($this->safeEnum($selection['configuredMode'] ?? null, ['legacy', 'shadow', 'identity-primary']) ?? 'invalid'),
+            'rollout=' . ($this->safeEnum($selection['rolloutMode'] ?? null, ['off', 'allowlist', 'percentage', 'full']) ?? 'invalid'),
+            'source=' . ($this->safeEnum($outcome['responseSource'] ?? null, ['legacy', 'identity', 'legacy-fallback', 'fail-closed']) ?? 'invalid'),
+            'decision=' . ($this->safeEnum($outcome['decision'] ?? null, ['allow', 'deny']) ?? 'invalid'),
+            'reason=' . ($this->safeEnum($selection['reason'] ?? null, [
+                'legacy_mode',
+                'shadow_mode',
+                'subject_missing',
+                'retained_legacy_subject',
+                'rollout_off',
+                'allowlist_subject_selected',
+                'allowlist_subject_not_selected',
+                'percentage_subject_selected',
+                'percentage_subject_not_selected',
+                'full_rollout',
+            ]) ?? 'invalid'),
+            'selected=' . $this->safeBoolean($selection, 'selectedForIdentityPrimary'),
+            'fallback=' . $this->safeBoolean($outcome, 'fallbackUsed'),
+            'failClosed=' . $this->safeBoolean($outcome, 'failClosed'),
+            'severity=' . ($this->safeEnum($evidence['severity'] ?? null, ['none', 'p0', 'p1', 'info']) ?? 'invalid'),
+            'classification=' . ($this->safeEnum($evidence['classification'] ?? null, [
+                'not_compared',
+                'match',
+                'legacy_deny_identity_allow',
+                'legacy_allow_identity_deny',
+                'identity_read_error',
+                'identity_decision_missing',
+                'identity_policy_version_missing',
+            ]) ?? 'invalid'),
+            'permissionUnion=' . $this->safeBoolean($safety, 'permissionUnionApplied'),
+        ]);
+
+        $expected = str_repeat('0', strlen($expected));
+        $actual = str_repeat('0', strlen($actual));
+        return $value;
+    }
+
+    private function safeBoolean(array $values, string $key): string
+    {
+        if (!array_key_exists($key, $values) || !is_bool($values[$key])) {
+            return 'invalid';
+        }
+
+        return $values[$key] ? '1' : '0';
     }
 
     private function safeHash($value): ?string

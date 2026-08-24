@@ -103,6 +103,119 @@ final class IamAuthorizationReadServiceTest extends TestCase
         $this->assertStringNotContainsString('plugin-user.users', $encoded);
     }
 
+    public function testBuildsExactSafeProbeEvidenceWithoutPersistingSubjectHashes(): void
+    {
+        $this->setEnvironment('IDENTITY_IAM_AUTHZ_ROUTE_INTEGRATION_ENABLED', 'true');
+        $expectedSubjectHash = substr(hash('sha256', 'legacy:42'), 0, 16);
+        $service = $this->serviceWithClient(new class($expectedSubjectHash) extends IdentityProviderClient {
+            public function __construct(private readonly string $subjectHash)
+            {
+            }
+
+            public function iamAuthzResolve(array $input): ?array
+            {
+                return [
+                    'selection' => [
+                        'subjectHash' => $this->subjectHash,
+                        'configuredMode' => 'legacy',
+                        'rolloutMode' => 'off',
+                        'selectedForIdentityPrimary' => false,
+                        'reason' => 'legacy_mode',
+                    ],
+                    'outcome' => [
+                        'decision' => 'deny',
+                        'responseSource' => 'legacy',
+                        'fallbackUsed' => false,
+                        'failClosed' => false,
+                    ],
+                    'evidence' => [
+                        'permissionHash' => 'fedcba9876543210',
+                        'requestKeyHash' => '0011223344556677',
+                        'severity' => 'none',
+                        'classification' => 'not_compared',
+                    ],
+                    'safety' => [
+                        'permissionUnionApplied' => false,
+                    ],
+                ];
+            }
+        });
+
+        $this->assertFalse($service->decide(
+            $this->user(),
+            'organization.list',
+            false,
+            'route',
+            'organization.list',
+            'api.organization.global-rbac'
+        ));
+
+        $probeEvidence = $service->subjectBindingProbeEvidence();
+        $this->assertSame(
+            'v1;binding=match;configured=legacy;rollout=off;source=legacy;decision=deny;' .
+            'reason=legacy_mode;selected=0;fallback=0;failClosed=0;severity=none;' .
+            'classification=not_compared;permissionUnion=0',
+            $probeEvidence
+        );
+        $this->assertStringNotContainsString($expectedSubjectHash, $probeEvidence);
+        $this->assertStringNotContainsString('test-operator', $probeEvidence);
+    }
+
+    public function testProbeEvidenceFailsClosedOnSubjectMismatchAndResetsWhileRouteIsOff(): void
+    {
+        $this->setEnvironment('IDENTITY_IAM_AUTHZ_ROUTE_INTEGRATION_ENABLED', 'true');
+        $service = $this->serviceWithClient(new class extends IdentityProviderClient {
+            public function iamAuthzResolve(array $input): ?array
+            {
+                return [
+                    'selection' => [
+                        'subjectHash' => '0123456789abcdef',
+                        'configuredMode' => 'legacy',
+                        'rolloutMode' => 'off',
+                        'selectedForIdentityPrimary' => false,
+                        'reason' => 'legacy_mode',
+                    ],
+                    'outcome' => [
+                        'decision' => 'deny',
+                        'responseSource' => 'legacy',
+                        'fallbackUsed' => false,
+                        'failClosed' => false,
+                    ],
+                    'evidence' => [
+                        'permissionHash' => 'fedcba9876543210',
+                        'requestKeyHash' => null,
+                        'severity' => 'none',
+                        'classification' => 'not_compared',
+                    ],
+                    'safety' => [
+                        'permissionUnionApplied' => false,
+                    ],
+                ];
+            }
+        });
+
+        $this->assertFalse($service->decide(
+            $this->user(),
+            'organization.list',
+            false,
+            'route',
+            'organization.list',
+            'api.organization.global-rbac'
+        ));
+        $this->assertStringStartsWith('v1;binding=mismatch;', $service->subjectBindingProbeEvidence());
+
+        $this->setEnvironment('IDENTITY_IAM_AUTHZ_ROUTE_INTEGRATION_ENABLED', 'false');
+        $this->assertFalse($service->decide(
+            $this->user(),
+            'organization.list',
+            false,
+            'route',
+            'organization.list',
+            'api.organization.global-rbac'
+        ));
+        $this->assertSame('v1;binding=missing', $service->subjectBindingProbeEvidence());
+    }
+
     public function testHonorsFailClosedIdentityDecisionWithoutPermissionUnion(): void
     {
         $this->setEnvironment('IDENTITY_IAM_AUTHZ_ROUTE_INTEGRATION_ENABLED', 'true');

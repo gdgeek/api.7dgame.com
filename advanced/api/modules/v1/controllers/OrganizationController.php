@@ -16,6 +16,10 @@ use yii\web\Response;
 class OrganizationController extends Controller
 {
     private const IAM_AUTHZ_INTEGRATED_ACTIONS = ['list', 'create', 'update', 'bind-user', 'unbind-user'];
+    private const IAM_AUTHZ_PROBE_ORIGIN = 'https://d.dev.xrugc.com';
+    private const IAM_AUTHZ_PROBE_QUERY_KEY = 'iamAuthzProbe';
+    private const IAM_AUTHZ_PROBE_QUERY_VALUE = 'wp3-subject-binding-v1';
+    private const IAM_AUTHZ_PROBE_HEADER = 'X-Identity-IAM-AuthZ-Probe-Evidence';
     private ?IamShadowCompareService $iamShadowCompareService = null;
     private ?IamAuthorizationReadService $iamAuthorizationReadService = null;
 
@@ -34,12 +38,21 @@ class OrganizationController extends Controller
             'except' => ['options'],
         ];
 
+        $integratedActions = ($this->iamAuthorizationReadService()->routeIntegrationEnabled()
+            || $this->isSubjectBindingProbeRequest())
+            ? self::IAM_AUTHZ_INTEGRATED_ACTIONS
+            : [];
+
         $behaviors['access'] = [
             'class' => AccessControl::class,
-            'allowActions' => ['options'],
-            'except' => $this->iamAuthorizationReadService()->routeIntegrationEnabled()
-                ? self::IAM_AUTHZ_INTEGRATED_ACTIONS
-                : [],
+            // The exact Develop probe must reach requirePermission() even if
+            // AccessControl observes a stale/default-off route value during
+            // pre-action filter construction. requirePermission() remains the
+            // sole authorization decision and still fails closed; this only
+            // guarantees that the safe evidence header can be published.
+            // mdm\admin\components\AccessControl overrides isActive() and
+            // consults allowActions, not ActionFilter::$except.
+            'allowActions' => array_merge(['options'], $integratedActions),
         ];
 
         return $behaviors;
@@ -234,16 +247,60 @@ class OrganizationController extends Controller
             $permission,
             'api.organization.global-rbac'
         );
+        $probeEvidence = $this->publishSubjectBindingProbeEvidence(
+            $this->iamAuthorizationReadService()
+        );
 
         if (!$allowed) {
             Yii::$app->response->statusCode = 403;
-            return [
-                'code' => 2003,
-                'message' => '没有权限执行此操作',
-            ];
+            return $this->permissionDeniedResponse($probeEvidence);
         }
 
         return null;
+    }
+
+    private function permissionDeniedResponse(?string $probeEvidence): array
+    {
+        $error = [
+            'code' => 2003,
+            'message' => '没有权限执行此操作',
+        ];
+        // Preserve the exact, categorical probe evidence in the denied
+        // response body as a transport-independent fallback. The normal
+        // response envelope remains unchanged for every non-probe call.
+        if ($probeEvidence !== null) {
+            $error['iamAuthzProbeEvidence'] = $probeEvidence;
+        }
+        return $error;
+    }
+
+    private function publishSubjectBindingProbeEvidence(IamAuthorizationReadService $service): ?string
+    {
+        if (!$this->isSubjectBindingProbeRequest()) {
+            return null;
+        }
+
+        $evidence = $service->subjectBindingProbeEvidence();
+        Yii::$app->response->headers->set(
+            self::IAM_AUTHZ_PROBE_HEADER,
+            $evidence
+        );
+        Yii::$app->response->headers->set('Cache-Control', 'no-store, private');
+        Yii::$app->response->headers->set('Pragma', 'no-cache');
+        return $evidence;
+    }
+
+    private function isSubjectBindingProbeRequest(): bool
+    {
+        $request = Yii::$app->request;
+        // The browser's cross-origin Origin is stable across the trusted
+        // reverse-proxy chain, while the backend-observed Host is not. This
+        // predicate only bypasses the generic pre-action filter; the request
+        // still reaches requirePermission(), which remains the sole AuthZ
+        // decision and fails closed.
+        return $request->getIsGet()
+            && strtolower((string)$request->headers->get('Origin', '')) === self::IAM_AUTHZ_PROBE_ORIGIN
+            && $request->getQueryParams() === [self::IAM_AUTHZ_PROBE_QUERY_KEY => self::IAM_AUTHZ_PROBE_QUERY_VALUE];
     }
 
     private function iamAuthorizationReadService(): IamAuthorizationReadService

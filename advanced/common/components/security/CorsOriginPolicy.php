@@ -43,6 +43,7 @@ final class CorsOriginPolicy
         'X-Identity-IAM-Role-Write-Entry',
         'X-Identity-IAM-Role-Write-Actor',
         'X-Identity-IAM-Role-Write-Selector-Kind',
+        'X-Identity-IAM-AuthZ-Probe-Evidence',
     ];
 
     /**
