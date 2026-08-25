@@ -70,6 +70,9 @@ final class IamAuthorizationReadServiceTest extends TestCase
                         'severity' => 'none',
                         'classification' => 'match',
                     ],
+                    'safety' => [
+                        'permissionUnionApplied' => false,
+                    ],
                 ];
             }
         };
@@ -97,6 +100,7 @@ final class IamAuthorizationReadServiceTest extends TestCase
         $this->assertSame('allowlist_subject_selected', $entries[0]['reason']);
         $this->assertSame('identity', $entries[0]['responseSource']);
         $this->assertSame('allow', $entries[0]['decision']);
+        $this->assertFalse($entries[0]['permissionUnionApplied']);
         $encoded = (string)json_encode($entries);
         $this->assertStringNotContainsString('test-operator', $encoded);
         $this->assertStringNotContainsString('user-management.users', $encoded);
@@ -241,6 +245,9 @@ final class IamAuthorizationReadServiceTest extends TestCase
                         'severity' => 'p0',
                         'classification' => 'legacy_deny_identity_allow',
                     ],
+                    'safety' => [
+                        'permissionUnionApplied' => false,
+                    ],
                 ];
             }
         });
@@ -274,6 +281,9 @@ final class IamAuthorizationReadServiceTest extends TestCase
                         'severity' => 'none',
                         'classification' => 'not_compared',
                     ],
+                    'safety' => [
+                        'permissionUnionApplied' => false,
+                    ],
                 ];
             }
         });
@@ -286,6 +296,102 @@ final class IamAuthorizationReadServiceTest extends TestCase
         $this->assertSame('retained_legacy_subject', $entries[0]['reason']);
         $this->assertSame('legacy', $entries[0]['responseSource']);
         $this->assertFalse($entries[0]['selectedForIdentityPrimary']);
+        $this->assertFalse($entries[0]['permissionUnionApplied']);
+    }
+
+    public function testPermissionUnionFailsClosedAndIsExplicitlyLogged(): void
+    {
+        $this->setEnvironment('IDENTITY_IAM_AUTHZ_ROUTE_INTEGRATION_ENABLED', 'true');
+        $service = $this->serviceWithClient(new class extends IdentityProviderClient {
+            public function iamAuthzResolve(array $input): ?array
+            {
+                return [
+                    'selection' => [
+                        'subjectHash' => '0123456789abcdef',
+                        'configuredMode' => 'shadow',
+                        'rolloutMode' => 'off',
+                        'selectedForIdentityPrimary' => false,
+                        'reason' => 'shadow_mode',
+                    ],
+                    'outcome' => [
+                        'decision' => 'allow',
+                        'responseSource' => 'legacy',
+                        'fallbackUsed' => false,
+                        'failClosed' => false,
+                    ],
+                    'evidence' => [
+                        'permissionHash' => 'fedcba9876543210',
+                        'requestKeyHash' => '0011223344556677',
+                        'severity' => 'none',
+                        'classification' => 'match',
+                    ],
+                    'safety' => [
+                        'permissionUnionApplied' => true,
+                    ],
+                ];
+            }
+        });
+
+        $entries = $this->captureAuthzLogs(function () use ($service): void {
+            $this->assertFalse($service->decide(
+                $this->user(),
+                'organization.list',
+                true,
+                'route',
+                'organization.list',
+                'api.organization.global-rbac'
+            ));
+        });
+
+        $this->assertCount(1, $entries);
+        $this->assertSame('authorization.route-decision', $entries[0]['event']);
+        $this->assertTrue($entries[0]['permissionUnionApplied']);
+    }
+
+    public function testMissingPermissionUnionEvidenceFailsClosedBeforeDecisionLog(): void
+    {
+        $this->setEnvironment('IDENTITY_IAM_AUTHZ_ROUTE_INTEGRATION_ENABLED', 'true');
+        $service = $this->serviceWithClient(new class extends IdentityProviderClient {
+            public function iamAuthzResolve(array $input): ?array
+            {
+                return [
+                    'selection' => [
+                        'subjectHash' => '0123456789abcdef',
+                        'configuredMode' => 'shadow',
+                        'rolloutMode' => 'off',
+                        'selectedForIdentityPrimary' => false,
+                        'reason' => 'shadow_mode',
+                    ],
+                    'outcome' => [
+                        'decision' => 'allow',
+                        'responseSource' => 'legacy',
+                        'fallbackUsed' => false,
+                        'failClosed' => false,
+                    ],
+                    'evidence' => [
+                        'permissionHash' => 'fedcba9876543210',
+                        'requestKeyHash' => '0011223344556677',
+                        'severity' => 'none',
+                        'classification' => 'match',
+                    ],
+                ];
+            }
+        });
+
+        $entries = $this->captureAuthzLogs(function () use ($service): void {
+            $this->assertFalse($service->decide(
+                $this->user(),
+                'organization.list',
+                true,
+                'route',
+                'organization.list',
+                'api.organization.global-rbac'
+            ));
+        });
+
+        $this->assertCount(1, $entries);
+        $this->assertSame('authorization.route-decision-unavailable', $entries[0]['event']);
+        $this->assertSame('IDENTITY_AUTHZ_SAFETY_INVALID', $entries[0]['errorCode']);
     }
 
     public function testTransportFailureUsesOnlyExplicitFallback(): void
