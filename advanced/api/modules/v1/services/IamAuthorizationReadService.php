@@ -72,11 +72,18 @@ class IamAuthorizationReadService extends Component
             return false;
         }
 
+        $permissionUnionApplied = $result['safety']['permissionUnionApplied'] ?? null;
+        if (!is_bool($permissionUnionApplied)) {
+            $this->logUnavailable('IDENTITY_AUTHZ_SAFETY_INVALID');
+            return false;
+        }
+
         $this->subjectBindingProbeEvidence = $this->buildSubjectBindingProbeEvidence($user, $result);
         $this->logDecision($result);
         if ($severity === 'p0'
             || $responseSource === 'fail-closed'
-            || (bool)($result['outcome']['failClosed'] ?? false)) {
+            || (bool)($result['outcome']['failClosed'] ?? false)
+            || $permissionUnionApplied) {
             return false;
         }
 
@@ -141,6 +148,7 @@ class IamAuthorizationReadService extends Component
         $selection = is_array($result['selection'] ?? null) ? $result['selection'] : [];
         $outcome = is_array($result['outcome'] ?? null) ? $result['outcome'] : [];
         $evidence = is_array($result['evidence'] ?? null) ? $result['evidence'] : [];
+        $safety = is_array($result['safety'] ?? null) ? $result['safety'] : [];
 
         Yii::info([
             'event' => 'authorization.route-decision',
@@ -176,6 +184,7 @@ class IamAuthorizationReadService extends Component
                 'identity_decision_missing',
                 'identity_policy_version_missing',
             ]),
+            'permissionUnionApplied' => $safety['permissionUnionApplied'] ?? null,
         ], 'identity.iamAuthzRead');
     }
 
