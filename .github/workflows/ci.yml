@@ -502,6 +502,41 @@ jobs:
               done
             ' task51-file-scan "${task51_sentinel}"
           }
+          task51_wait_for_apache() {
+            local task51_container_id="$1"
+            local task51_host_port="$2"
+            local task51_phase="$3"
+            local task51_exit_code
+            local task51_running
+            local task51_readiness_status='000'
+
+            for _ in $(seq 1 50); do
+              if ! task51_running=$(docker inspect \
+                --format='{{.State.Running}}' "${task51_container_id}"); then
+                echo "Release ${task51_phase} container disappeared before readiness." >&2
+                return 1
+              fi
+              if [ "${task51_running}" != true ]; then
+                task51_exit_code=$(docker inspect \
+                  --format='{{.State.ExitCode}}' "${task51_container_id}")
+                echo "Release ${task51_phase} container exited before readiness (exit=${task51_exit_code})." >&2
+                return 1
+              fi
+              if task51_readiness_status=$(curl --silent \
+                --max-time 1 \
+                --output /dev/null \
+                --write-out '%{http_code}' \
+                --header 'Host: api.xrteeth.com' \
+                "http://127.0.0.1:${task51_host_port}/robots.txt") \
+                && [ "${task51_readiness_status}" = '200' ]; then
+                return 0
+              fi
+              sleep 0.1
+            done
+
+            echo "Release ${task51_phase} Apache readiness timed out (status=${task51_readiness_status})." >&2
+            return 1
+          }
           trace_sentinel=$(task51_random_base64url)
           test "${#trace_sentinel}" = 43
           trace_output=$(docker run --rm \
@@ -550,25 +585,28 @@ jobs:
             --format='{{(index (index .NetworkSettings.Ports "80/tcp") 0).HostPort}}' \
             "${container_id}")
 
+          task51_wait_for_apache "${container_id}" "${host_port}" 'debug-guard'
           status='000'
-          for _ in $(seq 1 50); do
-            if status=$(curl --silent --show-error \
-              --max-time 1 \
-              --output "${smoke_dir}/debug-body" \
-              --dump-header "${smoke_dir}/debug-headers" \
-              --write-out '%{http_code}' \
-              --header 'Host: api.xrteeth.com' \
-              --header "X-Task51-Internal-Token: ${http_sentinel}" \
-              --header 'Content-Type: application/json' \
-              --data "{\"probe\":\"${http_sentinel}\"}" \
-              "http://127.0.0.1:${host_port}/v1/task51/stage-b/issue"); then
-              break
-            fi
-            status='000'
-            sleep 0.1
-          done
-
-          test "${status}" = '404'
+          debug_curl_exit=0
+          if status=$(curl --silent --show-error \
+            --max-time 2 \
+            --output "${smoke_dir}/debug-body" \
+            --dump-header "${smoke_dir}/debug-headers" \
+            --write-out '%{http_code}' \
+            --header 'Host: api.xrteeth.com' \
+            --header "X-Task51-Internal-Token: ${http_sentinel}" \
+            --header 'Content-Type: application/json' \
+            --data "{\"probe\":\"${http_sentinel}\"}" \
+            "http://127.0.0.1:${host_port}/v1/task51/stage-b/issue" \
+            2>"${smoke_dir}/debug-curl-error"); then
+            :
+          else
+            debug_curl_exit=$?
+          fi
+          if [ "${debug_curl_exit}" -ne 0 ] || [ "${status}" != '404' ]; then
+            echo "Release debug-guard HTTP assertion failed (curl=${debug_curl_exit}, status=${status:-000})." >&2
+            exit 1
+          fi
           grep -Eiq '^cache-control:[[:space:]]*no-store, private, max-age=0\r?$' \
             "${smoke_dir}/debug-headers"
           # The pre-Yii debug guard exits without rendering an application error
@@ -617,24 +655,27 @@ jobs:
             --format='{{(index (index .NetworkSettings.Ports "80/tcp") 0).HostPort}}' \
             "${container_id}")
 
+          task51_wait_for_apache "${container_id}" "${host_port}" 'production'
           status='000'
-          for _ in $(seq 1 50); do
-            if status=$(curl --silent --show-error \
-              --max-time 2 \
-              --output "${smoke_dir}/prod-body" \
-              --dump-header "${smoke_dir}/prod-headers" \
-              --write-out '%{http_code}' \
-              --header 'Host: api.xrteeth.com' \
-              --header 'Content-Type: application/json' \
-              --data "{\"probe\":\"${prod_http_sentinel}\"}" \
-              "http://127.0.0.1:${host_port}/v1/task51/stage-b/claim"); then
-              break
-            fi
-            status='000'
-            sleep 0.1
-          done
-
-          test "${status}" = '404'
+          prod_curl_exit=0
+          if status=$(curl --silent --show-error \
+            --max-time 2 \
+            --output "${smoke_dir}/prod-body" \
+            --dump-header "${smoke_dir}/prod-headers" \
+            --write-out '%{http_code}' \
+            --header 'Host: api.xrteeth.com' \
+            --header 'Content-Type: application/json' \
+            --data "{\"probe\":\"${prod_http_sentinel}\"}" \
+            "http://127.0.0.1:${host_port}/v1/task51/stage-b/claim" \
+            2>"${smoke_dir}/prod-curl-error"); then
+            :
+          else
+            prod_curl_exit=$?
+          fi
+          if [ "${prod_curl_exit}" -ne 0 ] || [ "${status}" != '404' ]; then
+            echo "Release production HTTP assertion failed (curl=${prod_curl_exit}, status=${status:-000})." >&2
+            exit 1
+          fi
           test -s "${smoke_dir}/prod-body"
           php -r '
             $body = json_decode(
@@ -666,15 +707,35 @@ jobs:
           for oversize_path in \
             '/v1/task51/stage-b/claim' \
             '/index.php/v1/task51/stage-b/claim'; do
-            oversize_status=$(curl --silent --show-error \
+            oversize_status='000'
+            oversize_curl_exit=0
+            if oversize_status=$(curl --silent --show-error \
               --max-time 2 \
               --output /dev/null \
               --write-out '%{http_code}' \
               --header 'Host: api.xrteeth.com' \
               --header 'Content-Type: application/octet-stream' \
               --data-binary "@${smoke_dir}/oversize-body" \
-              "http://127.0.0.1:${host_port}${oversize_path}")
-            test "${oversize_status}" = '413'
+              "http://127.0.0.1:${host_port}${oversize_path}" \
+              2>"${smoke_dir}/oversize-curl-error"); then
+              :
+            else
+              oversize_curl_exit=$?
+            fi
+            oversize_status=${oversize_status:-000}
+            if [ "${oversize_status}" != '413' ]; then
+              echo "Release oversize-body assertion failed for ${oversize_path} (curl=${oversize_curl_exit}, status=${oversize_status})." >&2
+              exit 1
+            fi
+            # Apache may close a rejected upload after emitting the complete
+            # HTTP 413 response. curl reports that expected close as exit 56;
+            # the exact status remains mandatory, so the security gate is not
+            # weakened into accepting a transport-only failure.
+            if [ "${oversize_curl_exit}" -ne 0 ] \
+              && [ "${oversize_curl_exit}" -ne 56 ]; then
+              echo "Release oversize-body transport failed unexpectedly for ${oversize_path} (curl=${oversize_curl_exit})." >&2
+              exit 1
+            fi
           done
 
           if ! task51_assert_container_files_clean "${container_id}" "${prod_http_sentinel}"; then
