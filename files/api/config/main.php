@@ -37,9 +37,9 @@ return [
         'loginCodeReadiness' => [
             'class' => LoginCodeReadiness::class,
         ],
-        // Task 5.1 exact-one transactions must never inherit the application's
-        // per-statement CynosDB retry command. This component is lazy and uses
-        // the same MySQL authority through the standard Yii connection/command.
+        // Task 5.1 exact-one transactions may use the pinned CynosDB service,
+        // but never the application's per-statement retry adapter/command. This
+        // component uses the same authority through standard Yii primitives.
         'task51CoordinatorDb' => [
             'class' => \yii\db\Connection::class,
             'commandClass' => \yii\db\Command::class,
