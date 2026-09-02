@@ -32,10 +32,16 @@ final class Task51StageBCoordinatorMigrationTest extends TestCase
             'get_class($db) !== Connection::class',
             '$db->commandClass !== Command::class',
             '$db->enableSlaves !== false',
-            "version_compare(\$matches[1], '8.0.19', '<')",
-            "stripos(\$serverVersion, 'mariadb')",
+            "version_compare(\$matches[1], '8.0.19', '>=')",
             'SELECT @@version_comment',
-            "stripos(\$versionComment, 'percona')",
+            'ORACLE_VERSION_COMMENTS',
+            "'/\\A(\\d+\\.\\d+\\.\\d+)\\z/D'",
+            'SELECT CYNOS_VERSION()',
+            'SELECT @@CYNOS_VERSION',
+            'CYNOS_SERVER_VERSION',
+            'CYNOS_KERNEL_VERSION',
+            'SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ',
+            'requiredMetadataCapabilityQueries',
             'SET SESSION lock_wait_timeout = ',
             'SET SESSION innodb_lock_wait_timeout = ',
         ] as $sharedGuard) {
@@ -78,7 +84,7 @@ final class Task51StageBCoordinatorMigrationTest extends TestCase
         $this->assertStringNotContainsString('updateTable', $source);
     }
 
-    public function testMigrationRejectsCynosAdapterBeforeFirstDdl(): void
+    public function testMigrationRejectsRetryingCynosAdapterBeforeFirstDdl(): void
     {
         require_once dirname(__DIR__, 3)
             . '/console/migrations/m260828_170000_create_task51_stage_b_coordinator_tables.php';

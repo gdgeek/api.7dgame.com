@@ -9,6 +9,7 @@ use Throwable;
 use yii\db\Connection;
 use yii\db\IntegrityException;
 use yii\db\Query;
+use yii\db\Transaction;
 
 final class DbTask51StageBRepository implements Task51StageBRepositoryInterface
 {
@@ -18,7 +19,13 @@ final class DbTask51StageBRepository implements Task51StageBRepositoryInterface
 
     public function transaction(Closure $operation): mixed
     {
-        $transaction = $this->db->beginTransaction();
+        if ($this->db->getTransaction() !== null) {
+            throw new Task51CoordinatorException(
+                Task51CoordinatorException::UNAVAILABLE,
+                'Task 5.1 coordinator refuses an inherited database transaction.'
+            );
+        }
+        $transaction = $this->db->beginTransaction(Transaction::REPEATABLE_READ);
         try {
             $result = $operation();
             $transaction->commit();
