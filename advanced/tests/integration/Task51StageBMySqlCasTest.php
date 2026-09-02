@@ -19,7 +19,7 @@ use yii\db\Exception as DbException;
 require_once dirname(__DIR__) . '/support/Task51ArtifactFixture.php';
 
 /**
- * Opt-in destructive suite for a dedicated, disposable Oracle MySQL database.
+ * Opt-in destructive suite for a dedicated, disposable supported MySQL database.
  *
  * It has no fallback to the application's DB configuration. To run it, set:
  *   TASK51_MYSQL_INTEGRATION=1
@@ -240,6 +240,54 @@ final class Task51StageBMySqlCasTest extends TestCase
         )->queryScalar());
         $this->assertSame(20, (int)$this->db()->createCommand(
             'SELECT @@SESSION.innodb_lock_wait_timeout'
+        )->queryScalar());
+    }
+
+    public function testRepositoryTransactionOverridesReadCommittedSession(): void
+    {
+        [, $rawStageB] = $this->issuedFixture();
+        $executionId = $this->stageB($rawStageB)['executionId'];
+        $updatedApprovalRef = 'task51-rr-' . bin2hex(random_bytes(16));
+        $writer = $this->newConnection();
+        $this->db()->createCommand(
+            'SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED'
+        )->execute();
+        $repository = new DbTask51StageBRepository($this->db());
+
+        try {
+            [$before, $after] = $repository->transaction(function () use (
+                $executionId,
+                $updatedApprovalRef,
+                $writer
+            ): array {
+                $before = (string)$this->db()->createCommand(
+                    'SELECT approval_ref FROM `' . self::EXECUTION_TABLE
+                        . '` WHERE execution_id = :executionId',
+                    [':executionId' => $executionId]
+                )->queryScalar();
+                $this->assertSame(1, $writer->createCommand()->update(
+                    self::EXECUTION_TABLE,
+                    ['approval_ref' => $updatedApprovalRef],
+                    ['execution_id' => $executionId]
+                )->execute());
+                $after = (string)$this->db()->createCommand(
+                    'SELECT approval_ref FROM `' . self::EXECUTION_TABLE
+                        . '` WHERE execution_id = :executionId',
+                    [':executionId' => $executionId]
+                )->queryScalar();
+
+                return [$before, $after];
+            });
+        } finally {
+            $writer->close();
+        }
+
+        $this->assertSame($before, $after);
+        $this->assertNotSame($updatedApprovalRef, $after);
+        $this->assertSame($updatedApprovalRef, (string)$this->db()->createCommand(
+            'SELECT approval_ref FROM `' . self::EXECUTION_TABLE
+                . '` WHERE execution_id = :executionId',
+            [':executionId' => $executionId]
         )->queryScalar());
     }
 
@@ -886,15 +934,7 @@ final class Task51StageBMySqlCasTest extends TestCase
                 'Refusing destructive Task51 integration tests outside a task51_test_* database.'
             );
         }
-        $version = (string)$db->getServerVersion();
-        $versionComment = (string)$db->createCommand('SELECT @@version_comment')->queryScalar();
-        if (stripos($version, 'mariadb') !== false
-            || stripos($versionComment, 'mysql') === false
-            || stripos($versionComment, 'percona') !== false
-            || preg_match('/^(\d+\.\d+\.\d+)/D', $version, $matches) !== 1
-            || version_compare($matches[1], '8.0.19', '<')) {
-            throw new RuntimeException('Task51 integration tests require Oracle MySQL 8.0.19 or newer.');
-        }
+        Task51AppliedSchemaFingerprint::assertSupportedDatabase($db);
     }
 
     private function assertTablesAbsent(Connection $db): void

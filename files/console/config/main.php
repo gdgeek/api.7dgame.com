@@ -28,9 +28,9 @@ return [
         ],
     ],
     'components' => [
-        // Task 5.1 DDL must not use the application's CynosDB connection or
-        // per-statement retry command. Migration invocation explicitly selects
-        // this lazy, standard Yii connection against the same MySQL authority.
+        // Task 5.1 DDL may use the pinned CynosDB service, but must not use the
+        // application's retrying CynosDB adapter/command. Migration invocation
+        // selects this lazy standard Yii connection to the same authority.
         'task51CoordinatorDb' => [
             'class' => \yii\db\Connection::class,
             'commandClass' => \yii\db\Command::class,
