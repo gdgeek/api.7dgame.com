@@ -24,11 +24,12 @@ RUN docker-php-ext-install -j$(nproc) mysqli pdo pdo_mysql zip
 
 # Enable OPcache + JIT configuration (opcache is built-in for PHP 8.5)
 COPY ./docker/php-jit.ini $PHP_INI_DIR/conf.d/opcache-jit.ini
+COPY ./docker/task51-security.ini $PHP_INI_DIR/conf.d/zz-task51-security.ini
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
+RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 
 WORKDIR /var/www/html/advanced
 
