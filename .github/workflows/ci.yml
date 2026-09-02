@@ -555,9 +555,27 @@ jobs:
           fi
 
           docker run --rm "${TASK51_RELEASE_IMAGE}" apache2ctl -t
-          vhost_dump=$(docker run --rm "${TASK51_RELEASE_IMAGE}" apache2ctl -S 2>&1)
-          grep -Eq 'default server api\.xrteeth\.com' <<< "${vhost_dump}"
-          grep -Eq 'alias api\.xrugc\.com' <<< "${vhost_dump}"
+          if ! vhost_dump=$(docker run --rm "${TASK51_RELEASE_IMAGE}" apache2ctl -S 2>&1); then
+            echo 'Release Apache virtual-host inspection failed.' >&2
+            exit 1
+          fi
+          if ! grep -Eq 'default server api\.xrteeth\.com' <<< "${vhost_dump}"; then
+            echo 'Release Apache default-server assertion failed.' >&2
+            exit 1
+          fi
+          if ! grep -Eq 'alias api\.xrugc\.com' <<< "${vhost_dump}"; then
+            echo 'Release Apache alias assertion failed.' >&2
+            exit 1
+          fi
+          if ! docker run --rm "${TASK51_RELEASE_IMAGE}" sh -ceu '
+            config=/etc/apache2/sites-enabled/000-default.conf
+            test -e "${config}"
+            grep -Eq "^[[:space:]]*ServerName[[:space:]]+api\\.xrteeth\\.com[[:space:]]*$" "${config}"
+            grep -Eq "^[[:space:]]*ServerAlias[[:space:]]+api\\.xrugc\\.com[[:space:]]*$" "${config}"
+          '; then
+            echo 'Release enabled Apache vhost contract failed.' >&2
+            exit 1
+          fi
 
           smoke_dir=$(mktemp -d)
           container_id=''
@@ -569,17 +587,16 @@ jobs:
           }
           trap cleanup_task51_smoke EXIT
 
-          # First prove the pre-Yii debug guard fails closed without rendering
-          # or logging a sensitive control-plane request. This intentionally
-          # does not prove that the production application can bootstrap.
+          # First prove the default-off pre-Yii debug guard fails closed without
+          # rendering or logging the request. This stays inside Stage A: the
+          # coordinator remains disabled and no internal control token is used.
           http_sentinel=$(task51_random_base64url)
           test "${#http_sentinel}" = 43
           container_id=$(docker run -d \
             -p 127.0.0.1::80 \
             -e YII_DEBUG=1 \
             -e YII_ENV=dev \
-            -e TASK51_STAGE_B_COORDINATOR_ENABLED=1 \
-            -e TASK51_STAGE_B_INTERNAL_TOKEN="${http_sentinel}" \
+            -e TASK51_STAGE_B_COORDINATOR_ENABLED=0 \
             "${TASK51_RELEASE_IMAGE}")
           host_port=$(docker inspect \
             --format='{{(index (index .NetworkSettings.Ports "80/tcp") 0).HostPort}}' \
@@ -594,7 +611,6 @@ jobs:
             --dump-header "${smoke_dir}/debug-headers" \
             --write-out '%{http_code}' \
             --header 'Host: api.xrteeth.com' \
-            --header "X-Task51-Internal-Token: ${http_sentinel}" \
             --header 'Content-Type: application/json' \
             --data "{\"probe\":\"${http_sentinel}\"}" \
             "http://127.0.0.1:${host_port}/v1/task51/stage-b/issue" \
@@ -608,10 +624,17 @@ jobs:
             exit 1
           fi
           test "${status}" = '404'
-          grep -Eiq '^cache-control:[[:space:]]*no-store, private, max-age=0\r?$' \
-            "${smoke_dir}/debug-headers"
+          if ! grep -Eiq '^cache-control:[[:space:]]*no-store, private, max-age=0\r?$' \
+            "${smoke_dir}/debug-headers"; then
+            echo 'Release debug-guard cache policy assertion failed.' >&2
+            exit 1
+          fi
           # The pre-Yii debug guard exits without rendering an application error
           # document. A non-empty body would mean the request reached Yii.
+          if [ -s "${smoke_dir}/debug-body" ]; then
+            echo 'Release debug-guard unexpectedly rendered a response body.' >&2
+            exit 1
+          fi
           test ! -s "${smoke_dir}/debug-body"
           if grep -Fq -- "${http_sentinel}" \
             "${smoke_dir}/debug-headers" "${smoke_dir}/debug-body"; then
@@ -622,13 +645,22 @@ jobs:
             echo 'Release container files exposed the Task 5.1 sentinel.' >&2
             exit 1
           fi
-          docker stop --time 5 "${container_id}" >/dev/null
-          docker logs "${container_id}" > "${smoke_dir}/debug-container.log" 2>&1
+          if ! docker stop --time 5 "${container_id}" >/dev/null; then
+            echo 'Release debug-guard container stop failed.' >&2
+            exit 1
+          fi
+          if ! docker logs "${container_id}" > "${smoke_dir}/debug-container.log" 2>&1; then
+            echo 'Release debug-guard container log collection failed.' >&2
+            exit 1
+          fi
           if grep -Fq -- "${http_sentinel}" "${smoke_dir}/debug-container.log"; then
             echo 'Release container logs exposed the Task 5.1 sentinel.' >&2
             exit 1
           fi
-          docker rm "${container_id}" >/dev/null
+          if ! docker rm "${container_id}" >/dev/null; then
+            echo 'Release debug-guard container removal failed.' >&2
+            exit 1
+          fi
           container_id=''
 
           # Now prove the exact release image really boots vendor/Yii and the
@@ -677,6 +709,10 @@ jobs:
             echo "Release production HTTP assertion failed (curl=${prod_curl_exit}, status=${status:-000})." >&2
             exit 1
           fi
+          if [ ! -s "${smoke_dir}/prod-body" ]; then
+            echo 'Release production response body was unexpectedly empty.' >&2
+            exit 1
+          fi
           test -s "${smoke_dir}/prod-body"
           php -r '
             $body = json_decode(
@@ -690,14 +726,29 @@ jobs:
               exit(1);
             }
           ' "${smoke_dir}/prod-body"
-          grep -Eiq '^content-type:[[:space:]]*application/json([;][[:space:]]*charset=UTF-8)?\r?$' \
-            "${smoke_dir}/prod-headers"
-          grep -Eiq '^cache-control:[[:space:]]*no-store, private, max-age=0\r?$' \
-            "${smoke_dir}/prod-headers"
-          grep -Eiq '^pragma:[[:space:]]*no-cache\r?$' "${smoke_dir}/prod-headers"
-          grep -Eiq '^expires:[[:space:]]*0\r?$' "${smoke_dir}/prod-headers"
-          grep -Eiq '^x-content-type-options:[[:space:]]*nosniff\r?$' \
-            "${smoke_dir}/prod-headers"
+          if ! grep -Eiq '^content-type:[[:space:]]*application/json([;][[:space:]]*charset=UTF-8)?\r?$' \
+            "${smoke_dir}/prod-headers"; then
+            echo 'Release production Content-Type assertion failed.' >&2
+            exit 1
+          fi
+          if ! grep -Eiq '^cache-control:[[:space:]]*no-store, private, max-age=0\r?$' \
+            "${smoke_dir}/prod-headers"; then
+            echo 'Release production Cache-Control assertion failed.' >&2
+            exit 1
+          fi
+          if ! grep -Eiq '^pragma:[[:space:]]*no-cache\r?$' "${smoke_dir}/prod-headers"; then
+            echo 'Release production Pragma assertion failed.' >&2
+            exit 1
+          fi
+          if ! grep -Eiq '^expires:[[:space:]]*0\r?$' "${smoke_dir}/prod-headers"; then
+            echo 'Release production Expires assertion failed.' >&2
+            exit 1
+          fi
+          if ! grep -Eiq '^x-content-type-options:[[:space:]]*nosniff\r?$' \
+            "${smoke_dir}/prod-headers"; then
+            echo 'Release production X-Content-Type-Options assertion failed.' >&2
+            exit 1
+          fi
           if grep -Fq -- "${prod_http_sentinel}" \
             "${smoke_dir}/prod-headers" "${smoke_dir}/prod-body"; then
             echo 'Production Yii HTTP response exposed the Task 5.1 sentinel.' >&2
@@ -744,12 +795,23 @@ jobs:
             echo 'Production Yii container files exposed the Task 5.1 sentinel.' >&2
             exit 1
           fi
-          docker stop --time 5 "${container_id}" >/dev/null
-          docker logs "${container_id}" > "${smoke_dir}/prod-container.log" 2>&1
+          if ! docker stop --time 5 "${container_id}" >/dev/null; then
+            echo 'Release production container stop failed.' >&2
+            exit 1
+          fi
+          if ! docker logs "${container_id}" > "${smoke_dir}/prod-container.log" 2>&1; then
+            echo 'Release production container log collection failed.' >&2
+            exit 1
+          fi
           if grep -Fq -- "${prod_http_sentinel}" "${smoke_dir}/prod-container.log"; then
             echo 'Production Yii container logs exposed the Task 5.1 sentinel.' >&2
             exit 1
           fi
+          if ! docker rm "${container_id}" >/dev/null; then
+            echo 'Release production container removal failed.' >&2
+            exit 1
+          fi
+          container_id=''
 
       - name: Push Docker Image
         run: |

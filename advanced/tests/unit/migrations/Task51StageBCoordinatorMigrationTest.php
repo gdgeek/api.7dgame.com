@@ -323,6 +323,13 @@ final class Task51StageBCoordinatorMigrationTest extends TestCase
             'apache2ctl -t',
             'apache2ctl -S',
             "default server api\\.xrteeth\\.com",
+            "alias api\\.xrugc\\.com",
+            'Release Apache default-server assertion failed.',
+            'Release Apache alias assertion failed.',
+            'sites-enabled/000-default.conf',
+            "ServerName[[:space:]]+api\\\\.xrteeth\\\\.com",
+            "ServerAlias[[:space:]]+api\\\\.xrugc\\\\.com",
+            'Release enabled Apache vhost contract failed.',
             '-e YII_DEBUG=1',
             '-e YII_ENV=dev',
             "test \"\${status}\" = '404'",
@@ -359,5 +366,26 @@ final class Task51StageBCoordinatorMigrationTest extends TestCase
         ] as $expectedImageGate) {
             $this->assertStringContainsString($expectedImageGate, $workflow);
         }
+
+        $this->assertSame(
+            2,
+            substr_count($workflow, 'TASK51_STAGE_B_COORDINATOR_ENABLED=')
+        );
+        $this->assertSame(
+            2,
+            substr_count($workflow, '-e TASK51_STAGE_B_COORDINATOR_ENABLED=0')
+        );
+        $this->assertSame(
+            0,
+            substr_count($workflow, '-e TASK51_STAGE_B_COORDINATOR_ENABLED=1')
+        );
+        $this->assertSame(
+            0,
+            substr_count($workflow, 'TASK51_STAGE_B_INTERNAL_TOKEN')
+        );
+        $this->assertSame(
+            0,
+            substr_count(strtolower($workflow), 'x-task51-internal-token')
+        );
     }
 }
