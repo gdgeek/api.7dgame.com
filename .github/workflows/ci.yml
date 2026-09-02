@@ -607,6 +607,7 @@ jobs:
             echo "Release debug-guard HTTP assertion failed (curl=${debug_curl_exit}, status=${status:-000})." >&2
             exit 1
           fi
+          test "${status}" = '404'
           grep -Eiq '^cache-control:[[:space:]]*no-store, private, max-age=0\r?$' \
             "${smoke_dir}/debug-headers"
           # The pre-Yii debug guard exits without rendering an application error
@@ -727,6 +728,7 @@ jobs:
               echo "Release oversize-body assertion failed for ${oversize_path} (curl=${oversize_curl_exit}, status=${oversize_status})." >&2
               exit 1
             fi
+            test "${oversize_status}" = '413'
             # Apache may close a rejected upload after emitting the complete
             # HTTP 413 response. curl reports that expected close as exit 56;
             # the exact status remains mandatory, so the security gate is not
