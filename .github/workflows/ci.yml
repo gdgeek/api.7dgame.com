@@ -624,7 +624,7 @@ jobs:
             exit 1
           fi
           test "${status}" = '404'
-          if ! grep -Eiq '^cache-control:[[:space:]]*no-store, private, max-age=0\r?$' \
+          if ! grep -Eiq $'^cache-control:[[:space:]]*no-store, private, max-age=0\r?$' \
             "${smoke_dir}/debug-headers"; then
             echo 'Release debug-guard cache policy assertion failed.' >&2
             exit 1
@@ -726,25 +726,25 @@ jobs:
               exit(1);
             }
           ' "${smoke_dir}/prod-body"
-          if ! grep -Eiq '^content-type:[[:space:]]*application/json([;][[:space:]]*charset=UTF-8)?\r?$' \
+          if ! grep -Eiq $'^content-type:[[:space:]]*application/json([;][[:space:]]*charset=UTF-8)?\r?$' \
             "${smoke_dir}/prod-headers"; then
             echo 'Release production Content-Type assertion failed.' >&2
             exit 1
           fi
-          if ! grep -Eiq '^cache-control:[[:space:]]*no-store, private, max-age=0\r?$' \
+          if ! grep -Eiq $'^cache-control:[[:space:]]*no-store, private, max-age=0\r?$' \
             "${smoke_dir}/prod-headers"; then
             echo 'Release production Cache-Control assertion failed.' >&2
             exit 1
           fi
-          if ! grep -Eiq '^pragma:[[:space:]]*no-cache\r?$' "${smoke_dir}/prod-headers"; then
+          if ! grep -Eiq $'^pragma:[[:space:]]*no-cache\r?$' "${smoke_dir}/prod-headers"; then
             echo 'Release production Pragma assertion failed.' >&2
             exit 1
           fi
-          if ! grep -Eiq '^expires:[[:space:]]*0\r?$' "${smoke_dir}/prod-headers"; then
+          if ! grep -Eiq $'^expires:[[:space:]]*0\r?$' "${smoke_dir}/prod-headers"; then
             echo 'Release production Expires assertion failed.' >&2
             exit 1
           fi
-          if ! grep -Eiq '^x-content-type-options:[[:space:]]*nosniff\r?$' \
+          if ! grep -Eiq $'^x-content-type-options:[[:space:]]*nosniff\r?$' \
             "${smoke_dir}/prod-headers"; then
             echo 'Release production X-Content-Type-Options assertion failed.' >&2
             exit 1
