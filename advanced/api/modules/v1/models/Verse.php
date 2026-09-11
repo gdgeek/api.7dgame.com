@@ -233,9 +233,15 @@ class Verse extends \yii\db\ActiveRecord
             [['updater_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updater_id' => 'id']],
         ];
     }
+    public function getServerRevision(): string
+    {
+        return \api\modules\v1\services\ContentRevision::of($this);
+    }
+
     public function fields()
     {
         $fields = parent::fields();
+        $fields['serverRevision'] = fn () => $this->getServerRevision();
         unset($fields['updater_id']);
         unset($fields['image_id']);
         unset($fields['updated_at']);

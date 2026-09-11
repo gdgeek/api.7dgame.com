@@ -264,6 +264,18 @@ jobs:
           echo "Running tests..."
           php vendor/bin/phpunit -c phpunit.xml --testdox
 
+      - name: Run WebMCP P1 MySQL Concurrency Contract
+        working-directory: ./advanced
+        env:
+          MYSQL_PWD: root
+          WEBMCP_MYSQL_TEST_DSN: mysql:host=127.0.0.1;dbname=webmcp_test_ci
+          WEBMCP_MYSQL_TEST_USER: root
+          WEBMCP_MYSQL_TEST_PASSWORD: root
+        run: |
+          mysql -h 127.0.0.1 -u root -e "CREATE DATABASE webmcp_test_ci CHARACTER SET utf8mb4"
+          php vendor/bin/phpunit -c phpunit.xml \
+            tests/integration/WebMcpMySqlConcurrencyTest.php --fail-on-skipped
+
       - name: Prepare Task 5.1 Isolated MySQL
         env:
           MYSQL_PWD: root

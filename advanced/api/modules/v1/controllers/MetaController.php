@@ -6,6 +6,7 @@ use api\modules\v1\models\data\MetaCodeTool;
 use mdm\admin\components\AccessControl;
 use bizley\jwt\JwtHttpBearerAuth;
 use Yii;
+use api\modules\v1\services\ReliableWrite;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
 
@@ -183,20 +184,23 @@ class MetaController extends ActiveController
      */
     public function actionUpdate($id)
     {
-        $model = Meta::findOne($id);
-        if (!$model) {
-            throw new NotFoundHttpException('Meta not found');
-        }
-        $this->checkAccess('update', $model);
-        $authorId = $model->author_id;
-        $model->load(Yii::$app->getRequest()->getBodyParams(), '');
-        $model->author_id = $authorId;
-        $model->prefab = 0;
-        if ($model->save()) {
-            return $model;
-        } else {
-            return $model->errors;
-        }
+        $body = Yii::$app->request->bodyParams;
+        return ReliableWrite::run('meta', (int) $id, 'save', $body,
+            fn (Meta $model) => $this->checkAccess('update', $model),
+            function (Meta $model) use ($body): array {
+                $authorId = $model->author_id;
+                $model->load($body, '');
+                $model->author_id = $authorId;
+                $model->prefab = 0;
+                if (!$model->save()) {
+                    throw new \yii\web\BadRequestHttpException('Invalid editor data; nothing was saved');
+                }
+                if (!$model->refresh()) {
+                    throw new \yii\web\ServerErrorHttpException('Saved object could not be reloaded');
+                }
+                return $model->toArray();
+            }
+        );
     }
 
     /**
@@ -314,22 +318,33 @@ class MetaController extends ActiveController
      */
     public function actionUpdateCode($id)
     {
-        $meta = Meta::findOne($id);
-        if (!$meta) {
-            throw new NotFoundHttpException('Meta not found');
-        }
-        $this->checkAccess('update', $meta);
+        $body = Yii::$app->request->bodyParams;
+        return ReliableWrite::run('meta', (int) $id, 'save_code', $body,
+            fn (Meta $model) => $this->checkAccess('update', $model),
+            function (Meta $owner) use ($body): array {
+                $model = new MetaCodeTool($owner->id);
+                $model->load($body, '');
+                if (!$model->validate()) {
+                    throw new \yii\web\BadRequestHttpException('Invalid script; nothing was saved');
+                }
+                $model->save();
+                return $model->toArray();
+            }
+        );
+    }
 
-        $post = Yii::$app->request->post();
-        $model = new MetaCodeTool($id);
-        $model->load($post, '');
-
-        if ($model->validate()) {
-            $model->save();
-        } else {
-            throw new Exception(json_encode($model->errors), 400);
-        }
-        return $model;
+    /**
+     * @OA\Get(path="/v1/metas/{id}/operations/{operationId}", tags={"Meta"},
+     *   summary="Read the authenticated editor's durable operation receipt", security={{"Bearer":{}}},
+     *   @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *   @OA\Parameter(name="operationId", in="path", required=true, @OA\Schema(type="string", format="uuid")),
+     *   @OA\Response(response=200, description="Committed receipt; no request replay"),
+     *   @OA\Response(response=404, description="Not observed; not proof of failure"))
+     */
+    public function actionOperation($id, $operationId): array
+    {
+        return ReliableWrite::receipt('meta', (int) $id, (string) $operationId,
+            fn (Meta $model) => $this->checkAccess('update', $model));
     }
 
     public function checkAccess($action, $model = null, $params = [])
