@@ -64,7 +64,7 @@ class MetaCode extends \yii\db\ActiveRecord
 
             $this->js = $this->code->js;
             $this->lua = $this->code->lua;
-            $this->save();
+            // Hydrate legacy code for reading; persistence belongs to an explicit guarded save.
         }
     }
     public function fields()

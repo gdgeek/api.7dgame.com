@@ -13,6 +13,8 @@ use common\components\security\CorsOriginPolicy;
 use yii\db\ActiveQuery;
 use mdm\admin\components\AccessControl;
 use Yii;
+use api\modules\v1\services\ReliableWrite;
+use api\modules\v1\services\ScenePublication;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
 use yii\web\BadRequestHttpException;
@@ -73,18 +75,22 @@ class VerseController extends ActiveController
 
     public function actionUpdate($id)
     {
-        $model = $this->findVerse($id);
-        $this->checkAccess('update', $model);
-
-        $authorId = $model->author_id;
-        $model->load(Yii::$app->request->bodyParams, '');
-        $model->author_id = $authorId;
-
-        if ($model->save() === false && !$model->hasErrors()) {
-            throw new \yii\web\ServerErrorHttpException('Failed to update the scene');
-        }
-
-        return $model;
+        $body = Yii::$app->request->bodyParams;
+        return ReliableWrite::run('verse', (int) $id, 'save', $body,
+            fn (Verse $model) => $this->checkAccess('update', $model),
+            function (Verse $model) use ($body): array {
+                $authorId = $model->author_id;
+                $model->load($body, '');
+                $model->author_id = $authorId;
+                if (!$model->save()) {
+                    throw new \yii\web\BadRequestHttpException('Invalid editor data; nothing was saved');
+                }
+                if (!$model->refresh()) {
+                    throw new \yii\web\ServerErrorHttpException('Saved object could not be reloaded');
+                }
+                return $model->toArray();
+            }
+        );
     }
     /**
      * @OA\Get(
@@ -259,17 +265,19 @@ class VerseController extends ActiveController
      */
     public function actionUpdateCode($id)
     {
-        $verse = $this->findVerse($id);
-        $this->checkAccess('update', $verse);
-        $post = Yii::$app->request->post();
-        $model = new VerseCodeTool($id);
-        $model->load($post, '');
-        if ($model->validate()) {
-            $model->save();
-        } else {
-            throw new BadRequestHttpException(json_encode($model->errors));
-        }
-        return $model;
+        $body = Yii::$app->request->bodyParams;
+        return ReliableWrite::run('verse', (int) $id, 'save_code', $body,
+            fn (Verse $model) => $this->checkAccess('update', $model),
+            function (Verse $owner) use ($body): array {
+                $model = new VerseCodeTool($owner->id);
+                $model->load($body, '');
+                if (!$model->validate()) {
+                    throw new \yii\web\BadRequestHttpException('Invalid script; nothing was saved');
+                }
+                $model->save();
+                return $model->toArray();
+            }
+        );
     }
 
     /**
@@ -587,15 +595,42 @@ class VerseController extends ActiveController
      */
     public function actionTakePhoto($id)
     {
-        $verse = $this->findVerse($id);
-        $this->checkAccess('update', $verse);
-        $snapshot = Snapshot::CreateById($id);
-        if ($snapshot->validate()) {
-            $snapshot->save();
-        } else {
-            throw new Exception(json_encode($snapshot->errors), 400);
+        $body = Yii::$app->request->bodyParams;
+        // Script language is part of publication intent and therefore the idempotency key.
+        $language = Yii::$app->request->get('cl', 'lua');
+        if (!in_array($language, ['lua', 'js'], true)) {
+            throw new BadRequestHttpException('Unsupported publication language');
         }
-        return $snapshot->toArray([], Snapshot::TAKE_PHOTO_EXTRA_FIELDS);
+        $body['_publicationLanguage'] = $language;
+        return ReliableWrite::run('verse', (int) $id, 'publish', $body,
+            fn (Verse $model) => $this->checkAccess('update', $model),
+            fn (Verse $model) => ScenePublication::publish($model));
+    }
+
+    /**
+     * @OA\Get(path="/v1/verses/{id}/operations/{operationId}", tags={"Verse"},
+     *   summary="Read the authenticated editor's durable operation receipt", security={{"Bearer":{}}},
+     *   @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *   @OA\Parameter(name="operationId", in="path", required=true, @OA\Schema(type="string", format="uuid")),
+     *   @OA\Response(response=200, description="Committed receipt; no request replay"),
+     *   @OA\Response(response=404, description="Not observed; not proof of failure"))
+     */
+    public function actionOperation($id, $operationId): array
+    {
+        return ReliableWrite::receipt('verse', (int) $id, (string) $operationId,
+            fn (Verse $model) => $this->checkAccess('update', $model));
+    }
+
+    /**
+     * @OA\Get(path="/v1/verses/{id}/publication", tags={"Verse"},
+     *   summary="Read authoritative publication metadata", security={{"Bearer":{}}},
+     *   @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *   @OA\Response(response=200, description="Current published state and snapshot pointer; no historical version"))
+     */
+    public function actionPublication($id): array
+    {
+        return ScenePublication::read((int) $id,
+            fn (Verse $model) => $this->checkAccess('update', $model));
     }
 
     public function checkAccess($action, $model = null, $params = [])
