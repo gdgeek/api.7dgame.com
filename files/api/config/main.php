@@ -501,6 +501,8 @@ return [
                         'POST {id}/tag' => 'add-tag',
                         'DELETE {id}/tag' => 'remove-tag',
                         'POST {id}/take-photo' => 'take-photo',
+                        'GET {id}/publication' => 'publication',
+                        'GET {id}/operations/<operationId:[0-9a-fA-F-]+>' => 'operation',
                     ],
                 ],
                 [
@@ -509,6 +511,7 @@ return [
                     'extraPatterns' => [
                         // 'PUT code' => 'update-code',
                         'PUT {id}/code' => 'update-code',
+                        'GET {id}/operations/<operationId:[0-9a-fA-F-]+>' => 'operation',
                     ],
                 ],
 

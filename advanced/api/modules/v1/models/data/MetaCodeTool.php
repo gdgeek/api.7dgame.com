@@ -46,7 +46,9 @@ class MetaCodeTool extends Model
         $metaCode->js = $this->js;
 
         if ($metaCode->validate()) {
-            $metaCode->save();
+            if (!$metaCode->save()) {
+                throw new \yii\web\ServerErrorHttpException('Script save failed');
+            }
         } else {
             throw new \yii\web\BadRequestHttpException("MetaCode validation failed: " . json_encode($metaCode->errors));
         }
