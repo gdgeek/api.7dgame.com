@@ -118,7 +118,7 @@ final class ReliableWrite
                     'action' => $action,
                     'serverRevision' => $revision,
                 ];
-                foreach (['snapshotId', 'publicationRevision', 'contentHash'] as $field) {
+                foreach (['snapshotId'] as $field) {
                     if (isset($result[$field])) {
                         $receipt[$field] = $result[$field];
                     }
@@ -153,7 +153,7 @@ final class ReliableWrite
             'serverRevision' => $receipt['serverRevision'],
             'writeReceipt' => $receipt,
             'replayed' => true,
-        ], array_intersect_key($receipt, array_flip(['snapshotId', 'publicationRevision', 'contentHash'])));
+        ], array_intersect_key($receipt, array_flip(['snapshotId'])));
     }
 
     public static function receipt(string $type, int $id, string $operationId, callable $authorize): array

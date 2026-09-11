@@ -6,9 +6,7 @@ use api\modules\v1\controllers\MetaController;
 use api\modules\v1\controllers\VerseController;
 use api\modules\v1\models\Meta;
 use api\modules\v1\models\Verse;
-use api\modules\v1\services\ContentRevision;
 use api\modules\v1\services\ReliableWrite;
-use api\modules\v1\services\ScenePublication;
 use PHPUnit\Framework\TestCase;
 use Yii;
 use yii\db\Connection;
@@ -164,15 +162,15 @@ final class ReliableWriteTest extends TestCase
         }
     }
 
-    public function testArchiveFailureRollsBackSnapshotAndOperation(): void
+    public function testReceiptInsertFailureRollsBackSnapshotAndOperation(): void
     {
         $this->db->createCommand()->update('verse', ['data' => '{"children":{"modules":[{"parameters":{"meta_id":2}}]}}'], ['id' => 1])->execute();
         $this->headers(ReliableWrite::uuid(), Verse::findOne(1)->serverRevision);
         Yii::$app->request->setBodyParams([]);
-        $this->db->createCommand()->dropTable('scene_publication_revision')->execute();
+        $this->db->pdo->exec("CREATE TRIGGER reject_receipt BEFORE INSERT ON webmcp_operation BEGIN SELECT RAISE(ABORT, 'receipt write rejected'); END");
         try {
             $this->controller()->actionTakePhoto(1);
-            $this->fail('Missing archive storage must prevent publication');
+            $this->fail('A receipt insertion failure must roll back publication');
         } catch (\yii\db\Exception) {
             $this->assertSame(0, (int) (new Query())->from('snapshot')->count());
             $this->assertSame(0, (int) (new Query())->from('webmcp_operation')->count());
@@ -248,7 +246,7 @@ final class ReliableWriteTest extends TestCase
         $this->assertSame('Legacy', Verse::findOne(1)->name);
     }
 
-    public function testImmutablePublicationSurvivesRepublishingMutableSnapshot(): void
+    public function testPublicationReceiptSurvivesLaterMutableSnapshotChangesWithoutReplaying(): void
     {
         $data = json_encode(['children' => ['modules' => [['parameters' => ['meta_id' => 2]]]]]);
         $this->db->createCommand()->update('verse', ['data' => $data], ['id' => 1])->execute();
@@ -256,31 +254,30 @@ final class ReliableWriteTest extends TestCase
         $operation = ReliableWrite::uuid();
         $this->headers($operation, Verse::findOne(1)->serverRevision);
         $first = $this->controller()->actionTakePhoto(1);
-        $this->assertTrue($this->controller()->actionTakePhoto(1)['replayed']);
-        $this->assertSame(1, (int) (new Query())->from('scene_publication_revision')->count());
-        $read = $this->controller()->actionPublication(1, $first['publicationRevision']);
-        $this->assertSame($first['contentHash'], $read['contentHash']);
-        $this->assertSame($read['contentHash'], ContentRevision::hash($read['snapshot']));
-        $this->headers(ReliableWrite::uuid(), Verse::findOne(1)->serverRevision);
-        $second = $this->controller()->actionTakePhoto(1);
-        $this->assertSame($first['id'], $second['id']);
-        $this->assertNotSame($first['publicationRevision'], $second['publicationRevision']);
-        $this->assertSame($first['contentHash'], $this->controller()->actionPublication(1, $first['publicationRevision'])['contentHash']);
-        $this->assertSame($second['publicationRevision'], $this->controller()->actionPublication(1)['publicationRevision']);
+        $this->assertArrayNotHasKey('publicationRevision', $first);
+        $this->assertArrayNotHasKey('contentHash', $first);
+        $this->assertNull($this->db->getTableSchema('scene_publication_revision', true));
+        $this->assertSame(1, (int) (new Query())->from('webmcp_operation')->count());
+        $this->db->createCommand()->update('snapshot', ['code' => 'later publication'], ['id' => $first['id']])->execute();
+        $retry = $this->controller()->actionTakePhoto(1);
+        $this->assertTrue($retry['replayed']);
+        $this->assertEquals($first['writeReceipt'], $retry['writeReceipt']);
+        $this->assertEquals($first['writeReceipt'], $this->controller()->actionOperation(1, $operation));
+        $this->assertSame('later publication', (new Query())->from('snapshot')->select('code')->scalar());
+        $this->assertSame(1, (int) (new Query())->from('webmcp_operation')->count());
     }
 
-    public function testCorruptedArchiveIsRejectedAndOldSnapshotIsReportedHonestly(): void
+    public function testCurrentPublicationDoesNotRequireAnArchiveAndChecksPermission(): void
     {
-        $this->db->createCommand()->update('verse', ['data' => '{"children":{"modules":[{"parameters":{"meta_id":2}}]}}'], ['id' => 1])->execute();
-        $this->headers(ReliableWrite::uuid(), Verse::findOne(1)->serverRevision);
-        Yii::$app->request->setBodyParams([]);
-        $published = $this->controller()->actionTakePhoto(1);
-        $this->db->createCommand()->update('snapshot', ['code' => 'externally overwritten'], ['id' => $published['id']])->execute();
-        $this->assertNull($this->controller()->actionPublication(1)['publicationRevision']);
-        $this->assertTrue($this->controller()->actionPublication(1)['published']);
-        $this->db->createCommand()->update('scene_publication_revision', ['snapshot_json' => '{}'], ['revision' => $published['publicationRevision']])->execute();
-        $this->expectException(\yii\web\ServerErrorHttpException::class);
-        $this->controller()->actionPublication(1, $published['publicationRevision']);
+        $this->assertFalse($this->controller()->actionPublication(1)['published']);
+        $this->db->createCommand()->insert('snapshot', ['id' => 40, 'verse_id' => 1, 'uuid' => 'existing-snapshot'])->execute();
+        $this->assertSame([
+            'sceneId' => 1, 'published' => true, 'snapshotId' => 40,
+            'snapshotUuid' => 'existing-snapshot', 'verification' => 'current_snapshot',
+        ], $this->controller()->actionPublication(1));
+        Yii::$app->user->switchIdentity(new ReceiptIdentity(8));
+        $this->expectException(ForbiddenHttpException::class);
+        $this->controller()->actionPublication(1);
     }
 
     public function testMissingReceiptStorageCannotLeaveAnUnacknowledgedCommit(): void
@@ -306,7 +303,6 @@ final class ReliableWriteTest extends TestCase
             $uuid = ReliableWrite::uuid();
             foreach ([
                 ["v1/verses/1/publication", 'v1/verse/publication'],
-                ["v1/verses/1/publication/$uuid", 'v1/verse/publication'],
                 ["v1/verses/1/operations/$uuid", 'v1/verse/operation'],
                 ["v1/metas/2/operations/$uuid", 'v1/meta/operation'],
             ] as [$path, $route]) {
@@ -315,16 +311,18 @@ final class ReliableWriteTest extends TestCase
                 $this->assertIsArray($parsed);
                 $this->assertSame($route, $parsed[0]);
             }
+            Yii::$app->request->setPathInfo("v1/verses/1/publication/$uuid");
+            $this->assertFalse($manager->parseRequest(Yii::$app->request));
         } finally {
             if ($oldMethod === null) unset($_SERVER['REQUEST_METHOD']);
             else $_SERVER['REQUEST_METHOD'] = $oldMethod;
         }
     }
 
-    public function testMismatchedOrCorruptArchiveDoesNotVerify(): void
+    public function testUnknownSceneCannotReturnPublicationState(): void
     {
         $this->expectException(NotFoundHttpException::class);
-        $this->controller()->actionPublication(1, ReliableWrite::uuid());
+        $this->controller()->actionPublication(999);
     }
 }
 

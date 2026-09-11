@@ -625,16 +625,11 @@ class VerseController extends ActiveController
      * @OA\Get(path="/v1/verses/{id}/publication", tags={"Verse"},
      *   summary="Read authoritative publication metadata", security={{"Bearer":{}}},
      *   @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
-     *   @OA\Response(response=200, description="Published state and immutable revision, if archived"))
-     * @OA\Get(path="/v1/verses/{id}/publication/{revision}", tags={"Verse"},
-     *   summary="Read an immutable published snapshot and verify its hash", security={{"Bearer":{}}},
-     *   @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
-     *   @OA\Parameter(name="revision", in="path", required=true, @OA\Schema(type="string", format="uuid")),
-     *   @OA\Response(response=200, description="Snapshot, publicationRevision and contentHash"))
+     *   @OA\Response(response=200, description="Current published state and snapshot pointer; no historical version"))
      */
-    public function actionPublication($id, $revision = null): array
+    public function actionPublication($id): array
     {
-        return ScenePublication::read((int) $id, $revision,
+        return ScenePublication::read((int) $id,
             fn (Verse $model) => $this->checkAccess('update', $model));
     }
 

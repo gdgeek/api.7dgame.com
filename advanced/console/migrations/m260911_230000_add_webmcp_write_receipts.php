@@ -17,18 +17,6 @@ class m260911_230000_add_webmcp_write_receipts extends Migration
             ]);
         }
         $this->ensureIndex('uq_webmcp_actor_operation', '{{%webmcp_operation}}', ['actor_id', 'operation_id'], true);
-        if ($this->db->getTableSchema('{{%scene_publication_revision}}', true) === null) {
-            $this->createTable('{{%scene_publication_revision}}', [
-                'id' => $this->bigPrimaryKey(), 'revision' => $this->string(36)->notNull(),
-                'verse_id' => $this->integer()->notNull(), 'snapshot_id' => $this->integer()->notNull(),
-                'snapshot_uuid' => $this->string(255), 'source_revision' => $this->string(71)->notNull(),
-                'content_hash' => $this->string(71)->notNull(), 'snapshot_hash' => $this->string(71)->notNull(),
-                'snapshot_json' => $this->db->driverName === 'mysql' ? 'LONGTEXT NOT NULL' : $this->text()->notNull(),
-                'created_by' => $this->integer()->notNull(), 'created_at' => $this->integer()->notNull(),
-            ]);
-        }
-        $this->ensureIndex('uq_scene_publication_revision', '{{%scene_publication_revision}}', ['revision'], true);
-        $this->ensureIndex('idx_scene_publication_latest', '{{%scene_publication_revision}}', ['verse_id', 'id'], false);
         // Attach read-only receipt routes beneath existing view/update grants. Model-level
         // editable checks still apply, and receipts additionally belong to the caller.
         if ($this->db->getTableSchema('{{%auth_item}}', true) !== null) {
@@ -53,7 +41,6 @@ class m260911_230000_add_webmcp_write_receipts extends Migration
     {
         foreach ([
             '{{%webmcp_operation}}' => ['id', 'actor_id', 'operation_id', 'target_type', 'target_id', 'action', 'request_hash', 'receipt', 'created_at'],
-            '{{%scene_publication_revision}}' => ['id', 'revision', 'verse_id', 'snapshot_id', 'snapshot_uuid', 'source_revision', 'content_hash', 'snapshot_hash', 'snapshot_json', 'created_by', 'created_at'],
         ] as $table => $columns) {
             $schema = $this->db->getTableSchema($table, true);
             if ($schema === null || array_diff($columns, $schema->columnNames) !== []) {
@@ -62,7 +49,6 @@ class m260911_230000_add_webmcp_write_receipts extends Migration
         }
         foreach ([
             '{{%webmcp_operation}}' => ['uq_webmcp_actor_operation', ['actor_id', 'operation_id']],
-            '{{%scene_publication_revision}}' => ['uq_scene_publication_revision', ['revision']],
         ] as $table => [$name, $columns]) {
             $matches = array_filter($this->db->schema->getTableIndexes($table, true), static fn ($index) =>
                 $index->name === $name && $index->columnNames === $columns && $index->isUnique);
@@ -89,7 +75,7 @@ class m260911_230000_add_webmcp_write_receipts extends Migration
 
     public function safeDown()
     {
-        echo "Receipt/archive history is intentionally retained. Roll back application code, not evidence.\n";
+        echo "Operation receipts are intentionally retained. Roll back application code, not evidence.\n";
         return false;
     }
 }

@@ -36,7 +36,7 @@ final class WebMcpMySqlConcurrencyTest extends TestCase
         Yii::$app->set('request', new Request(['cookieValidationKey' => 'test', 'scriptUrl' => '', 'hostInfo' => 'http://localhost']));
         Yii::$app->set('user', new User(['identityClass' => MySqlReceiptIdentity::class, 'enableSession' => false, 'loginUrl' => null]));
         Yii::$app->user->switchIdentity(new MySqlReceiptIdentity());
-        foreach (['verse', 'verse_code', 'webmcp_operation', 'scene_publication_revision'] as $table) {
+        foreach (['verse', 'verse_code', 'webmcp_operation'] as $table) {
             $this->db->createCommand("DROP TABLE IF EXISTS $table")->execute();
         }
         $this->db->createCommand('CREATE TABLE verse (id INT PRIMARY KEY, author_id INT, name TEXT, data JSON) ENGINE=InnoDB')->execute();

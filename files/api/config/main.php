@@ -502,7 +502,6 @@ return [
                         'DELETE {id}/tag' => 'remove-tag',
                         'POST {id}/take-photo' => 'take-photo',
                         'GET {id}/publication' => 'publication',
-                        'GET {id}/publication/<revision:[0-9a-fA-F-]+>' => 'publication',
                         'GET {id}/operations/<operationId:[0-9a-fA-F-]+>' => 'operation',
                     ],
                 ],
