@@ -65,11 +65,24 @@ final class ReliableWrite
 
     public static function run(string $type, int $id, string $action, array $body, callable $authorize, callable $mutate): array
     {
+        $db = self::modelClass($type)::getDb();
+        return $db->useMaster(fn () => $db->noCache(fn () => self::execute($type, $id, $action, $body, $authorize, $mutate)));
+    }
+
+    private static function execute(string $type, int $id, string $action, array $body, callable $authorize, callable $mutate): array
+    {
         [$operationId, $expectedRevision] = self::headers();
         $actorId = self::actor();
         $class = self::modelClass($type);
         $db = $class::getDb();
-        $transaction = $db->beginTransaction();
+        $publication = $type === 'verse' && $action === 'publish';
+        if ($publication && $db->getTransaction()?->isActive) {
+            throw new \LogicException('Publication must own its transaction and MVCC read view');
+        }
+        // The first nonlocking read happens AFTER the owner lock. All dependency reads
+        // then share one InnoDB read view; no lazy reads escape this transaction.
+        if ($publication) PublicationArchive::assertTransactionalStorage();
+        $transaction = $db->beginTransaction($publication && $db->driverName === 'mysql' ? \yii\db\Transaction::REPEATABLE_READ : null);
         try {
             $table = $db->quoteTableName($class::tableName());
             if ($db->driverName === 'sqlite') {
@@ -118,7 +131,7 @@ final class ReliableWrite
                     'action' => $action,
                     'serverRevision' => $revision,
                 ];
-                foreach (['snapshotId'] as $field) {
+                foreach (['snapshotId', 'publicationVersionId', 'contentHash', 'schemaVersion', 'language'] as $field) {
                     if (isset($result[$field])) {
                         $receipt[$field] = $result[$field];
                     }
@@ -153,7 +166,7 @@ final class ReliableWrite
             'serverRevision' => $receipt['serverRevision'],
             'writeReceipt' => $receipt,
             'replayed' => true,
-        ], array_intersect_key($receipt, array_flip(['snapshotId'])));
+        ], array_intersect_key($receipt, array_flip(['snapshotId', 'publicationVersionId', 'contentHash', 'schemaVersion', 'language'])));
     }
 
     public static function receipt(string $type, int $id, string $operationId, callable $authorize): array

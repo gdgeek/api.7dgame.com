@@ -43,6 +43,10 @@ try {
     if ($method === 'GET' && $path === '/ready') {
         Yii::$app->db->createCommand('SELECT 1')->queryScalar();
         $result = ['ready' => true];
+    } elseif ($method === 'POST' && $path === '/v1/verses/1/take-photo') {
+        $result = $controller->actionTakePhoto(1);
+    } elseif ($method === 'GET' && preg_match('~\A/v1/verses/1/publications/([0-9a-f-]+)\z~iD', $path, $match)) {
+        $result = $controller->actionPublicationVersion(1, $match[1]);
     } elseif ($method === 'PUT' && $path === '/v1/verses/1') {
         $body = Yii::$app->request->bodyParams;
         // Exercise the production transaction/guard/receipt service with a minimal mutation.

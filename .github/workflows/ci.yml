@@ -277,6 +277,8 @@ jobs:
             tests/integration/WebMcpMySqlConcurrencyTest.php --fail-on-skipped
           php vendor/bin/phpunit -c phpunit.xml \
             tests/integration/WebMcpHttpRecoveryTest.php --fail-on-skipped
+          php vendor/bin/phpunit -c phpunit.xml \
+            tests/integration/PublicationMySqlTest.php --fail-on-skipped
 
       - name: Prepare Task 5.1 Isolated MySQL
         env:
