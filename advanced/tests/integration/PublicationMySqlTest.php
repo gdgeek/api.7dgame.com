@@ -29,7 +29,8 @@ final class PublicationMySqlTest extends TestCase
         if (!$dsn || !function_exists('pcntl_fork')) $this->markTestSkipped('Requires isolated MySQL and pcntl');
         if (!preg_match('/(?:^|;)dbname=(webmcp_test_[a-z0-9_]+)(?:;|$)/D', $dsn)) throw new \RuntimeException('Unsafe database');
         foreach (['db','request','user'] as $key) $this->previous[$key] = Yii::$app->get($key);
-        $this->db = new Connection(['dsn' => $dsn, 'username' => getenv('WEBMCP_MYSQL_TEST_USER') ?: 'root', 'password' => getenv('WEBMCP_MYSQL_TEST_PASSWORD') ?: '', 'charset' => 'utf8mb4']);
+        $applicationConfig = require dirname(__DIR__, 3) . '/files/common/config/main-local.php';
+        $this->db = new Connection(['dsn' => $dsn, 'username' => getenv('WEBMCP_MYSQL_TEST_USER') ?: 'root', 'password' => getenv('WEBMCP_MYSQL_TEST_PASSWORD') ?: '', 'charset' => $applicationConfig['components']['db']['charset']]);
         Yii::$app->set('db', $this->db);
         Yii::$app->set('request', new Request(['cookieValidationKey'=>'test','scriptUrl'=>'','hostInfo'=>'http://localhost']));
         Yii::$app->set('user', new User(['identityClass'=>PublicationIdentity::class,'enableSession'=>false]));
@@ -91,6 +92,18 @@ final class PublicationMySqlTest extends TestCase
         $this->assertSame($result['contentHash'],$result['writeReceipt']['contentHash']);
     }
     public function testParallelSameOperationCreatesExactlyOneArchive(): void { $this->racePublications(true); }
+
+    public function testApplicationConnectionPreservesFourBytePublicationCharacters(): void
+    {
+        $script = 'print("发布 🚀 𠮷")';
+        $this->db->createCommand()->update('verse_code', ['lua' => $script], ['id' => 1])->execute();
+        $result = $this->publish(ReliableWrite::uuid(), Verse::findOne(1)->serverRevision);
+        $archive = PublicationArchive::read(1, $result['publicationVersionId'], fn () => null);
+        $this->assertStringContainsString('🚀 𠮷', $archive['canonicalBody']);
+        $this->assertSame($result['contentHash'], $archive['contentHash']);
+        $this->assertSame("local verse = {}\n local is_playing = false\n" . $script,
+            (new Query())->from('snapshot')->select('code')->scalar());
+    }
     public function testParallelDifferentPublicationsKeepBothIndependentArchives(): void { $this->racePublications(false); }
     private function racePublications(bool $sameKey): void
     {
