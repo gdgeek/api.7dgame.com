@@ -67,6 +67,8 @@ final class ReliableWriteTest extends TestCase
         ob_start();
         $migration->safeUp();
         $migration->safeUp();
+        require_once dirname(__DIR__, 3) . '/console/migrations/m260913_120000_add_scene_publication_history.php';
+        (new \m260913_120000_add_scene_publication_history(['db' => $this->db, 'compact' => true]))->safeUp();
         ob_end_clean();
     }
 
@@ -255,8 +257,8 @@ final class ReliableWriteTest extends TestCase
         $this->headers($operation, Verse::findOne(1)->serverRevision);
         $first = $this->controller()->actionTakePhoto(1);
         $this->assertArrayNotHasKey('publicationRevision', $first);
-        $this->assertArrayNotHasKey('contentHash', $first);
-        $this->assertNull($this->db->getTableSchema('scene_publication_revision', true));
+        $this->assertStringStartsWith('sha256:', $first['contentHash']);
+        $this->assertNotNull($this->db->getTableSchema('scene_publication_revision', true));
         $this->assertSame(1, (int) (new Query())->from('webmcp_operation')->count());
         $this->db->createCommand()->update('snapshot', ['code' => 'later publication'], ['id' => $first['id']])->execute();
         $retry = $this->controller()->actionTakePhoto(1);
@@ -265,6 +267,163 @@ final class ReliableWriteTest extends TestCase
         $this->assertEquals($first['writeReceipt'], $this->controller()->actionOperation(1, $operation));
         $this->assertSame('later publication', (new Query())->from('snapshot')->select('code')->scalar());
         $this->assertSame(1, (int) (new Query())->from('webmcp_operation')->count());
+    }
+
+    private function publishable(): void
+    {
+        $this->db->createCommand()->update('verse', ['data' => '{"children":{"modules":[{"parameters":{"meta_id":2}}]}}'], ['id' => 1])->execute();
+        Yii::$app->request->setBodyParams([]);
+    }
+
+    public function testArchivedAIsUnchangedAfterPublishingBAndLegacyCallCreatesAnotherVersion(): void
+    {
+        $this->publishable();
+        $this->headers(ReliableWrite::uuid(), Verse::findOne(1)->serverRevision);
+        $first = $this->controller()->actionTakePhoto(1);
+        $version = $first['publicationVersionId'];
+        $original = $this->controller()->actionPublicationVersion(1, $version);
+        $this->db->createCommand()->update('meta', ['title' => 'New entity', 'data' => '{"changed":true}'], ['id' => 2])->execute();
+        $this->db->createCommand()->update('verse', ['name' => 'New name', 'description' => 'New description'], ['id' => 1])->execute();
+        $this->headers(ReliableWrite::uuid(), Verse::findOne(1)->serverRevision);
+        $second = $this->controller()->actionTakePhoto(1);
+        $this->assertSame($first['snapshotId'], $second['snapshotId']);
+        $this->assertNotSame($version, $second['publicationVersionId']);
+        $this->assertNotSame($first['contentHash'], $second['contentHash']);
+        $this->assertSame($original, $this->controller()->actionPublicationVersion(1, $version));
+        $body = json_decode($original['canonicalBody'], true);
+        $this->assertSame('Scene', $body['scene']['name']);
+        $this->assertSame('Entity', $body['runtime']['metas'][0]['title']);
+        $this->assertSame($first['contentHash'], $original['contentHash']);
+        $this->assertStringNotContainsString('canonicalBody', json_encode($this->controller()->actionPublications(1)));
+        Yii::$app->request->headers->remove('Idempotency-Key');
+        Yii::$app->request->headers->remove('If-Match');
+        $third = $this->controller()->actionTakePhoto(1);
+        $this->assertNotSame($second['publicationVersionId'], $third['publicationVersionId']);
+        $this->assertSame(3, $this->controller()->actionPublications(1)['total']);
+        $this->assertSame(2, (int) (new Query())->from('webmcp_operation')->count());
+    }
+
+    public function testArchiveFailureRollsBackExistingSnapshotAndReceipt(): void
+    {
+        $this->publishable();
+        $this->headers(ReliableWrite::uuid(), Verse::findOne(1)->serverRevision);
+        $first = $this->controller()->actionTakePhoto(1);
+        $before = (new Query())->from('snapshot')->one();
+        $this->db->createCommand()->insert('verse_code', ['id' => 1, 'verse_id' => 1, 'lua' => 'changed'])->execute();
+        $this->headers(ReliableWrite::uuid(), Verse::findOne(1)->serverRevision);
+        $this->db->pdo->exec("CREATE TRIGGER fail_archive BEFORE INSERT ON scene_publication_revision BEGIN SELECT RAISE(ABORT, 'archive failure'); END");
+        try {
+            $this->controller()->actionTakePhoto(1);
+            $this->fail('Archive insertion must fail');
+        } catch (\yii\db\Exception) {
+            $this->assertSame($before, (new Query())->from('snapshot')->one());
+            $this->assertSame(1, (int) (new Query())->from('scene_publication_revision')->count());
+            $this->assertSame(1, (int) (new Query())->from('webmcp_operation')->count());
+        }
+    }
+
+    public function testSnapshotFailureLeavesNoArchiveOrReceipt(): void
+    {
+        $this->publishable();
+        $this->headers(ReliableWrite::uuid(), Verse::findOne(1)->serverRevision);
+        $this->db->pdo->exec("CREATE TRIGGER fail_snapshot BEFORE INSERT ON snapshot BEGIN SELECT RAISE(ABORT, 'snapshot failure'); END");
+        try {
+            $this->controller()->actionTakePhoto(1);
+            $this->fail('Snapshot insertion must fail');
+        } catch (\yii\db\Exception) {
+            foreach (['snapshot', 'scene_publication_revision', 'webmcp_operation'] as $table) {
+                $this->assertSame(0, (int) (new Query())->from($table)->count());
+            }
+        }
+    }
+
+    public function testReceiptFailureRollsBackInitialSnapshotAndArchive(): void
+    {
+        $this->publishable();
+        $this->headers(ReliableWrite::uuid(), Verse::findOne(1)->serverRevision);
+        $this->db->pdo->exec("CREATE TRIGGER fail_receipt BEFORE INSERT ON webmcp_operation BEGIN SELECT RAISE(ABORT, 'receipt failure'); END");
+        try {
+            $this->controller()->actionTakePhoto(1);
+            $this->fail('Receipt insertion must fail');
+        } catch (\yii\db\Exception) {
+            $this->assertSame(0, (int) (new Query())->from('snapshot')->count());
+            $this->assertSame(0, (int) (new Query())->from('scene_publication_revision')->count());
+        }
+    }
+
+    public function testHistoryNeverFallsBackAndRechecksPermissionAndIntegrity(): void
+    {
+        $this->assertSame('history_unavailable', $this->controller()->actionPublications(1)['historyStatus']);
+        $this->publishable();
+        $first = $this->controller()->actionTakePhoto(1);
+        $version = $first['publicationVersionId'];
+        try {
+            $this->controller()->actionPublicationVersion(1, ReliableWrite::uuid());
+            $this->fail('Unknown version must not return current snapshot');
+        } catch (NotFoundHttpException) {}
+        Yii::$app->user->switchIdentity(new ReceiptIdentity(8));
+        try {
+            $this->controller()->actionPublicationVersion(1, $version);
+            $this->fail('Current edit permission is required');
+        } catch (ForbiddenHttpException) {}
+        Yii::$app->user->switchIdentity(new ReceiptIdentity(7));
+        $this->db->createCommand()->update('scene_publication_revision', ['canonical_body' => '{}'], ['publication_version_id' => $version])->execute();
+        $this->expectExceptionMessage('publication_corrupt');
+        $this->controller()->actionPublicationVersion(1, $version);
+    }
+
+    public function testHistoryKeysetPaginationAndLanguageIntent(): void
+    {
+        $this->publishable();
+        $this->headers(ReliableWrite::uuid(), Verse::findOne(1)->serverRevision);
+        $first = $this->controller()->actionTakePhoto(1);
+        Yii::$app->request->setQueryParams(['cl' => 'js']);
+        try { $this->controller()->actionTakePhoto(1); $this->fail('Changed language must conflict'); }
+        catch (ConflictHttpException) {}
+        $this->headers(ReliableWrite::uuid(), Verse::findOne(1)->serverRevision);
+        $second = $this->controller()->actionTakePhoto(1);
+        Yii::$app->request->setQueryParams(['limit' => 1]);
+        $page = $this->controller()->actionPublications(1);
+        $this->assertSame($second['publicationVersionId'], $page['items'][0]['publicationVersionId']);
+        Yii::$app->request->setQueryParams(['limit' => 1, 'before' => $page['nextBefore']]);
+        $next = $this->controller()->actionPublications(1);
+        $this->assertSame($first['publicationVersionId'], $next['items'][0]['publicationVersionId']);
+        $this->assertNull($next['nextBefore']);
+    }
+
+    public function testSizeAndCapacityFailureCannotPartiallyPublish(): void
+    {
+        $this->publishable();
+        $this->headers(ReliableWrite::uuid(), Verse::findOne(1)->serverRevision);
+        $this->controller()->actionTakePhoto(1);
+        $before = (new Query())->from('snapshot')->one();
+        $this->db->createCommand()->update('scene_publication_revision', ['byte_length' => \api\modules\v1\services\PublicationArchive::SCENE_BUDGET_BYTES])->execute();
+        $this->headers(ReliableWrite::uuid(), Verse::findOne(1)->serverRevision);
+        try { $this->controller()->actionTakePhoto(1); $this->fail('Capacity limit must fail'); }
+        catch (\yii\web\HttpException $e) { $this->assertSame(507, $e->statusCode); }
+        $this->assertSame($before, (new Query())->from('snapshot')->one());
+        $this->assertSame(1, (int) (new Query())->from('webmcp_operation')->count());
+        $this->assertTrue($this->controller()->actionPublications(1)['capacityWarning']);
+        $this->db->createCommand()->insert('verse_code', ['id' => 1, 'verse_id' => 1, 'lua' => str_repeat('a', 8 * 1024 * 1024)])->execute();
+        $this->headers(ReliableWrite::uuid(), Verse::findOne(1)->serverRevision);
+        try { $this->controller()->actionTakePhoto(1); $this->fail('Body size limit must fail'); }
+        catch (\yii\web\HttpException $e) { $this->assertSame(413, $e->statusCode); }
+        $this->assertSame($before, (new Query())->from('snapshot')->one());
+    }
+
+    public function testExactP2MigrationPlanIsReadOnlyAndOnlyAppliesP2(): void
+    {
+        $this->db->createCommand()->dropTable('scene_publication_revision')->execute();
+        $class = \console\controllers\WebMcpP2MigrateController::class;
+        $controller = new $class('web-mcp-p2-migrate', Yii::$app, ['interactive' => false]);
+        ob_start();
+        try {
+            $this->assertSame(0, (new $class('web-mcp-p2-migrate', Yii::$app, ['interactive' => false]))->runAction('plan'));
+            $this->assertNull($this->db->getTableSchema('migration', true));
+            $this->assertSame(0, (new $class('web-mcp-p2-migrate', Yii::$app, ['interactive' => false]))->runAction('up', [1]));
+            $this->assertSame([$class::EXACT_MIGRATION], (new Query())->from('migration')->select('version')->where(['<>','version','m000000_000000_base'])->column());
+            $this->assertSame(0, (new $class('web-mcp-p2-migrate', Yii::$app, ['interactive' => false]))->runAction('plan'));
+        } finally { ob_end_clean(); }
     }
 
     public function testCurrentPublicationDoesNotRequireAnArchiveAndChecksPermission(): void
@@ -303,6 +462,8 @@ final class ReliableWriteTest extends TestCase
             $uuid = ReliableWrite::uuid();
             foreach ([
                 ["v1/verses/1/publication", 'v1/verse/publication'],
+                ["v1/verses/1/publications", 'v1/verse/publications'],
+                ["v1/verses/1/publications/$uuid", 'v1/verse/publication-version'],
                 ["v1/verses/1/operations/$uuid", 'v1/verse/operation'],
                 ["v1/metas/2/operations/$uuid", 'v1/meta/operation'],
             ] as [$path, $route]) {
@@ -311,6 +472,14 @@ final class ReliableWriteTest extends TestCase
                 $this->assertIsArray($parsed);
                 $this->assertSame($route, $parsed[0]);
             }
+            foreach (['v1/snapshots/1/take-photo', 'v1/system/take-photo', 'site/test'] as $path) {
+                foreach (['GET', 'POST'] as $method) {
+                    $_SERVER['REQUEST_METHOD'] = $method;
+                    Yii::$app->request->setPathInfo($path);
+                    $this->assertFalse($manager->parseRequest(Yii::$app->request), $path);
+                }
+            }
+            $_SERVER['REQUEST_METHOD'] = 'GET';
             Yii::$app->request->setPathInfo("v1/verses/1/publication/$uuid");
             $this->assertFalse($manager->parseRequest(Yii::$app->request));
         } finally {

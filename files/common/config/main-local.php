@@ -34,7 +34,8 @@ return [
             'dsn' => 'mysql:host=' . getenv('MYSQL_HOST') . ';dbname=' . getenv('MYSQL_DB'),
             'username' => getenv('MYSQL_USERNAME'),
             'password' => getenv(name: 'MYSQL_PASSWORD'),
-            'charset' => 'utf8',
+            // Publication archives retain exact UTF-8 bytes, including four-byte Unicode.
+            'charset' => 'utf8mb4',
         ],
 
         'redis' => [

@@ -134,6 +134,35 @@ final class WebMcpHttpRecoveryTest extends TestCase
         $this->assertSingleWrite();
     }
 
+    public function testPublicationSurvivesLostHttpResponseWithOneFixedArchive(): void
+    {
+        require_once __DIR__ . '/fixtures/PublicationFixture.php';
+        \tests\integration\fixtures\PublicationFixture::reset($this->db);
+        $operation = ReliableWrite::uuid();
+        $headers = ['Idempotency-Key' => $operation, 'If-Match' => '"' . Verse::findOne(1)->serverRevision . '"'];
+        $listener = self::listen(); $port = self::portOf($listener); $this->db->close();
+        $pid = pcntl_fork();
+        if ($pid === 0) { $this->dropSuccessfulResponse($listener); exit(0); }
+        $this->proxyPid = $pid; fclose($listener);
+        $lost = $this->request('POST', '/v1/verses/1/take-photo', [], $headers, $port);
+        pcntl_waitpid($pid, $status); $this->proxyPid = null;
+        $this->assertSame(0, pcntl_wexitstatus($status));
+        $this->assertSame('', $lost['wire']);
+        $receipt = $this->request('GET', '/v1/verses/1/operations/' . $operation);
+        $this->assertSame(200, $receipt['status']);
+        $version = $receipt['json']['publicationVersionId'];
+        $read = $this->request('GET', '/v1/verses/1/publications/' . $version);
+        $this->assertSame(200, $read['status']);
+        $this->assertSame($receipt['json']['contentHash'], 'sha256:' . hash('sha256', $read['json']['canonicalBody']));
+        $replay = $this->request('POST', '/v1/verses/1/take-photo', [], $headers);
+        $this->assertSame(200, $replay['status']);
+        $this->assertTrue($replay['json']['replayed']);
+        $this->assertSame($version, $replay['json']['publicationVersionId']);
+        $this->assertSame(1, (int) (new Query())->from('scene_publication_revision')->count());
+        $this->assertSame(1, (int) (new Query())->from('snapshot')->count());
+        $this->assertSame(1, (int) (new Query())->from('webmcp_operation')->count());
+    }
+
     public function testStaleHttpWriterCannotOverwriteCommittedContent(): void
     {
         $revision = Verse::findOne(1)->serverRevision;
