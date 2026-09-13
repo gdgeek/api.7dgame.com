@@ -633,6 +633,39 @@ class VerseController extends ActiveController
             fn (Verse $model) => $this->checkAccess('update', $model));
     }
 
+    /**
+     * @OA\Get(path="/v1/verses/{id}/publications", tags={"Verse"},
+     *   summary="List immutable publications and bounded capacity metadata", security={{"Bearer":{}}},
+     *   @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *   @OA\Parameter(name="limit", in="query", @OA\Schema(type="integer", minimum=1, maximum=50)),
+     *   @OA\Parameter(name="before", in="query", @OA\Schema(type="integer", minimum=0)),
+     *   @OA\Response(response=200, description="Metadata only; no archive bodies"))
+     */
+    public function actionPublications($id): array
+    {
+        $limit = filter_var(Yii::$app->request->get('limit', 20), FILTER_VALIDATE_INT);
+        $before = filter_var(Yii::$app->request->get('before', 0), FILTER_VALIDATE_INT);
+        if ($limit === false || $before === false) throw new BadRequestHttpException('Invalid history pagination');
+        return \api\modules\v1\services\PublicationArchive::listing((int) $id,
+            fn (Verse $model) => $this->checkAccess('update', $model), $limit, $before);
+    }
+
+    /**
+     * @OA\Get(path="/v1/verses/{id}/publications/{publicationVersionId}", tags={"Verse"},
+     *   summary="Read exact archived UTF-8 JSON bytes and their SHA-256", security={{"Bearer":{}}},
+     *   @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *   @OA\Parameter(name="publicationVersionId", in="path", required=true, @OA\Schema(type="string", format="uuid")),
+     *   @OA\Response(response=200, description="Integrity-checked archive; file bytes are not retained"),
+     *   @OA\Response(response=403, description="Current scene edit permission required"),
+     *   @OA\Response(response=404, description="Version not found for this scene"),
+     *   @OA\Response(response=500, description="Archive integrity failure"))
+     */
+    public function actionPublicationVersion($id, $publicationVersionId): array
+    {
+        return \api\modules\v1\services\PublicationArchive::read((int) $id, (string) $publicationVersionId,
+            fn (Verse $model) => $this->checkAccess('update', $model));
+    }
+
     public function checkAccess($action, $model = null, $params = [])
     {
         if (!$model instanceof Verse) {
