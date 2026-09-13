@@ -78,3 +78,16 @@ WEBMCP_MYSQL_TEST_USER=root WEBMCP_MYSQL_TEST_PASSWORD='<test-only-password>' \
 php advanced/vendor/bin/phpunit --do-not-cache-result -c advanced/phpunit.xml \
   advanced/tests/integration/WebMcpMySqlConcurrencyTest.php --fail-on-skipped
 ```
+
+### 真实 HTTP 丢响应恢复测试
+
+`advanced/tests/integration/WebMcpHttpRecoveryTest.php` 使用 loopback HTTP 服务和实际 MySQL 事务。故障代理先完整接收上游成功回执，再断开客户端连接，不向客户端转发响应字节；随后通过生产 `VerseController::actionOperation` 查询原 operationId，核对内容、revision 和回执，并重复原请求，验证只有一条回执且业务计数只递增一次。另覆盖 HTTP 409 拒绝旧版本、其他可编辑账号不能读原账号回执，以及撤销当前编辑权限后的 403。
+
+测试仅接受 loopback、`webmcp_test_*` 专用数据库，并在清理测试表前核对实际连接库名。它只使用测试身份，不加载应用配置、真实 JWT 或签名密钥；HTTP 写入经过生产 `ReliableWrite`，业务变化使用最小测试 mutation。此证据不代替真实浏览器四页序列化、JWT/RBAC 中间件或线上双后端数据库一致性验收。
+
+沿用上述三个 `WEBMCP_MYSQL_TEST_*` 测试环境变量执行，CI 将两种集成测试都设为不能跳过：
+
+```bash
+php advanced/vendor/bin/phpunit --do-not-cache-result -c advanced/phpunit.xml \
+  advanced/tests/integration/WebMcpHttpRecoveryTest.php --fail-on-skipped
+```
