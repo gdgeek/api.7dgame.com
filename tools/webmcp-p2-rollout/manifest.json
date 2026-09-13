@@ -1,0 +1,10 @@
+{
+  "sourceCommit": "495158c6",
+  "migration": "m260913_120000_add_scene_publication_history",
+  "files": {
+    "maintenance.php": "f9084beb5a6be25dd0b306a46c39bad620b8700df46413f441f68e164af90645",
+    "console/controllers/WebMcpP2MigrateController.php": "ac6848260a8b1c0ea494995b6bda93915d48cb40d3beef319cb7d24a068f7716",
+    "console/migrations/m260913_120000_add_scene_publication_history.php": "3f270eb89ad5e57de3ab1d36d0f2d119a72e3786d4792c11708ee1ca86961f2e",
+    "api/modules/v1/services/PublicationArchive.php": "405b2ad750d8ae94fa0bd768240f57738f6157975102edf3a06327227cc050cf"
+  }
+}
