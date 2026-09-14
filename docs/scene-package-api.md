@@ -241,6 +241,8 @@ Content-Type: multipart/form-data
 
 ## 导入流程说明
 
+导入会统一移除场景名称、实体标题和素材名称末尾的历史 `（副本 YYYY-MM-DD HH:mm:ss）` 后缀（包括多次重复的后缀），不再追加新的副本时间。名称按 UTF-8 字符保留最多 255 个字符；新建记录仍使用独立 UUID，内容和资源引用的重映射规则不变。
+
 1. 前端先通过 `/v1/files` 上传资源文件，获取 `fileId`
 2. 构造导入数据，`resourceFileMappings` 中用 `fileId` 引用已上传的文件
 3. 调用导入接口
