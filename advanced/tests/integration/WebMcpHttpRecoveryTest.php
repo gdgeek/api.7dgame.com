@@ -113,7 +113,7 @@ final class WebMcpHttpRecoveryTest extends TestCase
         pcntl_waitpid($pid, $status);
         $this->proxyPid = null;
         $this->assertTrue(pcntl_wifexited($status));
-        $this->assertSame(0, pcntl_wexitstatus($status));
+        $this->assertSame(0, pcntl_wexitstatus($status), file_exists($this->directory . '/drop-error.json') ? file_get_contents($this->directory . '/drop-error.json') . file_get_contents($this->directory . '/server.log') : '');
         $this->assertSame(0, $lost['status']);
         $this->assertSame('', $lost['wire'], 'Client must receive no HTTP success bytes');
         $evidence = json_decode(file_get_contents($this->directory . '/drop.json'), true, 512, JSON_THROW_ON_ERROR);
@@ -146,7 +146,7 @@ final class WebMcpHttpRecoveryTest extends TestCase
         $this->proxyPid = $pid; fclose($listener);
         $lost = $this->request('POST', '/v1/verses/1/take-photo', [], $headers, $port);
         pcntl_waitpid($pid, $status); $this->proxyPid = null;
-        $this->assertSame(0, pcntl_wexitstatus($status));
+        $this->assertSame(0, pcntl_wexitstatus($status), file_exists($this->directory . '/drop-error.json') ? file_get_contents($this->directory . '/drop-error.json') . file_get_contents($this->directory . '/server.log') : '');
         $this->assertSame('', $lost['wire']);
         $receipt = $this->request('GET', '/v1/verses/1/operations/' . $operation);
         $this->assertSame(200, $receipt['status']);
@@ -195,6 +195,68 @@ final class WebMcpHttpRecoveryTest extends TestCase
         $this->assertSame(200, $restored['status']);
         $this->assertEquals($saved['json']['writeReceipt'], $restored['json']);
         $this->assertSingleWrite();
+    }
+
+    public function testCreationLostResponseRecoversWithoutKnowingObjectId(): void
+    {
+        require_once __DIR__ . '/fixtures/AuthoringFixture.php';
+        \tests\integration\fixtures\AuthoringFixture::reset($this->db);
+        $operation = ReliableWrite::uuid();
+        $body = ['title' => 'durable entity 🧪', 'uuid' => ReliableWrite::uuid()];
+        $headers = ['Idempotency-Key' => $operation];
+        $listener = self::listen();
+        $port = self::portOf($listener);
+        $this->db->close();
+        $pid = pcntl_fork();
+        if ($pid === -1) throw new \RuntimeException('fork failed');
+        if ($pid === 0) { $this->dropSuccessfulResponse($listener); exit(0); }
+        $this->proxyPid = $pid;
+        fclose($listener);
+        $lost = $this->request('POST', '/v1/metas', $body, $headers, $port);
+        pcntl_waitpid($pid, $status);
+        $this->proxyPid = null;
+        $this->assertSame(0, pcntl_wexitstatus($status), file_exists($this->directory . '/drop-error.json') ? file_get_contents($this->directory . '/drop-error.json') . file_get_contents($this->directory . '/server.log') : '');
+        $this->assertSame('', $lost['wire']);
+        $path = '/v1/metas/create-operations/' . $operation;
+        $read = $this->request('GET', $path);
+        $this->assertSame(200, $read['status'], json_encode($read));
+        $this->assertSame($body['uuid'], $read['json']['uuid']);
+        $replay = $this->request('POST', '/v1/metas', $body, $headers);
+        $this->assertSame(200, $replay['status']);
+        $this->assertTrue($replay['json']['replayed']);
+        $this->assertSame($read['json']['id'], $replay['json']['id']);
+        $this->assertSame(409, $this->request('POST', '/v1/metas', array_merge($body, ['title' => 'different']), $headers)['status']);
+        $this->assertSame(1, (int)(new Query())->from('meta')->count());
+        $this->assertSame(1, (int)(new Query())->from('webmcp_operation')->count());
+        $this->assertSame(404, $this->request('GET', $path, null, ['X-WebMCP-Test-Actor' => '8'])['status']);
+        $this->db->createCommand()->update('meta', ['author_id' => 8], ['id' => $read['json']['id']])->execute();
+        $this->assertSame(403, $this->request('GET', $path)['status']);
+    }
+
+    public function testHttpTaskReloadPreservesInputsAndPreventsStaleProgress(): void
+    {
+        require_once __DIR__ . '/fixtures/AuthoringFixture.php';
+        \tests\integration\fixtures\AuthoringFixture::reset($this->db);
+        $id = ReliableWrite::uuid();
+        $plan = ['taskId' => $id, 'name' => 'durable HTTP task', 'steps' => [['key' => 'draft', 'tool' => 'xrugc_stage_authoring_creation', 'input' => ['kind' => 'entity', 'name' => 'test', 'data' => ['emptyObject' => new \stdClass(), 'emptyArray' => []]]]]];
+        $created = $this->request('POST', '/v1/authoring-tasks', $plan);
+        $this->assertSame(200, $created['status'], json_encode($created));
+        $read = $this->request('GET', '/v1/authoring-tasks/' . $id);
+        $this->assertSame(200, $read['status']);
+        // Parse as objects to prove {} and [] remain different after storage and a fresh HTTP request.
+        $wire = explode("\r\n\r\n", $read['wire'], 2)[1];
+        $payload = json_decode($wire);
+        $this->assertInstanceOf(\stdClass::class, $payload->plan[0]->input->data->emptyObject);
+        $this->assertIsArray($payload->plan[0]->input->data->emptyArray);
+        $claim = ReliableWrite::uuid();
+        $claimed = $this->request('POST', "/v1/authoring-tasks/$id/claim", ['revision' => 1, 'claimId' => $claim]);
+        $this->assertSame(200, $claimed['status']);
+        $this->assertSame(409, $this->request('POST', "/v1/authoring-tasks/$id/claim", ['revision' => 1, 'claimId' => ReliableWrite::uuid()])['status']);
+        $progress = ['index' => 1, 'status' => 'completed', 'states' => [['key' => 'draft', 'status' => 'completed', 'result' => ['nested' => new \stdClass()]]]];
+        $saved = $this->request('PUT', "/v1/authoring-tasks/$id/checkpoint", ['revision' => $claimed['json']['revision'], 'claimId' => $claim, 'progress' => $progress, 'release' => true]);
+        $this->assertSame(200, $saved['status']);
+        $this->assertSame('completed', $this->request('GET', '/v1/authoring-tasks')['json']['items'][0]['status']);
+        $this->assertSame(404, $this->request('GET', "/v1/authoring-tasks/$id", null, ['X-WebMCP-Test-Actor' => '8'])['status']);
     }
 
     private function assertSingleWrite(): void
@@ -279,7 +341,7 @@ final class WebMcpHttpRecoveryTest extends TestCase
         [$responseHead, $responseBody] = array_pad(explode("\r\n\r\n", $wire, 2), 2, '');
         preg_match('/\r\nContent-Length: ([0-9]+)/i', $responseHead, $match);
         if ($response['status'] !== 200 || !isset($match[1]) || strlen($responseBody) !== (int) $match[1]
-            || ($response['json']['writeReceipt']['status'] ?? null) !== 'completed') exit(6);
+            || ($response['json']['writeReceipt']['status'] ?? null) !== 'completed') { file_put_contents($this->directory . '/drop-error.json', json_encode($response)); exit(6); }
         file_put_contents($this->directory . '/drop.json', json_encode([
             'upstreamStatus' => 200, 'completeBody' => true, 'forwardedBytes' => 0,
             'receipt' => $response['json']['writeReceipt'],

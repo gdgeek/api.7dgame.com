@@ -50,7 +50,7 @@ final class WebMcpHttpFixture
 
 final class WebMcpHttpIdentity implements IdentityInterface
 {
-    public function __construct(private int $id) {}
+    public function __construct(public int $id) {}
     public static function findIdentity($id): ?self { return new self((int) $id); }
     public static function findIdentityByAccessToken($token, $type = null): ?self { return null; }
     public function getId(): int { return $this->id; }
