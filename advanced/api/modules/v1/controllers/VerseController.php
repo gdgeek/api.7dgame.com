@@ -69,8 +69,29 @@ class VerseController extends ActiveController
     {
         $actions = parent::actions();
         unset($actions['index']);
+        if (Yii::$app->request->headers->has('Idempotency-Key')) unset($actions['create']);
         unset($actions['update']);
         return $actions;
+    }
+
+    /** UUID Idempotency-Key opts in; callers without it retain Yii's original create action. */
+    public function actionCreate(): array
+    {
+        return \api\modules\v1\services\ReliableCreate::run('verse', Yii::$app->request->bodyParams,
+            fn (Verse $model) => $this->checkAccess('update', $model));
+    }
+
+    /**
+     * @OA\Get(path="/v1/verses/create-operations/{operationId}", summary="Read own creation receipt", tags={"Verse"}, security={{"Bearer": {}}},
+     * @OA\Parameter(name="operationId", in="path", required=true, @OA\Schema(type="string", format="uuid")),
+     * @OA\Response(response=200, description="Committed creation identity and writeReceipt"),
+     * @OA\Response(response=403, description="Current object permission revoked"),
+     * @OA\Response(response=404, description="Creation not observed; does not prove failure"))
+     */
+    public function actionCreateOperation($operationId): array
+    {
+        return \api\modules\v1\services\ReliableCreate::receipt('verse', (string) $operationId,
+            fn (Verse $model) => $this->checkAccess('update', $model));
     }
 
     public function actionUpdate($id)

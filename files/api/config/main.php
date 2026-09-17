@@ -491,6 +491,18 @@ return [
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/authoring-task',
+                    'tokens' => ['{id}' => '<id:[0-9a-fA-F-]+>'],
+                    'only' => ['index', 'view', 'create', 'claim', 'checkpoint', 'options'],
+                    'extraPatterns' => [
+                        'POST {id}/claim' => 'claim',
+                        'OPTIONS {id}/claim' => 'options',
+                        'OPTIONS {id}/checkpoint' => 'options',
+                        'PUT {id}/checkpoint' => 'checkpoint',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/verse',
                     'extraPatterns' => [
                         'GET public' => 'public',
@@ -505,6 +517,8 @@ return [
                         'GET {id}/publications' => 'publications',
                         'GET {id}/publications/<publicationVersionId:[0-9a-fA-F-]+>' => 'publication-version',
                         'GET {id}/operations/<operationId:[0-9a-fA-F-]+>' => 'operation',
+                        'GET create-operations/<operationId:[0-9a-fA-F-]+>' => 'create-operation',
+                        'OPTIONS create-operations/<operationId:[0-9a-fA-F-]+>' => 'options',
                     ],
                 ],
                 [
@@ -514,6 +528,8 @@ return [
                         // 'PUT code' => 'update-code',
                         'PUT {id}/code' => 'update-code',
                         'GET {id}/operations/<operationId:[0-9a-fA-F-]+>' => 'operation',
+                        'GET create-operations/<operationId:[0-9a-fA-F-]+>' => 'create-operation',
+                        'OPTIONS create-operations/<operationId:[0-9a-fA-F-]+>' => 'options',
                     ],
                 ],
 

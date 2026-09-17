@@ -43,6 +43,23 @@ try {
     if ($method === 'GET' && $path === '/ready') {
         Yii::$app->db->createCommand('SELECT 1')->queryScalar();
         $result = ['ready' => true];
+    } elseif ($path === '/v1/authoring-tasks' && in_array($method, ['POST', 'GET'], true)) {
+        $tasks = new \api\modules\v1\controllers\AuthoringTaskController('authoring-task', Yii::$app);
+        $result = $method === 'POST' ? $tasks->actionCreate() : $tasks->actionIndex();
+    } elseif (preg_match('~\A/v1/authoring-tasks/([0-9a-f-]+)(?:/(claim|checkpoint))?\z~iD', $path, $match)) {
+        $tasks = new \api\modules\v1\controllers\AuthoringTaskController('authoring-task', Yii::$app);
+        $result = match ([$method, $match[2] ?? '']) {
+            ['GET', ''] => $tasks->actionView($match[1]),
+            ['POST', 'claim'] => $tasks->actionClaim($match[1]),
+            ['PUT', 'checkpoint'] => $tasks->actionCheckpoint($match[1]),
+            default => throw new yii\web\NotFoundHttpException(),
+        };
+    } elseif ($method === 'POST' && in_array($path, ['/v1/metas', '/v1/verses'], true)) {
+        $creator = $path === '/v1/metas' ? new \api\modules\v1\controllers\MetaController('meta', Yii::$app) : $controller;
+        $result = $creator->actionCreate();
+    } elseif ($method === 'GET' && preg_match('~\A/v1/(metas|verses)/create-operations/([0-9a-f-]+)\z~iD', $path, $match)) {
+        $creator = $match[1] === 'metas' ? new \api\modules\v1\controllers\MetaController('meta', Yii::$app) : $controller;
+        $result = $creator->actionCreateOperation($match[2]);
     } elseif ($method === 'POST' && $path === '/v1/verses/1/take-photo') {
         $result = $controller->actionTakePhoto(1);
     } elseif ($method === 'GET' && preg_match('~\A/v1/verses/1/publications/([0-9a-f-]+)\z~iD', $path, $match)) {
@@ -68,6 +85,7 @@ try {
     $status = $error->statusCode;
     $result = ['error' => get_class($error)];
 } catch (Throwable $error) {
+    error_log($error->getMessage());
     $status = 500;
     $result = ['error' => get_class($error)];
 }
