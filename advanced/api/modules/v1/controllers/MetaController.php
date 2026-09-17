@@ -204,6 +204,19 @@ class MetaController extends ActiveController
     }
 
     /**
+     * @OA\Get(path="/v1/metas/create-operations/{operationId}", summary="Read own creation receipt", tags={"Meta"}, security={{"Bearer": {}}},
+     * @OA\Parameter(name="operationId", in="path", required=true, @OA\Schema(type="string", format="uuid")),
+     * @OA\Response(response=200, description="Committed creation identity and writeReceipt"),
+     * @OA\Response(response=403, description="Current object permission revoked"),
+     * @OA\Response(response=404, description="Creation not observed; does not prove failure"))
+     */
+    public function actionCreateOperation($operationId): array
+    {
+        return \api\modules\v1\services\ReliableCreate::receipt('meta', (string) $operationId,
+            fn (Meta $model) => $this->checkAccess('update', $model));
+    }
+
+    /**
      * @OA\Post(
      *     path="/v1/meta",
      *     summary="创建 Meta",
@@ -228,8 +241,13 @@ class MetaController extends ActiveController
      *     @OA\Response(response=401, description="未授权")
      * )
      */
+    // Optional UUID Idempotency-Key enables transactional create/receipt; no header retains the legacy API.
     public function actionCreate()
     {
+        if (Yii::$app->request->headers->has('Idempotency-Key')) {
+            return \api\modules\v1\services\ReliableCreate::run('meta', Yii::$app->request->bodyParams,
+                fn (Meta $model) => $this->checkAccess('update', $model));
+        }
         $model = new Meta();
         $model->load(Yii::$app->getRequest()->getBodyParams(), '');
         $model->author_id = (int) Yii::$app->user->id;

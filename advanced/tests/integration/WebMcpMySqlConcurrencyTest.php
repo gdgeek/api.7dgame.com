@@ -98,6 +98,63 @@ final class WebMcpMySqlConcurrencyTest extends TestCase
         return array_map(fn ($path) => json_decode(file_get_contents($path), true), glob($this->directory . '/result-*'));
     }
 
+    private function authoringRace(callable $operation): array
+    {
+        require_once __DIR__ . '/fixtures/WebMcpHttpFixture.php';
+        require_once __DIR__ . '/fixtures/AuthoringFixture.php';
+        \tests\integration\fixtures\AuthoringFixture::reset($this->db);
+        $taskId = ReliableWrite::uuid();
+        \api\modules\v1\services\AuthoringTaskStore::create(['taskId' => $taskId, 'name' => 'Concurrent task', 'steps' => [['key' => 'asset', 'tool' => 'xrugc_get_asset_metadata', 'input' => ['id' => 1]]]]);
+        $key = ReliableWrite::uuid();
+        $body = ['name' => 'concurrent scene', 'uuid' => ReliableWrite::uuid()];
+        $this->db->close();
+        $children = [];
+        for ($i = 0; $i < 2; $i++) {
+            $pid = pcntl_fork();
+            if ($pid === -1) throw new \RuntimeException('fork failed');
+            if ($pid === 0) {
+                touch($this->directory . '/ready-' . $i);
+                $deadline = microtime(true) + 10;
+                while (!file_exists($this->directory . '/go') && microtime(true) < $deadline) usleep(10000);
+                try {
+                    $result = $operation($key, $body, $taskId);
+                    $result['status'] = 'completed';
+                } catch (\Throwable $error) {
+                    $result = ['status' => $error instanceof \yii\web\ConflictHttpException ? 'conflict' : 'error', 'message' => $error->getMessage()];
+                }
+                file_put_contents($this->directory . '/result-' . $i, json_encode($result));
+                exit(0);
+            }
+            $children[] = $pid;
+        }
+        $deadline = microtime(true) + 10;
+        while (count(glob($this->directory . '/ready-*')) < 2 && microtime(true) < $deadline) usleep(10000);
+        touch($this->directory . '/go');
+        foreach ($children as $pid) pcntl_waitpid($pid, $status);
+        return array_map(fn($path) => json_decode(file_get_contents($path), true), glob($this->directory . '/result-*'));
+    }
+
+    public function testConcurrentCreationReturnsOneObjectAndOneReceipt(): void
+    {
+        $results = $this->authoringRace(function ($key, $body) {
+            Yii::$app->request->headers->set('Idempotency-Key', $key);
+            return \api\modules\v1\services\ReliableCreate::run('verse', $body, function () { usleep(250000); });
+        });
+        $this->assertSame(['completed', 'completed'], array_column($results, 'status'), json_encode($results));
+        $this->assertSame($results[0]['id'], $results[1]['id']);
+        $this->assertSame(1, count(array_filter($results, fn($r) => $r['replayed'])));
+        $this->assertSame(1, (int)(new Query())->from('verse')->count());
+        $this->assertSame(1, (int)(new Query())->from('webmcp_operation')->count());
+    }
+
+    public function testConcurrentTaskClaimAllowsOnlyOneClient(): void
+    {
+        $results = $this->authoringRace(fn($key, $body, $id) => \api\modules\v1\services\AuthoringTaskStore::change($id, ['revision' => 1, 'claimId' => ReliableWrite::uuid()], 'claim'));
+        $statuses = array_column($results, 'status');
+        sort($statuses);
+        $this->assertSame(['completed', 'conflict'], $statuses, json_encode($results));
+    }
+
     public function testParallelSameOperationCommitsExactlyOnce(): void
     {
         $results = $this->race(true);
