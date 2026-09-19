@@ -660,7 +660,7 @@ class VerseController extends ActiveController
      *   @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
      *   @OA\Parameter(name="limit", in="query", @OA\Schema(type="integer", minimum=1, maximum=50)),
      *   @OA\Parameter(name="before", in="query", @OA\Schema(type="integer", minimum=0)),
-     *   @OA\Response(response=200, description="Metadata only; no archive bodies"))
+     *   @OA\Response(response=200, description="Retained metadata, capacity and retention policy; default latest 20 bodies"))
      */
     public function actionPublications($id): array
     {
@@ -679,6 +679,7 @@ class VerseController extends ActiveController
      *   @OA\Response(response=200, description="Integrity-checked archive; file bytes are not retained"),
      *   @OA\Response(response=403, description="Current scene edit permission required"),
      *   @OA\Response(response=404, description="Version not found for this scene"),
+     *   @OA\Response(response=410, description="publication_version_expired: body removed by retention policy"),
      *   @OA\Response(response=500, description="Archive integrity failure"))
      */
     public function actionPublicationVersion($id, $publicationVersionId): array
