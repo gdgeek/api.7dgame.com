@@ -105,9 +105,13 @@ final class PublicationMySqlTest extends TestCase
             (new Query())->from('snapshot')->select('code')->scalar());
     }
     public function testParallelDifferentPublicationsKeepBothIndependentArchives(): void { $this->racePublications(false); }
-    private function racePublications(bool $sameKey): void
+    public function testParallelPublicationsRetainExactlyTwentyBodies(): void { $this->racePublications(false, 20); }
+    public function testParallelRetryExpiresOnlyOneOldBody(): void { $this->racePublications(true, 20); }
+    private function racePublications(bool $sameKey, int $seed = 0): void
     {
-        $revision=Verse::findOne(1)->serverRevision; $operation=ReliableWrite::uuid(); $this->db->close();
+        $revision=Verse::findOne(1)->serverRevision;
+        for ($i = 0; $i < $seed; $i++) $this->publish(ReliableWrite::uuid(), $revision);
+        $operation=ReliableWrite::uuid(); $this->db->close();
         $children=[];
         for ($i=0;$i<2;$i++) {
             $pid=pcntl_fork();
@@ -129,22 +133,29 @@ final class PublicationMySqlTest extends TestCase
         if ($sameKey) $this->assertSame($rows[0]['publicationVersionId'],$rows[1]['publicationVersionId']);
         else $this->assertNotSame($rows[0]['publicationVersionId'],$rows[1]['publicationVersionId']);
         $this->assertSame($rows[0]['contentHash'],$rows[1]['contentHash']);
-        $this->assertSame($sameKey ? 1 : 2,(int)(new Query())->from('scene_publication_revision')->count());
-        $this->assertSame($sameKey ? 1 : 2,(int)(new Query())->from('webmcp_operation')->count());
+        $this->assertSame($seed + ($sameKey ? 1 : 2),(int)(new Query())->from('scene_publication_revision')->count());
+        if ($seed) {
+            $this->assertSame(20, PublicationArchive::listing(1, fn () => null)['total']);
+            $this->assertSame($sameKey ? 1 : 2, (int) (new Query())->from('scene_publication_revision')->where(['canonical_body' => '', 'byte_length' => 0])->count());
+            foreach ($rows as $row) $this->assertSame('verified', PublicationArchive::read(1, $row['publicationVersionId'], fn () => null)['integrity']);
+        }
+        $this->assertSame($seed + ($sameKey ? 1 : 2),(int)(new Query())->from('webmcp_operation')->count());
         $this->assertSame(1,(int)(new Query())->from('snapshot')->count());
     }
     public function testFailedReceiptRollsBackExistingSnapshotAndArchiveInMysql(): void
     {
         $revision=Verse::findOne(1)->serverRevision;
-        $this->publish(ReliableWrite::uuid(),$revision);
+        for ($i = 0; $i < 20; $i++) $this->publish(ReliableWrite::uuid(), $revision);
+        $archives = (new Query())->from('scene_publication_revision')->orderBy('id')->all();
         $before=(new Query())->from('snapshot')->one();
         $this->db->createCommand()->update('verse_code',['lua'=>'later'],['id'=>1])->execute();
-        $this->db->createCommand("CREATE TRIGGER reject_receipt BEFORE INSERT ON webmcp_operation FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='injected failure'")->execute();
-        try { $this->publish(ReliableWrite::uuid(),Verse::findOne(1)->serverRevision); $this->fail('Expected receipt failure'); }
+        $rejectedOperation = ReliableWrite::uuid();
+        $this->db->createCommand('ALTER TABLE webmcp_operation ADD CONSTRAINT reject_receipt CHECK (operation_id <> ' . $this->db->quoteValue($rejectedOperation) . ')')->execute();
+        try { $this->publish($rejectedOperation,Verse::findOne(1)->serverRevision); $this->fail('Expected receipt failure'); }
         catch (\yii\db\Exception) {
             $this->assertSame($before,(new Query())->from('snapshot')->one());
-            $this->assertSame(1,(int)(new Query())->from('scene_publication_revision')->count());
-            $this->assertSame(1,(int)(new Query())->from('webmcp_operation')->count());
+            $this->assertSame($archives, (new Query())->from('scene_publication_revision')->orderBy('id')->all());
+            $this->assertSame(20,(int)(new Query())->from('webmcp_operation')->count());
         }
     }
     public function testSaveWaitsForPublicationOwnerLock(): void

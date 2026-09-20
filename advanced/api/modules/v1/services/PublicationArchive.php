@@ -9,15 +9,56 @@ use yii\web\BadRequestHttpException;
 use yii\web\HttpException;
 use yii\web\NotFoundHttpException;
 
-/** Insert-only publication evidence; deliberately no ActiveRecord/CRUD mutation surface. */
+/** Retained bodies are immutable; expired bodies leave only a small version marker. */
 final class PublicationArchive
 {
     public const TABLE = '{{%scene_publication_revision}}';
     public const MAX_BYTES = 8 * 1024 * 1024;
     public const SCENE_BUDGET_BYTES = 512 * 1024 * 1024;
     public const WARNING_BYTES = 400 * 1024 * 1024;
+    public const DEFAULT_RETAINED_VERSIONS = 20;
     public const METADATA = ['publication_version_id', 'scene_id', 'snapshot_id', 'actor_id', 'operation_id',
         'source_server_revision', 'schema_version', 'language', 'content_hash', 'byte_length', 'created_at'];
+
+    public static function retainedVersions(): int
+    {
+        $value = getenv('WEBMCP_PUBLICATION_RETAINED_VERSIONS');
+        if ($value === false || $value === '') return self::DEFAULT_RETAINED_VERSIONS;
+        // Even at the maximum body size, retained bodies fit the scene budget.
+        if (!preg_match('/\A[1-9][0-9]*\z/D', $value) || (int) $value > 64) {
+            throw new HttpException(503, 'publication_retention_configuration_invalid');
+        }
+        return (int) $value;
+    }
+
+    /** Read-only rollout preview. reserveNext=true previews the next successful publication. */
+    public static function retentionPlan(int $sceneId, bool $reserveNext = false): array
+    {
+        $retain = self::retainedVersions();
+        $rows = (new Query())->cache(false)->select(['publication_version_id', 'byte_length', 'created_at'])
+            ->from(self::TABLE)->where(['scene_id' => $sceneId])->andWhere(['>', 'byte_length', 0])
+            ->orderBy(['id' => SORT_DESC])->offset($retain - (int) $reserveNext)->all(Verse::getDb());
+        return ['sceneId' => $sceneId, 'retainedVersions' => $retain, 'reserveNextPublication' => $reserveNext,
+            'expiredVersionCount' => count($rows), 'reclaimableBodyBytes' => array_sum(array_column($rows, 'byte_length')),
+            'versions' => array_map(static fn ($row) => [
+                'publicationVersionId' => $row['publication_version_id'],
+                'byteLength' => (int) $row['byte_length'], 'createdAt' => (int) $row['created_at'],
+            ], $rows)];
+    }
+
+    /** Caller holds the scene owner lock; new archive, cleanup and receipt commit together. */
+    private static function expireOldBodies(int $sceneId): void
+    {
+        $db = Verse::getDb();
+        $cutoff = (new Query())->cache(false)->select('id')->from(self::TABLE)
+            ->where(['scene_id' => $sceneId])->andWhere(['>', 'byte_length', 0])
+            ->orderBy(['id' => SORT_DESC])->offset(self::retainedVersions() - 1)->limit(1)->scalar($db);
+        if ($cutoff === false) return;
+        // Preserve UUID/hash/operation uniqueness for 410 responses and receipt replay.
+        // The current Snapshot is separate; the newest archive is always retained.
+        $db->createCommand()->update(self::TABLE, ['canonical_body' => '', 'byte_length' => 0],
+            ['and', ['scene_id' => $sceneId], ['<', 'id', $cutoff], ['>', 'byte_length', 0]])->execute();
+    }
 
     public static function assertTransactionalStorage(): void
     {
@@ -66,8 +107,7 @@ final class PublicationArchive
         if (!$db->getTransaction()?->isActive) throw new \LogicException('Publication requires a transaction');
         $bytes = strlen($canonical);
         if ($bytes > self::MAX_BYTES) throw new HttpException(413, 'publication_too_large');
-        $used = (int) (new Query())->cache(false)->from(self::TABLE)->where(['scene_id' => $verse->id])->sum('byte_length', $db);
-        if ($used + $bytes > self::SCENE_BUDGET_BYTES) throw new HttpException(507, 'publication_capacity_exceeded');
+        self::retainedVersions(); // Fail closed before changing archive state on invalid configuration.
         [$operation] = ReliableWrite::headers();
         $row = [
             'publication_version_id' => ReliableWrite::uuid(), 'scene_id' => (int) $verse->id,
@@ -77,6 +117,9 @@ final class PublicationArchive
             'byte_length' => $bytes, 'created_at' => time(),
         ];
         $db->createCommand()->insert(self::TABLE, $row)->execute();
+        self::expireOldBodies((int) $verse->id);
+        $used = (int) (new Query())->cache(false)->from(self::TABLE)->where(['scene_id' => $verse->id])->sum('byte_length', $db);
+        if ($used > self::SCENE_BUDGET_BYTES) throw new HttpException(507, 'publication_capacity_exceeded');
         return self::metadata($row);
     }
 
@@ -87,6 +130,8 @@ final class PublicationArchive
         $db = Verse::getDb();
         return $db->useMaster(function () use ($sceneId, $limit, $before, $db) {
             $base = (new Query())->cache(false)->from(self::TABLE)->where(['scene_id' => $sceneId]);
+            $expired = (int) (clone $base)->andWhere(['byte_length' => 0, 'canonical_body' => ''])->count('*', $db);
+            $base->andWhere(['>', 'byte_length', 0]);
             $stats = (clone $base)->select(['total' => 'COUNT(*)', 'bytes' => 'COALESCE(SUM(byte_length),0)'])->one($db);
             $query = (clone $base)->select(array_merge(['id'], self::METADATA));
             if ($before) $query->andWhere(['<', 'id', $before]);
@@ -99,6 +144,8 @@ final class PublicationArchive
                 'total' => (int) $stats['total'], 'totalBytes' => (int) $stats['bytes'],
                 'maxBodyBytes' => self::MAX_BYTES, 'sceneBudgetBytes' => self::SCENE_BUDGET_BYTES,
                 'capacityWarning' => (int) $stats['bytes'] >= self::WARNING_BYTES,
+                'retention' => ['maxVersions' => self::retainedVersions(), 'expiredVersions' => $expired,
+                    'policy' => 'latest_versions', 'expiredVersionHttpStatus' => 410],
                 'resourceBytesArchived' => false];
         });
     }
@@ -112,6 +159,9 @@ final class PublicationArchive
             'scene_id' => $sceneId, 'publication_version_id' => strtolower($version),
         ])->one($db));
         if (!$row) throw new NotFoundHttpException('publication_version_not_found');
+        if ((int) $row['byte_length'] === 0 && $row['canonical_body'] === '') {
+            throw new HttpException(410, 'publication_version_expired');
+        }
         $body = $row['canonical_body'];
         try { $parsed = json_decode($body, true, 64, JSON_THROW_ON_ERROR); }
         catch (\JsonException) { throw new HttpException(500, 'publication_corrupt'); }

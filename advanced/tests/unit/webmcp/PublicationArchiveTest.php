@@ -7,6 +7,26 @@ use yii\web\HttpException;
 
 final class PublicationArchiveTest extends TestCase
 {
+    public function testRetentionConfigurationIsBoundedAndInvalidValuesFailClosed(): void
+    {
+        $previous = getenv('WEBMCP_PUBLICATION_RETAINED_VERSIONS');
+        try {
+            putenv('WEBMCP_PUBLICATION_RETAINED_VERSIONS');
+            $this->assertSame(20, PublicationArchive::retainedVersions());
+            foreach ([1, 20, 64] as $value) {
+                putenv('WEBMCP_PUBLICATION_RETAINED_VERSIONS=' . $value);
+                $this->assertSame($value, PublicationArchive::retainedVersions());
+            }
+            foreach (['0', '-1', '65', '20x', '1.5', '999999999999999999999'] as $value) {
+                putenv('WEBMCP_PUBLICATION_RETAINED_VERSIONS=' . $value);
+                try { PublicationArchive::retainedVersions(); $this->fail('Invalid retention must not disable cleanup'); }
+                catch (HttpException $e) { $this->assertSame(503, $e->statusCode); }
+            }
+        } finally {
+            putenv($previous === false ? 'WEBMCP_PUBLICATION_RETAINED_VERSIONS' : 'WEBMCP_PUBLICATION_RETAINED_VERSIONS=' . $previous);
+        }
+    }
+
     public function testSharedUtf8ByteFixtures(): void
     {
         $cases = json_decode(file_get_contents(dirname(__DIR__, 2) . '/fixtures/publication-v1.json'), false, 64, JSON_THROW_ON_ERROR);
