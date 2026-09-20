@@ -82,15 +82,25 @@ class VerseController extends ActiveController
     }
 
     /**
+     * @OA\Get(path="/v1/verses/create-operations", summary="Read own creation evidence by operation or UUID; never replays creation", tags={"Verse"}, security={{"Bearer": {}}},
+     * @OA\Parameter(name="operationId", in="query", @OA\Schema(type="string", format="uuid")),
+     * @OA\Parameter(name="creationUuid", in="query", @OA\Schema(type="string", format="uuid")),
+     * @OA\Response(response=200, description="Structured completed, observed, not_observed, indeterminate or conflict evidence; UUID readback is not an operation receipt"),
+     * @OA\Response(response=400, description="Missing or invalid identifiers"))
      * @OA\Get(path="/v1/verses/create-operations/{operationId}", summary="Read own creation receipt", tags={"Verse"}, security={{"Bearer": {}}},
      * @OA\Parameter(name="operationId", in="path", required=true, @OA\Schema(type="string", format="uuid")),
      * @OA\Response(response=200, description="Committed creation identity and writeReceipt"),
      * @OA\Response(response=403, description="Current object permission revoked"),
      * @OA\Response(response=404, description="Creation not observed; does not prove failure"))
      */
-    public function actionCreateOperation($operationId): array
+    public function actionCreateOperation($receiptOperationId = null): array
     {
-        return \api\modules\v1\services\ReliableCreate::receipt('verse', (string) $operationId,
+        if ($receiptOperationId === null) {
+            return \api\modules\v1\services\ReliableCreate::lookup('verse',
+                Yii::$app->request->get('operationId'), Yii::$app->request->get('creationUuid'),
+                fn (Verse $model) => $this->checkAccess('update', $model));
+        }
+        return \api\modules\v1\services\ReliableCreate::receipt('verse', (string) $receiptOperationId,
             fn (Verse $model) => $this->checkAccess('update', $model));
     }
 
