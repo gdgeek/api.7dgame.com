@@ -82,15 +82,25 @@ class VerseController extends ActiveController
     }
 
     /**
+     * @OA\Get(path="/v1/verses/create-operations", summary="Read own creation evidence by operation or UUID; never replays creation", tags={"Verse"}, security={{"Bearer": {}}},
+     * @OA\Parameter(name="operationId", in="query", @OA\Schema(type="string", format="uuid")),
+     * @OA\Parameter(name="creationUuid", in="query", @OA\Schema(type="string", format="uuid")),
+     * @OA\Response(response=200, description="Structured completed, observed, not_observed, indeterminate or conflict evidence; UUID readback is not an operation receipt"),
+     * @OA\Response(response=400, description="Missing or invalid identifiers"))
      * @OA\Get(path="/v1/verses/create-operations/{operationId}", summary="Read own creation receipt", tags={"Verse"}, security={{"Bearer": {}}},
      * @OA\Parameter(name="operationId", in="path", required=true, @OA\Schema(type="string", format="uuid")),
      * @OA\Response(response=200, description="Committed creation identity and writeReceipt"),
      * @OA\Response(response=403, description="Current object permission revoked"),
      * @OA\Response(response=404, description="Creation not observed; does not prove failure"))
      */
-    public function actionCreateOperation($operationId): array
+    public function actionCreateOperation($receiptOperationId = null): array
     {
-        return \api\modules\v1\services\ReliableCreate::receipt('verse', (string) $operationId,
+        if ($receiptOperationId === null) {
+            return \api\modules\v1\services\ReliableCreate::lookup('verse',
+                Yii::$app->request->get('operationId'), Yii::$app->request->get('creationUuid'),
+                fn (Verse $model) => $this->checkAccess('update', $model));
+        }
+        return \api\modules\v1\services\ReliableCreate::receipt('verse', (string) $receiptOperationId,
             fn (Verse $model) => $this->checkAccess('update', $model));
     }
 
@@ -660,7 +670,7 @@ class VerseController extends ActiveController
      *   @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
      *   @OA\Parameter(name="limit", in="query", @OA\Schema(type="integer", minimum=1, maximum=50)),
      *   @OA\Parameter(name="before", in="query", @OA\Schema(type="integer", minimum=0)),
-     *   @OA\Response(response=200, description="Metadata only; no archive bodies"))
+     *   @OA\Response(response=200, description="Retained metadata, capacity and retention policy; default latest 20 bodies"))
      */
     public function actionPublications($id): array
     {
@@ -679,6 +689,7 @@ class VerseController extends ActiveController
      *   @OA\Response(response=200, description="Integrity-checked archive; file bytes are not retained"),
      *   @OA\Response(response=403, description="Current scene edit permission required"),
      *   @OA\Response(response=404, description="Version not found for this scene"),
+     *   @OA\Response(response=410, description="publication_version_expired: body removed by retention policy"),
      *   @OA\Response(response=500, description="Archive integrity failure"))
      */
     public function actionPublicationVersion($id, $publicationVersionId): array

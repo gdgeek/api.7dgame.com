@@ -22,9 +22,12 @@ final class ReliableWriteTest extends TestCase
 {
     private array $components;
     private Connection $db;
+    private string|false $retentionEnvironment;
 
     protected function setUp(): void
     {
+        $this->retentionEnvironment = getenv('WEBMCP_PUBLICATION_RETAINED_VERSIONS');
+        putenv('WEBMCP_PUBLICATION_RETAINED_VERSIONS');
         $this->components = [];
         foreach (['db', 'user', 'request'] as $name) {
             $this->components[$name] = Yii::$app->has($name) ? Yii::$app->get($name) : null;
@@ -78,6 +81,7 @@ final class ReliableWriteTest extends TestCase
             Yii::$app->set($name, $component);
         }
         $this->db->close();
+        putenv($this->retentionEnvironment === false ? 'WEBMCP_PUBLICATION_RETAINED_VERSIONS' : 'WEBMCP_PUBLICATION_RETAINED_VERSIONS=' . $this->retentionEnvironment);
     }
 
     private function headers(string $id, string $revision): void
@@ -389,6 +393,100 @@ final class ReliableWriteTest extends TestCase
         $next = $this->controller()->actionPublications(1);
         $this->assertSame($first['publicationVersionId'], $next['items'][0]['publicationVersionId']);
         $this->assertNull($next['nextBefore']);
+    }
+
+    private function publishVersions(int $count): array
+    {
+        $this->publishable();
+        $versions = [];
+        for ($i = 0; $i < $count; $i++) {
+            $this->headers(ReliableWrite::uuid(), Verse::findOne(1)->serverRevision);
+            $versions[] = $this->controller()->actionTakePhoto(1);
+        }
+        return $versions;
+    }
+
+    public function testRetentionExpiresOnlyOldestBodyAfterTwentyAndPreservesReceipts(): void
+    {
+        $versions = $this->publishVersions(20);
+        $original = $this->controller()->actionPublicationVersion(1, $versions[1]['publicationVersionId']);
+        $snapshot = (new Query())->from('snapshot')->one();
+        $other = (new Query())->from('scene_publication_revision')->one();
+        unset($other['id']);
+        $other['scene_id'] = 99;
+        $other['publication_version_id'] = ReliableWrite::uuid();
+        $other['operation_id'] = null;
+        $this->db->createCommand()->insert('scene_publication_revision', $other)->execute();
+        $plan = \api\modules\v1\services\PublicationArchive::retentionPlan(1, true);
+        $this->assertSame(1, $plan['expiredVersionCount']);
+        $this->assertSame($versions[0]['publicationVersionId'], $plan['versions'][0]['publicationVersionId']);
+        $this->assertSame(20, $this->controller()->actionPublications(1)['total']); // Preview did not write.
+        $new = $this->publishVersions(1)[0];
+        $history = $this->controller()->actionPublications(1);
+        $this->assertSame(20, $history['total']);
+        $this->assertSame(['maxVersions' => 20, 'expiredVersions' => 1, 'policy' => 'latest_versions', 'expiredVersionHttpStatus' => 410], $history['retention']);
+        $this->assertNull($history['nextBefore']);
+        $this->assertSame($new['publicationVersionId'], $history['items'][0]['publicationVersionId']);
+        $this->assertSame($original, $this->controller()->actionPublicationVersion(1, $versions[1]['publicationVersionId']));
+        $expired = (new Query())->from('scene_publication_revision')->where(['publication_version_id' => $versions[0]['publicationVersionId']])->one();
+        $this->assertSame('', $expired['canonical_body']);
+        $this->assertSame(0, (int) $expired['byte_length']);
+        $this->assertSame($other['canonical_body'], (new Query())->from('scene_publication_revision')->where(['scene_id' => 99])->select('canonical_body')->scalar());
+        $this->assertSame($snapshot, (new Query())->from('snapshot')->one());
+        try {
+            $this->controller()->actionPublicationVersion(1, $versions[0]['publicationVersionId']);
+            $this->fail('Expired version must return 410');
+        } catch (\yii\web\HttpException $e) {
+            $this->assertSame(410, $e->statusCode);
+            $this->assertSame('publication_version_expired', $e->getMessage());
+        }
+        $this->headers($versions[0]['writeReceipt']['operationId'], Verse::findOne(1)->serverRevision);
+        $replay = $this->controller()->actionTakePhoto(1);
+        $this->assertTrue($replay['replayed']);
+        $this->assertEquals($versions[0]['writeReceipt'], $replay['writeReceipt']);
+        $this->assertSame(21, (int) (new Query())->from('webmcp_operation')->count());
+        $this->assertSame(20, $this->controller()->actionPublications(1)['total']);
+        Yii::$app->user->switchIdentity(new ReceiptIdentity(8));
+        $this->expectException(ForbiddenHttpException::class);
+        $this->controller()->actionPublicationVersion(1, $versions[0]['publicationVersionId']);
+    }
+
+    public function testCleanupAndNewPublicationBothRollBackIfReceiptFails(): void
+    {
+        $this->publishVersions(20);
+        $archives = (new Query())->from('scene_publication_revision')->orderBy('id')->all();
+        $snapshot = (new Query())->from('snapshot')->one();
+        $this->db->createCommand()->update('verse', ['name' => 'Must roll back snapshot'], ['id' => 1])->execute();
+        $this->db->pdo->exec("CREATE TRIGGER fail_retention_receipt BEFORE INSERT ON webmcp_operation BEGIN SELECT RAISE(ABORT, 'receipt failed'); END");
+        try { $this->publishVersions(1); $this->fail('Receipt failure must abort publication'); }
+        catch (\yii\db\Exception) {
+            $this->assertSame($archives, (new Query())->from('scene_publication_revision')->orderBy('id')->all());
+            $this->assertSame($snapshot, (new Query())->from('snapshot')->one());
+            $this->assertSame(20, (int) (new Query())->from('webmcp_operation')->count());
+        }
+        $this->db->pdo->exec('DROP TRIGGER fail_retention_receipt');
+        $this->db->pdo->exec("CREATE TRIGGER fail_cleanup BEFORE UPDATE ON scene_publication_revision BEGIN SELECT RAISE(ABORT, 'cleanup failed'); END");
+        try { $this->publishVersions(1); $this->fail('Cleanup failure must abort publication'); }
+        catch (\yii\db\Exception) {
+            $this->assertSame($archives, (new Query())->from('scene_publication_revision')->orderBy('id')->all());
+            $this->assertSame($snapshot, (new Query())->from('snapshot')->one());
+        }
+    }
+
+    public function testLegacyPublicationUsesConfiguredRetentionAndPrunesBeforeCapacityCheck(): void
+    {
+        $versions = $this->publishVersions(2);
+        putenv('WEBMCP_PUBLICATION_RETAINED_VERSIONS=1');
+        $this->db->createCommand()->update('scene_publication_revision', ['byte_length' => 512 * 1024 * 1024])->execute();
+        Yii::$app->request->headers->remove('Idempotency-Key');
+        Yii::$app->request->headers->remove('If-Match');
+        $new = $this->controller()->actionTakePhoto(1);
+        $history = $this->controller()->actionPublications(1);
+        $this->assertSame(1, $history['total']);
+        $this->assertSame(2, $history['retention']['expiredVersions']);
+        $this->assertSame($new['publicationVersionId'], $history['items'][0]['publicationVersionId']);
+        $this->assertLessThan(8 * 1024 * 1024, $history['totalBytes']);
+        $this->assertSame(2, (int) (new Query())->from('webmcp_operation')->count());
     }
 
     public function testSizeAndCapacityFailureCannotPartiallyPublish(): void

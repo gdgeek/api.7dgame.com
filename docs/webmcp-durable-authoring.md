@@ -12,6 +12,26 @@
 
 查回执和重放都重新检查原调用者及对象当前权限；删除后返回 404，撤权返回 403，不重新创建。404 未观察到回执不能证明原请求未提交。返回的是创建时版本，后续编辑前必须重新读取当前对象版本。
 
+### U01：只读创建恢复查询
+
+`GET /v1/metas/create-operations?operationId={UUID}&creationUuid={UUID}`（场景替换为 `verses`）至少提供一个标识，无需对象 ID。集合路由复用已有 `create-operation` action 与 RBAC，不需要新增迁移。原 `/{operationId}` 回执接口保持兼容。JWT、原账号回执归属与当前对象编辑权限仍必须通过；UUID 查找额外限定 `author_id=当前账号`（实体排除 prefab）。其他账号的 UUID 不暴露对象身份，同一账号多条 UUID 命中返回冲突而不选择第一条。
+
+响应为 `contractVersion=creation-recovery-v1`，回显 `targetType`、`operationId`、`creationUuid`，并始终返回 `retrySafe=false`：
+
+| status / reason | 证据及语义 |
+| --- | --- |
+| `completed / creation_receipt` | 原回执已找到且权限通过；`verification=server_acknowledged`、`operationVerified=true`；返回原 `writeReceipt`、真实 `id/uuid`、创建时 `serverRevision`、`requestHash` 与 `recordedAt` |
+| `observed / uuid_match_without_receipt` | 仅找到当前账号可编辑的唯一 UUID 对象；`verification=uuid_readback`、`operationVerified=false`；返回 `id/uuid/currentRevision`，**不含** `writeReceipt` 或创建时 `serverRevision` |
+| `not_observed / no_accessible_creation_evidence` | 没有本账号可读的证据；不代表原请求未执行，也不允许重放创建 |
+| `indeterminate / permission_denied`、`created_object_unavailable` | 当前权限不足，或原回执指向的对象不可用；不暴露对象 ID，不退回 UUID 候选代替原结果 |
+| `conflict / operation_key_conflict`、`creation_uuid_mismatch`、`ambiguous_uuid` | 原键属于其他动作/类型、UUID 与原回执不符、或 UUID 非唯一；不返回候选对象身份 |
+
+未认证、路由无权限、无此端点或服务故障仍可返回 HTTP 错误。客户端分别公开 `authentication_required`、`permission_denied`、`receipt_or_endpoint_not_observed`、`query_unavailable` 等原因，并保留 `operationStatus=indeterminate`。HTTP 404 也可能表示旧部署缺少端点，不能当作“确定未创建”。
+
+WebMCP `xrugc_get_authoring_operation` 支持 `kind + operationId/creationUuid` 跨会话只读查询；UUID 命中先返回 candidate，原操作仍为 unknown。显式 `xrugc_reconcile_authoring_creation` 可用原 `kind + creationUuid`（可附 operationId）恢复对象引用，不需要对象 ID；其 `status=completed` 只代表核对完成，`verification=uuid_readback`、`operationVerified=false`、`operationStatus=indeterminate` 保留原写入未确认的事实，不生成原回执。
+
+旧客户端未发送幂等头的创建不会被追溯补成持久回执；找不到旧 UUID 也可能是对象删除、归属变化或原请求尚在事务中。当前实现不提供持久“处理中”或“确定未执行”保证。前端能力声明将部署端幂等可用性标为 `null / unverified`，客户端支持、历史 UUID 恢复范围另列，不能仅凭函数已注册宣称后端已部署。
+
 ## 持久任务 API
 
 | 请求 | 内容 | 结果 |

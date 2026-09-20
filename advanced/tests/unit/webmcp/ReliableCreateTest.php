@@ -123,6 +123,139 @@ final class ReliableCreateTest extends TestCase
         }
         $this->assertSame(1, (int) (new Query())->from('webmcp_operation')->count());
     }
+    public function testStructuredLookupRecoversReceiptWithoutObjectId(): void
+    {
+        $key = ReliableWrite::uuid();
+        $uuid = ReliableWrite::uuid();
+        $created = $this->create($key, 'verse', ['name' => 'Receipt', 'uuid' => $uuid]);
+        $read = ReliableCreate::lookup('verse', $key, $uuid, fn() => null);
+        $this->assertSame('completed', $read['status']);
+        $this->assertSame('server_acknowledged', $read['verification']);
+        $this->assertTrue($read['operationVerified']);
+        $this->assertFalse($read['retrySafe']);
+        $this->assertSame($created['id'], $read['id']);
+        $this->assertEquals($created['writeReceipt'], $read['writeReceipt']);
+        $this->assertArrayHasKey('requestHash', $read);
+    }
+    public function testLegacyUuidReadbackDoesNotFabricateReceiptOrWriteAnything(): void
+    {
+        $uuid = ReliableWrite::uuid();
+        $this->db->createCommand()->insert('verse', ['author_id' => 7, 'name' => 'Legacy', 'uuid' => $uuid])->execute();
+        $count = (new Query())->from('verse')->count();
+        $read = ReliableCreate::lookup('verse', ReliableWrite::uuid(), $uuid, fn() => null);
+        $this->assertSame('observed', $read['status']);
+        $this->assertSame('uuid_readback', $read['verification']);
+        $this->assertFalse($read['operationVerified']);
+        $this->assertArrayHasKey('currentRevision', $read);
+        $this->assertArrayNotHasKey('writeReceipt', $read);
+        $this->assertArrayNotHasKey('serverRevision', $read);
+        $this->assertSame($count, (new Query())->from('verse')->count());
+        $this->assertSame(0, (int) (new Query())->from('webmcp_operation')->count());
+        $this->assertSame('observed', ReliableCreate::lookup('verse', null, $uuid, fn() => null)['status']);
+    }
+    public function testUnknownOperationAndUuidNeverMeanNotCreated(): void
+    {
+        foreach ([[ReliableWrite::uuid(), null], [null, ReliableWrite::uuid()]] as [$key, $uuid]) {
+            $read = ReliableCreate::lookup('verse', $key, $uuid, fn() => null);
+            $this->assertSame('not_observed', $read['status']);
+            $this->assertSame('no_accessible_creation_evidence', $read['reason']);
+            $this->assertFalse($read['retrySafe']);
+            $this->assertArrayNotHasKey('id', $read);
+        }
+    }
+    public function testLookupDoesNotDiscloseAnotherActorObjectEvenIfUuidIsKnown(): void
+    {
+        $key = ReliableWrite::uuid();
+        $uuid = ReliableWrite::uuid();
+        $this->create($key, 'verse', ['name' => 'Private', 'uuid' => $uuid]);
+        Yii::$app->user->switchIdentity(new CreationIdentity(8));
+        $called = false;
+        $read = ReliableCreate::lookup('verse', $key, $uuid, function () use (&$called) { $called = true; });
+        $this->assertSame('not_observed', $read['status']);
+        $this->assertArrayNotHasKey('id', $read);
+        $this->assertArrayNotHasKey('writeReceipt', $read);
+        $this->assertFalse($called);
+    }
+    public function testLookupChecksCurrentPermissionOnReceiptAndUuidPaths(): void
+    {
+        $key = ReliableWrite::uuid();
+        $uuid = ReliableWrite::uuid();
+        $this->create($key, 'verse', ['name' => 'Restricted', 'uuid' => $uuid]);
+        foreach ([$key, null] as $operation) {
+            $read = ReliableCreate::lookup('verse', $operation, $uuid, function () { throw new ForbiddenHttpException('Revoked'); });
+            $this->assertSame('indeterminate', $read['status']);
+            $this->assertSame('permission_denied', $read['reason']);
+            $this->assertArrayNotHasKey('id', $read);
+            $this->assertArrayNotHasKey('writeReceipt', $read);
+        }
+    }
+    public function testDuplicateOwnedUuidIsAmbiguousAndNeverSelectsFirst(): void
+    {
+        $uuid = ReliableWrite::uuid();
+        foreach ([1, 2] as $n) {
+            $this->db->createCommand()->insert('verse', ['author_id' => 7, 'name' => "Duplicate $n", 'uuid' => $uuid])->execute();
+        }
+        $read = ReliableCreate::lookup('verse', null, $uuid, fn() => null);
+        $this->assertSame('conflict', $read['status']);
+        $this->assertSame('ambiguous_uuid', $read['reason']);
+        $this->assertArrayNotHasKey('id', $read);
+    }
+    public function testLookupCannotSubstituteUuidForConflictingOrDeletedReceipt(): void
+    {
+        $key = ReliableWrite::uuid();
+        $uuid = ReliableWrite::uuid();
+        $created = $this->create($key, 'verse', ['name' => 'Original', 'uuid' => $uuid]);
+        $read = ReliableCreate::lookup('verse', $key, ReliableWrite::uuid(), fn() => null);
+        $this->assertSame('creation_uuid_mismatch', $read['reason']);
+        $this->assertArrayNotHasKey('id', $read);
+        $this->assertSame('operation_key_conflict', ReliableCreate::lookup('meta', $key, null, fn() => null)['reason']);
+        $this->db->createCommand()->delete('verse', ['id' => $created['id']])->execute();
+        $read = ReliableCreate::lookup('verse', $key, $uuid, fn() => null);
+        $this->assertSame('indeterminate', $read['status']);
+        $this->assertSame('created_object_unavailable', $read['reason']);
+        $this->assertArrayNotHasKey('id', $read);
+    }
+    public function testLookupRejectsMissingMalformedAndArrayIdentifiers(): void
+    {
+        foreach ([[null, null], ['bad', null], [null, 'bad'], [[], null], [null, []]] as [$key, $uuid]) {
+            try {
+                ReliableCreate::lookup('verse', $key, $uuid, fn() => null);
+                $this->fail('Invalid identifiers accepted');
+            } catch (\yii\web\BadRequestHttpException $error) {
+                $this->assertSame(400, $error->statusCode);
+            }
+        }
+    }
+    public function testCollectionQueryBindingKeepsOperationAndUuidInLookupPath(): void
+    {
+        foreach (['meta' => MetaController::class, 'verse' => VerseController::class] as $type => $controllerClass) {
+            $key = ReliableWrite::uuid();
+            $created = $this->create($key, $type);
+            $controller = new $controllerClass($type, Yii::$app);
+            $action = $controller->createAction('create-operation');
+            // Yii merges query parameters into runWithParams. They must not select the legacy path argument.
+            $query = ['operationId' => $key, 'creationUuid' => ReliableWrite::uuid()];
+            Yii::$app->request->setQueryParams($query);
+            $result = $action->runWithParams($query);
+            $this->assertSame('creation-recovery-v1', $result['contractVersion']);
+            $this->assertSame('conflict', $result['status']);
+            $this->assertSame('creation_uuid_mismatch', $result['reason']);
+            $legacy = $action->runWithParams(['receiptOperationId' => $key]);
+            $this->assertSame($created['id'], $legacy['id']);
+            $this->assertArrayNotHasKey('contractVersion', $legacy);
+            $query = ['operationId' => ReliableWrite::uuid(), 'creationUuid' => $created['uuid']];
+            Yii::$app->request->setQueryParams($query);
+            $observed = $action->runWithParams($query);
+            $this->assertSame('observed', $observed['status']);
+            $this->assertFalse($observed['operationVerified']);
+        }
+    }
+    public function testLookupRequiresAuthentication(): void
+    {
+        Yii::$app->user->switchIdentity(null);
+        $this->expectException(\yii\web\UnauthorizedHttpException::class);
+        ReliableCreate::lookup('verse', ReliableWrite::uuid(), null, fn() => null);
+    }
     public function testFailedCreationRollsBackKeyAndObjectTogether(): void
     {
         $key = ReliableWrite::uuid();
@@ -163,6 +296,10 @@ final class ReliableCreateTest extends TestCase
             foreach ([
                 ['GET', "v1/metas/create-operations/{$id}", 'v1/meta/create-operation'],
                 ['GET', "v1/verses/create-operations/{$id}", 'v1/verse/create-operation'],
+                ['GET', 'v1/metas/create-operations', 'v1/meta/create-operation'],
+                ['GET', 'v1/verses/create-operations', 'v1/verse/create-operation'],
+                ['OPTIONS', 'v1/metas/create-operations', 'v1/meta/options'],
+                ['OPTIONS', 'v1/verses/create-operations', 'v1/verse/options'],
                 ['GET', 'v1/authoring-tasks', 'v1/authoring-task/index'],
                 ['POST', 'v1/authoring-tasks', 'v1/authoring-task/create'],
                 ['GET', "v1/authoring-tasks/{$id}", 'v1/authoring-task/view'],

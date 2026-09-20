@@ -153,4 +153,78 @@ final class ReliableCreate
             return self::acknowledge($row, $type, $authorize);
         }));
     }
+
+    /** Read-only recovery. A UUID match is object evidence, never an invented operation receipt. */
+    public static function lookup(string $type, mixed $operation, mixed $uuid, callable $authorize): array
+    {
+        if (!in_array($type, ['meta', 'verse'], true)) {
+            throw new BadRequestHttpException('Invalid creation target');
+        }
+        $actor = self::actor();
+        if (($operation !== null && !is_string($operation)) || ($uuid !== null && !is_string($uuid))) {
+            throw new BadRequestHttpException('Creation identifiers must be UUID strings');
+        }
+        $operation = $operation === null ? null : self::operation($operation);
+        if ($uuid !== null && !ReliableWrite::validId($uuid)) {
+            throw new BadRequestHttpException('creationUuid must be a UUID');
+        }
+        $uuid = $uuid === null ? null : strtolower($uuid);
+        if ($operation === null && $uuid === null) {
+            throw new BadRequestHttpException('Provide operationId or creationUuid');
+        }
+        $base = [
+            'contractVersion' => 'creation-recovery-v1', 'targetType' => $type,
+            'operationId' => $operation, 'creationUuid' => $uuid,
+            'verification' => 'none', 'operationVerified' => false, 'retrySafe' => false,
+        ];
+        return Yii::$app->db->useMaster(fn() => Yii::$app->db->noCache(function () use ($type, $operation, $uuid, $authorize, $actor, $base) {
+            $row = $operation === null ? false : self::row($operation);
+            if ($row !== false) {
+                if ($row['target_type'] !== $type || $row['action'] !== 'create') {
+                    return array_merge($base, ['status' => 'conflict', 'reason' => 'operation_key_conflict']);
+                }
+                try {
+                    $ack = self::acknowledge($row, $type, $authorize);
+                } catch (NotFoundHttpException) {
+                    return array_merge($base, ['status' => 'indeterminate', 'reason' => 'created_object_unavailable']);
+                } catch (\yii\web\ForbiddenHttpException) {
+                    return array_merge($base, ['status' => 'indeterminate', 'reason' => 'permission_denied']);
+                }
+                if ($uuid !== null && strtolower($ack['uuid']) !== $uuid) {
+                    return array_merge($base, ['status' => 'conflict', 'reason' => 'creation_uuid_mismatch']);
+                }
+                return array_merge($base, $ack, [
+                    'status' => 'completed', 'reason' => 'creation_receipt',
+                    'verification' => 'server_acknowledged', 'operationVerified' => true,
+                    'requestHash' => $row['request_hash'], 'recordedAt' => (int) $row['created_at'],
+                ]);
+            }
+            if ($uuid !== null) {
+                $class = ReliableWrite::modelClass($type);
+                // Owner scope prevents a guessed UUID from disclosing another account's objects.
+                $query = $class::find()->where(['uuid' => $uuid, 'author_id' => $actor]);
+                if ($type === 'meta') $query->andWhere(['prefab' => 0]);
+                $models = $query->limit(2)->all();
+                if (count($models) > 1) {
+                    return array_merge($base, ['status' => 'conflict', 'reason' => 'ambiguous_uuid']);
+                }
+                if (count($models) === 1) {
+                    $model = $models[0];
+                    try {
+                        $authorize($model);
+                    } catch (\yii\web\ForbiddenHttpException) {
+                        return array_merge($base, ['status' => 'indeterminate', 'reason' => 'permission_denied']);
+                    }
+                    return array_merge($base, [
+                        'status' => 'observed', 'reason' => 'uuid_match_without_receipt',
+                        'verification' => 'uuid_readback', 'id' => (int) $model->id,
+                        'uuid' => $model->uuid, 'currentRevision' => ContentRevision::of($model),
+                    ]);
+                }
+            }
+            // No row can mean legacy creation, an in-flight transaction, wrong actor, or no request.
+            // None of these reads authorizes replay or proves the object was never created.
+            return array_merge($base, ['status' => 'not_observed', 'reason' => 'no_accessible_creation_evidence']);
+        }));
+    }
 }
