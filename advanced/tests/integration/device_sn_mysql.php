@@ -68,6 +68,10 @@ try {
     $service = new DeviceSnService($db, new DeviceSnCredential(['test' => $key], 'test'));
     $assert(count($service->accounts('', 1, 20)['items']) === 2, 'Account query must work with real MySQL collations.');
     [$first, $second, $third, $fourth] = $service->generate(2, 4, 'integration', 1);
+    foreach ([$first, $second, $third, $fourth] as $generated) {
+        $assert(preg_match('/^[0-9A-HJKMNP-TV-Z]{4}(?:-[0-9A-HJKMNP-TV-Z]{4}){3}$/D', $generated['sn']) === 1,
+            'New credentials must contain exactly sixteen characters in four groups.');
+    }
 
     // Independent processes/connections race against the same InnoDB indexes.
     $race = function (array $attempts) use ($config, $key, &$db) {
@@ -121,6 +125,42 @@ try {
     $assert((int)$db->createCommand('SELECT COUNT(DISTINCT device_uuid) FROM device_sn WHERE device_uuid IS NOT NULL')->queryScalar() === 3, 'Exactly three device bindings expected.');
     $assert((int)$db->createCommand('SELECT COUNT(*) FROM device_sn WHERE (device_uuid IS NULL) <> (activated_at IS NULL)')->queryScalar() === 0,
         'Racing activation must set the UUID and activation time atomically.');
+
+    // Persist the pre-shortening encryption format without calling the new generator.
+    // Cover both an unused distributed code and an existing device binding.
+    $legacyCodes = [];
+    foreach (['pending' => null, 'active' => 'legacy-existing-device'] as $state => $legacyUuid) {
+        $raw = str_repeat($state === 'pending' ? 'ABCDEFGH' : 'JKMNPQRS', 4);
+        $hash = hash('sha256', $raw);
+        $nonce = random_bytes(12);
+        $tag = '';
+        $encrypted = openssl_encrypt($raw, 'aes-256-gcm', base64_decode($key, true), OPENSSL_RAW_DATA,
+            $nonce, $tag, 'device-sn:v1:test:' . $hash, 16);
+        $assert(is_string($encrypted) && strlen($nonce . $tag . $encrypted) === 60,
+            'Legacy fixture must use the original 32-character ciphertext format.');
+        $ciphertext = base64_encode($nonce . $tag . $encrypted);
+        $db->createCommand()->insert('device_sn', [
+            'user_id' => 2, 'sn_hash' => $hash, 'sn_ciphertext' => $ciphertext, 'key_id' => 'test',
+            'sn_tail' => substr($raw, -4), 'device_uuid' => $legacyUuid, 'enabled' => 1,
+            'created_by' => 1, 'created_at' => '2026-09-26 00:00:00', 'updated_at' => '2026-09-26 00:00:00',
+            'activated_at' => $legacyUuid === null ? null : '2026-09-26 00:01:00', 'remark' => 'legacy fixture',
+        ])->execute();
+        $id = (int)$db->getLastInsertID();
+        $formatted = implode('-', str_split($raw, 4));
+        $legacyCodes[$state] = ['id' => $id, 'sn' => $formatted];
+        $uuid = $legacyUuid ?? 'legacy-new-device';
+        $authorized = $service->authenticate(strtolower($formatted), $uuid, $legacyUuid === null);
+        $assert($authorized['device_sn_id'] === $id, 'Legacy code must activate or log in using its original hash.');
+        $assert($service->authenticate($formatted, $uuid, false)['device_sn_id'] === $id,
+            'Legacy code must continue to log in without shortening or rebinding.');
+        $assert($service->reveal($id, 1)['sn'] === $formatted, 'Legacy reveal must preserve all eight groups.');
+        $stored = $db->createCommand('SELECT sn_hash, sn_ciphertext, device_uuid FROM device_sn WHERE id=:id', [':id' => $id])->queryOne();
+        $assert($stored['sn_hash'] === $hash && $stored['sn_ciphertext'] === $ciphertext && $stored['device_uuid'] === $uuid,
+            'Legacy credentials and device bindings must remain intact.');
+    }
+    $mixed = $service->export([$first['id'], $legacyCodes['pending']['id'], $legacyCodes['active']['id']], 1);
+    $assert(array_column($mixed, 'sn') === [$first['sn'], $legacyCodes['pending']['sn'], $legacyCodes['active']['sn']],
+        'Mixed export must preserve complete new sixteen-character and legacy thirty-two-character codes.');
     $assert($service->reveal($first['id'], 1)['sn'] === $first['sn'], 'Encrypted reveal must round-trip in MySQL.');
     $firstUuid = $service->view($first['id'], false)['device_uuid'];
     $service->update($first['id'], ['enabled' => false], 1);

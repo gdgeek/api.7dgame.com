@@ -24,7 +24,9 @@ final class DeviceSnCredential
             throw new BadRequestHttpException('Invalid SN format.');
         }
         $value = strtoupper(preg_replace('/[\s-]+/', '', $value));
-        if (!preg_match('/^[0-9A-HJKMNP-TV-Z]{32}$/D', $value)) {
+        // Newly issued credentials are 16 characters; existing 32-character
+        // credentials retain their exact normalized value and digest.
+        if (!in_array(strlen($value), [16, 32], true) || !preg_match('/^[0-9A-HJKMNP-TV-Z]+$/D', $value)) {
             throw new BadRequestHttpException('Invalid SN format.');
         }
         return $value;
@@ -43,7 +45,7 @@ final class DeviceSnCredential
     public function generate(): array
     {
         $sn = '';
-        foreach (unpack('C*', random_bytes(32)) as $byte) {
+        foreach (unpack('C*', random_bytes(16)) as $byte) {
             $sn .= self::ALPHABET[$byte & 31];
         }
         $hash = self::digest($sn);
@@ -68,7 +70,8 @@ final class DeviceSnCredential
     {
         [$keys] = $this->keyring();
         $bytes = base64_decode($ciphertext, true);
-        if (!isset($keys[$keyId]) || $bytes === false || strlen($bytes) !== 60) {
+        // 12-byte nonce + 16-byte tag + exactly 16 or legacy 32 plaintext bytes.
+        if (!isset($keys[$keyId]) || $bytes === false || !in_array(strlen($bytes), [44, 60], true)) {
             throw new ServiceUnavailableHttpException('SN decryption is unavailable.');
         }
         $sn = openssl_decrypt(substr($bytes, 28), 'aes-256-gcm', $keys[$keyId], OPENSSL_RAW_DATA,

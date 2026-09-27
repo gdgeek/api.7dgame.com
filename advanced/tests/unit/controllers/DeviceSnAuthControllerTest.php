@@ -46,9 +46,10 @@ final class DeviceSnAuthControllerTest extends TestCase
         }
     }
 
-    public function testActivationAndLoginNormalizeCredentialsAndKeepTheExistingEnvelope(): void
+    #[DataProvider('supportedSnLengths')]
+    public function testActivationAndLoginNormalizeCredentialsAndKeepTheExistingEnvelope(int $length): void
     {
-        Yii::$app->request->setBodyParams(['sn' => implode('-', array_fill(0, 8, 'aaaa')), 'uuid' => ' ROKID-device ']);
+        Yii::$app->request->setBodyParams(['sn' => implode('-', array_fill(0, intdiv($length, 4), 'aaaa')), 'uuid' => ' ROKID-device ']);
         $controller = $this->controller();
         $first = $controller->actionSnActivate();
         $second = $controller->actionSnLogin();
@@ -56,17 +57,46 @@ final class DeviceSnAuthControllerTest extends TestCase
         $this->assertSame(['success' => true, 'message' => 'login', 'token' => RecordingSnLoginService::TOKEN], $first);
         $this->assertSame($first, $second);
         $this->assertSame([
-            [str_repeat('A', 32), 'rokid-device', true],
-            [str_repeat('A', 32), 'rokid-device', false],
+            [str_repeat('A', $length), 'rokid-device', true],
+            [str_repeat('A', $length), 'rokid-device', false],
         ], $controller->service->calls);
         $this->assertSame(['ip', 'sn', 'uuid', 'ip', 'sn', 'uuid'], array_column($controller->limiter->calls, 1));
-        $this->assertSame(hash('sha256', str_repeat('A', 32)), $controller->limiter->calls[1][0]);
+        $this->assertSame(hash('sha256', str_repeat('A', $length)), $controller->limiter->calls[1][0]);
         $this->assertSame(hash('sha256', 'rokid-device'), $controller->limiter->calls[2][0]);
+    }
+
+    public static function supportedSnLengths(): array
+    {
+        return ['new' => [16], 'legacy' => [32]];
+    }
+
+    #[DataProvider('unsupportedSnLengths')]
+    public function testOtherSnLengthsAreRejectedBeforeAuthentication(int $length, string $action): void
+    {
+        Yii::$app->request->setBodyParams(['sn' => str_repeat('A', $length), 'uuid' => 'rokid-device']);
+        $controller = $this->controller();
+        try {
+            $controller->$action();
+            self::fail('Unsupported SN length accepted.');
+        } catch (HttpException $exception) {
+            self::assertSame(400, $exception->statusCode);
+            self::assertSame([], $controller->service->calls);
+            self::assertSame(['ip'], array_column($controller->limiter->calls, 1));
+        }
+    }
+
+    public static function unsupportedSnLengths(): iterable
+    {
+        foreach ([15, 17, 24, 31, 33] as $length) {
+            foreach (['actionSnActivate', 'actionSnLogin'] as $action) {
+                yield $action . '-' . $length => [$length, $action];
+            }
+        }
     }
 
     public function testRateLimitFailureDoesNotAuthenticateAndReturnsRetryAfter(): void
     {
-        Yii::$app->request->setBodyParams(['sn' => str_repeat('A', 32), 'uuid' => 'rokid-device']);
+        Yii::$app->request->setBodyParams(['sn' => str_repeat('A', 16), 'uuid' => 'rokid-device']);
         $controller = $this->controller();
         $controller->limiter->deny = 'uuid';
         try {

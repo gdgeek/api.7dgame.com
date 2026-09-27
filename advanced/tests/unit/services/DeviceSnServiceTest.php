@@ -68,6 +68,8 @@ final class DeviceSnServiceTest extends TestCase
     public function testMultipleDevicesForOneAccountAndIdempotentActivation(): void
     {
         [$a, $b] = $this->service->generate(2, 2, 'fleet', 1);
+        self::assertSame(19, strlen($a['sn']));
+        self::assertSame(19, strlen($b['sn']));
         self::assertNull($a['device_uuid']);
         self::assertNull($b['device_uuid']);
         $first = $this->service->authenticate($a['sn'], 'ROKID-ONE', true);
@@ -80,6 +82,44 @@ final class DeviceSnServiceTest extends TestCase
         self::assertSame('active', $this->service->view($a['id'])['status']);
         self::assertSame('rokid-one', $this->service->view($a['id'])['device_uuid']);
         self::assertCount(2, $this->service->view($a['id'])['events']);
+    }
+
+    public function testExisting32CharacterBindingCoexistsWithNew16CharacterCredentials(): void
+    {
+        $fixture = require dirname(__DIR__, 2) . '/fixtures/device-sn-legacy.php';
+        $legacy = $fixture['row'];
+        $stored = $legacy;
+        unset($stored['sn']);
+        $stored += ['user_id' => 2, 'device_uuid' => 'legacy-rokid', 'enabled' => 1, 'created_by' => 1,
+            'created_at' => '2026-09-26 10:00:00', 'updated_at' => '2026-09-26 10:00:00',
+            'activated_at' => '2026-09-26 10:00:00', 'last_login_at' => null, 'remark' => 'historical binding'];
+        $this->db->createCommand()->insert('device_sn', $stored)->execute();
+        $legacyId = (int)$this->db->getLastInsertID();
+        $this->service = new DeviceSnService($this->db, new DeviceSnCredential([
+            'legacy' => $fixture['key'], 'new' => base64_encode(random_bytes(32)),
+        ], 'new'));
+        $short = $this->service->generate(2, 1, 'new credential', 1)[0];
+        self::assertSame(19, strlen($short['sn']));
+        foreach ([false, true] as $activate) {
+            $authenticated = $this->service->authenticate(strtolower($legacy['sn']), 'LEGACY-ROKID', $activate);
+            self::assertSame($legacyId, $authenticated['device_sn_id']);
+            self::assertSame(2, (int)$authenticated['user']->id);
+        }
+        self::assertSame(2, (int)$this->service->authorizeSession($legacyId, 2)->id);
+        self::assertSame($legacy['sn'], $this->service->reveal($legacyId, 1)['sn']);
+        self::assertSame([$legacy['sn'], $short['sn']], array_column($this->service->export([$legacyId, $short['id']], 1), 'sn'));
+        $this->assertHttp(409, fn() => $this->service->authenticate($short['sn'], 'legacy-rokid', true));
+        self::assertSame(2, (int)$this->service->authenticate($short['sn'], 'new-rokid', true)['user']->id);
+        $this->assertHttp(409, fn() => $this->service->authenticate($legacy['sn'], 'new-rokid', true));
+        $current = (new Query())->from('device_sn')->where(['id' => $legacyId])->one($this->db);
+        foreach (['sn_hash', 'sn_ciphertext', 'key_id', 'device_uuid', 'activated_at'] as $field) {
+            self::assertSame($stored[$field], $current[$field]);
+        }
+        $this->service->update($legacyId, ['enabled' => false], 1);
+        $this->assertHttp(401, fn() => $this->service->authenticate($legacy['sn'], 'legacy-rokid', false));
+        self::assertSame(2, (int)$this->service->authorizeSession($short['id'], 2)->id);
+        $this->service->update($legacyId, ['enabled' => true], 1);
+        self::assertSame($legacyId, $this->service->authenticate($legacy['sn'], 'legacy-rokid', false)['device_sn_id']);
     }
 
     public function testUnactivatedCodeDoesNotImplicitlyBindOnLogin(): void
