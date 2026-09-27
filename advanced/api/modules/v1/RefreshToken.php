@@ -7,7 +7,7 @@ class RefreshToken extends \yii\redis\ActiveRecord
     
     public function attributes()
     {
-        return ['id', 'user_id', 'key', 'session_id', 'user_agent', 'ip', 'created_at', 'expires_at', 'revoked_at'];
+        return ['id', 'user_id', 'key', 'session_id', 'user_agent', 'ip', 'created_at', 'expires_at', 'revoked_at', 'auth_method', 'device_sn_id'];
     }
 
     public function beforeSave($insert)

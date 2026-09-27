@@ -7,6 +7,9 @@ use yii\base\Component;
 use yii\web\BadRequestHttpException;
 use yii\web\ServerErrorHttpException;
 use yii\web\UnauthorizedHttpException;
+use api\modules\v1\components\DeviceSnAuthContext;
+use api\modules\v1\exceptions\DeviceSnAuthenticationException;
+use Lcobucci\JWT\Validation\Constraint\SignedWith;
 
 class IdentityProviderClient extends Component
 {
@@ -40,18 +43,51 @@ class IdentityProviderClient extends Component
 
     public function issueUserToken(int $legacyUserId, array $context = []): array
     {
+        $authContext = DeviceSnAuthContext::normalize($context);
         $token = $this->internalAuthToken();
         if ($token === null) {
             throw new ServerErrorHttpException('IDENTITY_INTERNAL_API_TOKEN is required for identity user token issuance.');
         }
 
-        $response = $this->postJson('/internal/auth/issue-user-token', [
+        $response = $this->postJson('/internal/auth/issue-user-token', array_merge([
             'legacyUserId' => $legacyUserId,
-        ], array_merge($context, [
+        ], $authContext), array_merge($context, [
             'identity_internal_token' => $token,
         ]));
 
-        return $this->tokenFromResponse($response);
+        $issued = $this->tokenFromResponse($response);
+        if ($authContext !== []) {
+            $this->assertDeviceToken($issued, $legacyUserId, $authContext);
+        }
+
+        return $issued;
+    }
+
+    /** Detect an older issuer silently dropping the new internal fields. */
+    public function assertDeviceToken(array $issued, int $userId, array $expectedContext): void
+    {
+        try {
+            $expectedContext = DeviceSnAuthContext::normalize($expectedContext);
+            $token = Yii::$app->jwt->parse($issued['accessToken'] ?? '');
+            $configuration = Yii::$app->jwt->getConfiguration();
+            $signed = $configuration->validator()->validate($token,
+                new SignedWith($configuration->signer(), $configuration->verificationKey()));
+            $claims = $token->claims();
+            $issuedAt = $claims->get('iat');
+            $expiresAt = $claims->get('exp');
+            $subject = (int)$claims->get('uid', $claims->get('sub', 0));
+            if (!$signed || $expectedContext === [] || DeviceSnAuthContext::fromClaims($claims) !== $expectedContext
+                || $subject !== $userId || ($claims->has('sub') && (int)$claims->get('sub') !== $userId)
+                || !$issuedAt instanceof \DateTimeInterface || !$expiresAt instanceof \DateTimeInterface
+                || $issuedAt->getTimestamp() > time() + 60 || $expiresAt->getTimestamp() <= time()
+                || $expiresAt->getTimestamp() - $issuedAt->getTimestamp() > DeviceSnAuthContext::MAX_ACCESS_SECONDS
+                || $expiresAt->getTimestamp() > time() + DeviceSnAuthContext::MAX_ACCESS_SECONDS + 60
+                || !is_string($issued['refreshToken'] ?? null) || $issued['refreshToken'] === '') {
+                throw new \UnexpectedValueException('Device token provenance or lifetime is invalid.');
+            }
+        } catch (\Throwable $exception) {
+            throw new DeviceSnAuthenticationException('Identity provider did not preserve device authorization.', $exception);
+        }
     }
 
     public function proxyAccountLifecycle(
@@ -103,7 +139,7 @@ class IdentityProviderClient extends Component
         return $response['token'];
     }
 
-    private function postJson(string $path, array $payload, array $context): array
+    protected function postJson(string $path, array $payload, array $context): array
     {
         $response = $this->requestJson('POST', $path, $payload, [], $context, false);
 
@@ -187,6 +223,11 @@ class IdentityProviderClient extends Component
 
         if ($preserveHttpErrors) {
             return ['status' => $status, 'body' => $decoded];
+        }
+
+        if ($status >= 400 && is_string($decoded['code'] ?? null)
+            && str_starts_with($decoded['code'], 'DEVICE_SN_')) {
+            throw new DeviceSnAuthenticationException('Identity provider rejected device authorization.');
         }
 
         if ($status === 401) {
