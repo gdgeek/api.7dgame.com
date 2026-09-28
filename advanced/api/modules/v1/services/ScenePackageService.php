@@ -26,6 +26,16 @@ use yii\web\NotFoundHttpException;
 class ScenePackageService extends Component
 {
     /**
+     * Remove legacy copy timestamps and keep imported names within the
+     * models' 255-character limit. UUIDs, rather than names, identify copies.
+     */
+    private function buildImportName(string $name): string
+    {
+        $baseName = preg_replace('/(?:（副本 \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}）)+$/u', '', $name);
+        return mb_substr($baseName, 0, 255, 'UTF-8');
+    }
+
+    /**
      * 构建导出数据树
      *
      * 查询 Verse 及所有关联数据，组装 Scene_Data_Tree 结构。
@@ -198,7 +208,7 @@ class ScenePackageService extends Component
             foreach ($resourceFileMappings as $mapping) {
                 $resource = new Resource();
                 $resource->uuid = UuidHelper::uuid();
-                $resource->name = $mapping['name'] . '（副本 ' . date('Y-m-d H:i:s') . '）';
+                $resource->name = $this->buildImportName($mapping['name']);
                 $resource->type = $mapping['type'];
                 $resource->info = $mapping['info'];
                 $resource->file_id = $mapping['fileId'];
@@ -226,7 +236,7 @@ class ScenePackageService extends Component
             // --- Step 2: Create Verse (new UUID, data temporarily empty) ---
             $verse = new Verse();
             $verse->uuid = UuidHelper::uuid();
-            $verse->name = $verseData['name'] . '（副本 ' . date('Y-m-d H:i:s') . '）';
+            $verse->name = $this->buildImportName($verseData['name']);
             $verse->description = $verseData['description'] ?? null;
             // Save with empty data first to avoid afterSave refreshMetas issues
             $verse->data = null;
@@ -267,7 +277,7 @@ class ScenePackageService extends Component
             foreach ($metasData as $metaInput) {
                 $meta = new Meta();
                 $meta->uuid = UuidHelper::uuid();
-                $meta->title = $metaInput['title'] . '（副本 ' . date('Y-m-d H:i:s') . '）';
+                $meta->title = $this->buildImportName($metaInput['title']);
                 $meta->prefab = $metaInput['prefab'] ?? 0;
                 // Save with empty data/events first to avoid afterSave refreshResources issues
                 $meta->data = null;
