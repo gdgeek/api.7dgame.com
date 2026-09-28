@@ -14,6 +14,7 @@ final class DeviceSnRouteTest extends TestCase
         $manager = new UrlManager($config['components']['urlManager']);
         foreach ([
             ['GET', 'v1/plugin-sn', 'v1/plugin-sn/index'],
+            ['GET', 'v1/plugin-sn/access', 'v1/plugin-sn/access'],
             ['GET', 'v1/plugin-sn/accounts', 'v1/plugin-sn/accounts'],
             ['POST', 'v1/plugin-sn/generate', 'v1/plugin-sn/generate'],
             ['POST', 'v1/plugin-sn/export', 'v1/plugin-sn/export'],

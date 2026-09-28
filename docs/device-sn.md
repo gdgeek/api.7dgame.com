@@ -2,7 +2,9 @@
 
 ## 行为
 
-root 通过 `sn-management` 插件选择已有普通账号，一次生成 1–100 个永久 SN。
+获得当前插件配置授权的管理者通过 `sn-management` 插件选择已有普通账号，一次生成 1–100 个永久 SN。
+默认注册配置为 `root-only`；root 可在系统管理插件中改为 `admin-only`，允许 root/admin 分发，
+也可以再改回 `root-only`。分发操作者的权限与 SN 绑定账号的资格分别检查。
 每个 SN 只属于一个账号，首次激活只绑定一个 UUID；同账号可绑定多台设备。
 管理端可以停用/恢复及修改备注，不能解绑、换机、改账号或直接删除 SN。
 仅 `status=10` 且无 `root/admin/manager` 角色的账号可以使用设备会话。
@@ -80,13 +82,30 @@ Access Token 最多继续 3 小时。恢复只恢复原绑定。账号删除、�
 
 ## 管理 API
 
-所有 `/v1/plugin-sn` 接口都要求正常启用的 root 用户 Bearer Token，返回 `Cache-Control: no-store`。
+所有 `/v1/plugin-sn` 接口都要求正常启用账号的 Bearer Token，返回 `Cache-Control: no-store`。
+`GET /v1/plugin-sn/access` 仅查询当前能力；其他管理接口在每次请求时重新读取权威配置，
+根据 `plugins.access_scope` 和该账号当前真实角色决定是否放行。`root-only` 允许 root，
+`admin-only` 允许 root/admin，`manager-only` 再允许 manager，`auth-only` 再允许普通 user。
+SN 来源的 Token 始终不能管理 SN，即使插件被配置为 `auth-only`，也不能借此派生新凭据。
+这些限制不改变“SN 仅能绑定普通启用账号”的规则。
+
+权限切回 `root-only` 后，admin 的下一次请求立即拒绝；旧 Token、已打开页面或之前查询的
+能力结果不会保留管理资格。修改前已通过检查的在途请求可能完成。插件禁用、不存在或属于
+私有组织时任何角色都拒绝，包括 root；配置读取失败、版本/响应不符合协议或 scope 非法时
+返回 `503`，不使用缓存许可，也不回退为 `auth-only` 或固定 root 放行。默认 `root-only`
+必须写在插件登记配置中，缺失 scope 不自动授予任何权限。
+
+策略源不可用的 `503` 保留 Yii 的 `name/message/code/status` 字段（`code` 仍为整数 `0`），
+另增加稳定字段 `error_code:"PLUGIN_ACCESS_CONFIG_UNAVAILABLE"`。插件对任一 SN 管理请求
+收到 `503` 且该 `error_code` 精确匹配时立即撤销本地能力、清除 Token 与敏感页面结果，并
+使已在途响应失效；普通业务 `503` 不附带该码，不能仅凭 HTTP 状态区分两种情况。
 列表和详情只返回尾号，不返回摘要、密文、密钥或明文 SN。
 列表、详情、生成与导出中的设备字段仍为 `device_uuid`：未激活时为 `null`，激活后为
 规范化 UUID，停用后保持原值。后端存储调整不改变插件的 API 字段或 TypeScript 类型。
 
 | 方法和路径 | 输入/结果 |
 |---|---|
+| GET `/v1/plugin-sn/access` | `{success:true,data:{allowed:boolean,access_scope:合法scope或null}}`；已认证但无权限仍为 200，配置源不可用为 503 |
 | GET `/v1/plugin-sn/accounts` | `q,page,page_size`；仅返回可绑定账号 `id,username,nickname` |
 | GET `/v1/plugin-sn` | `q` 搜索尾号/账号/UUID；`status=pending/active/disabled`、`user_id`、分页 |
 | GET `/v1/plugin-sn/{id}` | 脱敏详情及最近 100 条操作审计 |
@@ -98,6 +117,28 @@ Access Token 最多继续 3 小时。恢复只恢复原绑定。账号删除、�
 分页响应是 `{success:true,data:{items,total,page,page_size}}`，默认每页 20，最大 100。
 其他管理响应是 `{success:true,data:...}`；错误使用 Yii 标准 HTTP 状态及 `message`。
 SN 时间字段采用 UTC 数据库时间。账号删除时其 SN 级联撤销，既有审计保留。
+
+### 管理授权的配置来源
+
+主后端通过显式环境变量 `PLUGIN_ACCESS_CONFIG_BASE_URL` 读取 system-admin 狭窄配置接口，
+例如开发 `http://system-admin-d:8088`、生产 `http://system-admin-p:8088`；实际服务名须与
+对应部署网络一致，不从请求、iframe INIT 或主库名称推导地址。仅拼接固定路径
+`/api/v1/plugin/access-config/sn-management`，不转发用户 Token、Cookie、Host 或角色。
+读取仅使用 HTTP(S)，禁用代理与重定向，连接超时 1 秒、总超时 5 秒、响应上限 16 KiB。
+每次实时读取，无许可缓存；Apache 配置已为该变量增加 `PassEnv`。
+
+配置端只返回 `organization_name IS NULL` 的公共插件元数据，不再回调主 API 验证 Bearer，
+避免 API → system-admin → API 同步依赖占满请求进程。禁用、不存在或组织非 NULL
+（包括空白字符串）返回 `404`，主后端转为 `allowed:false,access_scope:null`。
+私有组织插件本轮不支持，不能假设 root 可以越过这一限制。
+成功响应必须为 `code:0`，且 `data` 包含 `policy_version:1`、匹配的插件 `id`、
+`enabled:true` 和严格合法的 `access_scope`；主后端独立比较当前用户角色。
+配置接口不读取/复制主 API 数据库凭据，不返回插件 URL、组织名或其他配置字段。
+
+先部署提供此严格接口的 system-admin 后端，再给两侧主 API 设置对应环境地址并升级，
+最后部署使用 `/v1/plugin-sn/access` 的插件前端。双侧配置服务必须读取同一个本环境的
+权威插件配置库，否则不同 API 可能给出不同的权限判断。此授权调整不新增表、不迁移
+SN/用户数据，也不重新启用旧 `allowed-actions/check-permission` 插件内部路径。
 
 ## 配置、迁移和双后端
 

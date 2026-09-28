@@ -26,12 +26,18 @@ final class DeviceSnServiceTest extends TestCase
         $configs = new \ReflectionProperty(\mdm\admin\components\Configs::class, '_instance');
         $this->originalConfigs = $configs->getValue();
         $configs->setValue(null, null);
-        foreach (['db', 'deviceSnDb', 'authManager', 'user', 'response', 'request'] as $id) {
+        foreach (['db', 'deviceSnDb', 'pluginAccessConfigClient', 'authManager', 'user', 'response', 'request'] as $id) {
             $this->original[$id] = Yii::$app->get($id, false);
         }
         $this->db = new Connection(['dsn' => 'sqlite::memory:']);
         Yii::$app->set('db', $this->db);
         Yii::$app->set('deviceSnDb', $this->db);
+        Yii::$app->set('pluginAccessConfigClient', new class extends \api\modules\v1\services\PluginAccessConfigClient {
+            public function read(string $pluginId): ?array
+            {
+                return ['enabled' => true, 'access_scope' => 'root-only'];
+            }
+        });
         Yii::$app->set('authManager', new DbManager(['db' => $this->db]));
         Yii::$app->set('response', new Response());
         Yii::$app->set('user', new \yii\web\User(['identityClass' => User::class, 'enableSession' => false]));
@@ -268,7 +274,7 @@ final class DeviceSnServiceTest extends TestCase
         self::assertSame('rokid-search', $matched['items'][0]['device_uuid']);
     }
 
-    public function testEveryManagementActionRequiresRootEvenWhenCalledDirectly(): void
+    public function testEveryManagementActionEnforcesConfiguredRootScopeEvenWhenCalledDirectly(): void
     {
         $controller = new PluginSnController('plugin-sn', Yii::$app);
         $calls = [fn() => $controller->actionIndex(), fn() => $controller->actionAccounts(),
@@ -284,6 +290,33 @@ final class DeviceSnServiceTest extends TestCase
         Yii::$app->user->setIdentity(User::findOne(1));
         self::assertSame(0, $controller->actionIndex()['data']['total']);
         self::assertSame('no-store', Yii::$app->response->headers->get('Cache-Control'));
+    }
+
+    public function testConfiguredAdminCanGenerateForAnOrdinaryAccountButCannotBindAnAdmin(): void
+    {
+        Yii::$app->set('request', new \yii\web\Request(['hostInfo' => 'http://localhost', 'scriptUrl' => '']));
+        $this->db->createCommand()->insert('auth_assignment', ['item_name' => 'admin', 'user_id' => '3'])->execute();
+        Yii::$app->user->setIdentity(User::findOne(3));
+        Yii::$app->set('pluginAccessConfigClient', new class extends \api\modules\v1\services\PluginAccessConfigClient {
+            public function read(string $pluginId): ?array
+            {
+                return ['enabled' => true, 'access_scope' => 'admin-only'];
+            }
+        });
+        $controller = new class('plugin-sn', Yii::$app) extends PluginSnController {
+            public DeviceSnService $testService;
+            protected function service(): DeviceSnService { return $this->testService; }
+        };
+        $controller->testService = $this->service;
+        Yii::$app->request->setBodyParams(['user_id' => 2, 'count' => 1, 'remark' => 'admin distribution']);
+        $generated = $controller->actionGenerate()['data']['items'][0];
+        self::assertSame(19, strlen($generated['sn']));
+        $row = (new Query())->from('device_sn')->where(['id' => $generated['id']])->one($this->db);
+        self::assertSame(2, (int)$row['user_id']);
+        self::assertSame(3, (int)$row['created_by']);
+        Yii::$app->request->setBodyParams(['user_id' => 3, 'count' => 1]);
+        $this->assertHttp(400, fn() => $controller->actionGenerate());
+        self::assertSame(1, (int)(new Query())->from('device_sn')->count('*', $this->db));
     }
 
     private function assertHttp(int $status, callable $action): void

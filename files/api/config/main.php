@@ -34,6 +34,9 @@ return [
         'healthService' => [
             'class' => 'common\components\HealthService',
         ],
+        'pluginAccessConfigClient' => [
+            'class' => \api\modules\v1\services\PluginAccessConfigClient::class,
+        ],
         'loginCodeReadiness' => [
             'class' => LoginCodeReadiness::class,
         ],
@@ -163,6 +166,7 @@ return [
             ],
         ],
         'errorHandler' => [
+            'class' => \api\modules\v1\components\ApiErrorHandler::class,
             'errorAction' => 'site/error',
         ],
         'urlManager' => [
@@ -341,6 +345,7 @@ return [
                     'pluralize' => false,
                     'patterns' => [
                         'GET,HEAD' => 'index',
+                        'GET,HEAD access' => 'access',
                         'GET,HEAD accounts' => 'accounts',
                         'POST generate' => 'generate',
                         'POST export' => 'export',
