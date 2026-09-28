@@ -244,6 +244,7 @@ class PluginCampusController extends ScenePackageController
      */
     public function actionPassword(): array
     {
+        \api\modules\v1\components\DeviceSnAuthGuard::assertCredentialManagementAllowed();
         Yii::$app->response->format = Response::FORMAT_JSON;
 
         $targetContext = $this->resolveTargetUsersFromBody();

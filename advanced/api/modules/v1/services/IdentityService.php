@@ -3,6 +3,8 @@
 namespace api\modules\v1\services;
 
 use api\modules\v1\models\User;
+use api\modules\v1\components\DeviceSnAuthContext;
+use api\modules\v1\exceptions\DeviceSnAuthenticationException;
 use yii\base\Component;
 use yii\web\BadRequestHttpException;
 use yii\web\UnauthorizedHttpException;
@@ -52,6 +54,9 @@ class IdentityService extends Component
             try {
                 return $this->identityProviderClient()->refresh($refreshToken, $context);
             } catch (\Throwable $exception) {
+                if ($exception instanceof DeviceSnAuthenticationException) {
+                    throw $exception;
+                }
                 if (!$this->legacyRefreshFallbackEnabled()) {
                     throw $exception;
                 }
@@ -66,6 +71,9 @@ class IdentityService extends Component
         try {
             return $this->legacyRefresh($refreshToken, $context);
         } catch (UnauthorizedHttpException $exception) {
+            if ($exception instanceof DeviceSnAuthenticationException) {
+                throw $exception;
+            }
             $linkedToken = $this->refreshFromLinkedLoginCode($refreshToken, $context);
             if ($linkedToken !== null) {
                 return $linkedToken;
@@ -90,10 +98,18 @@ class IdentityService extends Component
 
     public function issueUserToken(User $user, array $context = []): array
     {
+        $authContext = DeviceSnAuthContext::normalize($user->authContext ?: $context);
+        if ($authContext !== []) {
+            $context = array_merge($context, $authContext);
+        }
         if ($this->authProvider() === 'identity') {
             try {
                 return $this->identityProviderClient()->issueUserToken((int)$user->id, $context);
             } catch (\Throwable $exception) {
+                if ($authContext !== []) {
+                    // A remote failure must not erase the device restriction.
+                    throw $exception;
+                }
                 if (!$this->legacyRefreshFallbackEnabled()) {
                     throw $exception;
                 }
@@ -106,6 +122,22 @@ class IdentityService extends Component
         }
 
         return $this->sessionService()->issueToken($user, $context);
+    }
+
+    public function loginDeviceSn(string $sn, string $uuid, bool $activate, array $context = []): array
+    {
+        $authenticated = $this->deviceSnService()->authenticate($sn, $uuid, $activate);
+        $context['auth_method'] = DeviceSnAuthContext::METHOD;
+        $context['device_sn_id'] = (int)$authenticated['device_sn_id'];
+        $token = $this->issueUserToken($authenticated['user'], $context);
+        $this->deviceSnService()->recordLogin($context['device_sn_id']);
+
+        return $token;
+    }
+
+    protected function deviceSnService(): DeviceSnService
+    {
+        return new DeviceSnService();
     }
 
     private function legacyLogin($username, $password, array $context = []): array
@@ -138,7 +170,8 @@ class IdentityService extends Component
             throw new BadRequestHttpException("save error");
         }
 
-        return $this->sessionService()->issueToken($user, $context);
+        unset($context['auth_method'], $context['device_sn_id']);
+        return $this->sessionService()->issueToken($user, array_merge($context, $user->authContext));
     }
 
     private function normalizeRefreshTokenInput(string $refreshToken): array

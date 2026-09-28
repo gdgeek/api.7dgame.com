@@ -89,6 +89,7 @@ class EmailController extends Controller
      */
     public function actionSendVerification()
     {
+        \api\modules\v1\components\DeviceSnAuthGuard::assertCredentialManagementAllowed();
         if (($proxy = $this->proxyAccountLifecycle('/v1/email/send-verification')) !== null) {
             return $proxy['body'];
         }
@@ -160,6 +161,7 @@ class EmailController extends Controller
      */
     public function actionVerify()
     {
+        \api\modules\v1\components\DeviceSnAuthGuard::assertCredentialManagementAllowed();
         if (($proxy = $this->proxyAccountLifecycle('/v1/email/verify')) !== null) {
             return $proxy['body'];
         }
@@ -358,6 +360,7 @@ class EmailController extends Controller
      */
     public function actionSendChangeConfirmation()
     {
+        \api\modules\v1\components\DeviceSnAuthGuard::assertCredentialManagementAllowed();
         if (($proxy = $this->proxyAccountLifecycle('/v1/email/send-change-confirmation')) !== null) {
             return $proxy['body'];
         }
@@ -444,6 +447,7 @@ class EmailController extends Controller
      */
     public function actionVerifyChangeConfirmation()
     {
+        \api\modules\v1\components\DeviceSnAuthGuard::assertCredentialManagementAllowed();
         if (($proxy = $this->proxyAccountLifecycle('/v1/email/verify-change-confirmation')) !== null) {
             return $proxy['body'];
         }
@@ -515,6 +519,7 @@ class EmailController extends Controller
      */
     public function actionUnbind()
     {
+        \api\modules\v1\components\DeviceSnAuthGuard::assertCredentialManagementAllowed();
         if (($proxy = $this->proxyAccountLifecycle('/v1/email/unbind')) !== null) {
             return $proxy['body'];
         }

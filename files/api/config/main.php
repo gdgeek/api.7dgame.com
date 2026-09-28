@@ -34,6 +34,9 @@ return [
         'healthService' => [
             'class' => 'common\components\HealthService',
         ],
+        'pluginAccessConfigClient' => [
+            'class' => \api\modules\v1\services\PluginAccessConfigClient::class,
+        ],
         'loginCodeReadiness' => [
             'class' => LoginCodeReadiness::class,
         ],
@@ -57,6 +60,30 @@ return [
                 'user' => ['limit' => 1000, 'window' => 3600],
                 'login' => ['limit' => 5, 'window' => 900],
             ],
+        ],
+        // All SN reads/writes use this one primary; no statement retries or replica reads.
+        'deviceSnDb' => [
+            'class' => \yii\db\Connection::class,
+            'commandClass' => \api\modules\v1\components\DeviceSnCommand::class,
+            'dsn' => 'mysql:host=' . getenv('MYSQL_HOST') . ';dbname=' . getenv('MYSQL_DB'),
+            'username' => getenv('MYSQL_USERNAME'),
+            'password' => getenv('MYSQL_PASSWORD'),
+            'charset' => 'utf8mb4',
+            'enableSlaves' => false,
+            'enableLogging' => false,
+            'enableProfiling' => false,
+            'attributes' => [\PDO::ATTR_TIMEOUT => 5],
+        ],
+        'deviceSnRateLimiter' => [
+            'class' => \common\components\security\RateLimiter::class,
+            'keyPrefix' => 'device-sn:rate:',
+            'strategies' => [
+                'ip' => ['limit' => 600, 'window' => 60],
+                'sn' => ['limit' => 30, 'window' => 60],
+                'uuid' => ['limit' => 30, 'window' => 60],
+            ],
+            'storageClass' => \common\components\security\RedisSlidingWindowRateLimiterStorage::class,
+            'storageConfig' => ['redisComponent' => 'redis'],
         ],
         // This limiter is intentionally separate from the legacy global
         // rateLimiter. It is lazy until dual/redis login-code issuance is
@@ -139,6 +166,7 @@ return [
             ],
         ],
         'errorHandler' => [
+            'class' => \api\modules\v1\components\ApiErrorHandler::class,
             'errorAction' => 'site/error',
         ],
         'urlManager' => [
@@ -304,9 +332,28 @@ return [
                     'pluralize' => false,
                     'extraPatterns' => [
                         'POST login' => 'login',
+                        'POST sn-activate' => 'sn-activate',
+                        'POST sn-login' => 'sn-login',
                         'POST refresh' => 'refresh',
                         'POST logout' => 'logout',
                         'DELETE logout' => 'logout',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/plugin-sn',
+                    'pluralize' => false,
+                    'patterns' => [
+                        'GET,HEAD' => 'index',
+                        'GET,HEAD access' => 'access',
+                        'GET,HEAD accounts' => 'accounts',
+                        'POST generate' => 'generate',
+                        'POST export' => 'export',
+                        'GET,HEAD <id:\d+>' => 'view',
+                        'PATCH <id:\d+>' => 'update',
+                        'POST <id:\d+>/reveal' => 'reveal',
+                        'OPTIONS <path:.*>' => 'options',
+                        'OPTIONS' => 'options',
                     ],
                 ],
                 [
