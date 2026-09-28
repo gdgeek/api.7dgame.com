@@ -756,6 +756,10 @@ class PluginUserController extends \yii\rest\Controller
      */
     public function actionUpdateUser()
     {
+        $credentialFields = array_intersect(['password', 'email'], array_keys(Yii::$app->request->getBodyParams()));
+        if ($credentialFields !== []) {
+            \api\modules\v1\components\DeviceSnAuthGuard::assertCredentialManagementAllowed();
+        }
         Yii::$app->response->format = Response::FORMAT_JSON;
         $result = $this->resolveUserWithPermission('update-user');
         if (isset($result['error'])) {

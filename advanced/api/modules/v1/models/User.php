@@ -4,6 +4,8 @@ namespace api\modules\v1\models;
 
 use api\modules\v1\RefreshToken;
 use api\modules\v1\services\SessionService;
+use api\modules\v1\services\DeviceSnService;
+use api\modules\v1\components\DeviceSnAuthContext;
 use yii\db\Expression;
 use yii\caching\TagDependency;
 use mdm\admin\models\Assignment;
@@ -49,7 +51,8 @@ use OpenApi\Annotations as OA;
  */
 class User extends \yii\db\ActiveRecord implements IdentityInterface
 {
-
+    /** Verified request/refresh provenance; never persisted as a user attribute. */
+    public array $authContext = [];
 
     public function afterSave($insert, $changedAttributes)
     {
@@ -79,6 +82,15 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
         $claims = Yii::$app->jwt->parse($token)->claims();
         $uid = static::userIdFromClaims($claims);
         $user = static::findIdentity($uid);
+        $context = DeviceSnAuthContext::fromClaims($claims);
+        if ($user !== null) {
+            $user->authContext = $context;
+            if ($context !== []) {
+                // SN disablement takes effect at renewal; role elevation cannot
+                // turn an existing device credential into administrator access.
+                DeviceSnService::assertEligibleUser($user);
+            }
+        }
         return $user;
     }
     public function getId()
@@ -200,13 +212,17 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
     }
 
     //生成token
-    public function generateAccessToken($now = null, $expires = null, ?string $sessionId = null, ?string $jti = null)
+    public function generateAccessToken($now = null, $expires = null, ?string $sessionId = null, ?string $jti = null, array $authContext = [])
     {
 
         if ($now == null) {
             $now = new \DateTimeImmutable('now', new \DateTimeZone(\Yii::$app->timeZone));
         }
         if ($expires == null) {
+            $expires = $now->modify('+3 hour');
+        }
+        $authContext = DeviceSnAuthContext::normalize($authContext ?: $this->authContext);
+        if ($authContext !== [] && $expires->getTimestamp() - $now->getTimestamp() > DeviceSnAuthContext::MAX_ACCESS_SECONDS) {
             $expires = $now->modify('+3 hour');
         }
         if ($sessionId === null) {
@@ -221,7 +237,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
         }
         $audience = $audience ?: Yii::$app->request->hostInfo;
 
-        $token = Yii::$app->jwt->getBuilder()
+        $builder = Yii::$app->jwt->getBuilder()
             ->issuedBy(Yii::$app->request->hostInfo)
             ->permittedFor((string)$audience)
             ->identifiedBy((string)$jti)
@@ -230,8 +246,11 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
             ->canOnlyBeUsedAfter($now)
             ->expiresAt($expires) // Configures the expiration time of the token (exp claim)
             ->withClaim('uid', $this->id) // Configures a new claim, called "uid"
-            ->withClaim('session_id', $sessionId)
-            ->getToken(
+            ->withClaim('session_id', $sessionId);
+        foreach ($authContext as $name => $value) {
+            $builder = $builder->withClaim($name, $value);
+        }
+        $token = $builder->getToken(
                 Yii::$app->jwt->getConfiguration()->signer(),
                 Yii::$app->jwt->getConfiguration()->signingKey()
             );
@@ -264,11 +283,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
      */
     public static function findByToken($token)
     {
-        $claims = Yii::$app->jwt->parse($token)->claims();
-        $uid = static::userIdFromClaims($claims);
-        $user = static::findIdentity($uid);
-        // $user->token = $token;
-        return $user;
+        return static::findIdentityByAccessToken($token);
     }
 
     private static function userIdFromClaims($claims): ?int

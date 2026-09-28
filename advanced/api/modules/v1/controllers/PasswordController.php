@@ -356,6 +356,7 @@ class PasswordController extends Controller
      */
     public function actionChange()
     {
+        \api\modules\v1\components\DeviceSnAuthGuard::assertCredentialManagementAllowed();
         if (($proxy = $this->proxyAccountLifecycle('/v1/password/change')) !== null) {
             return $proxy['body'];
         }
