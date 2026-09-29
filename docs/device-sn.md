@@ -1,4 +1,9 @@
-# SN 分发与 Rokid 登录
+# SN 分发管理与 y1 设备认证边界
+
+**2026-09-29 本地改造，尚未部署开发或生产。** 网页管理仍由主 API 提供；Unity/Rokid
+的 SN 激活、登录、刷新和退出改由 `backend/yii3-a1`（y1）提供，复用 y1 原用户名密码
+登录的 HS256 Token 协议。此前“主 API + identity”发布记录属于历史版本，不能视为
+本次 y1 或账号删除作废改动已经上线。
 
 ## 行为
 
@@ -7,6 +12,8 @@
 也可以再改回 `root-only`。分发操作者的权限与 SN 绑定账号的资格分别检查。
 每个 SN 只属于一个账号，首次激活只绑定一个 UUID；同账号可绑定多台设备。
 管理端可以停用/恢复及修改备注，不能解绑、换机、改账号或直接删除 SN。
+删除绑定用户账号会使其全部 SN 永久作废，保留记录、原账号 ID、设备 UUID 和已有审计；
+作废后不能恢复，重新创建同名或同 ID 账号也不能复活原 SN。账号暂时停用不触发永久作废。
 仅 `status=10` 且无 `root/admin/manager` 角色的账号可以使用设备会话。
 
 设备 UUID 直接存入 `device_sn.device_uuid`，该字段可为空并具有唯一约束。生成 SN 时为空，
@@ -21,64 +28,42 @@ UUID 支持 1–255 个 ASCII 字母、数字、点、下划线、冒号、连�
 
 新生成 SN 为 16 位随机 Crockford Base32 字符，80 bit 熵，每 4 位分组；显示为
 `0000-1111-2222-3333` 这样的 4 组格式，含连字符共 19 个字符（示例不是有效凭据）。
-输入忽略大小写、ASCII 空白、连字符；规范化后严格接受 16 位新码或 32 位历史码，
-不接受其他长度，不自动猜测 `I/L/O/U` 等字符。历史 32 位码保留 160 bit 熵及原有
-8 组显示格式，不截断、不补齐、不重新发行；其账号、UUID 和授权状态保持不变。
+新 y1 设备接口和 Unity 客户端只接受规范化后的 16 位码，忽略大小写、ASCII 空白和连字符，
+不猜测 `I/L/O/U` 等字符。主 API 的存储、查看和导出仍兼容 32 位历史码，保留其 160 bit 熵
+和 8 组显示格式，不截断、不补齐、不重新发行；这不表示 y1 接受历史 32 位输入。
 数据库保存 SHA-256 查询摘要及 AES-256-GCM 密文，完整 SN 只在受授权的生成、查看、
 导出响应中出现。审计复用 `audit_log`，resource 为 `device_sn/{id}`，不记录完整 SN。
 
-## Rokid 接入
+## 本地实现：Unity / Rokid 认证迁至 y1
 
-主后端原生路径是 `/v1/...`；经主站/插件代理时一般是 `/api/v1/...`。
-客户端配置环境的同一个权威 API base URL，生产使用 HTTPS。
+设备使用同环境 y1 的接口：
 
-首次输入 SN：
+| 方法和路径 | 用途 |
+|---|---|
+| POST `/v1/auth/sn-activate` | 首次绑定 UUID 并登录；同一对凭据可幂等重试 |
+| POST `/v1/auth/sn-login` | 已激活设备以相同 SN + UUID 登录，不隐式激活 |
+| POST `/v1/auth/refresh` | 轮换 y1 Refresh Token，持续核验并保留 SN 来源 |
+| POST `/v2/auth/refresh-token` | 严格刷新入口，同样保留 SN 来源 |
+| POST `/v1/auth/logout` | 撤销指定 y1 Refresh Token，保留 SN / UUID 绑定 |
 
-```http
-POST /v1/auth/sn-activate
-Content-Type: application/json
+激活、登录请求体仍是 `{sn,uuid}`，成功仍含
+`{success:true,message:"login",token:{accessToken,expires,refreshToken}}`，并返回安全的账号信息。
+y1 使用自己的 `JWT_KEY`（HS256），不调用 identity 内部签发接口，不接受主 API 的 EC Token
+作为自身登录态。Unity 的旧主 API 会话不能直接变为 y1 会话，必须用原 SN + UUID 向 y1
+重新登录；已共享的绑定不用复制或重建。接口详情见超级项目
+`backend/yii3-a1/docs/device-sn.md` 和 `docs/sn-management/UNITY_CLIENT_README.md`。
 
-{"sn":"分发得到的 SN","uuid":"稳定的设备 UUID"}
-```
+主 API 的 `POST /v1/auth/sn-activate` 与 `POST /v1/auth/sn-login` 在本次版本明确返回
+`410 Gone`，消息提示改用本环境 y1。保留的 action 和显式路由仅负责返回 410，
+默认 Yii controller/action 路由也不能继续激活或签发；错误体不包含跳转域名、SN 或 Token。
+主 API 不重定向、不代理这些凭据，客户端必须使用已核验的 y1 环境配置。
+主 API 现有用户名密码登录、刷新和退出不改协议；此前已签发主 API SN 会话的 refresh
+仍按原有来源校验处理，不能去掉来源以转成普通登录。新 Unity 会话只使用 y1 刷新和退出。
 
-之后每次启动或 Access Token 到期：
-
-```http
-POST /v1/auth/sn-login
-Content-Type: application/json
-
-{"sn":"本机保存的 SN","uuid":"同一个设备 UUID"}
-```
-
-两者成功均返回原登录协议：
-
-```json
-{
-  "success": true,
-  "message": "login",
-  "token": {
-    "accessToken": "JWT",
-    "expires": "沿用当前 issuer 的时间格式",
-    "refreshToken": "原有格式的刷新凭据"
-  }
-}
-```
-
-后续业务调用继续使用 `Authorization: Bearer <accessToken>`；账号 ID、角色及内容权限
-仍由原系统决定。客户端可以继续使用 `/v1/auth/refresh`，但 Rokid 的默认策略为
-启动/到期时以 UUID+SN 重登。不要在 URL、遥测、崩溃报告或截图中暴露 SN/Token；
-SN 存入平台安全存储，退出设备授权时清除本机凭据。不要在业务请求失败后无限重复登录。
-
-- 400：输入格式不正确，提示用户检查 SN/UUID。
-- 401：SN 停用、账号失效或授权无效；停止自动重试并提示联系管理员。
-- 409：需要首次激活或已有冲突绑定；未激活设备走激活入口，冲突不得自动换绑。
-- 429：遵循 `Retry-After`。
-- 5xx/网络异常：1、2、4、8、16、最多 30 秒指数退避并加入随机抖动。
-
-同一 SN+UUID 重复激活幂等；激活提交后即使签发失败或响应丢失，仍可用相同凭据重试。
-停用提交后开始的新登录和刷新都拒绝；已通过授权检查的在途请求可能完成，既有
-Access Token 最多继续 3 小时。恢复只恢复原绑定。账号删除、停用或升为管理员会拒绝
-该账号的 SN 会话。SN 会话不允许生成二维码登录码、OIDC 换票或修改账号密码/邮箱。
+只有停用 SN 时，新登录和刷新立即拒绝，已有 Access 最多继续 3 小时；恢复仍限原 UUID。
+删除绑定账号使共享表 `user_id=NULL`，永久阻止激活、登录、刷新及后续 Access 鉴权，
+包括同 ID 重建账号；已经通过授权校验的在途请求可能完成。账号暂时停用或升权会拒绝
+SN 会话，但不产生永久作废墓碑。设备会话不能派生不受 SN 限制的二维码/OIDC 等凭据。
 
 ## 管理 API
 
@@ -101,22 +86,27 @@ SN 来源的 Token 始终不能管理 SN，即使插件被配置为 `auth-only`�
 使已在途响应失效；普通业务 `503` 不附带该码，不能仅凭 HTTP 状态区分两种情况。
 列表和详情只返回尾号，不返回摘要、密文、密钥或明文 SN。
 列表、详情、生成与导出中的设备字段仍为 `device_uuid`：未激活时为 `null`，激活后为
-规范化 UUID，停用后保持原值。后端存储调整不改变插件的 API 字段或 TypeScript 类型。
+规范化 UUID，停用或作废后保持原值。删除账号后 `user_id/username/nickname` 为 `null`，
+`original_user_id` 保留原账号 ID，`enabled=false`、`status=revoked`，
+`revocation_reason=account_deleted`；其他状态的 `revocation_reason` 为 `null`。
+`original_user_id` 仅用于展示和历史筛选，绝不能作为认证绑定。
 
 | 方法和路径 | 输入/结果 |
 |---|---|
 | GET `/v1/plugin-sn/access` | `{success:true,data:{allowed:boolean,access_scope:合法scope或null}}`；已认证但无权限仍为 200，配置源不可用为 503 |
 | GET `/v1/plugin-sn/accounts` | `q,page,page_size`；仅返回可绑定账号 `id,username,nickname` |
-| GET `/v1/plugin-sn` | `q` 搜索尾号/账号/UUID；`status=pending/active/disabled`、`user_id`、分页 |
+| GET `/v1/plugin-sn` | `q` 搜索尾号/账号/UUID；`status=pending/active/disabled/revoked`、`user_id`、分页 |
 | GET `/v1/plugin-sn/{id}` | 脱敏详情及最近 100 条操作审计 |
 | POST `/v1/plugin-sn/generate` | `{user_id,count:1..100,remark}`；201，`data.items` 含本批完整 `sn` |
-| PATCH `/v1/plugin-sn/{id}` | 只接受 `{enabled?:boolean,remark?:string}`，备注最多 500 字 |
+| PATCH `/v1/plugin-sn/{id}` | 只接受 `{enabled?:boolean,remark?:string}`，备注最多 500 字；已作废 SN 只可改备注，提交 `enabled` 返回 409 |
 | POST `/v1/plugin-sn/{id}/reveal` | `data:{id,sn}`，记录查看审计 |
 | POST `/v1/plugin-sn/export` | `{ids:[整数]}`，最多 100 条，`data.items` 含完整码并逐条审计 |
 
 分页响应是 `{success:true,data:{items,total,page,page_size}}`，默认每页 20，最大 100。
 其他管理响应是 `{success:true,data:...}`；错误使用 Yii 标准 HTTP 状态及 `message`。
-SN 时间字段采用 UTC 数据库时间。账号删除时其 SN 级联撤销，既有审计保留。
+SN 时间字段采用 UTC 数据库时间。`user_id` 筛选也匹配已删除账号的 `original_user_id`；
+删除账号后不保留用户名快照，因此账号名搜索不能找回已删除账号的 SN。
+作废记录仍允许查看详情、完整码、导出及改备注，用于留档；凭据不再能登录。
 
 ### 管理授权的配置来源
 
@@ -145,37 +135,43 @@ SN/用户数据，也不重新启用旧 `allowed-actions/check-permission` 插�
 1. 在主库执行 Yii migration `m260926_210000_create_device_sn_table`。前置条件为已有
    `user/audit_log/auth_item/auth_item_child` 表及 root 角色，不依赖旧 `device` 表。
    迁移创建包含 nullable unique `device_uuid` 的 `device_sn`，同时登记管理路由。
+   接着执行增量迁移 `m260928_150000_preserve_revoked_device_sn`：新增并回填
+   `original_user_id`，将 `user_id` 改为可空、外键改为 `ON DELETE SET NULL`。
+   仍只使用原 `device_sn` 表；账号删除与作废由数据库原子完成，覆盖各删除入口。
 2. 配置 `DEVICE_SN_ACTIVE_KEY_ID` 与 `DEVICE_SN_KEYS`。后者是 key ID 到 base64 编码
    32-byte AES key 的 JSON。用 `openssl rand -base64 32` 生成随机密钥，通过部署 secret
    注入，例如 `{"v1":"<base64 key>"}`；不要提交真实值。更换 active key 后保留旧 key
    供历史 SN 解密。缺少密钥时生成/查看/导出失败，不退化成明文保存。
-3. `deviceSnDb` 使用与本环境主库相同的 MYSQL_* 配置及标准 Yii Connection；关闭副本读，
-   不使用 CynosDB 的逐语句重试。两个业务后端、identity 的 LEGACY_DB_* 必须指向同一
-   权威写库，JWT 验签配置和 keyring 必须一致；独立库/异步复制不满足此约束。
-4. 若 `AUTH_PROVIDER=identity`，先执行 identity session 增量迁移并升级签发服务，详见
-   超级项目 `services/identity-service/docs/runbooks/device-sn-sessions.md`。确认其
-   `/internal/auth/device-sn/readiness` 三项均 true。旧 issuer 丢弃来源时主后端拒绝发证，
-   SN 失败不会回退成普通会话。普通密码会话仍按原配置运行。
-5. Redis 原子限流组件 `deviceSnRateLimiter` 默认每 IP 600 次/分钟、每 SN 摘要和每 UUID
-   摘要各 30 次/分钟；Redis 故障拒绝请求。双后端应共享限流状态。
-6. 未证明双侧一致性前，插件和 Rokid 固定到同一个权威业务入口。插件生产 Nginx 只接受
-   一个 `APP_API_1_URL`；不能用随机双后端模板。业务入口不是 Portainer 管理入口。
+3. 主 API 的 `deviceSnDb` 使用同环境主库 MYSQL_* 和标准 Yii Connection，关闭副本读，
+   不使用 CynosDB 逐语句重试。y1 的 `MYSQL_HOST/MYSQL_DB/MYSQL_USER/MYSQL_PASS`
+   必须连接同一权威主库；共享原表，不复制 SN 绑定，不从异步副本决定授权。
+4. 主 API / identity 的既有 `AUTH_PROVIDER`、EC 验签和历史 SN 会话配置保持不变；
+   identity 的 LEGACY_DB_* 继续读取同一主库，已有 session 来源列不能移除。它们只负责
+   原有网页或历史会话兼容，不作为 y1 签发依赖。y1 不需要设置 identity internal token、
+   token issuance 开关或主 API AES keyring。主 API 两侧 AES keyring 一致；y1 各节点使用
+   同一组现有 HS256 `JWT_KEY`，两种签名体系不可混用。
+5. y1 的 `REDIS_HOST/REDIS_PORT/REDIS_DB` 必须指向本环境同一权威 Redis 逻辑库，
+   各节点共享刷新会话及 SN 限流状态；Redis 故障时设备认证拒绝请求。限流使用 SN/UUID
+   摘要，详细行为见 y1 文档。保留主 API 的内部历史会话检查不代表重新公开设备登录入口。
+6. 插件仍连接主 API，Unity 改连 y1；生产插件 Nginx 使用 `APP_API_1_URL`，不能将其
+   改成 y1。y1 对外环境地址须按部署核验；未证明节点一致性前固定到一个已确认入口。
+   业务入口不是 Portainer 管理入口。
 
-开发环境已有此前 32 位版本的迁移与测试数据；本次 16 位生成规则是否已部署，须按
-目标环境实际镜像和验收记录核实。长度调整复用现有摘要、密文和尾号字段，不需要
-新增迁移或回填历史 SN，也不涉及旧 `device` 表和普通登录数据。先升级所有会接收
-SN 的后端至兼容 16/32 位的版本，再分发新码；已签发 16 位码后不能回滚到只接受
-32 位的版本。
+此前 16 位生成及 32 位历史码留档兼容已有发布记录；本次 y1 接入只接受 16 位，
+部署前需核对客户端现有凭据，不得将历史 32 位码截断后使用。转移认证职责无需新表或
+重新绑定；账号删除永久作废仍须先完成上面的既有表增量迁移。所有新代码的部署状态
+必须按目标环境镜像和本轮功能验收确认，历史发布记录不能代替。
 回滚应先关闭插件和设备登录入口、停止 SN 发行，再部署兼容版本；已有 SN 后不要
 直接执行破坏性 `safeDown`。数据库和加密
 keyring 应配套备份，丢失旧 key 会导致历史 SN 无法再次查看，但摘要验证仍可用。
 
-### 已有环境只执行本次迁移
+### 限定 SN 迁移白名单
 
 在 Portainer 中选择已更新到本次镜像的主 API 容器，打开 `/bin/sh` 控制台。
 先确认该容器的 `MYSQL_HOST/MYSQL_DB` 对应目标环境的权威写库，已有迁移历史表、
-`user/audit_log/auth_item/auth_item_child` 表及 `root` 角色。首次执行前应不存在
-`device_sn`；若表已存在但历史中没有本次迁移，先检查此前执行是否中途失败，不要直接重跑。
+`user/audit_log/auth_item/auth_item_child` 表及 `root` 角色。首次安装按顺序执行建表和保留作废记录
+两项迁移；已有环境应已有建表迁移历史，只会执行新的增量迁移。若表已存在但没有建表迁移
+历史，先检查此前执行是否中途失败，不要直接重跑。迁移及升级主 API 期间暂停账号删除和 SN 生成。
 共享同一主库的双后端只需在一侧执行一次。
 
 以下使用临时目录限定迁移候选，既不会执行其他未完成迁移，也不会执行 Task 5.1 的迁移命令。
@@ -185,23 +181,39 @@ keyring 应配套备份，丢失旧 key 会导致历史 SN 无法再次查看，
 ```sh
 set -eu
 cd /var/www/html/advanced
-sn_migration_file=m260926_210000_create_device_sn_table.php
-test -f "console/migrations/$sn_migration_file"
+sn_create=m260926_210000_create_device_sn_table.php
+sn_revoke=m260928_150000_preserve_revoked_device_sn.php
+test -f "console/migrations/$sn_create"
+test -f "console/migrations/$sn_revoke"
 sn_migration_dir=$(mktemp -d /tmp/device-sn-migration.XXXXXX)
-trap 'rm -f "$sn_migration_dir/$sn_migration_file"; rmdir "$sn_migration_dir"' EXIT
-cp "console/migrations/$sn_migration_file" "$sn_migration_dir/"
+trap 'rm -f "$sn_migration_dir/$sn_create" "$sn_migration_dir/$sn_revoke"; rmdir "$sn_migration_dir"' EXIT
+cp "console/migrations/$sn_create" "console/migrations/$sn_revoke" "$sn_migration_dir/"
 php yii migrate/new --db=task51CoordinatorDb --migrationPath="$sn_migration_dir" --interactive=0
-php yii migrate/up 1 --db=task51CoordinatorDb --migrationPath="$sn_migration_dir" --interactive=0
+php yii migrate/up 2 --db=task51CoordinatorDb --migrationPath="$sn_migration_dir" --interactive=0
 php yii migrate/new --db=task51CoordinatorDb --migrationPath="$sn_migration_dir" --interactive=0
 ```
 
-首次执行中间步骤应报告仅应用 `m260926_210000_create_device_sn_table`，最后一步应无待执行迁移；
+首次安装最多应用这两项 SN 迁移，已有环境仅应用尚未执行的项，最后一步应无待执行迁移；
 成功后重复运行会根据迁移历史跳过。MySQL DDL 不是整个迁移原子回滚，若执行失败应先核对
-`device_sn`、索引、外键和 RBAC 状态，再决定修复步骤。
+`device_sn`、索引、外键和 RBAC 状态，再决定修复步骤。新的迁移可从已加列或已完成外键
+替换的状态重试；完成后核对 `user_id` 可空、`original_user_id` 已回填，且
+`fk_device_sn_user_retained` 为 `ON DELETE SET NULL`。
 
 GitHub CI 的 `Run Migrations` 会在临时 `yii2_advanced_test` 数据库执行应用迁移，
 因此会包含本迁移；这不等于部署环境已迁移。`docker/Release` 只构建应用镜像，
 没有自动运行迁移的启动命令，Portainer 更新容器后仍须执行上述单次增量步骤。
+
+### 账号删除永久作废的升级要求
+
+本项为本地实现，尚未发布到开发或生产环境；此前发布记录不代表该增量迁移已执行。
+升级期间暂停所有账号删除入口及 SN 生成，备份数据库，在同一权威库执行
+`m260928_150000_preserve_revoked_device_sn`，随后升级全部主 API 和参与设备鉴权的 y1 节点，再升级插件并恢复操作。
+暂停删除避免旧外键仍执行级联删除；暂停生成避免旧后端在回填后生成缺少原账号 ID 的记录。
+只需对双后端共享的权威库迁移一次，不新建表，不依赖旧 `device` 表。
+
+`user_id=NULL` 是不可恢复的作废状态；UUID 唯一占用继续保留，不能发新码给同 UUID 换绑。
+已被旧 `CASCADE` 规则删除的历史 SN 无法通过此迁移补回。迁移不提供破坏性回退；回滚应用
+时也须保留 nullable 外键与作废记录，并使用支持作废状态的兼容版本。
 
 ## 验证
 
@@ -215,5 +227,8 @@ DEVICE_SN_MYSQL_TEST_PORT=13318 DEVICE_SN_REDIS_TEST_PORT=16318 php tests/integr
 ```
 
 上线验收记录应包含环境、镜像/提交、迁移及 key ID（不含 key 内容）、测试用例和结果。
-验证 root 生成→Rokid 激活→重登→刷新→单码停用，以及另一个设备和密码登录不受影响。
+验证主 API 管理页分发→y1 激活→重登→两种刷新→退出，以及主 API 两个旧入口均410。
+再验证单码停用、另一设备和密码登录不受影响；分别回归 y1 普通密码会话与主 API 历史 SN 刷新。
+额外使用专用测试账号验证删除后 SN 留档且无法恢复、激活、登录、刷新或使用旧 Access；
+重建同 ID 账号不能复活原码；回滚删除事务不影响原 SN，作废设备 UUID 不能被新码占用。
 双后端必须额外验证 A 激活/B 登录、A 停用/B 拒绝刷新、并发绑定及失败切换。

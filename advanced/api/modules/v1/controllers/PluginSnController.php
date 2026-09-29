@@ -91,6 +91,8 @@ class PluginSnController extends \yii\rest\Controller
 
     /**
      * @OA\Get(path="/v1/plugin-sn", tags={"Device SN"}, summary="List masked SN records",
+     *     @OA\Parameter(name="status", in="query", @OA\Schema(type="string", enum={"pending", "active", "disabled", "revoked"})),
+     *     @OA\Parameter(name="user_id", in="query", description="Account ID, including the original ID of deleted accounts", @OA\Schema(type="integer")),
      *     security={{"Bearer":{}}}, @OA\Response(response=200, description="Paginated items"),
      *     @OA\Response(response=403, description="Current plugin configuration denies access"))
      */
@@ -117,7 +119,7 @@ class PluginSnController extends \yii\rest\Controller
 
     /** @OA\Get(path="/v1/plugin-sn/{id}", tags={"Device SN"}, summary="Read SN details and audit events",
      * @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
-     * security={{"Bearer":{}}}, @OA\Response(response=200, description="Masked record and events")) */
+     * security={{"Bearer":{}}}, @OA\Response(response=200, description="Masked record and events; revoked records have null user_id, retained original_user_id and revocation_reason=account_deleted")) */
     public function actionView($id)
     {
         $this->requireManagementAccess();
@@ -150,7 +152,8 @@ class PluginSnController extends \yii\rest\Controller
      * @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
      * security={{"Bearer":{}}}, @OA\RequestBody(required=true, @OA\JsonContent(
      * @OA\Property(property="enabled", type="boolean"), @OA\Property(property="remark", type="string"))),
-     * @OA\Response(response=200, description="Updated record; account and device are immutable")) */
+     * @OA\Response(response=200, description="Updated record; account and device are immutable"),
+     * @OA\Response(response=409, description="Account-deleted SNs are permanently revoked; only remark changes are allowed")) */
     public function actionUpdate($id)
     {
         $operator = $this->requireManagementAccess();

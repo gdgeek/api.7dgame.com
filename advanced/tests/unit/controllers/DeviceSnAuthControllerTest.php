@@ -17,8 +17,8 @@ use Yii;
 use yii\web\ForbiddenHttpException;
 use yii\web\Request;
 use yii\web\Response;
-use yii\web\HttpException;
-use yii\web\TooManyRequestsHttpException;
+use yii\web\GoneHttpException;
+use yii\web\UrlManager;
 use yii\web\User as WebUser;
 
 final class DeviceSnAuthControllerTest extends TestCase
@@ -27,11 +27,12 @@ final class DeviceSnAuthControllerTest extends TestCase
 
     protected function setUp(): void
     {
-        foreach (['request', 'response', 'user'] as $name) {
+        foreach (['request', 'response', 'user', 'errorHandler'] as $name) {
             $this->components[$name] = Yii::$app->get($name, false);
         }
         Yii::$app->set('request', new DeviceSnTestRequest());
         Yii::$app->set('response', new Response());
+        Yii::$app->set('errorHandler', new \yii\web\ErrorHandler());
         $webUser = new WebUser(['identityClass' => User::class, 'enableSession' => false]);
         $user = new DeviceSnGuardTestUser();
         $user->id = 42;
@@ -46,79 +47,69 @@ final class DeviceSnAuthControllerTest extends TestCase
         }
     }
 
-    #[DataProvider('supportedSnLengths')]
-    public function testActivationAndLoginNormalizeCredentialsAndKeepTheExistingEnvelope(int $length): void
+    #[DataProvider('retiredEndpoints')]
+    public function testRetiredSnEndpointsReturnGoneWithoutReadingCredentialsOrCallingAnIssuer(string $action, array $body): void
     {
-        Yii::$app->request->setBodyParams(['sn' => implode('-', array_fill(0, intdiv($length, 4), 'aaaa')), 'uuid' => ' ROKID-device ']);
-        $controller = $this->controller();
-        $first = $controller->actionSnActivate();
-        $second = $controller->actionSnLogin();
-
-        $this->assertSame(['success' => true, 'message' => 'login', 'token' => RecordingSnLoginService::TOKEN], $first);
-        $this->assertSame($first, $second);
-        $this->assertSame([
-            [str_repeat('A', $length), 'rokid-device', true],
-            [str_repeat('A', $length), 'rokid-device', false],
-        ], $controller->service->calls);
-        $this->assertSame(['ip', 'sn', 'uuid', 'ip', 'sn', 'uuid'], array_column($controller->limiter->calls, 1));
-        $this->assertSame(hash('sha256', str_repeat('A', $length)), $controller->limiter->calls[1][0]);
-        $this->assertSame(hash('sha256', 'rokid-device'), $controller->limiter->calls[2][0]);
-    }
-
-    public static function supportedSnLengths(): array
-    {
-        return ['new' => [16], 'legacy' => [32]];
-    }
-
-    #[DataProvider('unsupportedSnLengths')]
-    public function testOtherSnLengthsAreRejectedBeforeAuthentication(int $length, string $action): void
-    {
-        Yii::$app->request->setBodyParams(['sn' => str_repeat('A', $length), 'uuid' => 'rokid-device']);
+        Yii::$app->user->setIdentity(null);
+        Yii::$app->request->setBodyParams($body);
         $controller = $this->controller();
         try {
-            $controller->$action();
-            self::fail('Unsupported SN length accepted.');
-        } catch (HttpException $exception) {
-            self::assertSame(400, $exception->statusCode);
+            $controller->runAction($action);
+            self::fail('Retired SN endpoint accepted a request.');
+        } catch (GoneHttpException $exception) {
+            self::assertSame(410, $exception->statusCode);
+            self::assertStringContainsString('y1', $exception->getMessage());
+            self::assertStringContainsString('/v1/auth/' . $action, $exception->getMessage());
             self::assertSame([], $controller->service->calls);
-            self::assertSame(['ip'], array_column($controller->limiter->calls, 1));
         }
     }
 
-    public static function unsupportedSnLengths(): iterable
+    public static function retiredEndpoints(): iterable
     {
-        foreach ([15, 17, 24, 31, 33] as $length) {
-            foreach (['actionSnActivate', 'actionSnLogin'] as $action) {
-                yield $action . '-' . $length => [$length, $action];
+        foreach (['sn-activate', 'sn-login'] as $action) {
+            foreach ([
+                'sixteen' => ['sn' => str_repeat('A', 16), 'uuid' => 'rokid-device'],
+                'historical' => ['sn' => str_repeat('A', 32), 'uuid' => 'rokid-device'],
+                'malformed' => ['sn' => ['not-a-string'], 'uuid' => null],
+                'empty' => [],
+            ] as $name => $body) {
+                yield $action . '-' . $name => [$action, $body];
             }
         }
     }
 
-    public function testRateLimitFailureDoesNotAuthenticateAndReturnsRetryAfter(): void
+    public function testDefaultYiiRouteAlsoReachesOnlyTheRetiredAction(): void
     {
-        Yii::$app->request->setBodyParams(['sn' => str_repeat('A', 16), 'uuid' => 'rokid-device']);
-        $controller = $this->controller();
-        $controller->limiter->deny = 'uuid';
-        try {
-            $controller->actionSnLogin();
-            $this->fail('Expected a rate limit.');
-        } catch (TooManyRequestsHttpException) {
-            $this->assertSame('37', Yii::$app->response->headers->get('Retry-After'));
-            $this->assertSame([], $controller->service->calls);
+        Yii::$app->user->setIdentity(null);
+        $manager = new UrlManager(['enablePrettyUrl' => false]);
+        foreach (['sn-activate', 'sn-login'] as $action) {
+            Yii::$app->request->setQueryParams(['r' => 'v1/auth/' . $action]);
+            [$route] = $manager->parseRequest(Yii::$app->request);
+            self::assertSame('v1/auth/' . $action, $route);
+            $controller = $this->controller();
+            try {
+                $controller->runAction(substr($route, strlen('v1/auth/')));
+                self::fail('Default routing restored the retired issuer.');
+            } catch (GoneHttpException $exception) {
+                self::assertSame(410, $exception->statusCode);
+                self::assertSame([], $controller->service->calls);
+            }
         }
     }
 
-    public function testRateLimitStorageFailureClosesTheDeviceLoginEndpoint(): void
+    public function testExistingPasswordRefreshAndLogoutStillUseTheOriginalService(): void
     {
         $controller = $this->controller();
-        $controller->limiter->fail = true;
-        try {
-            $controller->actionSnActivate();
-            $this->fail('Expected unavailable limiter.');
-        } catch (HttpException $exception) {
-            $this->assertSame(503, $exception->statusCode);
-            $this->assertSame([], $controller->service->calls);
-        }
+        Yii::$app->request->setBodyParams(['username' => 'ordinary', 'password' => 'fixture-only']);
+        self::assertSame(RecordingSnLoginService::TOKEN, $controller->actionLogin()['token']);
+        Yii::$app->request->setBodyParams(['refreshToken' => 'existing-session']);
+        self::assertSame(RecordingSnLoginService::TOKEN, $controller->actionRefresh()['token']);
+        self::assertTrue($controller->actionLogout()['revoked']);
+        self::assertSame([
+            ['login', 'ordinary', 'fixture-only'],
+            ['refresh', 'existing-session'],
+            ['logout', 'existing-session'],
+        ], $controller->service->calls);
     }
 
     #[DataProvider('credentialActions')]
@@ -170,6 +161,7 @@ final class DeviceSnGuardTestUser extends User
 final class DeviceSnTestRequest extends Request
 {
     public function getUserIP(): string { return '203.0.113.9'; }
+    public function getMethod() { return 'POST'; }
 }
 
 final class RecordingSnLoginService extends IdentityService
@@ -177,33 +169,23 @@ final class RecordingSnLoginService extends IdentityService
     public const TOKEN = ['accessToken' => 'access', 'expires' => '2030-01-01', 'refreshToken' => 'refresh'];
     public array $calls = [];
     public function loginDeviceSn(string $sn, string $uuid, bool $activate, array $context = []): array
-    { $this->calls[] = [$sn, $uuid, $activate]; return self::TOKEN; }
-}
-
-final class DeviceSnTestLimiter
-{
-    public array $calls = [];
-    public ?string $deny = null;
-    public bool $fail = false;
-    public function consume(string $identifier, string $strategy): array
-    {
-        if ($this->fail) { throw new \RuntimeException('storage failed'); }
-        $this->calls[] = [$identifier, $strategy];
-        return ['allowed' => $this->deny !== $strategy, 'retry_after' => 37];
-    }
+    { $this->calls[] = ['sn', $sn, $uuid, $activate]; return self::TOKEN; }
+    public function login($username, $password, array $context = []): array
+    { $this->calls[] = ['login', $username, $password]; return self::TOKEN; }
+    public function refresh($refreshToken, array $context = []): array
+    { $this->calls[] = ['refresh', $refreshToken]; return self::TOKEN; }
+    public function logout(?string $refreshToken): bool
+    { $this->calls[] = ['logout', $refreshToken]; return true; }
 }
 
 final class DeviceSnTestAuthController extends AuthController
 {
     public RecordingSnLoginService $service;
-    public DeviceSnTestLimiter $limiter;
     public function init()
     {
         parent::init();
         $this->service = new RecordingSnLoginService();
-        $this->limiter = new DeviceSnTestLimiter();
     }
     protected function identityService(): IdentityService { return $this->service; }
     protected function requestContext(): array { return []; }
-    protected function deviceRateLimiter() { return $this->limiter; }
 }
