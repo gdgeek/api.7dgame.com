@@ -64,7 +64,7 @@ class DeviceSnService
                 $row = $credential;
                 unset($row['sn']);
                 $row += [
-                    'user_id' => $userId, 'device_uuid' => null, 'enabled' => 1,
+                    'user_id' => $userId, 'original_user_id' => $userId, 'device_uuid' => null, 'enabled' => 1,
                     'created_by' => $operatorId, 'created_at' => $now, 'updated_at' => $now,
                     'activated_at' => null, 'last_login_at' => null, 'remark' => $remark,
                 ];
@@ -85,7 +85,7 @@ class DeviceSnService
         try {
             return $this->db()->transaction(function () use ($hash, $uuid, $activate) {
                 $row = $this->lockedRow('{{%device_sn}}', 'sn_hash', $hash);
-                if (!$row || !(bool)$row['enabled']) {
+                if (!$row || $row['user_id'] === null || !(bool)$row['enabled']) {
                     throw new UnauthorizedHttpException('SN credentials are invalid or disabled.');
                 }
                 $user = $this->eligibleUser((int)$row['user_id']);
@@ -118,12 +118,17 @@ class DeviceSnService
         }
     }
 
-    /** Called on every issuance and refresh, including direct refresh-token requests. */
-    public function authorizeSession(int $snId, int $userId): User
+    /** Access checks ignore temporary disablement, but never a deleted account binding. */
+    public function authorizeSession(int $snId, int $userId, bool $requireEnabled = true): User
     {
-        $row = (new Query())->select('sn.device_uuid')->from(['sn' => '{{%device_sn}}'])
-            ->where(['sn.id' => $snId, 'sn.user_id' => $userId, 'sn.enabled' => 1])
-            ->andWhere(['not', ['sn.activated_at' => null]])->one($this->db());
+        $query = (new Query())->select('sn.device_uuid')->from(['sn' => '{{%device_sn}}'])
+            ->where(['sn.id' => $snId, 'sn.user_id' => $userId])
+            ->andWhere(['not', ['sn.user_id' => null]])
+            ->andWhere(['not', ['sn.activated_at' => null]]);
+        if ($requireEnabled) {
+            $query->andWhere(['sn.enabled' => 1]);
+        }
+        $row = $query->one($this->db());
         if (!$row || !is_string($row['device_uuid']) || !preg_match(self::UUID_PATTERN, $row['device_uuid'])) {
             throw new UnauthorizedHttpException('SN authorization is invalid or disabled.');
         }
@@ -161,15 +166,19 @@ class DeviceSnService
                 ['like', 'u.nickname', $q], ['like', 'sn.device_uuid', $q]]);
         }
         if (!empty($filters['user_id'])) {
-            $query->andWhere(['sn.user_id' => (int)$filters['user_id']]);
+            $query->andWhere(['or', ['sn.user_id' => (int)$filters['user_id']],
+                ['sn.user_id' => null, 'sn.original_user_id' => (int)$filters['user_id']]]);
         }
         $status = $filters['status'] ?? '';
-        if ($status === 'disabled') {
-            $query->andWhere(['sn.enabled' => 0]);
+        if ($status === 'revoked') {
+            $query->andWhere(['sn.user_id' => null]);
+        } elseif ($status === 'disabled') {
+            $query->andWhere(['sn.enabled' => 0])->andWhere(['not', ['sn.user_id' => null]]);
         } elseif ($status === 'pending') {
-            $query->andWhere(['sn.enabled' => 1, 'sn.activated_at' => null]);
+            $query->andWhere(['sn.enabled' => 1, 'sn.activated_at' => null])->andWhere(['not', ['sn.user_id' => null]]);
         } elseif ($status === 'active') {
-            $query->andWhere(['sn.enabled' => 1])->andWhere(['not', ['sn.activated_at' => null]]);
+            $query->andWhere(['sn.enabled' => 1])->andWhere(['not', ['sn.activated_at' => null]])
+                ->andWhere(['not', ['sn.user_id' => null]]);
         } elseif ($status !== '') {
             throw new BadRequestHttpException('Invalid SN status.');
         }
@@ -215,6 +224,9 @@ class DeviceSnService
             $row = $this->lockedRow('{{%device_sn}}', 'id', $id);
             if (!$row) {
                 throw new NotFoundHttpException('SN not found.');
+            }
+            if ($row['user_id'] === null && array_key_exists('enabled', $changes)) {
+                throw new ConflictHttpException('This SN is permanently revoked because its account was deleted.');
             }
             if (($changes['enabled'] ?? false) === true) {
                 $this->eligibleManagedAccount((int)$row['user_id']);
@@ -284,7 +296,7 @@ class DeviceSnService
 
     private function listingQuery(): Query
     {
-        return (new Query())->select(['sn.id', 'sn.user_id', 'sn.sn_tail', 'sn.enabled', 'sn.remark',
+        return (new Query())->select(['sn.id', 'sn.user_id', 'sn.original_user_id', 'sn.sn_tail', 'sn.enabled', 'sn.remark',
             'sn.created_by', 'sn.created_at', 'sn.updated_at', 'sn.activated_at', 'sn.last_login_at',
             'u.username', 'u.nickname', 'sn.device_uuid'])
             ->from(['sn' => '{{%device_sn}}'])->leftJoin(['u' => '{{%user}}'], 'u.id = sn.user_id');
@@ -293,9 +305,15 @@ class DeviceSnService
     private function serialize(array $row): array
     {
         $row['id'] = (int)$row['id'];
-        $row['user_id'] = (int)$row['user_id'];
-        $row['enabled'] = (bool)$row['enabled'];
-        $row['status'] = !$row['enabled'] ? 'disabled' : ($row['activated_at'] !== null ? 'active' : 'pending');
+        // ON DELETE SET NULL is the permanent tombstone, independent of enabled.
+        // original_user_id is display-only history and must never authorize a session.
+        $revoked = $row['user_id'] === null;
+        $row['user_id'] = $revoked ? null : (int)$row['user_id'];
+        $originalUserId = $row['original_user_id'] ?? $row['user_id'];
+        $row['original_user_id'] = $originalUserId === null ? null : (int)$originalUserId;
+        $row['enabled'] = !$revoked && (bool)$row['enabled'];
+        $row['status'] = $revoked ? 'revoked' : (!$row['enabled'] ? 'disabled' : ($row['activated_at'] !== null ? 'active' : 'pending'));
+        $row['revocation_reason'] = $revoked ? 'account_deleted' : null;
         return $row;
     }
 

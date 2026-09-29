@@ -30,6 +30,7 @@ final class DeviceSnServiceTest extends TestCase
             $this->original[$id] = Yii::$app->get($id, false);
         }
         $this->db = new Connection(['dsn' => 'sqlite::memory:']);
+        $this->db->createCommand('PRAGMA foreign_keys = ON')->execute();
         Yii::$app->set('db', $this->db);
         Yii::$app->set('deviceSnDb', $this->db);
         Yii::$app->set('pluginAccessConfigClient', new class extends \api\modules\v1\services\PluginAccessConfigClient {
@@ -46,7 +47,7 @@ final class DeviceSnServiceTest extends TestCase
             'CREATE TABLE auth_item (name TEXT PRIMARY KEY, type INTEGER, description TEXT, rule_name TEXT, data TEXT, created_at INTEGER, updated_at INTEGER)',
             'CREATE TABLE auth_assignment (item_name TEXT, user_id TEXT, created_at INTEGER)',
             'CREATE TABLE auth_item_child (parent TEXT, child TEXT)',
-            'CREATE TABLE device_sn (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, device_uuid TEXT UNIQUE, sn_hash TEXT UNIQUE, sn_ciphertext TEXT, key_id TEXT, sn_tail TEXT, enabled INTEGER, created_by INTEGER, created_at TEXT, updated_at TEXT, activated_at TEXT, last_login_at TEXT, remark TEXT)',
+            'CREATE TABLE device_sn (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER REFERENCES user(id) ON DELETE SET NULL, original_user_id INTEGER, device_uuid TEXT UNIQUE, sn_hash TEXT UNIQUE, sn_ciphertext TEXT, key_id TEXT, sn_tail TEXT, enabled INTEGER, created_by INTEGER REFERENCES user(id) ON DELETE SET NULL, created_at TEXT, updated_at TEXT, activated_at TEXT, last_login_at TEXT, remark TEXT)',
             'CREATE TABLE audit_log (id INTEGER PRIMARY KEY AUTOINCREMENT, event_type TEXT, user_id INTEGER, ip_address TEXT, action TEXT, resource TEXT, context TEXT, created_at TEXT)',
         ];
         foreach ($sql as $statement) {
@@ -177,6 +178,82 @@ final class DeviceSnServiceTest extends TestCase
         Yii::$app->authManager->invalidateCache();
         $this->assertHttp(401, fn() => $this->service->authorizeSession($sn['id'], 2));
         $this->assertHttp(401, fn() => $this->service->authenticate($sn['sn'], 'one', false));
+    }
+
+    public function testAccountDeletionPermanentlyRevokesEverySnAndRetainsHistory(): void
+    {
+        [$active, $pending, $disabled] = $this->service->generate(2, 3, 'retained history', 1);
+        $this->service->authenticate($active['sn'], 'deleted-device', true);
+        $this->service->update($disabled['id'], ['enabled' => false], 1);
+        $other = $this->service->generate(3, 1, '', 1)[0];
+        $eventCount = count($this->service->view($active['id'])['events']);
+
+        // The FK handles every deletion entry point, not only an API/model hook.
+        $this->db->createCommand()->delete('user', ['id' => 2])->execute();
+        foreach ([$active, $pending, $disabled] as $sn) {
+            $view = $this->service->view($sn['id']);
+            self::assertSame('revoked', $view['status']);
+            self::assertSame('account_deleted', $view['revocation_reason']);
+            self::assertNull($view['user_id']);
+            self::assertSame(2, $view['original_user_id']);
+            self::assertFalse($view['enabled']);
+            foreach ([true, false] as $enabled) {
+                $this->assertHttp(409, fn() => $this->service->update($sn['id'], ['enabled' => $enabled], 1));
+            }
+            foreach ([true, false] as $activate) {
+                $this->assertHttp(401, fn() => $this->service->authenticate($sn['sn'], 'deleted-device', $activate));
+            }
+        }
+        self::assertSame('deleted-device', $this->service->view($active['id'])['device_uuid']);
+        self::assertCount($eventCount, $this->service->view($active['id'])['events']);
+        self::assertSame(3, $this->service->listing(['status' => 'revoked'], 1, 20)['total']);
+        self::assertSame(3, $this->service->listing(['user_id' => 2], 1, 20)['total']);
+        self::assertSame(0, $this->service->listing(['status' => 'disabled'], 1, 20)['total']);
+        self::assertSame([$other['id']], array_column($this->service->listing(['status' => 'pending'], 1, 20)['items'], 'id'));
+        self::assertSame(0, $this->service->listing(['status' => 'active'], 1, 20)['total']);
+        self::assertSame($active['sn'], $this->service->reveal($active['id'], 1)['sn']);
+        self::assertSame('revoked', $this->service->export([$active['id']], 1)[0]['status']);
+        self::assertSame('revoked', $this->service->update($active['id'], ['remark' => 'kept for audit'], 1)['status']);
+
+        // Neither a recreated username nor explicit numeric-ID reuse restores a binding.
+        $this->db->createCommand()->insert('user', ['id' => 2, 'username' => 'player', 'status' => 10])->execute();
+        foreach ([true, false] as $requireEnabled) {
+            $this->assertHttp(401, fn() => $this->service->authorizeSession($active['id'], 2, $requireEnabled));
+        }
+        $this->assertHttp(409, fn() => $this->service->update($active['id'], ['enabled' => true], 1));
+        $this->assertHttp(400, fn() => $this->service->update($active['id'], ['user_id' => 2], 1));
+        $this->assertHttp(400, fn() => $this->service->update($active['id'], ['original_user_id' => 3], 1));
+        $this->assertHttp(409, fn() => $this->service->authenticate($other['sn'], 'deleted-device', true));
+        self::assertSame(3, (int)$this->service->authenticate($other['sn'], 'other-device', true)['user']->id);
+    }
+
+    public function testTemporaryAccountDisablementDoesNotPermanentlyRevokeSn(): void
+    {
+        $sn = $this->service->generate(2, 1, '', 1)[0];
+        $this->service->authenticate($sn['sn'], 'device', true);
+        $this->service->update($sn['id'], ['enabled' => false], 1);
+        self::assertSame(2, (int)$this->service->authorizeSession($sn['id'], 2, false)->id);
+        $this->db->createCommand()->update('user', ['status' => 0], ['id' => 2])->execute();
+        $this->assertHttp(400, fn() => $this->service->update($sn['id'], ['enabled' => true], 1));
+        $this->assertHttp(401, fn() => $this->service->authorizeSession($sn['id'], 2, false));
+        self::assertSame('disabled', $this->service->view($sn['id'])['status']);
+        self::assertNull($this->service->view($sn['id'])['revocation_reason']);
+        $this->db->createCommand()->update('user', ['status' => 10], ['id' => 2])->execute();
+        $this->service->update($sn['id'], ['enabled' => true], 1);
+        self::assertSame(2, (int)$this->service->authenticate($sn['sn'], 'device', false)['user']->id);
+    }
+
+    public function testRolledBackAccountDeletionDoesNotRevokeAndDeletingCreatorDoesNotRevoke(): void
+    {
+        $sn = $this->service->generate(2, 1, '', 3)[0];
+        $tx = $this->db->beginTransaction();
+        $this->db->createCommand()->delete('user', ['id' => 2])->execute();
+        self::assertSame('revoked', $this->service->view($sn['id'])['status']);
+        $tx->rollBack();
+        self::assertSame('pending', $this->service->view($sn['id'])['status']);
+        $this->db->createCommand()->delete('user', ['id' => 3])->execute();
+        self::assertNull($this->service->view($sn['id'])['created_by']);
+        self::assertSame(2, (int)$this->service->authenticate($sn['sn'], 'device', true)['user']->id);
     }
 
     public function testRevealAndExportAuditWithoutLeakingIntoListOrStorage(): void
