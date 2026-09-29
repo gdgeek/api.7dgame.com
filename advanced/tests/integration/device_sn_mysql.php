@@ -65,12 +65,56 @@ try {
     $assert(isset($snSchema->columns['device_uuid']) && $snSchema->columns['device_uuid']->allowNull,
         'The SN table must directly store a nullable device UUID.');
     $assert(!isset($snSchema->columns['device_id']), 'The SN table must not reference a legacy device ID.');
+
+    // Exercise the actual incremental migration against a pre-existing distributed
+    // 32-character credential, not a schema already created in its final shape.
+    $historicalRaw = str_repeat('WXYZ0123', 4);
+    $historicalHash = hash('sha256', $historicalRaw);
+    $historicalNonce = random_bytes(12);
+    $historicalTag = '';
+    $historicalEncrypted = openssl_encrypt($historicalRaw, 'aes-256-gcm', base64_decode($key, true), OPENSSL_RAW_DATA,
+        $historicalNonce, $historicalTag, 'device-sn:v1:test:' . $historicalHash, 16);
+    $historicalCiphertext = base64_encode($historicalNonce . $historicalTag . $historicalEncrypted);
+    $db->createCommand()->insert('device_sn', [
+        'user_id' => 3, 'sn_hash' => $historicalHash, 'sn_ciphertext' => $historicalCiphertext, 'key_id' => 'test',
+        'sn_tail' => substr($historicalRaw, -4), 'enabled' => 1, 'created_by' => 1,
+        'created_at' => '2026-09-26 00:00:00', 'updated_at' => '2026-09-26 00:00:00', 'remark' => 'before tombstone migration',
+    ])->execute();
+    $historicalId = (int)$db->getLastInsertID();
+    require dirname(__DIR__, 2) . '/console/migrations/m260928_150000_preserve_revoked_device_sn.php';
+    $revocationMigration = new m260928_150000_preserve_revoked_device_sn(['db' => $db]);
+    ob_start();
+    try {
+        $revocationMigration->up();
+        $revocationMigration->up();
+    } finally {
+        ob_end_clean();
+    }
+    $snSchema = $db->schema->getTableSchema('device_sn', true);
+    $assert($snSchema->columns['user_id']->allowNull && $snSchema->columns['original_user_id']->allowNull,
+        'Incremental migration must permit a null owner and add the historical owner snapshot.');
+    $ownerConstraints = $db->createCommand('SELECT r.DELETE_RULE FROM information_schema.REFERENTIAL_CONSTRAINTS r'
+        . ' JOIN information_schema.KEY_COLUMN_USAGE k ON k.CONSTRAINT_SCHEMA=r.CONSTRAINT_SCHEMA'
+        . ' AND k.TABLE_NAME=r.TABLE_NAME AND k.CONSTRAINT_NAME=r.CONSTRAINT_NAME'
+        . ' WHERE r.CONSTRAINT_SCHEMA=:database AND r.TABLE_NAME=\'device_sn\' AND k.COLUMN_NAME=\'user_id\'',
+        [':database' => $database])->queryColumn();
+    $assert($ownerConstraints === ['SET NULL'], 'Exactly one live MySQL owner FK must use ON DELETE SET NULL.');
+    $assert((int)$db->createCommand('SELECT COUNT(*) FROM information_schema.KEY_COLUMN_USAGE'
+        . ' WHERE TABLE_SCHEMA=:database AND TABLE_NAME=\'device_sn\' AND COLUMN_NAME=\'original_user_id\''
+        . ' AND REFERENCED_TABLE_NAME IS NOT NULL', [':database' => $database])->queryScalar() === 0,
+        'The original account snapshot must not have a cascading foreign key.');
+    $historical = $db->createCommand('SELECT * FROM device_sn WHERE id=:id', [':id' => $historicalId])->queryOne();
+    $assert((int)$historical['original_user_id'] === 3 && (int)$historical['user_id'] === 3,
+        'Re-running the incremental migration must preserve the backfilled original owner.');
+    $assert($historical['sn_hash'] === $historicalHash && $historical['sn_ciphertext'] === $historicalCiphertext,
+        'Migration must preserve the originally distributed credential.');
     $service = new DeviceSnService($db, new DeviceSnCredential(['test' => $key], 'test'));
     $assert(count($service->accounts('', 1, 20)['items']) === 2, 'Account query must work with real MySQL collations.');
     [$first, $second, $third, $fourth] = $service->generate(2, 4, 'integration', 1);
     foreach ([$first, $second, $third, $fourth] as $generated) {
         $assert(preg_match('/^[0-9A-HJKMNP-TV-Z]{4}(?:-[0-9A-HJKMNP-TV-Z]{4}){3}$/D', $generated['sn']) === 1,
             'New credentials must contain exactly sixteen characters in four groups.');
+        $assert($generated['original_user_id'] === 2, 'New credentials must save the original account ID.');
     }
 
     // Independent processes/connections race against the same InnoDB indexes.
@@ -140,7 +184,7 @@ try {
             'Legacy fixture must use the original 32-character ciphertext format.');
         $ciphertext = base64_encode($nonce . $tag . $encrypted);
         $db->createCommand()->insert('device_sn', [
-            'user_id' => 2, 'sn_hash' => $hash, 'sn_ciphertext' => $ciphertext, 'key_id' => 'test',
+            'user_id' => 2, 'original_user_id' => 2, 'sn_hash' => $hash, 'sn_ciphertext' => $ciphertext, 'key_id' => 'test',
             'sn_tail' => substr($raw, -4), 'device_uuid' => $legacyUuid, 'enabled' => 1,
             'created_by' => 1, 'created_at' => '2026-09-26 00:00:00', 'updated_at' => '2026-09-26 00:00:00',
             'activated_at' => $legacyUuid === null ? null : '2026-09-26 00:01:00', 'remark' => 'legacy fixture',
@@ -170,6 +214,8 @@ try {
     } catch (\yii\web\UnauthorizedHttpException $exception) {
         $assert(true, 'Disabled SN rejected.');
     }
+    $assert((int)$service->authorizeSession($first['id'], 2, false)->id === 2,
+        'Ordinary SN disablement must preserve existing access authorization.');
     [$replacement] = $service->generate(2, 1, 'disabled UUID reservation', 1);
     try {
         $service->authenticate($replacement['sn'], $firstUuid, true);
@@ -182,7 +228,100 @@ try {
     $service->update($first['id'], ['enabled' => true], 1);
     $assert((int)$service->authorizeSession($first['id'], 2)->id === 2, 'Restore keeps original authorization.');
 
+    // A failed surrounding account-deletion transaction must restore both the
+    // parent account and its FK binding; no irreversible application hook runs.
+    $auditBeforeRollback = $db->createCommand('SELECT * FROM audit_log ORDER BY id')->queryAll();
+    try {
+        $db->transaction(function () use ($db, $service, $assert, $first) {
+            $db->createCommand()->delete('user', ['id' => 2])->execute();
+            $assert($service->view($first['id'], false)['status'] === 'revoked',
+                'Deletion must create the tombstone inside the same transaction.');
+            throw new RuntimeException('Injected account deletion failure');
+        });
+        $assert(false, 'Injected deletion failure was swallowed.');
+    } catch (RuntimeException $exception) {
+        $assert($exception->getMessage() === 'Injected account deletion failure', 'Unexpected rollback failure.');
+    }
+    $assert((int)$service->authorizeSession($first['id'], 2)->id === 2,
+        'Failed account deletion must roll back the account and all SN bindings.');
+    $assert($db->createCommand('SELECT * FROM audit_log ORDER BY id')->queryAll() === $auditBeforeRollback,
+        'Failed deletion must not lose or fabricate SN audit events.');
+
+    // Hold an actual deletion open while an independent connection attempts an
+    // activation retry. Observe the InnoDB wait rather than relying on sleep order.
+    $db->createCommand()->insert('user', ['id' => 4, 'username' => 'delete-race', 'nickname' => 'delete-race', 'status' => 10])->execute();
+    $db->createCommand()->insert('auth_assignment', ['item_name' => 'user', 'user_id' => '4'])->execute();
+    [$deletionRaceSn] = $service->generate(4, 1, 'account deletion race', 1);
+    $service->authenticate($deletionRaceSn['sn'], 'deletion-race-device', true);
+    $db->close();
+    $pipes = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
+    if ($pipes === false) {
+        throw new RuntimeException('Cannot create account deletion race sockets.');
+    }
+    $pid = pcntl_fork();
+    if ($pid === -1) {
+        fclose($pipes[0]);
+        fclose($pipes[1]);
+        throw new RuntimeException('Cannot start account deletion race.');
+    }
+    if ($pid === 0) {
+        fclose($pipes[0]);
+        $childDb = new Connection($config);
+        Yii::$app->set('db', $childDb);
+        Yii::$app->set('deviceSnDb', $childDb);
+        Yii::$app->set('authManager', new \yii\rbac\DbManager(['db' => $childDb]));
+        (new ReflectionProperty(\mdm\admin\components\Configs::class, '_instance'))->setValue(null, null);
+        fread($pipes[1], 1);
+        try {
+            (new DeviceSnService($childDb, new DeviceSnCredential(['test' => $key], 'test')))
+                ->authenticate($deletionRaceSn['sn'], 'deletion-race-device', true);
+            fwrite($pipes[1], '200');
+        } catch (\yii\web\HttpException $exception) {
+            fwrite($pipes[1], (string)$exception->statusCode);
+        } catch (Throwable $exception) {
+            fwrite($pipes[1], 'error:' . get_class($exception));
+        }
+        fclose($pipes[1]);
+        exit(0);
+    }
+    fclose($pipes[1]);
+    stream_set_timeout($pipes[0], 15);
+    $db->open();
+    $deletionTransaction = $db->beginTransaction();
+    try {
+        $db->createCommand()->delete('user', ['id' => 4])->execute();
+        fwrite($pipes[0], 'x');
+        $waiting = false;
+        $deadline = microtime(true) + 10;
+        do {
+            $waiting = (int)$db->createCommand('SELECT COUNT(*) FROM performance_schema.data_lock_waits w'
+                . ' JOIN performance_schema.data_locks l ON l.ENGINE_LOCK_ID=w.REQUESTING_ENGINE_LOCK_ID'
+                . ' AND l.ENGINE=w.ENGINE WHERE l.OBJECT_SCHEMA=:database AND l.OBJECT_NAME=\'device_sn\'',
+                [':database' => $database])->queryScalar() > 0;
+            if (!$waiting) {
+                usleep(20000);
+            }
+        } while (!$waiting && microtime(true) < $deadline);
+        $deletionTransaction->commit();
+    } finally {
+        if ($deletionTransaction->isActive) {
+            $deletionTransaction->rollBack();
+        }
+        $deletionRaceResult = stream_get_contents($pipes[0]);
+        fclose($pipes[0]);
+        pcntl_waitpid($pid, $childStatus);
+    }
+    $assert($waiting, 'Concurrent activation must actually wait on the in-flight account deletion.');
+    $assert(pcntl_wifexited($childStatus) && pcntl_wexitstatus($childStatus) === 0 && $deletionRaceResult === '401',
+        'Activation queued behind committed deletion must reject the tombstone.');
+    $raceTombstone = $service->view($deletionRaceSn['id'], true);
+    $assert($raceTombstone['status'] === 'revoked' && $raceTombstone['original_user_id'] === 4
+        && $raceTombstone['device_uuid'] === 'deletion-race-device' && count($raceTombstone['events']) === 2,
+        'Concurrent deletion must retain the UUID, account history and original events.');
+
     $redisPort = filter_var(getenv('DEVICE_SN_REDIS_TEST_PORT'), FILTER_VALIDATE_INT);
+    $revocationToken = null;
+    $identity = null;
     if ($redisPort) {
         putenv('AUTH_PROVIDER=legacy');
         putenv('IDENTITY_LOGIN_AUDIT_ENABLED=false');
@@ -225,18 +364,129 @@ try {
         } catch (\yii\web\UnauthorizedHttpException $exception) {
             $assert(true, 'Elevated device access rejected.');
         }
+        $db->createCommand()->delete('auth_assignment', ['item_name' => 'admin', 'user_id' => '2'])->execute();
+        Yii::$app->authManager->invalidateCache();
+        $revocationToken = $identity->loginDeviceSn($fourth['sn'], 'idempotent', false);
     }
     $assert(!in_array('device', $db->schema->getTableNames('', true), true), 'Activation and token flows must not create or depend on the legacy device table.');
+    $retainedRows = $db->createCommand('SELECT id, original_user_id, sn_hash, sn_ciphertext, device_uuid, activated_at'
+        . ' FROM device_sn WHERE user_id=2 ORDER BY id')->queryAll();
+    $auditBeforeDeletion = $db->createCommand('SELECT * FROM audit_log ORDER BY id')->queryAll();
     $db->createCommand()->delete('user', ['id' => 2])->execute();
-    $assert((int)$db->createCommand('SELECT COUNT(*) FROM device_sn')->queryScalar() === 0, 'User deletion must revoke all account SNs.');
-    $assert((int)$db->createCommand('SELECT COUNT(*) FROM audit_log')->queryScalar() > 0, 'User deletion must retain audit events.');
+    $assert($db->createCommand('SELECT id, original_user_id, sn_hash, sn_ciphertext, device_uuid, activated_at'
+        . ' FROM device_sn WHERE original_user_id=2 AND user_id IS NULL ORDER BY id')->queryAll() === $retainedRows,
+        'Physical deletion must preserve every credential, original owner, UUID and activation date as a tombstone.');
+    $assert($db->createCommand('SELECT * FROM audit_log ORDER BY id')->queryAll() === $auditBeforeDeletion,
+        'Physical deletion must retain exactly the original audit events.');
+    $assert($service->listing(['status' => 'revoked', 'user_id' => 2], 1, 100)['total'] === count($retainedRows),
+        'Revoked history must remain searchable by its original account ID.');
+    $revoked = $service->view($fourth['id'], false);
+    $assert($revoked['status'] === 'revoked' && $revoked['enabled'] === false && $revoked['user_id'] === null
+        && $revoked['original_user_id'] === 2 && $revoked['revocation_reason'] === 'account_deleted',
+        'API must distinguish irreversible revocation from an ordinary disabled SN.');
+    foreach ([false, true] as $enabled) {
+        try {
+            $service->update($fourth['id'], ['enabled' => $enabled], 1);
+            $assert(false, 'A revoked SN accepted an enabled mutation.');
+        } catch (\yii\web\ConflictHttpException $exception) {
+            $assert(true, 'Revoked enabled mutations rejected.');
+        }
+    }
+    $assert($service->update($fourth['id'], ['remark' => 'archived account'], 1)['status'] === 'revoked',
+        'Archival remark changes must not resurrect the credential.');
+    $assert($service->reveal($fourth['id'], 1)['sn'] === $fourth['sn'], 'Revoked credentials must remain available to authorized archival reveal.');
+    $archive = $service->export([$fourth['id']], 1)[0];
+    $assert($archive['sn'] === $fourth['sn'] && $archive['original_user_id'] === 2 && $archive['user_id'] === null,
+        'Archival export must preserve the original account ID and full code without reconnecting an owner.');
+
+    $assertRevoked = function () use ($service, $fourth, $assert, $revocationToken, $redisPort, &$identity) {
+        foreach ([false, true] as $activate) {
+            try {
+                $service->authenticate($fourth['sn'], 'idempotent', $activate);
+                $assert(false, 'Deleted account SN authenticated.');
+            } catch (\yii\web\UnauthorizedHttpException $exception) {
+                $assert(true, 'Deleted account SN activation/login rejected.');
+            }
+        }
+        foreach ([false, true] as $requireEnabled) {
+            try {
+                $service->authorizeSession($fourth['id'], 2, $requireEnabled);
+                $assert(false, 'Tombstone accepted an existing session.');
+            } catch (\yii\web\UnauthorizedHttpException $exception) {
+                $assert(true, 'Tombstone access/refresh authorization rejected.');
+            }
+        }
+        if ($redisPort) {
+            try {
+                \api\modules\v1\models\User::findIdentityByAccessToken($revocationToken['accessToken']);
+                $assert(false, 'A deleted account accepted its existing access token.');
+            } catch (\yii\web\UnauthorizedHttpException $exception) {
+                $assert(true, 'Real JWT access rejected after physical account deletion.');
+            }
+            try {
+                $identity->refresh($revocationToken['refreshToken']);
+                $assert(false, 'A deleted account refreshed its existing session.');
+            } catch (\api\modules\v1\exceptions\DeviceSnAuthenticationException $exception) {
+                $assert(true, 'Real Redis refresh rejected after physical account deletion.');
+            }
+        }
+    };
+    $assertRevoked();
+    $db->createCommand()->insert('user', ['id' => 2, 'username' => 'reused-player-id', 'nickname' => 'different account', 'status' => 10])->execute();
+    Yii::$app->authManager->invalidateCache();
+    $assertRevoked();
+    try {
+        $service->update($fourth['id'], ['user_id' => 2], 1);
+        $assert(false, 'API rebound a tombstone to a reused account ID.');
+    } catch (\yii\web\BadRequestHttpException $exception) {
+        $assert(true, 'SN owner is immutable even when the former account ID exists again.');
+    }
+    [$reusedAccountSn] = $service->generate(2, 1, 'new account with reused ID', 1);
+    try {
+        $service->authenticate($reusedAccountSn['sn'], 'idempotent', true);
+        $assert(false, 'Deleted account tombstone released its reserved UUID.');
+    } catch (\yii\web\ConflictHttpException $exception) {
+        $assert(true, 'A deleted account SN keeps its original UUID reserved.');
+    }
+    $db->createCommand()->delete('user', ['id' => 3])->execute();
     ob_start();
-    $migration->safeDown();
-    $migration->safeUp();
-    ob_end_clean();
-    $assert($db->schema->getTableSchema('device_sn', true) !== null, 'Migration rollback/reapply must work.');
+    try {
+        $revocationMigration->up();
+        $rollbackResult = $revocationMigration->down();
+    } finally {
+        ob_end_clean();
+    }
+    $assert($rollbackResult === false, 'Revocation migration must reject a destructive rollback.');
+    $assert($service->view($historicalId, false)['original_user_id'] === 3
+        && $service->view($historicalId, false)['user_id'] === null,
+        'Migrated historical credentials must retain the backfilled owner after deletion and migration rerun.');
+    $assert($service->view($fourth['id'], false)['user_id'] === null,
+        'Migration rerun must not rebind tombstones to recreated accounts.');
+
+    // Only the disposable database is torn down to verify resuming after ADD
+    // COLUMN committed but before backfill/FK replacement had been executed.
+    ob_start();
+    try {
+        $migration->safeDown();
+        $migration->safeUp();
+        $resumeRow = $historical;
+        unset($resumeRow['original_user_id']);
+        $resumeRow['user_id'] = 2;
+        $db->createCommand()->insert('device_sn', $resumeRow)->execute();
+        $db->createCommand()->addColumn('device_sn', 'original_user_id', 'INT NULL')->execute();
+        $revocationMigration->up();
+    } finally {
+        ob_end_clean();
+    }
+    $assert($db->schema->getTableSchema('device_sn', true)->columns['user_id']->allowNull,
+        'An interrupted migration must resume with a nullable account binding.');
+    $assert($service->view($historicalId, false)['original_user_id'] === 2,
+        'Resume after ADD COLUMN must backfill the original account before replacing the FK.');
+    $db->createCommand()->delete('user', ['id' => 2])->execute();
+    $assert($service->view($historicalId, false)['status'] === 'revoked',
+        'The resumed migration must establish the effective SET NULL delete behavior.');
     $assert(!in_array('device', $db->schema->getTableNames('', true), true), 'Migration rollback/reapply must remain independent of the legacy device table.');
-    echo 'PASS: real MySQL single-table migration without legacy device, activation races, retry, encrypted distribution, disabled UUID reservation, disable/restore, cascade'
+    echo 'PASS: real MySQL migration/backfill/rerun, activation and deletion races, deletion rollback, encrypted distribution, permanent tombstones, account ID reuse, UUID reservation, disable/restore'
         . ($redisPort ? ', real Redis/JWT login and refresh, password regression' : '') . ' (' . $assertions . " assertions)\n";
 } finally {
     $db->close();

@@ -81,13 +81,18 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
     {
         $claims = Yii::$app->jwt->parse($token)->claims();
         $uid = static::userIdFromClaims($claims);
-        $user = static::findIdentity($uid);
         $context = DeviceSnAuthContext::fromClaims($claims);
+        // Existing access survives ordinary SN disablement, but never account
+        // deletion or a reused user ID. Read the binding and account from the
+        // authoritative SN database instead of trusting a stale user replica.
+        $user = $context === []
+            ? static::findIdentity($uid)
+            : (new DeviceSnService())->authorizeSession($context['device_sn_id'], (int)$uid, false);
         if ($user !== null) {
             $user->authContext = $context;
             if ($context !== []) {
-                // SN disablement takes effect at renewal; role elevation cannot
-                // turn an existing device credential into administrator access.
+                // Downstream permissions still use the default RBAC view. A
+                // stale elevated role there must not broaden a device session.
                 DeviceSnService::assertEligibleUser($user);
             }
         }

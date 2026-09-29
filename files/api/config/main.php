@@ -332,6 +332,7 @@ return [
                     'pluralize' => false,
                     'extraPatterns' => [
                         'POST login' => 'login',
+                        // Retired device authentication endpoints return 410; Unity uses y1.
                         'POST sn-activate' => 'sn-activate',
                         'POST sn-login' => 'sn-login',
                         'POST refresh' => 'refresh',
