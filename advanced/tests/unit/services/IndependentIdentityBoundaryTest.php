@@ -131,6 +131,19 @@ class IndependentIdentityBoundaryTest extends TestCase
         $this->assertSame(['old_password' => 'old-secret', 'new_password' => 'new-secret', 'confirm_password' => 'new-secret'], $client->request['payload']);
     }
 
+    public function testQrGatewayPreservesBrowserOriginAndRefererForAuthorityValidation(): void
+    {
+        $client = new BoundaryRecordingClient();
+        Yii::$app->request->headers->set('Origin', 'https://WhiteLabel.example:443');
+        Yii::$app->request->headers->set('Referer', 'https://WhiteLabel.example/path?display=qr');
+        (new IdentityRouteGateway(['client' => $client]))->forward('v1/tools/user-linked');
+        $this->assertSame('/v1/tools/user-linked', $client->request['path']);
+        $this->assertSame('https://WhiteLabel.example:443', $client->request['context']['origin']);
+        $this->assertSame('https://WhiteLabel.example/path?display=qr', $client->request['context']['referer']);
+        $this->assertArrayNotHasKey('aud', $client->request['context']);
+        $this->assertArrayNotHasKey('frontend_domain', $client->request['payload']);
+    }
+
     public function testMailTransportDiagnosticKeepsItsProviderOnlyImplementation(): void
     {
         $this->assertNull((new IdentityRouteGateway())->target('v1/email/test'));

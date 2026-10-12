@@ -27,6 +27,7 @@ class IdentityRouteGateway extends Component
         $context = [
             'authorization' => $request->headers->get('Authorization'), 'ip' => $request->userIP,
             'user_agent' => $request->userAgent, 'idempotency_key' => $request->headers->get('Idempotency-Key'),
+            'origin' => $request->headers->get('Origin'), 'referer' => $request->headers->get('Referer'),
         ];
         if (in_array($route, ['wechat/qrcode', 'site/wechat-qrcode', 'wechat/openid', 'site/wechat-openid',
             'wechat/signup', 'wechat/binding'], true)) {
@@ -58,12 +59,7 @@ class IdentityRouteGateway extends Component
             $target,
             in_array($method, ['GET', 'HEAD'], true) ? null : $payload,
             $query,
-            [
-                'authorization' => $request->headers->get('Authorization'),
-                'ip' => $request->userIP,
-                'user_agent' => $request->userAgent,
-                'idempotency_key' => $request->headers->get('Idempotency-Key'),
-            ]
+            $context
         );
         if (in_array($route, ['site/login', 'v1/site/login'], true) && $result['status'] >= 200 && $result['status'] < 300) {
             $tokens = $result['body']['token'] ?? null;

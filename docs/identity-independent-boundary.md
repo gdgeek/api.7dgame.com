@@ -83,6 +83,8 @@ Apple 三个现有 `v1/site/apple-id*` 入口已接通：PHP 使用 Composer 锁
 
 旧待扫码二维码须先发布兼容基线：应用 `m261012_020000_create_legacy_wechat_scene_evidence` 并在所有实际发行节点开启 `IDENTITY_CAPTURE_LEGACY_QR_SCENES=true`。现行三个 Yii 发码入口保存 scene SHA-256、exact appId、issuedAt、expiresAt 和来源，不保存 bearer scene、openId 或伪造已扫码状态。`api/wechat/qrcode` 有效 3600 秒，site/v1 入口有效 6 天；至少经过最长 6 天后再最终 drain/export/import，才能证明所有仍有效旧 ticket 都有期限证据。未扫描 scene 不能靠缺 TTL 的 Redis key 猜测有效期。该捕获测试不连接真实 Redis。
 
+独立模式的二维码网关保留浏览器原始 `Origin` 和 `Referer` 头。Identity 以 `IDENTITY_CORS_ORIGINS` 精确白名单验证来源，非空 Origin 优先，缺省才使用 Referer；只保存白标跳转的域名，不修改 JWT audience。PHP 拒绝控制字符或超长头，不静默丢弃非法 Origin 后转而接受 Referer。`IdentityProviderOriginHeadersTest` 包含真实本地 HTTP 透传测试。
+
 旧邮箱验证码须在全部发行节点提前开启 `IDENTITY_CAPTURE_LEGACY_EMAIL_CHALLENGES=true`（默认关闭，仅 legacy 模式生效）。Redis 7+ Lua 同时写原 `code/created_at` payload 和独立 companion；后者只记录已认证且有效用户的 ID、当时邮箱（初次绑定为空时规范为 null）、目标邮箱、验证码 SHA-256 和原 issuedAt，并用 `PEXPIRETIME` 取得原码的确切期限，`PEXPIREAT` 保持完全相同到期时间。原响应、原 key 和 900 秒 TTL 不变。匿名覆盖、邮件失败和成功消费均清理相应关联；迟到的失败邮件不能删除更新的码。至少发布并等待完整 900 秒后再 drain/export，以原期限、码摘要及私库当时邮箱核验 association。匿名、缺证或不能证明期限的有效码不得猜测迁入；无法在既定预算内补齐证据时取消本次切换。
 
 ## 开启前仍需完成

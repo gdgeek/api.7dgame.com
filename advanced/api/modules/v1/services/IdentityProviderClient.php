@@ -323,6 +323,7 @@ class IdentityProviderClient extends Component
                 $headers[] = 'Idempotency-Key: ' . $key;
             }
         }
+        $headers = array_merge($headers, $this->originHeaders($context));
 
         $url = rtrim($baseUrl, '/') . $path;
         if (!empty($query)) {
@@ -349,7 +350,6 @@ class IdentityProviderClient extends Component
         $raw = curl_exec($handle);
         $status = (int)curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
         $error = curl_error($handle);
-        curl_close($handle);
 
         if ($raw === false || $error !== '') {
             Yii::warning('Identity provider transport failed: ' . $error, 'identity.auth');
@@ -381,6 +381,26 @@ class IdentityProviderClient extends Component
         }
 
         return ['status' => $status, 'body' => $decoded];
+    }
+
+    protected function originHeaders(array $context): array
+    {
+        $headers = [];
+        // Identity checks the exact origin allowlist. These browser values
+        // preserve QR display context only and must never select JWT aud.
+        foreach (['origin' => 'Origin', 'referer' => 'Referer'] as $key => $name) {
+            $value = $context[$key] ?? null;
+            if ($value === null || $value === '') {
+                continue;
+            }
+            if (!is_string($value) || strlen($value) > 8192 || preg_match('/[\x00-\x1F\x7F]/', $value) === 1) {
+                // Reject rather than drop an invalid Origin and accidentally
+                // permit Referer fallback at the authority.
+                throw new BadRequestHttpException('Invalid identity origin header.');
+            }
+            $headers[] = $name . ': ' . $value;
+        }
+        return $headers;
     }
 
     private function baseUrl(): ?string
