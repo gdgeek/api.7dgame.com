@@ -35,8 +35,20 @@ class Tags extends \yii\db\ActiveRecord
             [['name', 'key'], 'string', 'max' => 255],
             //name 和 key 必须提供
             [['name', 'key'], 'required'],
+            ['key', 'validateClassificationKey'],
             [['name','key'], 'unique'],
         ];
+    }
+
+    public function validateClassificationKey($attribute): void
+    {
+        if (!$this->isNewRecord && !$this->isAttributeChanged($attribute)) {
+            return;
+        }
+
+        if (strcasecmp(trim((string) $this->$attribute), 'public') === 0) {
+            $this->addError($attribute, 'The public key is reserved for scene properties.');
+        }
     }
 
     /**

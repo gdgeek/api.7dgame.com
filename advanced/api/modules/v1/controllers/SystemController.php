@@ -273,7 +273,10 @@ class SystemController extends Controller
                 'meta' => ['total' => 0, 'success' => 0, 'fail' => 0, 'errors' => []],
                 'verse' => ['total' => 0, 'success' => 0, 'fail' => 0, 'errors' => []],
                 'version' => ['status' => 'pending'],
-                'tags' => ['public' => ['status' => 'pending'], 'checkin' => ['status' => 'pending']],
+                'tags' => [
+                    'public' => ['status' => 'skipped', 'message' => 'Public visibility is controlled only by property.key=public.'],
+                    'checkin' => ['status' => 'pending'],
+                ],
             ];
 
             // 1. Version 升级
@@ -288,19 +291,9 @@ class SystemController extends Controller
                 throw new Exception("Version upgrade failed: " . $e->getMessage(), 500);
             }
 
-            // 2. Tag 迁移
+            // 2. 仅迁移 checkin；旧 public 标签不能重新设置场景公开状态。
             try {
-                $result['tags']['public'] = $this->migrateTagToProperty('public');
-            } catch (\Exception $e) {
-                $result['tags']['public']['status'] = 'error';
-                $result['tags']['public']['error'] = $e->getMessage();
-                $result['tags']['public']['trace'] = $e->getTraceAsString();
-                Yii::error("Tag 'public' Migration Error: " . $e->getMessage() . "\n" . $e->getTraceAsString(), 'upgrade');
-                throw new Exception("Tag 'public' migration failed: " . $e->getMessage(), 500);
-            }
-
-            try {
-                $result['tags']['checkin'] = $this->migrateTagToProperty('checkin');
+                $result['tags']['checkin'] = $this->migrateCheckinTagToProperty();
             } catch (\Exception $e) {
                 $result['tags']['checkin']['status'] = 'error';
                 $result['tags']['checkin']['error'] = $e->getMessage();
@@ -562,13 +555,13 @@ class SystemController extends Controller
     }
 
     /**
-     * 将指定 key 的 tag 迁移到 property，并为对应的 verse 创建 verse_property 关联
-     * @param string $key 标签的 key
+     * 仅将 checkin 标签迁移到 property，并为对应的 verse 创建 verse_property 关联
      * @return array 迁移结果
      * @throws Exception
      */
-    private function migrateTagToProperty($key)
+    private function migrateCheckinTagToProperty()
     {
+        $key = 'checkin';
         try {
             // 查找指定 key 的 tag
             $tag = \api\modules\v1\models\Tags::findOne(['key' => $key]);

@@ -420,7 +420,11 @@ Authorization: Bearer {accessToken}
 - `per-page`: 每页数量
 - `tags`: 标签 ID 列表 (逗号分隔)
 
-**响应**: 返回带有 `public` 标签的场景列表
+**响应**: 返回关联 `property.key=public` 的公开场景列表。
+
+公开状态属于场景属性，分类属于标签，两者独立。`tags` 参数仅匹配分类标签，旧 `tags.public` ID 不再匹配任何场景；混合多个 ID 时，其他分类标签仍按 OR 匹配。标签目录和场景 `expand=tags` 不返回旧 `public` 标签；通过标签新增接口添加它会返回 400，设置公开请使用场景公开接口。
+
+场景列表支持独立的 `public` 查询参数：`1` / `true` 筛选有公开属性的场景，`0` / `false` 筛选没有公开属性的场景；其他值返回 400。`/v1/verses` 仍受当前用户范围限制。`/v1/verses/public?public=0` 返回空列表，不能用该参数扩大公开列表范围。省略 `public` 不增加属性筛选。此查询参数不修改公开状态。
 
 ---
 

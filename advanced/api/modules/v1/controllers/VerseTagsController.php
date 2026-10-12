@@ -11,6 +11,7 @@ use api\modules\v1\models\data\VerseCodeTool;
 use OpenApi\Annotations as OA;
 
 use yii\base\Exception;
+use yii\web\BadRequestHttpException;
 
 /**
  * @OA\Tag(
@@ -68,7 +69,7 @@ class VerseTagsController extends ActiveController
      * @OA\Post(
      *     path="/v1/verse-tags",
      *     summary="添加 Verse 标签",
-     *     description="为 Verse 添加标签",
+     *     description="为 Verse 添加分类标签；public 是场景属性，传入旧 public 标签 ID 返回 400",
      *     tags={"VerseTags"},
      *     security={{"Bearer": {}}},
      *     @OA\RequestBody(
@@ -99,6 +100,9 @@ class VerseTagsController extends ActiveController
         $tags = Tags::findOne($tags_id);
         if(!$tags) {
             throw new Exception('Tags not found');
+        }
+        if ($tags->key === 'public') {
+            throw new BadRequestHttpException('Public visibility is a scene property; use the public endpoint.');
         }
         $permission = Yii::$app->user->can('root')||  Yii::$app->user->can('admin');
         if($tags->type == 'Status' && !$permission){

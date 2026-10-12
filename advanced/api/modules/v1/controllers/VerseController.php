@@ -11,6 +11,7 @@ use api\modules\v1\models\data\VerseCodeTool;
 use bizley\jwt\JwtHttpBearerAuth;
 use common\components\security\CorsOriginPolicy;
 use yii\db\ActiveQuery;
+use yii\db\Query;
 use mdm\admin\components\AccessControl;
 use Yii;
 use api\modules\v1\services\ReliableWrite;
@@ -127,8 +128,9 @@ class VerseController extends ActiveController
      * @OA\Get(
      *     path="/v1/verse/public",
      *     summary="获取公开 Verse 列表",
-     *     description="获取所有公开的 Verse 列表",
+     *     description="按 property.key=public 获取公开 Verse 列表；tags 仅筛选分类标签",
      *     tags={"Verse"},
+     *     @OA\Parameter(name="public", in="query", description="公开属性筛选：1/true 或 0/false；公开列表传 0/false 返回空列表", @OA\Schema(type="string", enum={"0","1","false","true"}, example="1")),
      *     @OA\Parameter(
      *         name="tags",
      *         in="query",
@@ -175,19 +177,11 @@ class VerseController extends ActiveController
 
         if ($dataProvider->query instanceof ActiveQuery) {
             $query = $dataProvider->query;
-            $query->innerJoin('verse_property AS vp1', 'vp1.verse_id = verse.id')
-                ->innerJoin('property', 'property.id = vp1.property_id')
-                ->andWhere(['property.key' => 'public']);
+            $query->andWhere(['exists', $this->publicPropertyQuery()]);
         }
 
-        /*
-        // 添加 public 标签条件
-        $dataProvider->query->innerJoin('verse_tags AS vt_public', 'vt_public.verse_id = verse.id')
-            ->innerJoin('tags AS t_public', 't_public.id = vt_public.tags_id')
-            ->andWhere(['t_public.key' => 'public']);*/
-
-        // 处理额外的标签过滤
-        $this->applyTagsFilter($dataProvider->query, 'vt_extra');
+        $this->applyPublicFilter($dataProvider->query);
+        $this->applyTagsFilter($dataProvider->query);
 
         return $dataProvider;
     }
@@ -199,6 +193,7 @@ class VerseController extends ActiveController
      *     description="获取当前用户创建的 Verse 列表",
      *     tags={"Verse"},
      *     security={{"Bearer": {}}},
+     *     @OA\Parameter(name="public", in="query", description="按公开属性筛选，只接受 1/true 或 0/false；不改变当前用户范围", @OA\Schema(type="string", enum={"0","1","false","true"}, example="1")),
      *     @OA\Parameter(
      *         name="tags",
      *         in="query",
@@ -246,6 +241,7 @@ class VerseController extends ActiveController
         );
 
         // 处理标签过滤
+        $this->applyPublicFilter($dataProvider->query);
         $this->applyTagsFilter($dataProvider->query);
 
         return $dataProvider;
@@ -460,7 +456,7 @@ class VerseController extends ActiveController
      * @OA\Post(
      *     path="/v1/verse/{id}/tag",
      *     summary="添加标签",
-     *     description="为 Verse 添加标签",
+     *     description="为 Verse 添加分类标签；public 是场景属性，传入旧 public 标签 ID 返回 400",
      *     tags={"Verse"},
      *     security={{"Bearer": {}}},
      *     @OA\Parameter(
@@ -501,6 +497,9 @@ class VerseController extends ActiveController
         $tags = Tags::findOne($tags_id);
         if (!$tags) {
             throw new Exception('Tags not found');
+        }
+        if ($tags->key === 'public') {
+            throw new BadRequestHttpException('Public visibility is a scene property; use the public endpoint.');
         }
 
         $model = new VerseTags();
@@ -725,18 +724,50 @@ class VerseController extends ActiveController
     /**
      * 应用标签过滤到查询
      * @param \yii\db\ActiveQuery $query 查询对象
-     * @param string $alias 表别名，默认为 'verse_tags'
      */
-    private function applyTagsFilter($query, $alias = 'verse_tags')
+    private function applyTagsFilter($query)
     {
         $tags = Yii::$app->request->get('tags');
         if ($tags) {
             $tagsArray = array_map('intval', explode(',', $tags));
             if (!empty($tagsArray)) {
-                $query->innerJoin("verse_tags AS {$alias}", "{$alias}.verse_id = verse.id")
-                    ->andWhere(['in', "{$alias}.tags_id", $tagsArray])
-                    ->groupBy('verse.id');
+                $classifications = (new Query())->select('vt_filter.verse_id')
+                    ->from(['vt_filter' => VerseTags::tableName()])
+                    ->innerJoin(['tag_filter' => Tags::tableName()], 'tag_filter.id = vt_filter.tags_id')
+                    ->where('vt_filter.verse_id = verse.id')
+                    ->andWhere(['vt_filter.tags_id' => $tagsArray])
+                    ->andWhere(['or', ['<>', 'tag_filter.key', 'public'], ['tag_filter.key' => null]]);
+                $query->andWhere(['exists', $classifications]);
             }
         }
+    }
+
+    /** Public visibility is independent from classification tags. */
+    private function applyPublicFilter(ActiveQuery $query): void
+    {
+        $params = Yii::$app->request->queryParams;
+        if (!array_key_exists('public', $params)) {
+            return;
+        }
+
+        $value = $params['public'];
+        if (in_array($value, [true, 1, '1', 'true'], true)) {
+            $public = true;
+        } elseif (in_array($value, [false, 0, '0', 'false'], true)) {
+            $public = false;
+        } else {
+            throw new BadRequestHttpException('public must be 1, 0, true or false.');
+        }
+
+        $query->andWhere([$public ? 'exists' : 'not exists', $this->publicPropertyQuery()]);
+    }
+
+    private function publicPropertyQuery(): Query
+    {
+        return (new Query())->select('vp_filter.verse_id')
+            ->from(['vp_filter' => VerseProperty::tableName()])
+            ->innerJoin(['property_filter' => Property::tableName()], 'property_filter.id = vp_filter.property_id')
+            ->where('vp_filter.verse_id = verse.id')
+            ->andWhere(['property_filter.key' => 'public']);
     }
 }
