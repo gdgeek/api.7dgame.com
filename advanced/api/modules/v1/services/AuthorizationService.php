@@ -11,6 +11,9 @@ class AuthorizationService extends Component
 
     public function getRoleNamesByUserId(int $userId): array
     {
+        if (IndependentIdentity::enabled()) {
+            return IndependentIdentity::authority()->roles($userId);
+        }
         $roles = array_keys(Yii::$app->authManager->getRolesByUser($userId));
         $this->iamShadowCompareService()->compareRolesByUserId($userId, $roles, 'authorization');
 

@@ -123,8 +123,11 @@ class SiteController extends \yii\rest\Controller
         $wechat = \Yii::$app->wechat;
         $app = $wechat->officialAccount();
         $token = Yii::$app->security->generateRandomString();
+        $issuedAt = time();
         $result = $app->qrcode->temporary($token, 6 * 24 * 3600);
         $url = $app->qrcode->url($result['ticket']);
+        \api\modules\v1\services\LegacyWechatSceneRecorder::capture($token, (string)$wechat->app_id,
+            $issuedAt, 6 * 24 * 3600, 'api/site/wechat-qrcode');
         
         return ['qrcode' => $url, 'token' => $token];
     }
@@ -144,6 +147,9 @@ class SiteController extends \yii\rest\Controller
             throw new BadRequestHttpException($e->getMessage());
         }
         if ($user = $model->verifyEmail()) {
+            if (\api\modules\v1\services\IndependentIdentity::enabled()) {
+                return ['data' => '您的email已经确认！', 'code' => 20000];
+            }
             if (Yii::$app->user->login($user)) {
                 $assignment = new Assignment($user->id);
                 $invitation = Invitation::findOne(['recipient_id' => $user->id]);

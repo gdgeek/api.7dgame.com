@@ -35,6 +35,9 @@ class IdentityService extends Component
         if (!is_string($refreshToken) || $refreshToken === '') {
             throw new BadRequestHttpException("refreshToken is required");
         }
+        if (IndependentIdentity::enabled()) {
+            return $this->identityProviderClient()->refresh($refreshToken, $context);
+        }
 
         $normalized = $this->normalizeRefreshTokenInput($refreshToken);
         $refreshToken = $normalized['token'];
@@ -81,6 +84,9 @@ class IdentityService extends Component
             try {
                 return $this->identityProviderClient()->logout($refreshToken);
             } catch (\Throwable $exception) {
+                if (IndependentIdentity::enabled()) {
+                    throw $exception;
+                }
                 \Yii::warning('Identity logout failed; falling back to local revoke.', 'identity.auth');
             }
         }
@@ -220,6 +226,9 @@ class IdentityService extends Component
 
     private function authProvider(): string
     {
+        if (IndependentIdentity::enabled()) {
+            return 'identity';
+        }
         $provider = $this->stringConfig('AUTH_PROVIDER') ?? 'legacy';
         $provider = strtolower($provider);
 
@@ -228,6 +237,9 @@ class IdentityService extends Component
 
     private function legacyRefreshFallbackEnabled(): bool
     {
+        if (IndependentIdentity::enabled()) {
+            return false;
+        }
         return $this->boolConfig('IDENTITY_AUTH_LEGACY_REFRESH_FALLBACK', true);
     }
 

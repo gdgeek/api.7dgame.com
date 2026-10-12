@@ -15,6 +15,8 @@ use Yii;
  */
 class AuthAssignment extends \yii\db\ActiveRecord
 {
+    use \common\components\IdentityOwnedRecordGuard;
+
     /**
      * {@inheritdoc}
      */

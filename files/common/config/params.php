@@ -68,6 +68,8 @@ $params = [
             : true,
     ],
     'identityAuth' => [
+        'IDENTITY_DATA_SOURCE' => getenv('IDENTITY_DATA_SOURCE') ?: 'legacy',
+        'IDENTITY_INDEPENDENT_READY' => getenv('IDENTITY_INDEPENDENT_READY') ?: 'false',
         'AUTH_PROVIDER' => getenv('AUTH_PROVIDER') ?: 'legacy',
         'IDENTITY_AUTH_BASE_URL' => getenv('IDENTITY_AUTH_BASE_URL') ?: null,
         'IDENTITY_AUTH_TIMEOUT_MS' => getenv('IDENTITY_AUTH_TIMEOUT_MS') ?: 1500,

@@ -11,6 +11,34 @@ class UserManagementService extends Component
 
     public function buildCurrentUserPayload($user): array
     {
+        if (IndependentIdentity::enabled()) {
+            $subject = IndependentIdentity::authority()->subject((int)$user->id);
+            $verifiedAt = $subject['emailVerifiedAt'];
+            $businessInfo = $user->userInfo ? $user->userInfo->toArray() : [];
+            if (array_key_exists('avatarId', $subject)) {
+                $avatar = $subject['avatarId'] === null ? null : \api\modules\v1\models\File::findOne((int)$subject['avatarId']);
+                $businessInfo['avatar'] = $avatar === null ? null : $avatar->toArray();
+            }
+            $profile = $subject['userInfo'] ?? null;
+            $businessInfo['info'] = is_array($profile) && array_key_exists('info', $profile)
+                ? $profile['info'] : $profile;
+            return [
+                'id' => $subject['id'],
+                'userData' => ['username' => $subject['username'], 'nickname' => $subject['nickname']],
+                'userInfo' => $businessInfo,
+                'roles' => $subject['roles'],
+                'perms' => $subject['permissions'],
+                'organizations' => User::normalizeOrganizations($subject['organizations']),
+                'email' => $subject['email'],
+                'emailVerified' => $verifiedAt !== null,
+                'emailVerifiedAt' => $verifiedAt,
+                'emailBind' => $subject['email'] === null ? null : [
+                    'email' => $subject['email'], 'verified' => $verifiedAt !== null,
+                    'verifiedAt' => $verifiedAt,
+                    'verifiedAtFormatted' => $verifiedAt ? date('Y-m-d H:i:s', $verifiedAt) : null,
+                ],
+            ];
+        }
         $emailVerified = !empty($user->email_verified_at);
         $emailBind = null;
         if (!empty($user->email)) {

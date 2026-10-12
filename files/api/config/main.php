@@ -16,7 +16,7 @@ return [
     'id' => 'restful',
     'basePath' => dirname(__DIR__),
     'controllerNamespace' => 'api\controllers',
-    'bootstrap' => ['log'],
+    'bootstrap' => ['log', \common\components\IdentityBoundaryBootstrap::class],
     'modules' => [
         'v1' => [
             'class' => 'api\modules\v1\Module',
@@ -537,7 +537,7 @@ return [
 
         ],
         'authManager' => [
-            'class' => 'yii\rbac\DbManager',
+            'class' => \common\components\IdentityDbManager::class,
         ],
 
     ],

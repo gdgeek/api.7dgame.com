@@ -189,6 +189,7 @@ class WechatController extends \yii\rest\Controller
         
         $api = $app->getClient();
         $lifetime = 3600;
+        $issuedAt = time();
         $token = Yii::$app->security->generateRandomString();
         $json =
         [
@@ -203,6 +204,8 @@ class WechatController extends \yii\rest\Controller
         $response = $api->post('/cgi-bin/qrcode/create', ['body' => json_encode($json, JSON_UNESCAPED_UNICODE)]);
         
         $result = $response->toArray();
+        \api\modules\v1\services\LegacyWechatSceneRecorder::capture($token, (string)$wechat->app_id,
+            $issuedAt, $lifetime, 'api/wechat/qrcode');
         return ['qrcode' => $result['ticket'], 'token' => $token, 'lifetime' => $lifetime];
     }
     

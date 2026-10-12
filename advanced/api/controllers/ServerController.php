@@ -152,7 +152,12 @@ class ServerController extends \yii\rest\Controller
     public function actionToken()
     {
         $ret = new \stdClass();
-        $ret->token = Yii::$app->user->identity->generateAccessToken();
+        if (\api\modules\v1\services\IndependentIdentity::enabled()) {
+            $token = Yii::$app->user->identity->token();
+            $ret->token = $token['accessToken'] ?? $token['token'];
+        } else {
+            $ret->token = Yii::$app->user->identity->generateAccessToken();
+        }
         return $ret;
     }
 

@@ -658,6 +658,15 @@ class PluginCampusController extends ScenePackageController
 
     private function assertOrganizationAllowed(User $actor, array $actorRoles, int $organizationId): ?array
     {
+        if (\api\modules\v1\services\IndependentIdentity::enabled()) {
+            \api\modules\v1\services\IndependentIdentity::authority()->organizationMembers($organizationId);
+            if ($this->hasAnyRole($actorRoles, ['root'])
+                || in_array($organizationId, $this->getOrganizationIdsByUserId((int)$actor->id), true)) {
+                return null;
+            }
+            Yii::$app->response->statusCode = 403;
+            return ['code' => 2003, 'message' => '不能管理非本组织账号'];
+        }
         if (!Organization::find()->where(['id' => $organizationId])->exists()) {
             Yii::$app->response->statusCode = 422;
             return ['code' => 4220, 'message' => '组织不存在'];
@@ -680,6 +689,28 @@ class PluginCampusController extends ScenePackageController
      */
     private function findManageableUsers(User $actor, array $actorRoles, array $organizationIds, string $search): array
     {
+        if (\api\modules\v1\services\IndependentIdentity::enabled()) {
+            $authority = \api\modules\v1\services\IndependentIdentity::authority();
+            $users = [];
+            foreach ($organizationIds as $organizationId) {
+                foreach ($authority->organizationMembers((int)$organizationId)['subjects'] as $subject) {
+                    if ($subject['id'] === (int)$actor->id || $subject['status'] !== 10
+                        || !$this->canManageTargetRoles($actorRoles, $subject['roles'])) {
+                        continue;
+                    }
+                    if ($search !== '') {
+                        $haystack = implode(' ', [$subject['username'], $subject['nickname'], $subject['email']]);
+                        if (function_exists('mb_stripos') ? mb_stripos($haystack, $search) === false : stripos($haystack, $search) === false) {
+                            continue;
+                        }
+                    }
+                    $users[$subject['id']] = $authority->projectSubject($subject);
+                }
+            }
+            usort($users, static fn(User $left, User $right): int => strcmp((string)$left->username, (string)$right->username)
+                ?: (int)$left->id <=> (int)$right->id);
+            return $users;
+        }
         $query = User::find()
             ->alias('u')
             ->distinct()
@@ -1413,6 +1444,10 @@ class PluginCampusController extends ScenePackageController
 
     private function getOrganizationIdsByUserId(int $userId): array
     {
+        if (\api\modules\v1\services\IndependentIdentity::enabled()) {
+            return array_map(static fn(array $organization): int => (int)$organization['id'],
+                \api\modules\v1\services\IndependentIdentity::authority()->organizations($userId));
+        }
         return array_map('intval', UserOrganization::find()
             ->select('organization_id')
             ->where(['user_id' => $userId])

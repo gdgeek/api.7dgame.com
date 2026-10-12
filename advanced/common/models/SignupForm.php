@@ -21,7 +21,7 @@ class SignupForm extends Model
      */
     public function rules()
     {
-        return [
+        $rules = [
             ['username', 'trim'],
             ['username', 'required'],
             ['username', 'unique', 'targetClass' => '\api\modules\v1\models\User', 'message' => 'This username has already been taken.'],
@@ -44,6 +44,8 @@ class SignupForm extends Model
 
 
         ];
+        return \api\modules\v1\services\IndependentIdentity::enabled()
+            ? array_values(array_filter($rules, static fn($rule) => $rule[1] !== 'unique')) : $rules;
     }
 
     /**
@@ -75,6 +77,11 @@ class SignupForm extends Model
     {
         if (!$this->validate()) {
             return null;
+        }
+        if (\api\modules\v1\services\IndependentIdentity::enabled()) {
+            return (new IdentityLegacyFormBridge())->sendEmail('signup', [
+                'username' => $this->username, 'email' => $this->email, 'password' => $this->password, 'invitation' => $this->invitation,
+            ]);
         }
         $user = new User();
         $user->username = $this->username;

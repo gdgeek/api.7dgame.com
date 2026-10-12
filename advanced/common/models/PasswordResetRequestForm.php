@@ -18,6 +18,9 @@ class PasswordResetRequestForm extends Model
      */
     public function rules()
     {
+        if (\api\modules\v1\services\IndependentIdentity::enabled()) {
+            return [['email', 'trim'], ['email', 'required'], ['email', 'email']];
+        }
         return [
             ['email', 'trim'],
             ['email', 'required'],
@@ -37,6 +40,9 @@ class PasswordResetRequestForm extends Model
      */
     public function sendEmail()
     {
+        if (\api\modules\v1\services\IndependentIdentity::enabled()) {
+            return (new IdentityLegacyFormBridge())->sendEmail('request-reset', ['email' => $this->email]);
+        }
         /* @var $user User */
         $user = User::findOne([
             'status' => User::STATUS_ACTIVE,

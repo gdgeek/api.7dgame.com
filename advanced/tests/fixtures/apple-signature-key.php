@@ -1,0 +1,39 @@
+<?php
+
+// Public test fixture only. Never use this private key outside automated tests.
+return [
+    'privateKey' => <<<'PEM'
+-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC5aUksGvS/DT84
+AC2Ya/nutGQwxPAG00VC1tAX5w9MOgOB9uEJIyMRfRRVvPCa9gHi9lxcFLxByUvd
+6KhnAEoZnWEC2ZGH+aLQrwQFusn122+CJHKu0YAalTifEC7vzcZgM5xE7jrA7sDw
+5IdWgMaagRhzYAQu4Ig2tdxbNqyu2P8e08jYx41cTxJ0oKbMfqhyWU+KJQ7rTvxq
+cKq0ZoFD5clEBZjr1cXddKTcIx0BfkEDy54PXuh2eyVLmsihjuYhpvXEc2FT+a68
+rKVKFH0gXu0sze6lSlxgXslZrx6EHRk1y96CvgFjj4ag1uids/imBMShzzIGLVH3
+xATDL/TLAgMBAAECggEAGf5N4QOPGrZnja56C0Yz/ghHNY5z3MPDZYP1HNdquHPi
+UwGX+e51ok7dSh8uF3jJZJbHoFcohLaM+Xl+cSDuwoQ4T1cjhSMfys7b1avNWDeh
+Jzx8jCVYfCGTFGWx7DJL5JJyZDgxKiQuuMw+bF0AZYpssZwdP1nWGYl0cPXgzrWQ
+KULIdISJIPcBTHIgSNl2l5qxQV0v5gcro4GB7u+HmL5RLgLsflOlPUpTnw5B/XZt
+2K0cj3YoeaMD9RgQfJQ4PHttikfTHZGUclAfy0ubGG5kz4OILcpI9lS0EbwLDUeo
+Cuk4WnQQRA+KVfDWozbJZQfd9I+MyDY4DKxhejY2zQKBgQDzcC9G3aIBu7yRBGmN
+FsTUvpXrDST9WLyAKeDt7JyGFdStofTpWv7Zl43+rL3MY1DkJB5d/KSHPPxe1vDx
+wiVddGT1svL/1tnhLSBEVI0m/wsEnQakNHdDbaIUw323D7aqCcAH//+HHgOfF9vi
+eyb54jmLF2AwlzZDAZFToiBHLwKBgQDC+pDmb+bjCuONMqd4SWDsL+v+JDnVypDE
+Y5mE3aFCMxk2q2apUUfC5yyoQUJfnt3iavgpmFMhfAvNA67q3XExKukSCL4LXN4Q
+iXQk8J94Aq74wdkRDXwmFkRdEPj244L/rAguNrjsEdj7GGsyrVMABhO+Ow+ufMyK
+pyXuXopFJQKBgCv3CtLFnEir2zZlkZqFji7N7M1ypkeLCyAqcBEINoyQzMQ/B7hN
+UtGBaYehMvYCyc0qKMHYqu4xuXJ3ZzSCV7U1HDazhudlqhvcxoMQsh1k2lyO73Ag
+eZmX5znQxJeXIuo6sI/BUCja5tSIvpF8pGFk1fek1R5xcL9RPSnZkfLJAoGBALJC
+POnBEvkugl4cGopZo/gr0/l1Cz9PxE0YtkmICx+n8fxOdjyEqDQkAGsPxuv/JeMU
+YzA8KHyrmWplXK0zqYIHNjEbtwxSal/6GyqOp20kHu4k5By4FHIJ15SyqLunw6OW
+l6AQvb5ujs76Qz+AwSp7Y99+xdaEGMkHCiHFY2rVAoGAUmj2Jp/+JZb8vuCbFHxL
+/VF8NnzQhEG72sIWGS+Vq7tAt8Yr6GP6BwRorZpMhEaSMSSOgqz8sWCE++UYGN7D
+0sJPP0qSpYUzfOcckEwtdmX6evEYbuP59M3sYUuKtHGItIdRVGRDKYVdyRO8FbTD
+IGcBvKTPHog6W74iJKsd2MY=
+-----END PRIVATE KEY-----
+PEM,
+    'jwks' => ['keys' => [[
+        'kty' => 'RSA', 'use' => 'sig', 'alg' => 'RS256', 'kid' => 'local-apple-fixture',
+        'n' => 'uWlJLBr0vw0_OAAtmGv57rRkMMTwBtNFQtbQF-cPTDoDgfbhCSMjEX0UVbzwmvYB4vZcXBS8QclL3eioZwBKGZ1hAtmRh_mi0K8EBbrJ9dtvgiRyrtGAGpU4nxAu783GYDOcRO46wO7A8OSHVoDGmoEYc2AELuCINrXcWzasrtj_HtPI2MeNXE8SdKCmzH6ocllPiiUO6078anCqtGaBQ-XJRAWY69XF3XSk3CMdAX5BA8ueD17odnslS5rIoY7mIab1xHNhU_muvKylShR9IF7tLM3upUpcYF7JWa8ehB0ZNcvegr4BY4-GoNbonbP4pgTEoc8yBi1R98QEwy_0yw', 'e' => 'AQAB',
+    ]]],
+];

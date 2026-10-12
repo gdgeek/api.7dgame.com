@@ -25,6 +25,7 @@ use Yii;
  */
 class AuthItem extends \yii\db\ActiveRecord
 {
+    use \common\components\IdentityOwnedRecordGuard;
     /**
      * {@inheritdoc}
      */

@@ -55,6 +55,19 @@ class LoginForm extends Model
      */
     public function login()
     {
+        if (\api\modules\v1\services\IndependentIdentity::enabled()) {
+            if (!$this->validate(['username', 'rememberMe']) || !is_string($this->password) || $this->password === '') {
+                $this->addError('password', 'Password cannot be blank.');
+                return false;
+            }
+            try {
+                $tokens = (new \api\modules\v1\services\IdentityProviderClient())->login($this->username, $this->password);
+                return Yii::$app->user->loginWithIdentityTokens($tokens, $this->rememberMe ? 3600 * 24 * 30 : 0);
+            } catch (\yii\web\UnauthorizedHttpException $exception) {
+                $this->addError('password', 'Incorrect username or password.');
+                return false;
+            }
+        }
         if ($this->validate()) {
             $user = $this->getUser();
             $access_token = $user->generateAccessToken();

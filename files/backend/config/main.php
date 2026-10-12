@@ -11,7 +11,7 @@ return [
     'name'=>'AR创作平台',
     'basePath' => dirname(__DIR__),
     'controllerNamespace' => 'backend\controllers',
-    'bootstrap' => ['log'],
+    'bootstrap' => ['log', \common\components\IdentityBoundaryBootstrap::class],
     'aliases' => [
         '@bower' => '@vendor/bower-asset',
         '@npm'   => '@vendor/npm-asset',
@@ -19,6 +19,13 @@ return [
     'modules' => [
         'admin' => [
             'class' => 'mdm\admin\Module',
+            'controllerMap' => [
+                'user' => \backend\controllers\IdentityAdminUserController::class,
+                'assignment' => \backend\controllers\IdentityAdminAssignmentController::class,
+                'role' => \backend\controllers\IdentityAdminRoleController::class,
+                'permission' => \backend\controllers\IdentityAdminPermissionController::class,
+                'rule' => \backend\controllers\IdentityAdminRuleController::class,
+            ],
             'layout' => '@app/views/layouts/main.php', 
         ],
         'reporter' => [
@@ -42,6 +49,7 @@ return [
             'csrfParam' => '_csrf-backend',
         ],
         'user' => [
+            'class' => \common\components\IdentityBackendUser::class,
             'identityClass' => 'api\modules\v1\models\User',
             'enableAutoLogin' => true,
             'identityCookie' => ['name' => '_identity-backend', 'httpOnly' => true],
@@ -66,7 +74,7 @@ return [
             ],
         ],
         'authManager' => [
-            'class' => 'yii\rbac\DbManager', 
+            'class' => \common\components\IdentityDbManager::class,
         ],
         
         'errorHandler' => [
@@ -87,4 +95,3 @@ return [
         ],
         'params' => $params,
     ];
-    

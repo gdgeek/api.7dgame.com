@@ -80,6 +80,7 @@ class WechatController extends \yii\rest\Controller
             $app = $wechat->application();
             $api = $app->getClient();
             $lifetime = 6 * 24 * 3600;
+            $issuedAt = time();
             $token = Yii::$app->security->generateRandomString();
             $payload = [
                 "expire_seconds" => $lifetime,
@@ -102,6 +103,8 @@ class WechatController extends \yii\rest\Controller
 
         $ticket = (string)$result['ticket'];
         $url = 'https://mp.weixin.qq.com/cgi-bin/showqrcode?ticket=' . rawurlencode($ticket);
+        \api\modules\v1\services\LegacyWechatSceneRecorder::capture($token, (string)$wechat->app_id,
+            $issuedAt, $lifetime, 'v1/wechat/qrcode');
 
         return [
             'qrcode' => [

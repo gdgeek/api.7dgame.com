@@ -6,6 +6,8 @@ use yii\behaviors\TimestampBehavior;
 
 class Organization extends \yii\db\ActiveRecord
 {
+    use \common\components\IdentityOwnedRecordGuard;
+
     public static function tableName()
     {
         return '{{%organization}}';

@@ -21,6 +21,8 @@ use yii\db\Expression;
  */
 class Wechat extends \yii\db\ActiveRecord
 {
+    use \common\components\IdentityOwnedRecordGuard;
+
 
 
     public function behaviors()

@@ -116,11 +116,17 @@ class EmailVerificationService extends Component
         
         // 存储到 Redis
         $codeKey = RedisKeyManager::getVerificationCodeKey($email);
+        $issuedAt = time();
         $data = json_encode([
             'code' => $code,
-            'created_at' => time(),
+            'created_at' => $issuedAt,
         ]);
-        $this->redis->executeCommand('SETEX', [$codeKey, self::CODE_TTL, $data]);
+        $captureAssociation = LegacyEmailChallengeRecorder::enabled();
+        if ($captureAssociation) {
+            LegacyEmailChallengeRecorder::store($this->redis, $codeKey, $email, $data, self::CODE_TTL, $code, $issuedAt);
+        } else {
+            $this->redis->executeCommand('SETEX', [$codeKey, self::CODE_TTL, $data]);
+        }
         
         // 发送邮件。只有真实投递成功后，接口才能报告成功并进入冷却期。
         try {
@@ -131,13 +137,15 @@ class EmailVerificationService extends Component
                 $i18n
             );
         } catch (\Throwable $exception) {
-            $this->redis->executeCommand('DEL', [$codeKey]);
+            if ($captureAssociation) LegacyEmailChallengeRecorder::removeFailedDelivery($this->redis, $codeKey, $email, $data);
+            else $this->redis->executeCommand('DEL', [$codeKey]);
             Yii::error("Verification email delivery raised an exception for {$email}: " . $exception->getMessage(), __METHOD__);
             throw new ServerErrorHttpException('发送验证码失败，请稍后重试', 0, $exception);
         }
 
         if (!$emailSent) {
-            $this->redis->executeCommand('DEL', [$codeKey]);
+            if ($captureAssociation) LegacyEmailChallengeRecorder::removeFailedDelivery($this->redis, $codeKey, $email, $data);
+            else $this->redis->executeCommand('DEL', [$codeKey]);
             Yii::error("Failed to deliver verification email to {$email}", __METHOD__);
             throw new ServerErrorHttpException('发送验证码失败，请稍后重试');
         }
@@ -395,6 +403,7 @@ class EmailVerificationService extends Component
     protected function clearVerificationData(string $email): bool
     {
         $keys = RedisKeyManager::getAllVerificationKeys($email);
+        if (LegacyEmailChallengeRecorder::enabled()) $keys[] = LegacyEmailChallengeRecorder::key($email);
         $result = $this->rateLimiter->clearMany($keys);
         return $result > 0;
     }

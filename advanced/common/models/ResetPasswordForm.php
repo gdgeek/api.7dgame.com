@@ -17,6 +17,7 @@ class ResetPasswordForm extends Model
      * @var \api\modules\v1\models\User
      */
     private $_user;
+    private ?string $identityToken = null;
 
 
     /**
@@ -30,6 +31,13 @@ class ResetPasswordForm extends Model
     {
         if (empty($token) || !is_string($token)) {
             throw new InvalidArgumentException('Password reset token cannot be blank.');
+        }
+        if (\api\modules\v1\services\IndependentIdentity::enabled()) {
+            $data = (new IdentityLegacyFormBridge())->operation('validate-reset', ['token' => $token]);
+            $this->identityToken = $token;
+            $this->_user = (object)['username' => $data['username'] ?? null, 'email' => $data['email'] ?? null];
+            parent::__construct($config);
+            return;
         }
         $this->_user = User::findByPasswordResetToken($token);
         
@@ -82,6 +90,10 @@ class ResetPasswordForm extends Model
      */
     public function resetPassword()
     {
+        if ($this->identityToken !== null) {
+            (new IdentityLegacyFormBridge())->operation('reset', ['token' => $this->identityToken, 'password' => $this->password]);
+            return true;
+        }
         $user = $this->_user;
         $user->setPassword($this->password);
         $user->removePasswordResetToken();

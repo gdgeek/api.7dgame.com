@@ -20,6 +20,9 @@ class ResendVerificationEmailForm extends Model
      */
     public function rules()
     {
+        if (\api\modules\v1\services\IndependentIdentity::enabled()) {
+            return [['email', 'trim'], ['email', 'required'], ['email', 'email']];
+        }
         return [
             ['email', 'trim'],
             ['email', 'required'],
@@ -39,6 +42,9 @@ class ResendVerificationEmailForm extends Model
      */
     public function sendEmail()
     {
+        if (\api\modules\v1\services\IndependentIdentity::enabled()) {
+            return (new IdentityLegacyFormBridge())->sendEmail('resend-verification', ['email' => $this->email]);
+        }
         $user = User::findOne([
             'email' => $this->email,
             'status' => User::STATUS_INACTIVE

@@ -14,6 +14,7 @@ class SessionService extends Component
 {
     public function issueToken(User $user, array $context = []): array
     {
+        $this->assertLegacySessionWriter();
         $refreshToken = Yii::$app->security->generateRandomString(64);
         $sessionId = $context['session_id'] ?? Yii::$app->security->generateRandomString(32);
         $now = new \DateTimeImmutable('now', new \DateTimeZone(Yii::$app->timeZone));
@@ -41,6 +42,7 @@ class SessionService extends Component
 
     public function consumeRefreshToken(string $refreshToken): User
     {
+        $this->assertLegacySessionWriter();
         $token = $this->findRefreshTokenRecord($refreshToken);
         if (!$token) {
             throw new UnauthorizedHttpException('Refresh token is invalid.');
@@ -66,6 +68,7 @@ class SessionService extends Component
 
     public function revokeRefreshToken(?string $refreshToken): bool
     {
+        $this->assertLegacySessionWriter();
         if ($refreshToken === null || $refreshToken === '') {
             return true;
         }
@@ -84,6 +87,7 @@ class SessionService extends Component
 
     public function revokeUserSessions(int $userId): int
     {
+        $this->assertLegacySessionWriter();
         return (int)RefreshToken::deleteAll(['user_id' => $userId]);
     }
 
@@ -112,5 +116,12 @@ class SessionService extends Component
             'ip' => $request->userIP,
             'user_agent' => $request->userAgent,
         ];
+    }
+
+    private function assertLegacySessionWriter(): void
+    {
+        if (IndependentIdentity::enabled()) {
+            throw new \common\components\security\ServiceUnavailableHttpException('Sessions are owned by Identity; local session writes are disabled.');
+        }
     }
 }

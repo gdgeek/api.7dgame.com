@@ -4,6 +4,8 @@ namespace api\modules\v1\models;
 
 class UserOrganization extends \yii\db\ActiveRecord
 {
+    use \common\components\IdentityOwnedRecordGuard;
+
     public static function tableName()
     {
         return '{{%user_organization}}';

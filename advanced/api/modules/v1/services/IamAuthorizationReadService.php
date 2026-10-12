@@ -18,6 +18,14 @@ class IamAuthorizationReadService extends Component
         ?string $requestKey = null,
         ?string $coverageId = null
     ): bool {
+        if (IndependentIdentity::enabled()) {
+            if ($this->routeCoverage($coverageId) === 'retained-legacy') {
+                // The caller has evaluated MRPP object rules with authoritative
+                // Identity assignments through IdentityDbManager.
+                return $legacyAllowed;
+            }
+            return IndependentIdentity::authority()->allowed((int)$user->id, $permission);
+        }
         $this->subjectBindingProbeEvidence = 'v1;binding=missing';
         if (!$this->routeIntegrationEnabled()) {
             return $legacyAllowed;

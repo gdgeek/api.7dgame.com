@@ -21,6 +21,8 @@ use api\modules\v1\models\User;
  */
 class Invitation extends \yii\db\ActiveRecord
 {
+    use \common\components\IdentityOwnedRecordGuard;
+
     /**
      * {@inheritdoc}
      */

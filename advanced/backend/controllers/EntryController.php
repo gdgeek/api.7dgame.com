@@ -144,6 +144,13 @@ class EntryController extends Controller
 
         $model = new SignupForm();
 		if($model->load(Yii::$app->request->post())){
+			if (\api\modules\v1\services\IndependentIdentity::enabled()) {
+				if ($model->signup()) {
+					Yii::$app->session->setFlash('success', '感谢您的注册。请检查您的收件箱中的验证邮件。');
+					return $this->goHome();
+				}
+				return $this->render('account', ['model' => $model]);
+			}
 			$invitation = Invitation::findOne(['code' => $model->invitation]);
 		   
 			if($invitation != null){ 
@@ -240,6 +247,10 @@ class EntryController extends Controller
             throw new BadRequestHttpException($e->getMessage());
         }
         if ($user = $model->verifyEmail()) {
+            if (\api\modules\v1\services\IndependentIdentity::enabled()) {
+                Yii::$app->session->setFlash('success', '您的email已经确认！');
+                return $this->goHome();
+            }
             if (Yii::$app->user->login($user)) {
 				$assignment = new Assignment($user->id);
 				$invitation = Invitation::findOne(['recipient_id'=> $user->id]);

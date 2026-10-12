@@ -20,7 +20,8 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) gd
 
-RUN docker-php-ext-install -j$(nproc) mysqli pdo pdo_mysql
+# pcntl is required by the Identity projection CLI worker for graceful SIGTERM.
+RUN docker-php-ext-install -j$(nproc) mysqli pdo pdo_mysql pcntl
 
 RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
 

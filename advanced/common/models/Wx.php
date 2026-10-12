@@ -19,6 +19,8 @@ use Yii;
 class Wx extends \yii\db\ActiveRecord
 
 {
+    use \common\components\IdentityOwnedRecordGuard;
+
     /**
      * {@inheritdoc}
      */

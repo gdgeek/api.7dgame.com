@@ -23,6 +23,8 @@ use Yii;
  */
 class User extends \yii\db\ActiveRecord
 {
+    use \common\components\IdentityOwnedRecordGuard;
+
     /**
      * {@inheritdoc}
      */

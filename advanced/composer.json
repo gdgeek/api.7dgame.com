@@ -45,7 +45,9 @@
     "doctrine/annotations": "^2.0",
     "tencentcloud/sts": "^3.0",
     "yiisoft/yii2-symfonymailer": "^4.0",
-    "predis/predis": "^3.3"
+    "predis/predis": "^3.3",
+    "firebase/php-jwt": "^7.2",
+    "patrickbussmann/oauth2-apple": "^0.4.0"
   },
   "replace": {
     "npm-asset/bootstrap": ">=4.2.1",

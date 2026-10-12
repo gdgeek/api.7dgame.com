@@ -47,7 +47,6 @@ class PasswordController extends Controller
     {
         $behaviors = parent::behaviors();
 
-
         // unset($behaviors['authenticator']);
         $behaviors['authenticator'] = [
             'class' => CompositeAuth::class,
@@ -64,6 +63,10 @@ class PasswordController extends Controller
             // except list.
             'allowActions' => ['options', 'request-reset', 'verify-code', 'reset'],
         ];
+        if (\api\modules\v1\services\IndependentIdentity::enabled()) {
+            $behaviors['authenticator']['except'][] = 'verify-token';
+            $behaviors['access']['allowActions'][] = 'verify-token';
+        }
 
 
         /*
@@ -304,6 +307,9 @@ class PasswordController extends Controller
      */
     public function actionVerifyToken()
     {
+        if (($proxy = $this->proxyAccountLifecycle('/v1/password/verify-token')) !== null) {
+            return $proxy['body'];
+        }
         $token = trim((string)Yii::$app->request->post('token', ''));
         if ($token === '') {
             Yii::$app->response->statusCode = 400;

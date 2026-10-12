@@ -68,6 +68,14 @@ class InfoController extends Controller
                     'invitation' => $info->invitation,
                 ]);
             }else{
+                if (\api\modules\v1\services\IndependentIdentity::enabled()) {
+                    $issued = \common\components\IdentityLegacyAdmin::call('trial-create', ['businessInfoId' => (int)$info->id], true);
+                    $info->invitation = $issued['code'];
+                    if ($info->save()) {
+                        return $this->render('succeed', ['invitation' => $issued['code']]);
+                    }
+                    return $this->render('error', ['text' => '无法得到您的测试码']);
+                }
                 $aa = \common\models\AuthAssignment::findOne(['item_name'=>'root']);
                 $invitation = new Invitation();
                 $invitation->sender_id =$aa->user_id;
@@ -97,9 +105,15 @@ class InfoController extends Controller
     { 
         $model = new \common\models\Info(); 
         
-        $is = \common\models\Invitation::find()->where(["date_format(create_at,'%Y-%m-%d')" =>new Expression("date_format(now(),'%Y-%m-%d')")])->all();
-        if(count($is) >= 10){
-            return $this->redirect(['no-invitation','invitation'=>count($is)]);
+        if (\api\modules\v1\services\IndependentIdentity::enabled()) {
+            $quota = \common\components\IdentityLegacyAdmin::call('invitation-quota', [], true);
+            $invitationCount = (int)$quota['count'];
+        } else {
+            $is = \common\models\Invitation::find()->where(["date_format(create_at,'%Y-%m-%d')" =>new Expression("date_format(now(),'%Y-%m-%d')")])->all();
+            $invitationCount = count($is);
+        }
+        if($invitationCount >= 10){
+            return $this->redirect(['no-invitation','invitation'=>$invitationCount]);
         }
         if ($model->load(Yii::$app->request->post())) { 
             if ($model->validate() && $model->save()) { 

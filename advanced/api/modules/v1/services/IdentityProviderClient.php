@@ -7,9 +7,119 @@ use yii\base\Component;
 use yii\web\BadRequestHttpException;
 use yii\web\ServerErrorHttpException;
 use yii\web\UnauthorizedHttpException;
+use common\components\security\ServiceUnavailableHttpException;
 
 class IdentityProviderClient extends Component
 {
+    public function legacyAdmin(string $operation, array $payload = [], ?string $accessToken = null): array
+    {
+        return $this->trustedLegacyOperation('/internal/legacy-admin', $this->legacyAdminEnvelope($operation, $payload, $accessToken), []);
+    }
+
+    private function legacyAdminEnvelope(string $operation, array $payload, ?string $accessToken): array
+    {
+        $envelope = compact('operation', 'payload', 'accessToken');
+        // Derive delegated MDM authorization only from the executing Yii route.
+        // Browser payload fields can never select the actor or permission.
+        $route = isset(Yii::$app->controller) ? Yii::$app->controller->getRoute() : '';
+        if (preg_match('~^admin/[a-z0-9-]+/[a-z0-9-]+$~D', $route) === 1) {
+            $envelope['permissionName'] = '/' . $route;
+        }
+        return $envelope;
+    }
+
+    public function legacyPhpSession(int $userId, string $authKey, array $context = []): array
+    {
+        $response = $this->trustedLegacyOperation('/internal/legacy-php-session/exchange', compact('userId', 'authKey'), $context);
+        return $this->tokenFromResponse($response);
+    }
+
+    public function legacyEmailLink(string $operation, array $payload, array $context = []): array
+    {
+        if (!in_array($operation, ['validate-reset', 'reset', 'verify', 'request-reset', 'resend-verification', 'signup'], true)) {
+            throw new BadRequestHttpException('Invalid legacy email link operation.');
+        }
+        return $this->trustedLegacyOperation('/internal/legacy-email-link/' . $operation, $payload, $context);
+    }
+
+    private function trustedLegacyOperation(string $path, array $payload, array $context): array
+    {
+        $token = $this->internalAuthToken();
+        if ($token === null) {
+            throw new ServiceUnavailableHttpException('Identity compatibility internal credential is not configured.');
+        }
+        return $this->requestJson('POST', $path, $payload, [],
+            array_merge($context, ['identity_internal_token' => $token]), false)['body'];
+    }
+
+    public function verifiedApple(string $operation, array $payload, array $context = []): array
+    {
+        if (!in_array($operation, ['resolve', 'create', 'link'], true)) {
+            throw new BadRequestHttpException('Invalid Apple identity operation.');
+        }
+        $token = $this->internalAuthToken();
+        if ($token === null) {
+            throw new ServiceUnavailableHttpException('Identity Apple internal credential is not configured.');
+        }
+        return $this->requestJson('POST', '/internal/apple/' . $operation, $payload, [],
+            array_merge($context, ['identity_internal_token' => $token]), true);
+    }
+
+    public function identitySubject(int $id): array
+    {
+        return $this->requiredInternalData('GET', '/internal/identity/subjects/' . $id);
+    }
+
+    public function identityPolicyGraph(): array
+    {
+        return $this->requiredInternalData('POST', '/internal/identity/policy-graph');
+    }
+
+    public function verifyIdentityAccessToken(string $token): array
+    {
+        return $this->requiredInternalData('POST', '/internal/auth/verify-access-token', ['token' => $token]);
+    }
+
+    public function identityOrganizationMembers(int $id): array
+    {
+        return $this->requiredInternalData('GET', '/internal/identity/organizations/' . $id . '/members');
+    }
+
+    public function identityPermission(int $id, string $permission): bool
+    {
+        $data = $this->requiredInternalData('POST', '/internal/identity/authorize', [
+            'legacyUserId' => $id, 'permission' => $permission,
+        ]);
+        if (!isset($data['allowed']) || !is_bool($data['allowed'])) {
+            throw new ServiceUnavailableHttpException('Identity returned an invalid authorization decision.');
+        }
+        return $data['allowed'];
+    }
+
+    public function identityProjectionEvents(int $afterId, int $limit = 100): array
+    {
+        return $this->requiredInternalData('GET', '/internal/identity/events?'
+            . http_build_query(['afterId' => $afterId, 'limit' => max(1, min(500, $limit))]));
+    }
+
+    private function requiredInternalData(string $method, string $path, ?array $payload = null): array
+    {
+        $token = $this->internalIamToken();
+        if ($token === null) {
+            throw new ServiceUnavailableHttpException('Identity internal credential is not configured.');
+        }
+        $response = $this->requestJson($method, $path, $payload, [], ['identity_internal_token' => $token], true);
+        $status = (int)($response['status'] ?? 0);
+        if (in_array($status, [401, 403, 404], true)) {
+            throw new UnauthorizedHttpException('Identity rejected the subject or token.');
+        }
+        $data = $response['body']['data'] ?? null;
+        if ($status < 200 || $status >= 300 || !is_array($data)) {
+            throw new ServiceUnavailableHttpException('Identity authority is unavailable.');
+        }
+        return $data;
+    }
+
     public function login(string $username, string $password, array $context = []): array
     {
         $response = $this->postJson('/v1/auth/login', [
@@ -154,6 +264,12 @@ class IdentityProviderClient extends Component
         if (!empty($context['identity_internal_token'])) {
             $headers[] = 'X-Identity-Internal-Token: ' . $context['identity_internal_token'];
         }
+        if (!empty($context['idempotency_key'])) {
+            $key = (string)$context['idempotency_key'];
+            if (strlen($key) <= 128 && preg_match('/^[A-Za-z0-9._:-]+$/', $key) === 1) {
+                $headers[] = 'Idempotency-Key: ' . $key;
+            }
+        }
 
         $url = rtrim($baseUrl, '/') . $path;
         if (!empty($query)) {
@@ -161,6 +277,13 @@ class IdentityProviderClient extends Component
         }
 
         $handle = curl_init($url);
+        $responseHeaders = [];
+        curl_setopt($handle, CURLOPT_HEADERFUNCTION, static function ($handle, string $line) use (&$responseHeaders): int {
+            if (preg_match('/^(X-Pagination-(?:Total-Count|Page-Count|Current-Page|Per-Page)):\s*(\d+)\s*$/i', trim($line), $matches) === 1) {
+                $responseHeaders[$matches[1]] = $matches[2];
+            }
+            return strlen($line);
+        });
         curl_setopt($handle, CURLOPT_CUSTOMREQUEST, strtoupper($method));
         if ($body !== null) {
             curl_setopt($handle, CURLOPT_POSTFIELDS, $body);
@@ -177,7 +300,7 @@ class IdentityProviderClient extends Component
 
         if ($raw === false || $error !== '') {
             Yii::warning('Identity provider transport failed: ' . $error, 'identity.auth');
-            throw new ServerErrorHttpException('Identity provider is unavailable.');
+            throw new ServiceUnavailableHttpException('Identity provider is unavailable.');
         }
 
         $decoded = json_decode((string)$raw, true);
@@ -186,7 +309,7 @@ class IdentityProviderClient extends Component
         }
 
         if ($preserveHttpErrors) {
-            return ['status' => $status, 'body' => $decoded];
+            return ['status' => $status, 'body' => $decoded, 'headers' => $responseHeaders];
         }
 
         if ($status === 401) {

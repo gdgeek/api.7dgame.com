@@ -46,6 +46,9 @@ class AccountLifecycleProxyService extends Component
 
     public function shouldProxy(string $scope): bool
     {
+        if (IndependentIdentity::enabled()) {
+            return true;
+        }
         if ($this->hasLifecycleProxyMarker()) {
             return false;
         }
@@ -130,6 +133,9 @@ class AccountLifecycleProxyService extends Component
 
     private function fallbackEnabled(): bool
     {
+        if (IndependentIdentity::enabled()) {
+            return false;
+        }
         return $this->boolConfig('IDENTITY_ACCOUNT_LIFECYCLE_FALLBACK', true);
     }
 

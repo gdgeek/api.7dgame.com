@@ -4,6 +4,7 @@ namespace api\modules\v1\models;
 
 use api\modules\v1\RefreshToken;
 use api\modules\v1\services\SessionService;
+use api\modules\v1\services\IndependentIdentity;
 use yii\db\Expression;
 use yii\caching\TagDependency;
 use mdm\admin\models\Assignment;
@@ -49,6 +50,28 @@ use OpenApi\Annotations as OA;
  */
 class User extends \yii\db\ActiveRecord implements IdentityInterface
 {
+    use \common\components\IdentityOwnedRecordGuard;
+
+    public ?array $identitySubject = null;
+
+    public function beforeSave($insert)
+    {
+        $this->assertLegacyAccountWriter();
+        return parent::beforeSave($insert);
+    }
+
+    public function beforeDelete()
+    {
+        $this->assertLegacyAccountWriter();
+        return parent::beforeDelete();
+    }
+
+    private function assertLegacyAccountWriter(): void
+    {
+        if (IndependentIdentity::enabled()) {
+            throw new \common\components\security\ServiceUnavailableHttpException('Account writes and token issuance are owned by Identity.');
+        }
+    }
 
 
     public function afterSave($insert, $changedAttributes)
@@ -67,15 +90,47 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
 
     public static function findByAuthKey($authKey)
     {
+        if (IndependentIdentity::enabled()) {
+            return null;
+        }
         return static::find()->where(['auth_key' => $authKey])->one();
     }
 
     public static function findIdentity($id)
     {
+        if (IndependentIdentity::enabled()) {
+            return IndependentIdentity::authority()->identityById((int)$id);
+        }
         return static::find()->where(['id' => $id])->one();
     }
+
+    public static function findOne($condition)
+    {
+        $user = parent::findOne($condition);
+        if ($user !== null || !IndependentIdentity::enabled()) {
+            return $user;
+        }
+        // Business target IDs can arrive before the background projection.
+        // Username/email searches remain ordinary projection queries.
+        $candidate = is_array($condition)
+            ? (count($condition) === 1 ? ($condition['id'] ?? null) : null)
+            : $condition;
+        $id = filter_var($candidate, FILTER_VALIDATE_INT);
+        if ($id === false || $id <= 0) {
+            return null;
+        }
+        try {
+            return IndependentIdentity::authority()->identityById($id);
+        } catch (\yii\web\UnauthorizedHttpException $exception) {
+            return null;
+        }
+    }
+
     public static function findIdentityByAccessToken($token, $type = null)
     {
+        if (IndependentIdentity::enabled()) {
+            return IndependentIdentity::authority()->verifyAccessToken((string)$token);
+        }
         $claims = Yii::$app->jwt->parse($token)->claims();
         $uid = static::userIdFromClaims($claims);
         $user = static::findIdentity($uid);
@@ -87,10 +142,16 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
     }
     public function getAuthKey()
     {
+        if (IndependentIdentity::enabled()) {
+            return null;
+        }
         return $this->auth_key;
     }
     public function validateAuthKey($authKey)
     {
+        if (IndependentIdentity::enabled()) {
+            return false;
+        }
         return $this->authKey === $authKey;
     }
 
@@ -99,6 +160,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
      */
     public function generateAuthKey()
     {
+        $this->assertLegacyAccountWriter();
         $this->auth_key = Yii::$app->security->generateRandomString();
     }
 
@@ -134,6 +196,9 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
 
     public function getOrganizations()
     {
+        if (IndependentIdentity::enabled()) {
+            return IndependentIdentity::authority()->organizations((int)$this->id);
+        }
         return $this->hasMany(Organization::class, ['id' => 'organization_id'])
             ->viaTable('{{%user_organization}}', ['user_id' => 'id'])
             ->orderBy(['title' => SORT_ASC, 'id' => SORT_ASC]);
@@ -150,14 +215,23 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
     }
     public function token()
     {
+        if (IndependentIdentity::enabled()) {
+            return (new \api\modules\v1\services\IdentityService())->issueUserToken($this);
+        }
         return (new SessionService())->issueToken($this);
     }
     public function getAuth()
     {
+        if (IndependentIdentity::enabled()) {
+            return null;
+        }
         return $this->auth_key;
     }
     public function getRoles()
     {
+        if (IndependentIdentity::enabled()) {
+            return IndependentIdentity::authority()->roles((int)$this->id);
+        }
         $manager = Configs::authManager();
         return array_keys($manager->getRolesByUser($this->id));
 
@@ -202,6 +276,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
     //生成token
     public function generateAccessToken($now = null, $expires = null, ?string $sessionId = null, ?string $jti = null)
     {
+        $this->assertLegacyAccountWriter();
 
         if ($now == null) {
             $now = new \DateTimeImmutable('now', new \DateTimeZone(\Yii::$app->timeZone));
@@ -254,6 +329,9 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
 
     public static function tokenToId($token)
     {
+        if (IndependentIdentity::enabled()) {
+            return IndependentIdentity::authority()->verifyAccessToken((string)$token)->id;
+        }
         $claims = Yii::$app->jwt->parse($token)->claims();
         $uid = static::userIdFromClaims($claims);
         return $uid;
@@ -264,6 +342,9 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
      */
     public static function findByToken($token)
     {
+        if (IndependentIdentity::enabled()) {
+            return IndependentIdentity::authority()->verifyAccessToken((string)$token);
+        }
         $claims = Yii::$app->jwt->parse($token)->claims();
         $uid = static::userIdFromClaims($claims);
         $user = static::findIdentity($uid);
@@ -292,6 +373,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
      */
     public function validatePassword($password)
     {
+        $this->assertLegacyAccountWriter();
         return Yii::$app->security->validatePassword($password, $this->password_hash);
     }
 
@@ -302,6 +384,7 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
      */
     public function setPassword($password)
     {
+        $this->assertLegacyAccountWriter();
         $this->password = $password;
         // 使用 bcrypt，cost 因子为 12（安全加固要求）
         $this->password_hash = Yii::$app->security->generatePasswordHash($password, 12);
@@ -314,11 +397,13 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
 
     public function addRoles($roles)
     {
+        $this->assertLegacyAccountWriter();
         $assignment = new Assignment($this->id);
         $assignment->assign($roles);
     }
     public function removeRoles($roles)
     {
+        $this->assertLegacyAccountWriter();
         $assignment = new Assignment($this->id);
         $assignment->revoke($roles);
     }
