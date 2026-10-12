@@ -14,9 +14,11 @@
 - 检查并创建当前版本记录 (Version 表)
 
 ### 2. 标签迁移
-将 `public`、`checkin` 标签迁移到 Property 系统：
+仅将 `checkin` 标签迁移到 Property 系统：
 - Tags → Property 表
 - verse_tags → verse_property 关联
+
+场景公开状态只由 `property.key=public` 及 `verse_property` 关联决定。升级接口不再读取或迁移旧 `tags.public`，不会依据历史标签重新公开场景；响应中的 `tags.public.status` 固定为 `skipped`。旧标签及关联的清理属于独立的数据维护，本接口不会删除它们。
 
 ### 3. Meta 升级
 - 为 Meta 生成 UUID (如缺失)

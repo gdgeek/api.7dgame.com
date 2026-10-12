@@ -62,7 +62,7 @@ class TagsController extends ActiveController
      * @OA\Get(
      *     path="/v1/tags",
      *     summary="获取标签列表",
-     *     description="获取所有标签列表",
+     *     description="获取分类标签列表，不返回已废弃的 public 标签；公开状态使用场景属性",
      *     tags={"Tags"},
      *     security={{"Bearer": {}}},
      *     @OA\Parameter(

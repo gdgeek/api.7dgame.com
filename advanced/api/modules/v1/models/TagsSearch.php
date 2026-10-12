@@ -41,8 +41,8 @@ class TagsSearch extends Tags
     public function search($params)
     {
         $query = Tags::find();
-
-        // add conditions that should always apply here
+        // Public visibility belongs to scene properties, never the classification catalog.
+        $query->andWhere(['or', ['<>', 'key', 'public'], ['key' => null]]);
 
         $dataProvider = new ActiveDataProvider([
             'query' => $query,

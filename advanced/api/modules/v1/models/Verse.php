@@ -433,7 +433,8 @@ class Verse extends \yii\db\ActiveRecord
     {
         // 方法一：如果 VerseTags 有关联到 Tag 模型
         return $this->hasMany(Tags::class, ['id' => 'tags_id'])
-            ->viaTable('verse_tags', ['verse_id' => 'id']);
+            ->viaTable('verse_tags', ['verse_id' => 'id'])
+            ->andWhere(['or', ['<>', 'tags.key', 'public'], ['tags.key' => null]]);
     }
 
 
