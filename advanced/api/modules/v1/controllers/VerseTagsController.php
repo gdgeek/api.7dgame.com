@@ -104,11 +104,6 @@ class VerseTagsController extends ActiveController
         if ($tags->key === 'public') {
             throw new BadRequestHttpException('Public visibility is a scene property; use the public endpoint.');
         }
-        $permission = Yii::$app->user->can('root')||  Yii::$app->user->can('admin');
-        if($tags->type == 'Status' && !$permission){
-            throw new Exception('You do not have permission to add this tag');
-        }
-
         $model = new \api\modules\v1\models\VerseTags();
         $model->verse_id = $verse_id;
         $model->tags_id = $tags_id;
