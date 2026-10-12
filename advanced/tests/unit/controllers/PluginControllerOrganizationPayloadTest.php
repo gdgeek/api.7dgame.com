@@ -23,9 +23,9 @@ final class PluginControllerOrganizationPayloadTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->hadUserComponent = Yii::$app->has('user', true);
-        $this->hadAuthManager = Yii::$app->has('authManager', true);
-        $this->hadResponseComponent = Yii::$app->has('response', true);
+        $this->hadUserComponent = Yii::$app->has('user');
+        $this->hadAuthManager = Yii::$app->has('authManager');
+        $this->hadResponseComponent = Yii::$app->has('response');
         $this->originalUserComponent = $this->hadUserComponent ? Yii::$app->get('user') : null;
         $this->originalAuthManager = $this->hadAuthManager ? Yii::$app->get('authManager') : null;
         $this->originalResponseComponent = $this->hadResponseComponent ? Yii::$app->get('response') : null;

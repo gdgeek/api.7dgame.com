@@ -4,6 +4,10 @@ namespace api\modules\v1\controllers;
 
 use api\modules\v1\services\IdentityService;
 use common\components\security\RateLimitBehavior;
+use yii\web\GoneHttpException;
+use yii\filters\auth\CompositeAuth;
+use bizley\jwt\JwtHttpBearerAuth;
+use mdm\admin\components\AccessControl;
 use Yii;
 use OpenApi\Annotations as OA;
 
@@ -22,6 +26,16 @@ class AuthController extends \yii\rest\Controller
     {
 
         $behaviors = parent::behaviors();
+        $publicActions = ['options', 'login', 'refresh', 'logout', 'sn-activate', 'sn-login'];
+        $behaviors['authenticator'] = [
+            'class' => CompositeAuth::class,
+            'authMethods' => [JwtHttpBearerAuth::class],
+            'except' => $publicActions,
+        ];
+        $behaviors['access'] = [
+            'class' => AccessControl::class,
+            'allowActions' => $publicActions,
+        ];
 
         $behaviors['rateLimiter'] = [
             'class' => RateLimitBehavior::class,
@@ -30,6 +44,7 @@ class AuthController extends \yii\rest\Controller
             'actionStrategies' => [
                 'login' => 'login',
             ],
+            'except' => ['sn-activate', 'sn-login'],
         ];
 
         return $behaviors;
@@ -47,6 +62,37 @@ class AuthController extends \yii\rest\Controller
     protected function requestContext(): array
     {
         return $this->identityService()->sessionService()->contextFromRequest(Yii::$app->request);
+    }
+
+    protected function verbs()
+    {
+        return [
+            'login' => ['POST'],
+            'refresh' => ['POST'],
+            'logout' => ['POST', 'DELETE'],
+            'sn-activate' => ['POST'],
+            'sn-login' => ['POST'],
+        ];
+    }
+
+    /**
+     * @OA\Post(path="/v1/auth/sn-activate", summary="已迁移至 y1 的设备激活入口", deprecated=true, tags={"Auth"},
+     *   @OA\Response(response=410, description="请在本环境 y1 服务调用 /v1/auth/sn-activate"))
+     */
+    public function actionSnActivate()
+    {
+        // Keep a tombstone action: removing only the URL rule would leave Yii's
+        // default controller/action route capable of reaching the old issuer.
+        throw new GoneHttpException('SN activation has moved to the y1 service. Use this environment\'s y1 /v1/auth/sn-activate endpoint.');
+    }
+
+    /**
+     * @OA\Post(path="/v1/auth/sn-login", summary="已迁移至 y1 的设备登录入口", deprecated=true, tags={"Auth"},
+     *   @OA\Response(response=410, description="请在本环境 y1 服务调用 /v1/auth/sn-login"))
+     */
+    public function actionSnLogin()
+    {
+        throw new GoneHttpException('SN login has moved to the y1 service. Use this environment\'s y1 /v1/auth/sn-login endpoint.');
     }
 
     /**

@@ -51,6 +51,20 @@ class IdentityUserProjection
             if (!$exists) {
                 $db->createCommand()->insert('{{%user_info}}', ['user_id' => $id])->execute();
             }
+            if (($subject['deletedAt'] ?? null) !== null) {
+                $deviceTable = $db->schema->getTableSchema('{{%device_sn}}');
+                if ($deviceTable !== null) {
+                    if (!isset($deviceTable->columns['original_user_id'])) {
+                        throw new \RuntimeException('Device SN revocation migration must be applied before Identity deletion projection.');
+                    }
+                    // Soft deletion preserves business ownership FKs. Explicitly
+                    // keep the old ON DELETE SET NULL device tombstone semantics.
+                    $db->createCommand()->update('{{%device_sn}}', [
+                        'original_user_id' => new \yii\db\Expression('COALESCE([[original_user_id]], [[user_id]])'),
+                        'user_id' => null, 'enabled' => 0, 'updated_at' => gmdate('Y-m-d H:i:s'),
+                    ], ['user_id' => $id])->execute();
+                }
+            }
             $db->createCommand()->update('{{%identity_user_projection_state}}', ['version' => $version], ['user_id' => $id])->execute();
             $transaction->commit();
             return true;

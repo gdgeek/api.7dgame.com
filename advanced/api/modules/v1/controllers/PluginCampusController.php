@@ -244,6 +244,7 @@ class PluginCampusController extends ScenePackageController
      */
     public function actionPassword(): array
     {
+        \api\modules\v1\components\DeviceSnAuthGuard::assertCredentialManagementAllowed();
         Yii::$app->response->format = Response::FORMAT_JSON;
 
         $targetContext = $this->resolveTargetUsersFromBody();
@@ -1330,7 +1331,7 @@ class PluginCampusController extends ScenePackageController
         }
 
         $detectedMimeType = finfo_file($finfo, $uploadedFile->tempName);
-        finfo_close($finfo);
+        unset($finfo);
 
         if ($detectedMimeType === false || !in_array(strtolower($detectedMimeType), $allowedImageMimeTypes, true)) {
             throw new BadRequestHttpException('图片内容与文件类型不匹配');

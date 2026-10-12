@@ -130,6 +130,84 @@ class IdentityUserProjectionTest extends TestCase
         }
     }
 
+    public function testIdentitySoftDeletionPreservesContentOwnerAndPermanentlyRevokesDeviceBinding(): void
+    {
+        $this->db->createCommand('CREATE TABLE device_sn (id INTEGER PRIMARY KEY, user_id INTEGER, original_user_id INTEGER,
+            device_uuid TEXT UNIQUE, enabled INTEGER, updated_at TEXT)')->execute();
+        $this->db->createCommand()->insert('device_sn', ['id' => 9, 'user_id' => 42, 'original_user_id' => 42,
+            'device_uuid' => 'retained-device', 'enabled' => 1])->execute();
+        $event = $this->event(42, 3, 'deleted-owner', null);
+        $event['subject']['status'] = 0;
+        $event['subject']['deletedAt'] = 1700000000;
+        $this->assertTrue((new IdentityUserProjection())->apply($this->db, $event));
+        $device = $this->db->createCommand('SELECT * FROM device_sn WHERE id=9')->queryOne();
+        $this->assertNull($device['user_id']);
+        $this->assertSame(42, (int)$device['original_user_id']);
+        $this->assertSame(0, (int)$device['enabled']);
+        $this->assertSame('retained-device', $device['device_uuid']);
+        $this->assertSame(42, (int)$this->db->createCommand('SELECT user_id FROM user_info WHERE user_id=42')->queryScalar());
+        $this->assertSame(1, (int)$this->db->createCommand('SELECT COUNT(*) FROM user WHERE id=42')->queryScalar());
+    }
+
+    public function testDeletionWithoutSnTombstoneMigrationRollsBackTheProjection(): void
+    {
+        $this->db->createCommand('CREATE TABLE device_sn (id INTEGER PRIMARY KEY, user_id INTEGER, enabled INTEGER)')->execute();
+        $this->db->createCommand()->insert('device_sn', ['id' => 9, 'user_id' => 42, 'enabled' => 1])->execute();
+        $event = $this->event(42, 3, 'deleted-owner', null);
+        $event['subject']['status'] = 0;
+        $event['subject']['deletedAt'] = 1700000000;
+        try {
+            (new IdentityUserProjection())->apply($this->db, $event);
+            $this->fail('Deleting a projection without a permanent SN tombstone must fail.');
+        } catch (\RuntimeException $exception) {
+            $this->assertStringContainsString('revocation migration', $exception->getMessage());
+            $this->assertSame('original', $this->db->createCommand('SELECT username FROM user WHERE id=42')->queryScalar());
+            $this->assertSame(42, (int)$this->db->createCommand('SELECT user_id FROM device_sn WHERE id=9')->queryScalar());
+            $this->assertSame(0, (int)$this->db->createCommand('SELECT COUNT(*) FROM identity_user_projection_state')->queryScalar());
+        }
+    }
+
+    public function testVerifiedIdentitySnSourceSurvivesPhpProjectionAndBlocksCredentialManagement(): void
+    {
+        $previousDb = \Yii::$app->db;
+        \Yii::$app->set('db', $this->db);
+        try {
+            $authority = new IdentityAuthorityService(['client' => new ProjectionVerifiedSnClient()]);
+            $user = $authority->verifyAccessToken('already-verified-by-identity');
+            $this->assertSame(['auth_method' => 'device_sn', 'device_sn_id' => 9], $user->authContext);
+            $this->assertSame('identity-current', $user->username);
+            $this->expectException(\yii\web\ForbiddenHttpException::class);
+            \api\modules\v1\components\DeviceSnAuthGuard::assertCredentialManagementAllowed($user);
+        } finally {
+            \Yii::$app->set('db', $previousDb);
+        }
+    }
+
+    public function testSnManagementUsesPrivateAccountSelectorAndPrivateInheritedRoleEligibility(): void
+    {
+        $previousDb = \Yii::$app->db;
+        $previousAuthority = \Yii::$app->has('identityAuthority') ? \Yii::$app->get('identityAuthority') : null;
+        $previousMode = getenv('IDENTITY_DATA_SOURCE');
+        \Yii::$app->set('db', $this->db);
+        $client = new ProjectionVerifiedSnClient();
+        \Yii::$app->set('identityAuthority', new IdentityAuthorityService(['client' => $client]));
+        putenv('IDENTITY_DATA_SOURCE=identity');
+        try {
+            $service = new ProjectionSnService($client);
+            $this->assertSame(['items' => [['id' => 42, 'username' => 'identity-current', 'nickname' => null]],
+                'total' => 1, 'page' => 1, 'page_size' => 20], $service->accounts('', 1, 20));
+            // This business database has no auth_assignment table at all.
+            $this->assertSame(42, (int)$service->eligible(42)->id);
+            $client->children = [['parent' => 'user', 'child' => 'team'], ['parent' => 'team', 'child' => 'admin']];
+            $this->expectException(\yii\web\UnauthorizedHttpException::class);
+            $service->eligible(42);
+        } finally {
+            \Yii::$app->set('db', $previousDb);
+            \Yii::$app->set('identityAuthority', $previousAuthority);
+            putenv($previousMode === false ? 'IDENTITY_DATA_SOURCE' : 'IDENTITY_DATA_SOURCE=' . $previousMode);
+        }
+    }
+
     private function event(int $id, int $version, string $username, ?string $email): array
     {
         return ['userId' => $id, 'version' => $version, 'subject' => ['id' => $id, 'username' => $username, 'email' => $email, 'status' => 10]];
@@ -151,4 +229,29 @@ class ProjectionSubjectClient extends IdentityProviderClient
     {
         return ['id' => $id, 'username' => 'identity-user', 'status' => 10, 'roles' => ['user']];
     }
+}
+
+class ProjectionVerifiedSnClient extends IdentityProviderClient
+{
+    public array $children = [];
+    public function verifyIdentityAccessToken(string $token): array
+    {
+        return $this->identitySubject(42) + ['authContext' => ['auth_method' => 'device_sn', 'device_sn_id' => 9]];
+    }
+    public function identitySubject(int $id): array
+    {
+        return ['id' => $id, 'username' => 'identity-current', 'status' => 10, 'roles' => ['user']];
+    }
+    public function identityPolicyGraph(): array { return ['children' => $this->children]; }
+    public function deviceSnAccounts(string $q, int $page, int $pageSize): array
+    {
+        return ['items' => [['id' => 42, 'username' => 'identity-current', 'nickname' => null]], 'total' => 1, 'page' => $page, 'page_size' => $pageSize];
+    }
+}
+
+class ProjectionSnService extends \api\modules\v1\services\DeviceSnService
+{
+    public function __construct(private IdentityProviderClient $client) { parent::__construct(); }
+    protected function identityProvider(): IdentityProviderClient { return $this->client; }
+    public function eligible(int $id): User { return $this->eligibleUser($id); }
 }

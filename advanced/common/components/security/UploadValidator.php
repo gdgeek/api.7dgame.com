@@ -228,7 +228,7 @@ class UploadValidator extends Component
         }
 
         $detectedType = finfo_file($finfo, $file->tempName);
-        finfo_close($finfo);
+        unset($finfo);
 
         if ($detectedType === false) {
             return false;

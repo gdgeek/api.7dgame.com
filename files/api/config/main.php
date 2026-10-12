@@ -34,12 +34,15 @@ return [
         'healthService' => [
             'class' => 'common\components\HealthService',
         ],
+        'pluginAccessConfigClient' => [
+            'class' => \api\modules\v1\services\PluginAccessConfigClient::class,
+        ],
         'loginCodeReadiness' => [
             'class' => LoginCodeReadiness::class,
         ],
-        // Task 5.1 exact-one transactions must never inherit the application's
-        // per-statement CynosDB retry command. This component is lazy and uses
-        // the same MySQL authority through the standard Yii connection/command.
+        // Task 5.1 exact-one transactions may use the pinned CynosDB service,
+        // but never the application's per-statement retry adapter/command. This
+        // component uses the same authority through standard Yii primitives.
         'task51CoordinatorDb' => [
             'class' => \yii\db\Connection::class,
             'commandClass' => \yii\db\Command::class,
@@ -57,6 +60,30 @@ return [
                 'user' => ['limit' => 1000, 'window' => 3600],
                 'login' => ['limit' => 5, 'window' => 900],
             ],
+        ],
+        // All SN reads/writes use this one primary; no statement retries or replica reads.
+        'deviceSnDb' => [
+            'class' => \yii\db\Connection::class,
+            'commandClass' => \api\modules\v1\components\DeviceSnCommand::class,
+            'dsn' => 'mysql:host=' . getenv('MYSQL_HOST') . ';dbname=' . getenv('MYSQL_DB'),
+            'username' => getenv('MYSQL_USERNAME'),
+            'password' => getenv('MYSQL_PASSWORD'),
+            'charset' => 'utf8mb4',
+            'enableSlaves' => false,
+            'enableLogging' => false,
+            'enableProfiling' => false,
+            'attributes' => [\PDO::ATTR_TIMEOUT => 5],
+        ],
+        'deviceSnRateLimiter' => [
+            'class' => \common\components\security\RateLimiter::class,
+            'keyPrefix' => 'device-sn:rate:',
+            'strategies' => [
+                'ip' => ['limit' => 600, 'window' => 60],
+                'sn' => ['limit' => 30, 'window' => 60],
+                'uuid' => ['limit' => 30, 'window' => 60],
+            ],
+            'storageClass' => \common\components\security\RedisSlidingWindowRateLimiterStorage::class,
+            'storageConfig' => ['redisComponent' => 'redis'],
         ],
         // This limiter is intentionally separate from the legacy global
         // rateLimiter. It is lazy until dual/redis login-code issuance is
@@ -139,6 +166,7 @@ return [
             ],
         ],
         'errorHandler' => [
+            'class' => \api\modules\v1\components\ApiErrorHandler::class,
             'errorAction' => 'site/error',
         ],
         'urlManager' => [
@@ -304,9 +332,29 @@ return [
                     'pluralize' => false,
                     'extraPatterns' => [
                         'POST login' => 'login',
+                        // Retired device authentication endpoints return 410; Unity uses y1.
+                        'POST sn-activate' => 'sn-activate',
+                        'POST sn-login' => 'sn-login',
                         'POST refresh' => 'refresh',
                         'POST logout' => 'logout',
                         'DELETE logout' => 'logout',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/plugin-sn',
+                    'pluralize' => false,
+                    'patterns' => [
+                        'GET,HEAD' => 'index',
+                        'GET,HEAD access' => 'access',
+                        'GET,HEAD accounts' => 'accounts',
+                        'POST generate' => 'generate',
+                        'POST export' => 'export',
+                        'GET,HEAD <id:\d+>' => 'view',
+                        'PATCH <id:\d+>' => 'update',
+                        'POST <id:\d+>/reveal' => 'reveal',
+                        'OPTIONS <path:.*>' => 'options',
+                        'OPTIONS' => 'options',
                     ],
                 ],
                 [
@@ -491,6 +539,18 @@ return [
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/authoring-task',
+                    'tokens' => ['{id}' => '<id:[0-9a-fA-F-]+>'],
+                    'only' => ['index', 'view', 'create', 'claim', 'checkpoint', 'options'],
+                    'extraPatterns' => [
+                        'POST {id}/claim' => 'claim',
+                        'OPTIONS {id}/claim' => 'options',
+                        'OPTIONS {id}/checkpoint' => 'options',
+                        'PUT {id}/checkpoint' => 'checkpoint',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/verse',
                     'extraPatterns' => [
                         'GET public' => 'public',
@@ -501,6 +561,14 @@ return [
                         'POST {id}/tag' => 'add-tag',
                         'DELETE {id}/tag' => 'remove-tag',
                         'POST {id}/take-photo' => 'take-photo',
+                        'GET {id}/publication' => 'publication',
+                        'GET {id}/publications' => 'publications',
+                        'GET {id}/publications/<publicationVersionId:[0-9a-fA-F-]+>' => 'publication-version',
+                        'GET {id}/operations/<operationId:[0-9a-fA-F-]+>' => 'operation',
+                        'GET create-operations' => 'create-operation',
+                        'OPTIONS create-operations' => 'options',
+                        'GET create-operations/<receiptOperationId:[0-9a-fA-F-]+>' => 'create-operation',
+                        'OPTIONS create-operations/<receiptOperationId:[0-9a-fA-F-]+>' => 'options',
                     ],
                 ],
                 [
@@ -509,6 +577,11 @@ return [
                     'extraPatterns' => [
                         // 'PUT code' => 'update-code',
                         'PUT {id}/code' => 'update-code',
+                        'GET {id}/operations/<operationId:[0-9a-fA-F-]+>' => 'operation',
+                        'GET create-operations' => 'create-operation',
+                        'OPTIONS create-operations' => 'options',
+                        'GET create-operations/<receiptOperationId:[0-9a-fA-F-]+>' => 'create-operation',
+                        'OPTIONS create-operations/<receiptOperationId:[0-9a-fA-F-]+>' => 'options',
                     ],
                 ],
 

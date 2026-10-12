@@ -149,7 +149,12 @@ final class Task51StageBCoordinatorServiceTest extends TestCase
         $source = file_get_contents(dirname(__DIR__, 3)
             . '/api/modules/v1/services/DbTask51StageBRepository.php');
         $this->assertIsString($source);
-        $this->assertStringContainsString('beginTransaction()', $source);
+        $this->assertStringContainsString(
+            'beginTransaction(Transaction::REPEATABLE_READ)',
+            $source
+        );
+        $this->assertStringContainsString('$this->db->getTransaction() !== null', $source);
+        $this->assertStringNotContainsString('beginTransaction();', $source);
         $this->assertStringContainsString("'state' => \$expectedState", $source);
         $this->assertStringContainsString("'state_version' => \$expectedVersion", $source);
         $this->assertStringContainsString("{{%task51_stage_b_execution}}", $source);

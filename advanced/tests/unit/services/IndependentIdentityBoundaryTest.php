@@ -28,6 +28,8 @@ class IndependentIdentityBoundaryTest extends TestCase
     private $originalRequest;
     private $originalAuthority;
     private $originalMethod;
+    private $originalUser;
+    private $originalResponse;
 
     protected function setUp(): void
     {
@@ -44,6 +46,10 @@ class IndependentIdentityBoundaryTest extends TestCase
         putenv('IDENTITY_APPLE_REDIRECT_URIS=https://example.test/apple-callback');
         putenv('IDENTITY_APPLE_KEY_ENV_NAMES=APPLE_KEY_ID');
         $this->originalRequest = Yii::$app->get('request');
+        $this->originalUser = Yii::$app->get('user', false);
+        $this->originalResponse = Yii::$app->get('response', false);
+        Yii::$app->set('user', new \yii\web\User(['identityClass' => User::class, 'enableSession' => false]));
+        Yii::$app->set('response', new \yii\web\Response());
         $this->originalAuthority = Yii::$app->has('identityAuthority') ? Yii::$app->get('identityAuthority') : null;
         $this->originalMethod = $_SERVER['REQUEST_METHOD'] ?? null;
         $_SERVER['REQUEST_METHOD'] = 'POST';
@@ -56,6 +62,8 @@ class IndependentIdentityBoundaryTest extends TestCase
             putenv($value === false ? $key : $key . '=' . $value);
         }
         Yii::$app->set('request', $this->originalRequest);
+        Yii::$app->set('user', $this->originalUser);
+        Yii::$app->set('response', $this->originalResponse);
         Yii::$app->set('identityAuthority', $this->originalAuthority);
         if ($this->originalMethod === null) {
             unset($_SERVER['REQUEST_METHOD']);

@@ -28,11 +28,14 @@ final class VersePreviewContractTest extends TestCase
     private bool $hadUserComponent = false;
 
     private mixed $originalUserComponent = null;
+    private mixed $originalResponseComponent = null;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->hadUserComponent = Yii::$app->has('user', true);
+        $this->originalResponseComponent = Yii::$app->get('response', false);
+        Yii::$app->set('response', new Response());
+        $this->hadUserComponent = Yii::$app->has('user');
         $this->originalUserComponent = $this->hadUserComponent
             ? Yii::$app->get('user')
             : null;
@@ -58,6 +61,7 @@ final class VersePreviewContractTest extends TestCase
             'user',
             $this->hadUserComponent ? $this->originalUserComponent : null
         );
+        Yii::$app->set('response', $this->originalResponseComponent);
         parent::tearDown();
     }
 

@@ -51,13 +51,10 @@ class ScenePackageControllerTest extends TestCase
         $reflection = new \ReflectionClass(ScenePackageController::class);
 
         $this->validateImportDataMethod = $reflection->getMethod('validateImportData');
-        $this->validateImportDataMethod->setAccessible(true);
 
         $this->parseZipUploadMethod = $reflection->getMethod('parseZipUpload');
-        $this->parseZipUploadMethod->setAccessible(true);
 
         $this->validateFileIdsMethod = $reflection->getMethod('validateFileIds');
-        $this->validateFileIdsMethod->setAccessible(true);
     }
 
     // =========================================================================

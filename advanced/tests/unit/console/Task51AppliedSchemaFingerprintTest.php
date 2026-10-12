@@ -9,6 +9,98 @@ use RuntimeException;
 
 final class Task51AppliedSchemaFingerprintTest extends TestCase
 {
+    public function testIdentityPolicyAcceptsOracleMySqlFloor(): void
+    {
+        $this->assertSame(
+            Task51AppliedSchemaFingerprint::PROFILE_ORACLE_MYSQL,
+            Task51AppliedSchemaFingerprint::classifySupportedServerIdentity(
+                '8.0.19',
+                'MySQL Community Server - GPL',
+                null,
+                null
+            )
+        );
+    }
+
+    public function testIdentityPolicyAcceptsExactProductionCynosProfile(): void
+    {
+        $this->assertSame(
+            Task51AppliedSchemaFingerprint::PROFILE_TENCENT_CYNOSDB,
+            Task51AppliedSchemaFingerprint::classifySupportedServerIdentity(
+                '8.0.30-cynos-3.1.17.002',
+                '20230630',
+                '8.0.mysql_cynos.3.1.17.002',
+                '8.0.mysql_cynos.3.1.17.002'
+            )
+        );
+    }
+
+    #[DataProvider('unsupportedIdentityProvider')]
+    public function testIdentityPolicyRejectsUnpinnedDatabaseProfiles(
+        string $serverVersion,
+        string $versionComment,
+        ?string $cynosFunctionVersion,
+        ?string $cynosVariableVersion
+    ): void {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('outside the pinned supported profiles');
+        Task51AppliedSchemaFingerprint::classifySupportedServerIdentity(
+            $serverVersion,
+            $versionComment,
+            $cynosFunctionVersion,
+            $cynosVariableVersion
+        );
+    }
+
+    /** @return iterable<string,array{string,string,?string,?string}> */
+    public static function unsupportedIdentityProvider(): iterable
+    {
+        yield 'Oracle below CHECK enforcement floor' => [
+            '8.0.18',
+            'MySQL Community Server - GPL',
+            null,
+            null,
+        ];
+        yield 'MariaDB' => ['10.11.8-MariaDB', 'MariaDB Server', null, null];
+        yield 'Percona' => ['8.0.30-22', 'Percona Server (GPL)', null, null];
+        yield 'Version-prefix spoof' => [
+            '8.0.30-evilfork',
+            'MySQL Community Server - GPL',
+            null,
+            null,
+        ];
+        yield 'Comment-substring spoof' => [
+            '8.0.30',
+            'Not MySQL compatible',
+            null,
+            null,
+        ];
+        yield 'Cynos missing kernel identity' => [
+            '8.0.30-cynos-3.1.17.002',
+            '20230630',
+            null,
+            null,
+        ];
+        yield 'Cynos function and server mismatch' => [
+            '8.0.30-cynos-3.1.17.002',
+            '20230630',
+            '8.0.mysql_cynos.3.1.17.003',
+            '8.0.mysql_cynos.3.1.17.002',
+        ];
+        yield 'Cynos function and variable mismatch' => [
+            '8.0.30-cynos-3.1.17.002',
+            '20230630',
+            '8.0.mysql_cynos.3.1.17.002',
+            '8.0.mysql_cynos.3.1.17.003',
+        ];
+        yield 'Unpinned Cynos server build' => [
+            '8.0.30-cynos-3.1.17.003',
+            '20230630',
+            '8.0.mysql_cynos.3.1.17.003',
+            '8.0.mysql_cynos.3.1.17.003',
+        ];
+    }
+
     public function testRestrictedCheckParserNormalizesMySqlPresentationOnly(): void
     {
         $expected = Task51AppliedSchemaFingerprint::canonicalizeRestrictedExpression(
@@ -148,6 +240,13 @@ final class Task51AppliedSchemaFingerprintTest extends TestCase
             "'InnoDB'",
             "'SET SESSION lock_wait_timeout = '",
             "'SET SESSION innodb_lock_wait_timeout = '",
+            'SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ',
+            'SELECT @@transaction_isolation',
+            'SELECT REGEXP_LIKE(CHAR(97,98,99), CHAR(94,97))',
+            'SELECT CYNOS_VERSION()',
+            'SELECT @@CYNOS_VERSION',
+            'PROFILE_TENCENT_CYNOSDB',
+            'FROM information_schema.ENGINES WHERE ENGINE = :engine',
             'hash_equals($expectedJson, $actualJson)',
             "preg_match('/\\A[a-z0-9_]*\\z/D', \$prefix)",
             "'characterOctetLength' => \$characterLength",

@@ -20,7 +20,7 @@ class IdentityPolicyGraphTest extends TestCase
     {
         $this->environment = getenv('IDENTITY_DATA_SOURCE'); putenv('IDENTITY_DATA_SOURCE=identity');
         $this->authority = Yii::$app->getComponents()['identityAuthority'] ?? null;
-        $this->user = Yii::$app->getComponents()['user'];
+        $this->user = Yii::$app->get('user', false);
         $this->client = new GraphClient();
         Yii::$container->set(IdentityProviderClient::class, fn() => $this->client);
         Yii::$app->set('identityAuthority', new IdentityAuthorityService(['client' => $this->client]));

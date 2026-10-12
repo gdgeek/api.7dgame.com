@@ -6,6 +6,7 @@ use api\modules\v1\models\data\MetaCodeTool;
 use mdm\admin\components\AccessControl;
 use bizley\jwt\JwtHttpBearerAuth;
 use Yii;
+use api\modules\v1\services\ReliableWrite;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
 
@@ -183,20 +184,46 @@ class MetaController extends ActiveController
      */
     public function actionUpdate($id)
     {
-        $model = Meta::findOne($id);
-        if (!$model) {
-            throw new NotFoundHttpException('Meta not found');
+        $body = Yii::$app->request->bodyParams;
+        return ReliableWrite::run('meta', (int) $id, 'save', $body,
+            fn (Meta $model) => $this->checkAccess('update', $model),
+            function (Meta $model) use ($body): array {
+                $authorId = $model->author_id;
+                $model->load($body, '');
+                $model->author_id = $authorId;
+                $model->prefab = 0;
+                if (!$model->save()) {
+                    throw new \yii\web\BadRequestHttpException('Invalid editor data; nothing was saved');
+                }
+                if (!$model->refresh()) {
+                    throw new \yii\web\ServerErrorHttpException('Saved object could not be reloaded');
+                }
+                return $model->toArray();
+            }
+        );
+    }
+
+    /**
+     * @OA\Get(path="/v1/metas/create-operations", summary="Read own creation evidence by operation or UUID; never replays creation", tags={"Meta"}, security={{"Bearer": {}}},
+     * @OA\Parameter(name="operationId", in="query", @OA\Schema(type="string", format="uuid")),
+     * @OA\Parameter(name="creationUuid", in="query", @OA\Schema(type="string", format="uuid")),
+     * @OA\Response(response=200, description="Structured completed, observed, not_observed, indeterminate or conflict evidence; UUID readback is not an operation receipt"),
+     * @OA\Response(response=400, description="Missing or invalid identifiers"))
+     * @OA\Get(path="/v1/metas/create-operations/{operationId}", summary="Read own creation receipt", tags={"Meta"}, security={{"Bearer": {}}},
+     * @OA\Parameter(name="operationId", in="path", required=true, @OA\Schema(type="string", format="uuid")),
+     * @OA\Response(response=200, description="Committed creation identity and writeReceipt"),
+     * @OA\Response(response=403, description="Current object permission revoked"),
+     * @OA\Response(response=404, description="Creation not observed; does not prove failure"))
+     */
+    public function actionCreateOperation($receiptOperationId = null): array
+    {
+        if ($receiptOperationId === null) {
+            return \api\modules\v1\services\ReliableCreate::lookup('meta',
+                Yii::$app->request->get('operationId'), Yii::$app->request->get('creationUuid'),
+                fn (Meta $model) => $this->checkAccess('update', $model));
         }
-        $this->checkAccess('update', $model);
-        $authorId = $model->author_id;
-        $model->load(Yii::$app->getRequest()->getBodyParams(), '');
-        $model->author_id = $authorId;
-        $model->prefab = 0;
-        if ($model->save()) {
-            return $model;
-        } else {
-            return $model->errors;
-        }
+        return \api\modules\v1\services\ReliableCreate::receipt('meta', (string) $receiptOperationId,
+            fn (Meta $model) => $this->checkAccess('update', $model));
     }
 
     /**
@@ -224,8 +251,13 @@ class MetaController extends ActiveController
      *     @OA\Response(response=401, description="未授权")
      * )
      */
+    // Optional UUID Idempotency-Key enables transactional create/receipt; no header retains the legacy API.
     public function actionCreate()
     {
+        if (Yii::$app->request->headers->has('Idempotency-Key')) {
+            return \api\modules\v1\services\ReliableCreate::run('meta', Yii::$app->request->bodyParams,
+                fn (Meta $model) => $this->checkAccess('update', $model));
+        }
         $model = new Meta();
         $model->load(Yii::$app->getRequest()->getBodyParams(), '');
         $model->author_id = (int) Yii::$app->user->id;
@@ -314,22 +346,33 @@ class MetaController extends ActiveController
      */
     public function actionUpdateCode($id)
     {
-        $meta = Meta::findOne($id);
-        if (!$meta) {
-            throw new NotFoundHttpException('Meta not found');
-        }
-        $this->checkAccess('update', $meta);
+        $body = Yii::$app->request->bodyParams;
+        return ReliableWrite::run('meta', (int) $id, 'save_code', $body,
+            fn (Meta $model) => $this->checkAccess('update', $model),
+            function (Meta $owner) use ($body): array {
+                $model = new MetaCodeTool($owner->id);
+                $model->load($body, '');
+                if (!$model->validate()) {
+                    throw new \yii\web\BadRequestHttpException('Invalid script; nothing was saved');
+                }
+                $model->save();
+                return $model->toArray();
+            }
+        );
+    }
 
-        $post = Yii::$app->request->post();
-        $model = new MetaCodeTool($id);
-        $model->load($post, '');
-
-        if ($model->validate()) {
-            $model->save();
-        } else {
-            throw new Exception(json_encode($model->errors), 400);
-        }
-        return $model;
+    /**
+     * @OA\Get(path="/v1/metas/{id}/operations/{operationId}", tags={"Meta"},
+     *   summary="Read the authenticated editor's durable operation receipt", security={{"Bearer":{}}},
+     *   @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *   @OA\Parameter(name="operationId", in="path", required=true, @OA\Schema(type="string", format="uuid")),
+     *   @OA\Response(response=200, description="Committed receipt; no request replay"),
+     *   @OA\Response(response=404, description="Not observed; not proof of failure"))
+     */
+    public function actionOperation($id, $operationId): array
+    {
+        return ReliableWrite::receipt('meta', (int) $id, (string) $operationId,
+            fn (Meta $model) => $this->checkAccess('update', $model));
     }
 
     public function checkAccess($action, $model = null, $params = [])

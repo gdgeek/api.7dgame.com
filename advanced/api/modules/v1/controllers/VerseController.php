@@ -13,6 +13,8 @@ use common\components\security\CorsOriginPolicy;
 use yii\db\ActiveQuery;
 use mdm\admin\components\AccessControl;
 use Yii;
+use api\modules\v1\services\ReliableWrite;
+use api\modules\v1\services\ScenePublication;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
 use yii\web\BadRequestHttpException;
@@ -67,24 +69,59 @@ class VerseController extends ActiveController
     {
         $actions = parent::actions();
         unset($actions['index']);
+        if (Yii::$app->request->headers->has('Idempotency-Key')) unset($actions['create']);
         unset($actions['update']);
         return $actions;
     }
 
+    /** UUID Idempotency-Key opts in; callers without it retain Yii's original create action. */
+    public function actionCreate(): array
+    {
+        return \api\modules\v1\services\ReliableCreate::run('verse', Yii::$app->request->bodyParams,
+            fn (Verse $model) => $this->checkAccess('update', $model));
+    }
+
+    /**
+     * @OA\Get(path="/v1/verses/create-operations", summary="Read own creation evidence by operation or UUID; never replays creation", tags={"Verse"}, security={{"Bearer": {}}},
+     * @OA\Parameter(name="operationId", in="query", @OA\Schema(type="string", format="uuid")),
+     * @OA\Parameter(name="creationUuid", in="query", @OA\Schema(type="string", format="uuid")),
+     * @OA\Response(response=200, description="Structured completed, observed, not_observed, indeterminate or conflict evidence; UUID readback is not an operation receipt"),
+     * @OA\Response(response=400, description="Missing or invalid identifiers"))
+     * @OA\Get(path="/v1/verses/create-operations/{operationId}", summary="Read own creation receipt", tags={"Verse"}, security={{"Bearer": {}}},
+     * @OA\Parameter(name="operationId", in="path", required=true, @OA\Schema(type="string", format="uuid")),
+     * @OA\Response(response=200, description="Committed creation identity and writeReceipt"),
+     * @OA\Response(response=403, description="Current object permission revoked"),
+     * @OA\Response(response=404, description="Creation not observed; does not prove failure"))
+     */
+    public function actionCreateOperation($receiptOperationId = null): array
+    {
+        if ($receiptOperationId === null) {
+            return \api\modules\v1\services\ReliableCreate::lookup('verse',
+                Yii::$app->request->get('operationId'), Yii::$app->request->get('creationUuid'),
+                fn (Verse $model) => $this->checkAccess('update', $model));
+        }
+        return \api\modules\v1\services\ReliableCreate::receipt('verse', (string) $receiptOperationId,
+            fn (Verse $model) => $this->checkAccess('update', $model));
+    }
+
     public function actionUpdate($id)
     {
-        $model = $this->findVerse($id);
-        $this->checkAccess('update', $model);
-
-        $authorId = $model->author_id;
-        $model->load(Yii::$app->request->bodyParams, '');
-        $model->author_id = $authorId;
-
-        if ($model->save() === false && !$model->hasErrors()) {
-            throw new \yii\web\ServerErrorHttpException('Failed to update the scene');
-        }
-
-        return $model;
+        $body = Yii::$app->request->bodyParams;
+        return ReliableWrite::run('verse', (int) $id, 'save', $body,
+            fn (Verse $model) => $this->checkAccess('update', $model),
+            function (Verse $model) use ($body): array {
+                $authorId = $model->author_id;
+                $model->load($body, '');
+                $model->author_id = $authorId;
+                if (!$model->save()) {
+                    throw new \yii\web\BadRequestHttpException('Invalid editor data; nothing was saved');
+                }
+                if (!$model->refresh()) {
+                    throw new \yii\web\ServerErrorHttpException('Saved object could not be reloaded');
+                }
+                return $model->toArray();
+            }
+        );
     }
     /**
      * @OA\Get(
@@ -259,17 +296,19 @@ class VerseController extends ActiveController
      */
     public function actionUpdateCode($id)
     {
-        $verse = $this->findVerse($id);
-        $this->checkAccess('update', $verse);
-        $post = Yii::$app->request->post();
-        $model = new VerseCodeTool($id);
-        $model->load($post, '');
-        if ($model->validate()) {
-            $model->save();
-        } else {
-            throw new BadRequestHttpException(json_encode($model->errors));
-        }
-        return $model;
+        $body = Yii::$app->request->bodyParams;
+        return ReliableWrite::run('verse', (int) $id, 'save_code', $body,
+            fn (Verse $model) => $this->checkAccess('update', $model),
+            function (Verse $owner) use ($body): array {
+                $model = new VerseCodeTool($owner->id);
+                $model->load($body, '');
+                if (!$model->validate()) {
+                    throw new \yii\web\BadRequestHttpException('Invalid script; nothing was saved');
+                }
+                $model->save();
+                return $model->toArray();
+            }
+        );
     }
 
     /**
@@ -587,15 +626,76 @@ class VerseController extends ActiveController
      */
     public function actionTakePhoto($id)
     {
-        $verse = $this->findVerse($id);
-        $this->checkAccess('update', $verse);
-        $snapshot = Snapshot::CreateById($id);
-        if ($snapshot->validate()) {
-            $snapshot->save();
-        } else {
-            throw new Exception(json_encode($snapshot->errors), 400);
+        $body = Yii::$app->request->bodyParams;
+        // Script language is part of publication intent and therefore the idempotency key.
+        $language = Yii::$app->request->get('cl', 'lua');
+        if (!in_array($language, ['lua', 'js'], true)) {
+            throw new BadRequestHttpException('Unsupported publication language');
         }
-        return $snapshot->toArray([], Snapshot::TAKE_PHOTO_EXTRA_FIELDS);
+        $body['_publicationLanguage'] = $language;
+        return ReliableWrite::run('verse', (int) $id, 'publish', $body,
+            fn (Verse $model) => $this->checkAccess('update', $model),
+            fn (Verse $model) => ScenePublication::publish($model));
+    }
+
+    /**
+     * @OA\Get(path="/v1/verses/{id}/operations/{operationId}", tags={"Verse"},
+     *   summary="Read the authenticated editor's durable operation receipt", security={{"Bearer":{}}},
+     *   @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *   @OA\Parameter(name="operationId", in="path", required=true, @OA\Schema(type="string", format="uuid")),
+     *   @OA\Response(response=200, description="Committed receipt; no request replay"),
+     *   @OA\Response(response=404, description="Not observed; not proof of failure"))
+     */
+    public function actionOperation($id, $operationId): array
+    {
+        return ReliableWrite::receipt('verse', (int) $id, (string) $operationId,
+            fn (Verse $model) => $this->checkAccess('update', $model));
+    }
+
+    /**
+     * @OA\Get(path="/v1/verses/{id}/publication", tags={"Verse"},
+     *   summary="Read authoritative publication metadata", security={{"Bearer":{}}},
+     *   @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *   @OA\Response(response=200, description="Current published state and snapshot pointer; no historical version"))
+     */
+    public function actionPublication($id): array
+    {
+        return ScenePublication::read((int) $id,
+            fn (Verse $model) => $this->checkAccess('update', $model));
+    }
+
+    /**
+     * @OA\Get(path="/v1/verses/{id}/publications", tags={"Verse"},
+     *   summary="List immutable publications and bounded capacity metadata", security={{"Bearer":{}}},
+     *   @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *   @OA\Parameter(name="limit", in="query", @OA\Schema(type="integer", minimum=1, maximum=50)),
+     *   @OA\Parameter(name="before", in="query", @OA\Schema(type="integer", minimum=0)),
+     *   @OA\Response(response=200, description="Retained metadata, capacity and retention policy; default latest 20 bodies"))
+     */
+    public function actionPublications($id): array
+    {
+        $limit = filter_var(Yii::$app->request->get('limit', 20), FILTER_VALIDATE_INT);
+        $before = filter_var(Yii::$app->request->get('before', 0), FILTER_VALIDATE_INT);
+        if ($limit === false || $before === false) throw new BadRequestHttpException('Invalid history pagination');
+        return \api\modules\v1\services\PublicationArchive::listing((int) $id,
+            fn (Verse $model) => $this->checkAccess('update', $model), $limit, $before);
+    }
+
+    /**
+     * @OA\Get(path="/v1/verses/{id}/publications/{publicationVersionId}", tags={"Verse"},
+     *   summary="Read exact archived UTF-8 JSON bytes and their SHA-256", security={{"Bearer":{}}},
+     *   @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *   @OA\Parameter(name="publicationVersionId", in="path", required=true, @OA\Schema(type="string", format="uuid")),
+     *   @OA\Response(response=200, description="Integrity-checked archive; file bytes are not retained"),
+     *   @OA\Response(response=403, description="Current scene edit permission required"),
+     *   @OA\Response(response=404, description="Version not found for this scene"),
+     *   @OA\Response(response=410, description="publication_version_expired: body removed by retention policy"),
+     *   @OA\Response(response=500, description="Archive integrity failure"))
+     */
+    public function actionPublicationVersion($id, $publicationVersionId): array
+    {
+        return \api\modules\v1\services\PublicationArchive::read((int) $id, (string) $publicationVersionId,
+            fn (Verse $model) => $this->checkAccess('update', $model));
     }
 
     public function checkAccess($action, $model = null, $params = [])

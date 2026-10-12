@@ -23,12 +23,14 @@ $isDocker = getenv('DOCKER_ENV') === 'true' || file_exists('/.dockerenv');
 
 // Database configuration
 $dbHost = getenv('MYSQL_HOST') ?: ($isDocker ? 'db' : '127.0.0.1');
+$dbPort = (int)(getenv('MYSQL_PORT') ?: 3306);
 $dbName = getenv('MYSQL_DB') ?: ($isDocker ? 'bujiaban' : 'yii2_advanced_test');
 $dbUser = getenv('MYSQL_USERNAME') ?: ($isDocker ? 'bujiaban' : 'root');
-$dbPass = getenv('MYSQL_PASSWORD') ?: ($isDocker ? 'local_dev_password' : 'root');
+$dbPass = getenv('MYSQL_PASSWORD') !== false ? getenv('MYSQL_PASSWORD') : ($isDocker ? 'local_dev_password' : 'root');
 
 // Redis configuration
 $redisHost = getenv('REDIS_HOST') ?: ($isDocker ? 'redis' : '127.0.0.1');
+$redisPort = (int)(getenv('REDIS_PORT') ?: 6379);
 
 // Create a minimal application for tests
 new \yii\console\Application([
@@ -38,7 +40,7 @@ new \yii\console\Application([
     'components' => [
         'db' => [
             'class' => 'yii\db\Connection',
-            'dsn' => "mysql:host={$dbHost};dbname={$dbName}",
+            'dsn' => "mysql:host={$dbHost};port={$dbPort};dbname={$dbName}",
             'username' => $dbUser,
             'password' => $dbPass,
             'charset' => 'utf8',
@@ -68,7 +70,7 @@ new \yii\console\Application([
         'redis' => [
             'class' => 'yii\redis\Connection',
             'hostname' => $redisHost,
-            'port' => 6379,
+            'port' => $redisPort,
             'database' => 1, // Use database 1 for testing
         ],
         'mailer' => [

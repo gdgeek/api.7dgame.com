@@ -7,6 +7,7 @@ use Yii;
 use yii\base\Component;
 use yii\web\UnauthorizedHttpException;
 use common\components\security\ServiceUnavailableHttpException;
+use api\modules\v1\components\DeviceSnAuthContext;
 
 /** Request-scoped authoritative reads; no cross-request permission cache. */
 class IdentityAuthorityService extends Component
@@ -38,7 +39,11 @@ class IdentityAuthorityService extends Component
         }
         $this->subjects[$subject['id']] = $subject;
 
-        return $this->projectSubject($subject);
+        $user = $this->projectSubject($subject);
+        // Only Identity's verified response supplies request credential provenance.
+        // The display projection never persists or reconstructs authentication.
+        $user->authContext = DeviceSnAuthContext::normalize($subject['authContext'] ?? []);
+        return $user;
     }
 
     public function identityById(int $id): ?User

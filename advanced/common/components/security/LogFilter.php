@@ -48,6 +48,8 @@ class LogFilter
         'wechat_aes_key',
         'private_key',
         'signing_key',
+        'sn_ciphertext',
+        'device_sn_keys',
     ];
 
     /**
@@ -105,6 +107,9 @@ class LogFilter
     public static function isSensitiveKey(string $key): bool
     {
         $lowerKey = strtolower($key);
+        if ($lowerKey === 'sn') {
+            return true;
+        }
         foreach (self::$sensitiveKeys as $sensitiveKey) {
             if (strpos($lowerKey, $sensitiveKey) !== false) {
                 return true;
@@ -121,7 +126,7 @@ class LogFilter
     {
         $keysPattern = implode('|', array_map(function ($key) {
             return preg_quote($key, '/');
-        }, self::$sensitiveKeys));
+        }, array_merge(self::$sensitiveKeys, ['sn'])));
 
         // 匹配 "key" => "value" 或 'key' => 'value'
         $message = preg_replace(

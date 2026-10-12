@@ -18,12 +18,20 @@ use yii\db\Transaction;
 final class Task51AppliedSchemaFingerprint
 {
     public const FORMAT = 'wp3-task51-applied-schema-fingerprint-v1';
+    public const PROFILE_ORACLE_MYSQL = 'oracle-mysql';
+    public const PROFILE_TENCENT_CYNOSDB = 'tencent-cynosdb-8.0.30-cynos-3.1.17.002';
     public const EXECUTION_TABLE = '{{%task51_stage_b_execution}}';
     public const TRANSITION_TABLE = '{{%task51_stage_b_transition}}';
 
     private const LOCK_WAIT_SECONDS = 20;
     private const MAX_METADATA_ROWS = 128;
     private const MAX_EXPRESSION_BYTES = 16384;
+    private const ORACLE_VERSION_COMMENTS = [
+        'MySQL Community Server - GPL',
+        'MySQL Enterprise Server - Commercial',
+    ];
+    private const CYNOS_SERVER_VERSION = '8.0.30-cynos-3.1.17.002';
+    private const CYNOS_KERNEL_VERSION = '8.0.mysql_cynos.3.1.17.002';
 
     /**
      * Shared database guard for both the exact migration and its no-op verifier.
@@ -38,20 +46,38 @@ final class Task51AppliedSchemaFingerprint
             );
         }
         if ($db->driverName !== 'mysql') {
-            throw new RuntimeException('Task 5.1 coordinator requires Oracle MySQL 8.0.19 or newer with InnoDB.');
+            throw new RuntimeException(
+                'Task 5.1 coordinator requires the pinned MySQL-compatible database profile.'
+            );
         }
 
         $serverVersion = (string)$db->getServerVersion();
         $versionComment = (string)$db->createCommand('SELECT @@version_comment')->queryScalar();
-        if (stripos($serverVersion, 'mariadb') !== false
-            || stripos($versionComment, 'mysql') === false
-            || stripos($versionComment, 'percona') !== false
-            || preg_match('/^(\d+\.\d+\.\d+)/D', $serverVersion, $matches) !== 1
-            || version_compare($matches[1], '8.0.19', '<')) {
-            throw new RuntimeException(
-                'Task 5.1 coordinator requires Oracle MySQL 8.0.19 or newer with enforced CHECK constraints.'
-            );
+        $cynosFunctionVersion = null;
+        $cynosVariableVersion = null;
+        if (str_contains(strtolower($serverVersion), '-cynos-')) {
+            try {
+                $cynosFunctionVersion = (string)$db->createCommand(
+                    'SELECT CYNOS_VERSION()'
+                )->queryScalar();
+                $cynosVariableVersion = (string)$db->createCommand(
+                    'SELECT @@CYNOS_VERSION'
+                )->queryScalar();
+            } catch (Throwable $exception) {
+                throw new RuntimeException(
+                    'Task 5.1 coordinator CynosDB identity probe failed closed.',
+                    0,
+                    $exception
+                );
+            }
         }
+        self::classifySupportedServerIdentity(
+            $serverVersion,
+            $versionComment,
+            $cynosFunctionVersion,
+            $cynosVariableVersion
+        );
+        self::assertRequiredCapabilities($db);
 
         $db->createCommand(
             'SET SESSION lock_wait_timeout = ' . self::LOCK_WAIT_SECONDS
@@ -59,6 +85,123 @@ final class Task51AppliedSchemaFingerprint
         $db->createCommand(
             'SET SESSION innodb_lock_wait_timeout = ' . self::LOCK_WAIT_SECONDS
         )->execute();
+    }
+
+    /** Public for deterministic identity-policy tests; production also probes capabilities. */
+    public static function classifySupportedServerIdentity(
+        string $serverVersion,
+        string $versionComment,
+        ?string $cynosFunctionVersion,
+        ?string $cynosVariableVersion
+    ): string {
+        $isOracleMySql = preg_match(
+            '/\A(\d+\.\d+\.\d+)\z/D',
+            $serverVersion,
+            $matches
+        ) === 1
+            && in_array($versionComment, self::ORACLE_VERSION_COMMENTS, true)
+            && version_compare($matches[1], '8.0.19', '>=');
+        if ($isOracleMySql) {
+            return self::PROFILE_ORACLE_MYSQL;
+        }
+
+        if (hash_equals(self::CYNOS_SERVER_VERSION, $serverVersion)
+            && is_string($cynosFunctionVersion)
+            && is_string($cynosVariableVersion)
+            && hash_equals(self::CYNOS_KERNEL_VERSION, $cynosFunctionVersion)
+            && hash_equals(self::CYNOS_KERNEL_VERSION, $cynosVariableVersion)) {
+            return self::PROFILE_TENCENT_CYNOSDB;
+        }
+
+        throw new RuntimeException(
+            'Task 5.1 coordinator database identity is outside the pinned supported profiles.'
+        );
+    }
+
+    /**
+     * Read-only, fail-closed probe for every data-dictionary surface consumed
+     * by the fingerprint plus the SQL/transaction features used by the ledger.
+     */
+    private static function assertRequiredCapabilities(Connection $db): void
+    {
+        try {
+            $db->createCommand(
+                'SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ'
+            )->execute();
+            $isolation = strtoupper(str_replace('_', '-', (string)$db->createCommand(
+                'SELECT @@transaction_isolation'
+            )->queryScalar()));
+            if ($isolation !== 'REPEATABLE-READ') {
+                throw new RuntimeException(
+                    'Task 5.1 coordinator requires REPEATABLE READ transaction isolation.'
+                );
+            }
+
+            $regexpLike = $db->createCommand(
+                'SELECT REGEXP_LIKE(CHAR(97,98,99), CHAR(94,97))'
+            )->queryScalar();
+            if ((string)$regexpLike !== '1') {
+                throw new RuntimeException(
+                    'Task 5.1 coordinator requires enforced MySQL 8 REGEXP checks.'
+                );
+            }
+
+            $engineSupport = strtoupper((string)$db->createCommand(
+                'SELECT SUPPORT FROM information_schema.ENGINES WHERE ENGINE = :engine',
+                [':engine' => 'InnoDB']
+            )->queryScalar());
+            if (!in_array($engineSupport, ['YES', 'DEFAULT'], true)) {
+                throw new RuntimeException('Task 5.1 coordinator requires InnoDB support.');
+            }
+
+            foreach (self::requiredMetadataCapabilityQueries() as $query) {
+                $db->createCommand($query)->queryAll();
+            }
+        } catch (Throwable $exception) {
+            if ($exception instanceof RuntimeException
+                && str_starts_with($exception->getMessage(), 'Task 5.1')) {
+                throw $exception;
+            }
+            throw new RuntimeException(
+                'Task 5.1 coordinator database capability probe failed closed.',
+                0,
+                $exception
+            );
+        }
+    }
+
+    /** @return list<non-empty-string> */
+    private static function requiredMetadataCapabilityQueries(): array
+    {
+        return [
+            'SELECT TABLE_NAME, TABLE_TYPE, ENGINE, TABLE_COLLATION '
+                . 'FROM information_schema.TABLES LIMIT 0',
+            'SELECT TABLE_NAME, COLUMN_NAME, ORDINAL_POSITION, DATA_TYPE, COLUMN_TYPE, '
+                . 'IS_NULLABLE, COLUMN_DEFAULT, CHARACTER_MAXIMUM_LENGTH, '
+                . 'CHARACTER_OCTET_LENGTH, DATETIME_PRECISION, CHARACTER_SET_NAME, '
+                . 'COLLATION_NAME, EXTRA, GENERATION_EXPRESSION '
+                . 'FROM information_schema.COLUMNS LIMIT 0',
+            'SELECT TABLE_NAME, INDEX_NAME, NON_UNIQUE, SEQ_IN_INDEX, COLUMN_NAME, '
+                . 'COLLATION, SUB_PART, INDEX_TYPE, IS_VISIBLE, EXPRESSION '
+                . 'FROM information_schema.STATISTICS LIMIT 0',
+            'SELECT TABLE_NAME, CONSTRAINT_NAME, CONSTRAINT_TYPE, ENFORCED '
+                . 'FROM information_schema.TABLE_CONSTRAINTS LIMIT 0',
+            'SELECT CONSTRAINT_SCHEMA, CONSTRAINT_NAME, CHECK_CLAUSE '
+                . 'FROM information_schema.CHECK_CONSTRAINTS LIMIT 0',
+            'SELECT TABLE_NAME, CONSTRAINT_NAME, REFERENCED_TABLE_NAME, '
+                . 'UNIQUE_CONSTRAINT_SCHEMA, UNIQUE_CONSTRAINT_NAME, MATCH_OPTION, '
+                . 'UPDATE_RULE, DELETE_RULE '
+                . 'FROM information_schema.REFERENTIAL_CONSTRAINTS LIMIT 0',
+            'SELECT CONSTRAINT_SCHEMA, CONSTRAINT_NAME, TABLE_NAME, COLUMN_NAME, '
+                . 'ORDINAL_POSITION, REFERENCED_TABLE_SCHEMA, REFERENCED_COLUMN_NAME, '
+                . 'POSITION_IN_UNIQUE_CONSTRAINT '
+                . 'FROM information_schema.KEY_COLUMN_USAGE LIMIT 0',
+            'SELECT TRIGGER_NAME, EVENT_OBJECT_TABLE, EVENT_MANIPULATION, ACTION_TIMING, '
+                . 'ACTION_ORIENTATION, ACTION_ORDER, ACTION_CONDITION, ACTION_STATEMENT '
+                . 'FROM information_schema.TRIGGERS LIMIT 0',
+            'SELECT TABLE_NAME, PARTITION_NAME, SUBPARTITION_NAME, PARTITION_METHOD, '
+                . 'SUBPARTITION_METHOD FROM information_schema.PARTITIONS LIMIT 0',
+        ];
     }
 
     /** Fail before migration DDL if the shared history authority cannot row-lock. */

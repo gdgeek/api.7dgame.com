@@ -140,9 +140,15 @@ class FileControllerUploadTest extends TestCase
         $originalUserComponent = Yii::$app->get('user', false);
         $originalRequestMethod = $_SERVER['REQUEST_METHOD'] ?? null;
 
-        Yii::$app->set('db', new Connection(['dsn' => 'sqlite::memory:']));
+        try {
+        Yii::$app->set('db', new Connection(['dsn' => 'sqlite::memory:',
+            'pdoClass' => class_exists(\Pdo\Sqlite::class) ? \Pdo\Sqlite::class : \PDO::class]));
         Yii::$app->db->open();
-        Yii::$app->db->pdo->sqliteCreateFunction('NOW', static fn () => gmdate('Y-m-d H:i:s'));
+        if (method_exists(Yii::$app->db->pdo, 'createFunction')) {
+            Yii::$app->db->pdo->createFunction('NOW', static fn () => gmdate('Y-m-d H:i:s'));
+        } else {
+            Yii::$app->db->pdo->sqliteCreateFunction('NOW', static fn () => gmdate('Y-m-d H:i:s'));
+        }
         Yii::$app->db->createCommand()->createTable('{{%user}}', [
             'id' => 'pk',
         ])->execute();
@@ -165,6 +171,14 @@ class FileControllerUploadTest extends TestCase
         Yii::$app->set('request', new Request());
         Yii::$app->set('response', new Response());
         $_SERVER['REQUEST_METHOD'] = 'POST';
+        } catch (\Throwable $exception) {
+            Yii::$app->set('request', $originalRequestComponent);
+            Yii::$app->set('response', $originalResponseComponent);
+            Yii::$app->set('user', $originalUserComponent);
+            Yii::$app->db->close();
+            Yii::$app->set('db', $originalDbComponent);
+            throw $exception;
+        }
 
         return static function () use (
             $originalDbComponent,

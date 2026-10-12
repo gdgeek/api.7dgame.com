@@ -138,11 +138,17 @@ class Meta extends \yii\db\ActiveRecord
             'blockly',
         ];
     }
+    public function getServerRevision(): string
+    {
+        return \api\modules\v1\services\ContentRevision::of($this);
+    }
+
     public function fields()
     {
 
         return [
             'id',
+            'serverRevision',
             'image_id',
             'uuid',
             'events',

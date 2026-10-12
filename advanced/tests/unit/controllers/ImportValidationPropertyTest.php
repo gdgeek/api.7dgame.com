@@ -42,7 +42,6 @@ class ImportValidationPropertyTest extends TestCase
 
         $reflection = new \ReflectionClass(ScenePackageController::class);
         $this->validateMethod = $reflection->getMethod('validateImportData');
-        $this->validateMethod->setAccessible(true);
     }
 
     // =========================================================================

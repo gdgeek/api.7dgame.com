@@ -29,6 +29,8 @@ final class CorsOriginPolicy
         'Content-Type',
         'X-Requested-With',
         'X-CSRF-Token',
+        'Idempotency-Key',
+        'If-Match',
     ];
 
     private const EXPOSED_HEADERS = [

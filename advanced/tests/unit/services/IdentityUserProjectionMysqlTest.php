@@ -94,6 +94,27 @@ class IdentityUserProjectionMysqlTest extends TestCase
         }
     }
 
+    public function testSoftDeletionRetainsActualOwnerForeignKeysAndRevokesSnBinding(): void
+    {
+        $this->db->createCommand('CREATE TABLE device_sn (id INT PRIMARY KEY, user_id INT NULL,
+            original_user_id INT NULL, device_uuid VARCHAR(255) UNIQUE, enabled TINYINT NOT NULL,
+            updated_at DATETIME NULL, FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE SET NULL) ENGINE=InnoDB')->execute();
+        $this->db->createCommand()->insert('device_sn', ['id' => 9, 'user_id' => 42, 'original_user_id' => 42,
+            'device_uuid' => 'must-stay-occupied', 'enabled' => 1])->execute();
+        $this->retire();
+        $event = $this->event(42, 3, 'deleted-owner', null);
+        $event['subject']['status'] = 0;
+        $event['subject']['deletedAt'] = 1700000000;
+        $this->assertTrue((new IdentityUserProjection())->apply($this->db, $event));
+        $device = $this->db->createCommand('SELECT * FROM device_sn WHERE id=9')->queryOne();
+        $this->assertNull($device['user_id']);
+        $this->assertSame(42, (int)$device['original_user_id']);
+        $this->assertSame(0, (int)$device['enabled']);
+        $this->assertSame('must-stay-occupied', $device['device_uuid']);
+        $this->assertSame(42, (int)$this->db->createCommand('SELECT author_id FROM verse WHERE id=7')->queryScalar());
+        $this->assertSame(1, (int)$this->db->createCommand('SELECT COUNT(*) FROM user WHERE id=42')->queryScalar());
+    }
+
     public function testCredentialConstraintsRejectLegacyWritesAndAllowProfileProjection(): void
     {
         $this->retire();

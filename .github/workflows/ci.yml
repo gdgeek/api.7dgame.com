@@ -5,6 +5,13 @@ on:
     branches: ['**']  # 包括 feature/foo、codex/foo 等含斜杠的分支
   pull_request:
     branches: [develop, main, publish]
+  workflow_dispatch:
+    inputs:
+      publish_candidate:
+        description: 'Publish SHA-pinned API/app candidate images; no deployment or branch/latest tags'
+        type: boolean
+        required: false
+        default: false
 
 # Serialize mutable branch/latest publishers. Remote-head checks fail stale
 # runs, but they are not a registry CAS: Task 5.1 Stage A still requires an
@@ -264,6 +271,22 @@ jobs:
           echo "Running tests..."
           php vendor/bin/phpunit -c phpunit.xml --testdox
 
+      - name: Run WebMCP P1 MySQL Concurrency and HTTP Recovery Contracts
+        working-directory: ./advanced
+        env:
+          MYSQL_PWD: root
+          WEBMCP_MYSQL_TEST_DSN: mysql:host=127.0.0.1;dbname=webmcp_test_ci
+          WEBMCP_MYSQL_TEST_USER: root
+          WEBMCP_MYSQL_TEST_PASSWORD: root
+        run: |
+          mysql -h 127.0.0.1 -u root -e "CREATE DATABASE webmcp_test_ci CHARACTER SET utf8mb4"
+          php vendor/bin/phpunit -c phpunit.xml \
+            tests/integration/WebMcpMySqlConcurrencyTest.php --fail-on-skipped
+          php vendor/bin/phpunit -c phpunit.xml \
+            tests/integration/WebMcpHttpRecoveryTest.php --fail-on-skipped
+          php vendor/bin/phpunit -c phpunit.xml \
+            tests/integration/PublicationMySqlTest.php --fail-on-skipped
+
       - name: Prepare Task 5.1 Isolated MySQL
         env:
           MYSQL_PWD: root
@@ -282,6 +305,59 @@ jobs:
           php vendor/bin/phpunit -c phpunit.xml \
             tests/integration/Task51StageBMySqlCasTest.php \
             --testdox --fail-on-skipped
+
+  # Manual candidates use the same dual-vhost release artifact for API and
+  # backend app consumers. No mutable branch/latest publisher is entered.
+  candidate:
+    runs-on: ubuntu-latest
+    needs: test
+    if: >-
+      (github.event_name == 'workflow_dispatch' && inputs.publish_candidate == true) ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/codex/identity-online-dev-20261012')
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-buildx-action@v3
+      - name: Login to Tencent Registry
+        uses: docker/login-action@v3
+        with:
+          registry: hkccr.ccs.tencentyun.com
+          username: ${{ secrets.TENCENT_DOCKER_USERNAME }}
+          password: ${{ secrets.TENCENT_DOCKER_PASSWORD }}
+      - name: Prepare Candidate Revision
+        env:
+          CANDIDATE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${CANDIDATE_SHA}"
+          printf '%s\n' "${CANDIDATE_SHA}" > advanced/GIT_COMMIT
+          TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S' > advanced/BUILD_TIME
+      - name: Build and Publish Candidate Only
+        id: candidate_image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Release
+          platforms: linux/amd64
+          push: true
+          labels: org.opencontainers.image.revision=${{ github.sha }}
+          tags: |
+            hkccr.ccs.tencentyun.com/gdgeek/api:candidate-${{ github.sha }}
+            hkccr.ccs.tencentyun.com/gdgeek/app:candidate-${{ github.sha }}
+      - name: Record Candidate Digest
+        env:
+          CANDIDATE_SHA: ${{ github.sha }}
+          CANDIDATE_DIGEST: ${{ steps.candidate_image.outputs.digest }}
+        run: |
+          set -euo pipefail
+          [[ "${CANDIDATE_DIGEST}" =~ ^sha256:[0-9a-f]{64}$ ]]
+          {
+            printf 'API candidate: `hkccr.ccs.tencentyun.com/gdgeek/api@%s`\n' "${CANDIDATE_DIGEST}"
+            printf 'App candidate: `hkccr.ccs.tencentyun.com/gdgeek/app@%s`\n' "${CANDIDATE_DIGEST}"
+            printf 'OCI revision: `%s`\n' "${CANDIDATE_SHA}"
+            printf 'No branch/latest tags or deployment were performed.\n'
+          } >> "${GITHUB_STEP_SUMMARY}"
 
   # 阶段2: 构建 Docker 镜像（仅 publish / main / develop 分支）
   build:
@@ -502,6 +578,41 @@ jobs:
               done
             ' task51-file-scan "${task51_sentinel}"
           }
+          task51_wait_for_apache() {
+            local task51_container_id="$1"
+            local task51_host_port="$2"
+            local task51_phase="$3"
+            local task51_exit_code
+            local task51_running
+            local task51_readiness_status='000'
+
+            for _ in $(seq 1 50); do
+              if ! task51_running=$(docker inspect \
+                --format='{{.State.Running}}' "${task51_container_id}"); then
+                echo "Release ${task51_phase} container disappeared before readiness." >&2
+                return 1
+              fi
+              if [ "${task51_running}" != true ]; then
+                task51_exit_code=$(docker inspect \
+                  --format='{{.State.ExitCode}}' "${task51_container_id}")
+                echo "Release ${task51_phase} container exited before readiness (exit=${task51_exit_code})." >&2
+                return 1
+              fi
+              if task51_readiness_status=$(curl --silent \
+                --max-time 1 \
+                --output /dev/null \
+                --write-out '%{http_code}' \
+                --header 'Host: api.xrteeth.com' \
+                "http://127.0.0.1:${task51_host_port}/robots.txt") \
+                && [ "${task51_readiness_status}" = '200' ]; then
+                return 0
+              fi
+              sleep 0.1
+            done
+
+            echo "Release ${task51_phase} Apache readiness timed out (status=${task51_readiness_status})." >&2
+            return 1
+          }
           trace_sentinel=$(task51_random_base64url)
           test "${#trace_sentinel}" = 43
           trace_output=$(docker run --rm \
@@ -520,9 +631,27 @@ jobs:
           fi
 
           docker run --rm "${TASK51_RELEASE_IMAGE}" apache2ctl -t
-          vhost_dump=$(docker run --rm "${TASK51_RELEASE_IMAGE}" apache2ctl -S 2>&1)
-          grep -Eq 'default server api\.xrteeth\.com' <<< "${vhost_dump}"
-          grep -Eq 'alias api\.xrugc\.com' <<< "${vhost_dump}"
+          if ! vhost_dump=$(docker run --rm "${TASK51_RELEASE_IMAGE}" apache2ctl -S 2>&1); then
+            echo 'Release Apache virtual-host inspection failed.' >&2
+            exit 1
+          fi
+          if ! grep -Eq 'default server api\.xrteeth\.com' <<< "${vhost_dump}"; then
+            echo 'Release Apache default-server assertion failed.' >&2
+            exit 1
+          fi
+          if ! grep -Eq 'alias api\.xrugc\.com' <<< "${vhost_dump}"; then
+            echo 'Release Apache alias assertion failed.' >&2
+            exit 1
+          fi
+          if ! docker run --rm "${TASK51_RELEASE_IMAGE}" sh -ceu '
+            config=/etc/apache2/sites-enabled/000-default.conf
+            test -e "${config}"
+            grep -Eq "^[[:space:]]*ServerName[[:space:]]+api\\.xrteeth\\.com[[:space:]]*$" "${config}"
+            grep -Eq "^[[:space:]]*ServerAlias[[:space:]]+api\\.xrugc\\.com[[:space:]]*$" "${config}"
+          '; then
+            echo 'Release enabled Apache vhost contract failed.' >&2
+            exit 1
+          fi
 
           smoke_dir=$(mktemp -d)
           container_id=''
@@ -534,45 +663,54 @@ jobs:
           }
           trap cleanup_task51_smoke EXIT
 
-          # First prove the pre-Yii debug guard fails closed without rendering
-          # or logging a sensitive control-plane request. This intentionally
-          # does not prove that the production application can bootstrap.
+          # First prove the default-off pre-Yii debug guard fails closed without
+          # rendering or logging the request. This stays inside Stage A: the
+          # coordinator remains disabled and no internal control token is used.
           http_sentinel=$(task51_random_base64url)
           test "${#http_sentinel}" = 43
           container_id=$(docker run -d \
             -p 127.0.0.1::80 \
             -e YII_DEBUG=1 \
             -e YII_ENV=dev \
-            -e TASK51_STAGE_B_COORDINATOR_ENABLED=1 \
-            -e TASK51_STAGE_B_INTERNAL_TOKEN="${http_sentinel}" \
+            -e TASK51_STAGE_B_COORDINATOR_ENABLED=0 \
             "${TASK51_RELEASE_IMAGE}")
           host_port=$(docker inspect \
             --format='{{(index (index .NetworkSettings.Ports "80/tcp") 0).HostPort}}' \
             "${container_id}")
 
+          task51_wait_for_apache "${container_id}" "${host_port}" 'debug-guard'
           status='000'
-          for _ in $(seq 1 50); do
-            if status=$(curl --silent --show-error \
-              --max-time 1 \
-              --output "${smoke_dir}/debug-body" \
-              --dump-header "${smoke_dir}/debug-headers" \
-              --write-out '%{http_code}' \
-              --header 'Host: api.xrteeth.com' \
-              --header "X-Task51-Internal-Token: ${http_sentinel}" \
-              --header 'Content-Type: application/json' \
-              --data "{\"probe\":\"${http_sentinel}\"}" \
-              "http://127.0.0.1:${host_port}/v1/task51/stage-b/issue"); then
-              break
-            fi
-            status='000'
-            sleep 0.1
-          done
-
+          debug_curl_exit=0
+          if status=$(curl --silent --show-error \
+            --max-time 2 \
+            --output "${smoke_dir}/debug-body" \
+            --dump-header "${smoke_dir}/debug-headers" \
+            --write-out '%{http_code}' \
+            --header 'Host: api.xrteeth.com' \
+            --header 'Content-Type: application/json' \
+            --data "{\"probe\":\"${http_sentinel}\"}" \
+            "http://127.0.0.1:${host_port}/v1/task51/stage-b/issue" \
+            2>"${smoke_dir}/debug-curl-error"); then
+            :
+          else
+            debug_curl_exit=$?
+          fi
+          if [ "${debug_curl_exit}" -ne 0 ] || [ "${status}" != '404' ]; then
+            echo "Release debug-guard HTTP assertion failed (curl=${debug_curl_exit}, status=${status:-000})." >&2
+            exit 1
+          fi
           test "${status}" = '404'
-          grep -Eiq '^cache-control:[[:space:]]*no-store, private, max-age=0\r?$' \
-            "${smoke_dir}/debug-headers"
+          if ! grep -Eiq $'^cache-control:[[:space:]]*no-store, private, max-age=0\r?$' \
+            "${smoke_dir}/debug-headers"; then
+            echo 'Release debug-guard cache policy assertion failed.' >&2
+            exit 1
+          fi
           # The pre-Yii debug guard exits without rendering an application error
           # document. A non-empty body would mean the request reached Yii.
+          if [ -s "${smoke_dir}/debug-body" ]; then
+            echo 'Release debug-guard unexpectedly rendered a response body.' >&2
+            exit 1
+          fi
           test ! -s "${smoke_dir}/debug-body"
           if grep -Fq -- "${http_sentinel}" \
             "${smoke_dir}/debug-headers" "${smoke_dir}/debug-body"; then
@@ -583,13 +721,22 @@ jobs:
             echo 'Release container files exposed the Task 5.1 sentinel.' >&2
             exit 1
           fi
-          docker stop --time 5 "${container_id}" >/dev/null
-          docker logs "${container_id}" > "${smoke_dir}/debug-container.log" 2>&1
+          if ! docker stop --time 5 "${container_id}" >/dev/null; then
+            echo 'Release debug-guard container stop failed.' >&2
+            exit 1
+          fi
+          if ! docker logs "${container_id}" > "${smoke_dir}/debug-container.log" 2>&1; then
+            echo 'Release debug-guard container log collection failed.' >&2
+            exit 1
+          fi
           if grep -Fq -- "${http_sentinel}" "${smoke_dir}/debug-container.log"; then
             echo 'Release container logs exposed the Task 5.1 sentinel.' >&2
             exit 1
           fi
-          docker rm "${container_id}" >/dev/null
+          if ! docker rm "${container_id}" >/dev/null; then
+            echo 'Release debug-guard container removal failed.' >&2
+            exit 1
+          fi
           container_id=''
 
           # Now prove the exact release image really boots vendor/Yii and the
@@ -617,24 +764,31 @@ jobs:
             --format='{{(index (index .NetworkSettings.Ports "80/tcp") 0).HostPort}}' \
             "${container_id}")
 
+          task51_wait_for_apache "${container_id}" "${host_port}" 'production'
           status='000'
-          for _ in $(seq 1 50); do
-            if status=$(curl --silent --show-error \
-              --max-time 2 \
-              --output "${smoke_dir}/prod-body" \
-              --dump-header "${smoke_dir}/prod-headers" \
-              --write-out '%{http_code}' \
-              --header 'Host: api.xrteeth.com' \
-              --header 'Content-Type: application/json' \
-              --data "{\"probe\":\"${prod_http_sentinel}\"}" \
-              "http://127.0.0.1:${host_port}/v1/task51/stage-b/claim"); then
-              break
-            fi
-            status='000'
-            sleep 0.1
-          done
-
-          test "${status}" = '404'
+          prod_curl_exit=0
+          if status=$(curl --silent --show-error \
+            --max-time 2 \
+            --output "${smoke_dir}/prod-body" \
+            --dump-header "${smoke_dir}/prod-headers" \
+            --write-out '%{http_code}' \
+            --header 'Host: api.xrteeth.com' \
+            --header 'Content-Type: application/json' \
+            --data "{\"probe\":\"${prod_http_sentinel}\"}" \
+            "http://127.0.0.1:${host_port}/v1/task51/stage-b/claim" \
+            2>"${smoke_dir}/prod-curl-error"); then
+            :
+          else
+            prod_curl_exit=$?
+          fi
+          if [ "${prod_curl_exit}" -ne 0 ] || [ "${status}" != '404' ]; then
+            echo "Release production HTTP assertion failed (curl=${prod_curl_exit}, status=${status:-000})." >&2
+            exit 1
+          fi
+          if [ ! -s "${smoke_dir}/prod-body" ]; then
+            echo 'Release production response body was unexpectedly empty.' >&2
+            exit 1
+          fi
           test -s "${smoke_dir}/prod-body"
           php -r '
             $body = json_decode(
@@ -648,14 +802,29 @@ jobs:
               exit(1);
             }
           ' "${smoke_dir}/prod-body"
-          grep -Eiq '^content-type:[[:space:]]*application/json([;][[:space:]]*charset=UTF-8)?\r?$' \
-            "${smoke_dir}/prod-headers"
-          grep -Eiq '^cache-control:[[:space:]]*no-store, private, max-age=0\r?$' \
-            "${smoke_dir}/prod-headers"
-          grep -Eiq '^pragma:[[:space:]]*no-cache\r?$' "${smoke_dir}/prod-headers"
-          grep -Eiq '^expires:[[:space:]]*0\r?$' "${smoke_dir}/prod-headers"
-          grep -Eiq '^x-content-type-options:[[:space:]]*nosniff\r?$' \
-            "${smoke_dir}/prod-headers"
+          if ! grep -Eiq $'^content-type:[[:space:]]*application/json([;][[:space:]]*charset=UTF-8)?\r?$' \
+            "${smoke_dir}/prod-headers"; then
+            echo 'Release production Content-Type assertion failed.' >&2
+            exit 1
+          fi
+          if ! grep -Eiq $'^cache-control:[[:space:]]*no-store, private, max-age=0\r?$' \
+            "${smoke_dir}/prod-headers"; then
+            echo 'Release production Cache-Control assertion failed.' >&2
+            exit 1
+          fi
+          if ! grep -Eiq $'^pragma:[[:space:]]*no-cache\r?$' "${smoke_dir}/prod-headers"; then
+            echo 'Release production Pragma assertion failed.' >&2
+            exit 1
+          fi
+          if ! grep -Eiq $'^expires:[[:space:]]*0\r?$' "${smoke_dir}/prod-headers"; then
+            echo 'Release production Expires assertion failed.' >&2
+            exit 1
+          fi
+          if ! grep -Eiq $'^x-content-type-options:[[:space:]]*nosniff\r?$' \
+            "${smoke_dir}/prod-headers"; then
+            echo 'Release production X-Content-Type-Options assertion failed.' >&2
+            exit 1
+          fi
           if grep -Fq -- "${prod_http_sentinel}" \
             "${smoke_dir}/prod-headers" "${smoke_dir}/prod-body"; then
             echo 'Production Yii HTTP response exposed the Task 5.1 sentinel.' >&2
@@ -666,27 +835,59 @@ jobs:
           for oversize_path in \
             '/v1/task51/stage-b/claim' \
             '/index.php/v1/task51/stage-b/claim'; do
-            oversize_status=$(curl --silent --show-error \
+            oversize_status='000'
+            oversize_curl_exit=0
+            if oversize_status=$(curl --silent --show-error \
               --max-time 2 \
               --output /dev/null \
               --write-out '%{http_code}' \
               --header 'Host: api.xrteeth.com' \
               --header 'Content-Type: application/octet-stream' \
               --data-binary "@${smoke_dir}/oversize-body" \
-              "http://127.0.0.1:${host_port}${oversize_path}")
+              "http://127.0.0.1:${host_port}${oversize_path}" \
+              2>"${smoke_dir}/oversize-curl-error"); then
+              :
+            else
+              oversize_curl_exit=$?
+            fi
+            oversize_status=${oversize_status:-000}
+            if [ "${oversize_status}" != '413' ]; then
+              echo "Release oversize-body assertion failed for ${oversize_path} (curl=${oversize_curl_exit}, status=${oversize_status})." >&2
+              exit 1
+            fi
             test "${oversize_status}" = '413'
+            # Apache may close a rejected upload after emitting the complete
+            # HTTP 413 response. curl reports that expected close as exit 56;
+            # the exact status remains mandatory, so the security gate is not
+            # weakened into accepting a transport-only failure.
+            if [ "${oversize_curl_exit}" -ne 0 ] \
+              && [ "${oversize_curl_exit}" -ne 56 ]; then
+              echo "Release oversize-body transport failed unexpectedly for ${oversize_path} (curl=${oversize_curl_exit})." >&2
+              exit 1
+            fi
           done
 
           if ! task51_assert_container_files_clean "${container_id}" "${prod_http_sentinel}"; then
             echo 'Production Yii container files exposed the Task 5.1 sentinel.' >&2
             exit 1
           fi
-          docker stop --time 5 "${container_id}" >/dev/null
-          docker logs "${container_id}" > "${smoke_dir}/prod-container.log" 2>&1
+          if ! docker stop --time 5 "${container_id}" >/dev/null; then
+            echo 'Release production container stop failed.' >&2
+            exit 1
+          fi
+          if ! docker logs "${container_id}" > "${smoke_dir}/prod-container.log" 2>&1; then
+            echo 'Release production container log collection failed.' >&2
+            exit 1
+          fi
           if grep -Fq -- "${prod_http_sentinel}" "${smoke_dir}/prod-container.log"; then
             echo 'Production Yii container logs exposed the Task 5.1 sentinel.' >&2
             exit 1
           fi
+          if ! docker rm "${container_id}" >/dev/null; then
+            echo 'Release production container removal failed.' >&2
+            exit 1
+          fi
+          container_id=''
 
       - name: Push Docker Image
         run: |

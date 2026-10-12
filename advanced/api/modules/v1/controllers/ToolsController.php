@@ -127,6 +127,7 @@ class ToolsController extends \yii\rest\Controller
     //把 Yii::$app->user->identity 转换成 User 类型
 
         $user = $this->currentUser();
+        \api\modules\v1\components\DeviceSnAuthGuard::assertCredentialManagementAllowed($user);
         $issued = $this->loginCodeStore()->issue((int)$user->id, $this->loginCodeContext());
 
         return [

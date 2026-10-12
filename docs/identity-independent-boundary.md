@@ -25,6 +25,7 @@ Person 保留原 REST 方法、查询参数和分页头，人员头像按 Identi
 | 接口 | 用途 |
 | --- | --- |
 | `POST /internal/auth/verify-access-token` | 验签并返回当前 subject |
+| `GET /internal/auth/device-sn/accounts?q=&page=&pageSize=` | Auth scope 内部 key 读取私库当前可绑定 SN 账号，排除禁用、删除及继承 root/admin/manager |
 | `GET /internal/identity/subjects/:id` | 当前身份、角色、直接/有效权限和组织 |
 | `POST /internal/identity/authorize` | Identity 原生全局判权 |
 | `GET /internal/identity/events?afterId=&limit=` | 版本化业务显示投影事件 |
@@ -37,6 +38,8 @@ Person 保留原 REST 方法、查询参数和分页头，人员头像按 Identi
 
 校园清理、内容导入等业务操作仍由 PHP 执行；其管理者组织归属和目标成员来自 Identity 实时读取，不依赖主库滞后的 `user_organization`。成员摘要只供角色和组织检查，不能替代完整的直接权限读取。
 
+设备 SN 仍是业务数据。PHP 创建、分发和解绑继续操作业务 `device_sn`，账号选择和绑定资格改读 Identity 当前用户及完整继承角色；不再用业务投影或旧 RBAC 决定资格。Identity 使用单独的 `DEVICE_SN_DB_HOST/PORT/NAME/USER/PASSWORD` 只读连接校验设备，部署账号只授予 `SELECT device_sn`；独立模式缺配置或连接失败明确拒绝 SN 认证，普通账号登录不依赖该连接。SN access 的来源只取 Identity 验签返回的 `authContext`，PHP 保留该来源并继续禁止凭据派生及账号管理。启停用设备后的已有 access 保留原最长三小时兼容期，解绑、用户删除/禁用和提升到继承管理角色立即拒绝；refresh 必须再次确认设备启用。
+
 ## 主库业务投影
 
 保留原整型 `user.id`，所有业务 FK 继续引用它。主库账号模型禁止保存、删除、改密、验证密码和本地签发。认证主体及业务目标的纯 ID 查找遇到缺失用户时，从 Identity 当前 subject 补建最小用户和空业务资料；不复制密码、认证 key 或 refresh token。应用可配置独立 `identityProjectionDb` 组件供投影写入，常规业务数据库凭据应撤销用户/授权表写权限。
@@ -48,7 +51,9 @@ IDENTITY_DATA_SOURCE=identity php yii identity-projection/sync --limit=100
 IDENTITY_DATA_SOURCE=identity php yii identity-projection/watch --limit=100 --pollInterval=2 --maxBackoff=30
 ```
 
-事件按用户版本幂等应用，游标在整页成功后推进，失败可重放。`watch` 由 Supervisor/systemd 等进程管理器监督，满页立即追赶，空页定时轮询；失败指数退避且仅输出固定错误文案，不记录 SQL、邮件地址或内部凭据。SIGTERM/SIGINT 等当前页完成后退出，缺 CLI pcntl 扩展时启动失败；相关 Dockerfiles 已增加扩展，但本机没有 Docker daemon，未宣称镜像构建验证通过。投影仅按稳定主键修改用户，用户名/邮箱唯一键冲突会报错，不能把另一用户的业务归属覆盖。停用账号保留业务行，不级联删除业务资源。余额、积分和文件资产不从 Identity 写回。
+事件按用户版本幂等应用，游标在整页成功后推进，失败可重放。`watch` 由 Supervisor/systemd 等进程管理器监督，满页立即追赶，空页定时轮询；失败指数退避且仅输出固定错误文案，不记录 SQL、邮件地址或内部凭据。SIGTERM/SIGINT 等当前页完成后退出，缺 CLI pcntl 扩展时启动失败；Local_Api/Local_App 已实际构建并验证 PHP/扩展和锁定 vendor 安装。投影仅按稳定主键修改用户，用户名/邮箱唯一键冲突会报错，不能把另一用户的业务归属覆盖。停用账号保留业务行，不级联删除业务资源。余额、积分和文件资产不从 Identity 写回。
+
+若业务库已有 `device_sn`，须先完成其历史迁移 `m260928_150000_preserve_revoked_device_sn`，再消费用户删除事件。删除投影会在同一业务事务保留 `original_user_id` 和 UUID、清空当前绑定并禁用设备，保留永久撤销墓碑；缺该列时整页失败并不推进游标。用户业务行和内容外键仍保留，避免软删除后旧设备被重用。
 
 维护窗口内先冻结旧账号写入，完成全量/增量和 refresh 会话最终导入，然后才启动原生 Identity HTTP。Identity 启动会把私库 `identity_migration_control.authority` 从 `staging` 单向提升为 `identity`，激活后旧导入 apply 被拒绝，避免用旧库覆盖新密码或新账号；不可先启动原生 HTTP 再补导入。
 
@@ -82,7 +87,7 @@ Apple 三个现有 `v1/site/apple-id*` 入口已接通：PHP 使用 Composer 锁
 
 ## 开启前仍需完成
 
-- 验证真实 Apple/微信/邮件凭据与旧账号页面端到端请求。Apple code exchange 在测试中 mock 外部网络，真实 RSA/JWKS 验证已执行；Composer 锁已由官方 solver 生成，但完整生产 vendor install 和真实 provider 网络尚未在当前主机完成。
+- 验证真实 Apple/微信/邮件凭据与旧账号页面端到端请求。Apple code exchange 在测试中 mock 外部网络，真实 RSA/JWKS 验证已执行；Composer 锁已由官方 solver 生成，锁定 vendor 已在隔离 Docker PHP 环境安装；真实 provider 网络仍须目标开发环境验证。
 - 在目标隔离部署完成 MDM 实际浏览器旅程和非 root 明确 route grants 验证，包括创建用户、编辑规则、授权/撤权与退出。原页面已通过 PHP 原模板渲染及定向写入测试；完整 HTTP、资源发布、CSRF、不同历史角色授权和目标浏览器 cookie 行为仍须端到端验收。`email/test` 是不读写身份的原 PHP 邮件 provider 诊断，保留其原实现；`password/verify-token` 已接当前私库 reset challenge，只读校验，不混用旧 user.password_reset_token。
 - 验证现有 access、Redis refresh、待完成扫码和注册凭据的最终导入；新短码由 Identity 保存主体和 SHA-256 摘要，60 秒内允许多设备兑换，每次创建独立会话。维护前二维码/旧短码的状态导入仍需专门演练。
 - 真实 MySQL 上投影插入/幂等、唯一键冲突回滚、凭据 CHECK、实际迁移生成的 verse CASCADE FK 与禁止删除/改 ID 已验证；部署数据全量对账、持续 worker 落后/故障演练及最小数据库权限仍须在目标隔离环境执行。
@@ -114,3 +119,7 @@ php vendor/bin/phpunit --bootstrap test_bootstrap.php tests/unit/contracts/Email
 ```
 
 当前主机无原生 PHP，通过临时 PHP 8.4.25 WASM、锁定版本 Yii2/bizley/Firebase7.2.1 和 PHPUnit 10.5.63 实际运行上述 112 项测试、357 项断言，79 个改动 PHP 文件通过语法解析。MySQL 测试使用仅测试环境的 PDO transport bridge 连接临时 MySQL8.4 实例；SQL、事务、真实迁移及生产投影代码均实际执行，不是 mock 数据库结果。邮箱 companion 测试以测试专用 Redis transport bridge 执行临时官方 Redis 7.4.2 的真实命令和 Lua，结束关闭该实例，没有连接源环境 Redis。标准 `make test` 依赖完整项目容器/扩展，尚未在此环境执行。
+
+整合 GitHub develop `7e905338` 的 SN、WebMCP 与 Task51 更新后，Docker PHP 8.5.9 / PHPUnit 12.5.4 定向运行 436 项测试、3072 个断言通过；14 项因未启用外部 MySQL/Redis 测试跳过，原 RateLimit mock 有一个 PHPUnit notice。另以本机一次性 MySQL 显式运行投影测试 6 项、35 个断言通过，包含实际资源 FK 保留、SN 永久撤销墓碑及缺墓碑迁移时不推进版本；没有连接源环境或线上数据库。完整单元集仍依赖其原数据库/Redis fixture，不能将该定向结果称为全部业务测试通过。
+
+CI 手动 `workflow_dispatch` 的 `publish_candidate` 默认为 false。显式开启或仅推送指定整合分支 `codex/identity-online-dev-20261012` 时，在测试通过后将同一双 VirtualHost Release 镜像发布到 `api:candidate-<full-sha>` 和 `app:candidate-<full-sha>`，固定 linux/amd64、OCI revision 并记录 registry digest；不会覆盖 develop/main/publish/latest，也不执行部署。既有 push 分支发布条件保持不变。

@@ -164,7 +164,10 @@ class IdentityBackendUserTest extends TestCase
 class BackendSession extends \yii\web\Session
 {
     public array $values = [];
+    private array $testCookieParams = ['lifetime' => 0, 'path' => '/', 'domain' => '', 'secure' => false, 'httponly' => true];
     public function init() {}
+    public function getCookieParams() { return $this->testCookieParams; }
+    public function setCookieParams($value) { $this->testCookieParams = $value; }
     public function get($key, $default = null) { return $this->values[$key] ?? $default; }
     public function set($key, $value) { $this->values[$key] = $value; }
     public function remove($key) { $value = $this->values[$key] ?? null; unset($this->values[$key]); return $value; }

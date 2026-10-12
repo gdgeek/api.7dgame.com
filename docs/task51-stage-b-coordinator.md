@@ -111,6 +111,15 @@ whose per-statement transparent retries would make a transaction outcome
 ambiguous after a connection failure. This dedicated component does not alter
 the existing application database component or its retry policy.
 
+The database guard supports Oracle MySQL 8.0.19+ and one exact production
+Tencent CynosDB/TDSQL-C profile only: server `8.0.30-cynos-3.1.17.002`, with
+both `CYNOS_VERSION()` and `@@CYNOS_VERSION` equal to
+`8.0.mysql_cynos.3.1.17.002`. It then performs read-only fail-closed probes for
+the exact `information_schema` fields, InnoDB, `REGEXP_LIKE`, and
+`REPEATABLE READ` used by the schema verifier and ledger. Any identity drift or
+missing capability stops before migration DDL. Coordinator transactions also
+request `REPEATABLE READ` explicitly instead of inheriting a database default.
+
 `task51CoordinatorDb` must have an empty `tablePrefix`. One database carries
 exactly one unprefixed Task 5.1 authority; multiple prefixed copies in one
 schema are unsupported and fail before the first migration DDL.
@@ -135,7 +144,7 @@ php yii task51-migrate/up 1 --db=task51CoordinatorDb --interactive=0
 
 Do not use the general `yii migrate` command for this window: it can include
 unrelated pending migrations. The dedicated command rejects a path override,
-any limit other than one, a subclassed/Cynos connection, a non-standard
+any limit other than one, a subclassed or retrying connection, a non-standard
 command class, or slave routing before creating a Task 5.1 table.
 
 The migration is deliberately irreversible: generic migration rollback never
@@ -163,7 +172,8 @@ database. It runs only with `TASK51_MYSQL_INTEGRATION=1`, explicit
 `TASK51_MYSQL_TEST_DSN`, `TASK51_MYSQL_TEST_USER`, and
 `TASK51_MYSQL_TEST_PASSWORD`, and then refuses any selected database whose name
 does not begin with `task51_test_`. Run that file explicitly against a clean,
-disposable Oracle MySQL 8.0.19+ database. The two-process CAS and lock-wait
+disposable supported Oracle MySQL or exact pinned CynosDB database. The
+two-process CAS and lock-wait
 cases also require the CLI `pcntl`/`posix` extensions. The test account needs
 `CREATE`, `ALTER`, `DROP`, `TRIGGER`, and access to
 `performance_schema.data_lock_waits`/`threads`; a schema-scoped MySQL named

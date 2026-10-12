@@ -310,7 +310,7 @@ class EmailVerificationServicePropertyTest extends TestCase
         $user->save(false);
         $this->testUser = $user;
 
-        $this->originalUserComponent = Yii::$app->has('user', true)
+        $this->originalUserComponent = Yii::$app->has('user')
             ? Yii::$app->get('user')
             : null;
         $this->userComponentReplaced = true;

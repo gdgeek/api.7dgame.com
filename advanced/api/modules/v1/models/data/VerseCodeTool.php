@@ -54,7 +54,9 @@ class VerseCodeTool extends Model
 
 
         if ($verseCode->validate()) {
-            $verseCode->save();
+            if (!$verseCode->save()) {
+                throw new \yii\web\ServerErrorHttpException('Script save failed');
+            }
         } else {
 
             throw new \yii\web\ServerErrorHttpException(json_encode($verseCode->errors));
