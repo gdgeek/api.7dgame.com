@@ -38,7 +38,7 @@ final class ScenePublicPropertyTest extends TestCase
             'verse' => ['id' => 'pk', 'author_id' => 'integer', 'updater_id' => 'integer', 'image_id' => 'integer',
                 'name' => 'string', 'info' => 'text', 'data' => 'text', 'uuid' => 'string',
                 'created_at' => 'datetime', 'updated_at' => 'datetime'],
-            'tags' => ['id' => 'pk', 'name' => 'string', 'key' => 'string', 'type' => 'string'],
+            'tags' => ['id' => 'pk', 'name' => 'string', 'key' => 'string'],
             'verse_tags' => ['id' => 'pk', 'verse_id' => 'integer', 'tags_id' => 'integer'],
             'property' => ['id' => 'pk', 'key' => 'string', 'info' => 'text'],
             'verse_property' => ['id' => 'pk', 'verse_id' => 'integer', 'property_id' => 'integer'],
@@ -56,11 +56,11 @@ final class ScenePublicPropertyTest extends TestCase
             [4, 42, 'Private category', 'scene-4'],
             [5, 7, 'Other author public scene', 'scene-5'],
         ])->execute();
-        $db->createCommand()->batchInsert('tags', ['id', 'name', 'key', 'type'], [
-            [1, 'Old public', 'public', 'Status'],
-            [2, 'Category A', 'category-a', 'Classify'],
-            [3, 'Category B', 'category-b', 'Classify'],
-            [4, 'Checkin', 'checkin', 'Status'],
+        $db->createCommand()->batchInsert('tags', ['id', 'name', 'key'], [
+            [1, 'Old public', 'public'],
+            [2, 'Category A', 'category-a'],
+            [3, 'Category B', 'category-b'],
+            [4, 'Checkin', 'checkin'],
         ])->execute();
         $db->createCommand()->batchInsert('verse_tags', ['verse_id', 'tags_id'], [
             [1, 1], [1, 4], [2, 2], [3, 1], [3, 3], [4, 2], [5, 2],
@@ -147,6 +147,28 @@ final class ScenePublicPropertyTest extends TestCase
         $this->assertSame([4], array_map('intval', Verse::findOne(1)->getTags()->select('tags.id')->column()));
     }
 
+    public function testCatalogIgnoresLegacyTypeFilterWithoutTypeColumn(): void
+    {
+        Yii::$app->request->setQueryParams(['TagsSearch' => ['type' => 'Classify']]);
+        $catalog = new TagsController('tags', Yii::$app);
+
+        $this->assertSame([2, 3, 4], array_map('intval', $catalog->actionIndex()->query->orderBy('id')->select('id')->column()));
+        $provider = (new TagsSearch())->search(['TagsSearch' => ['name' => 'Category', 'key' => 'category-b', 'type' => 'Status']]);
+        $this->assertSame([3], array_map('intval', $provider->query->select('id')->column()));
+    }
+
+    public function testTagAssignmentDoesNotRequireTypeColumnOrPrivilegedTagRole(): void
+    {
+        Yii::$app->user->allowPrivilegedTags = false;
+        Yii::$app->request->setBodyParams(['verse_id' => 4, 'tags_id' => 4]);
+
+        $result = (new VerseTagsController('verse-tags', Yii::$app))->actionCreate();
+
+        $this->assertTrue($result['success']);
+        $this->assertTrue(VerseTags::find()->where(['verse_id' => 4, 'tags_id' => 4])->exists());
+        $this->assertFalse(Verse::findOne(4)->public);
+    }
+
     #[DataProvider('tagAddEndpoints')]
     public function testBothTagAddEndpointsRejectPublicWithoutChangingVisibility(string $endpoint): void
     {
@@ -219,6 +241,7 @@ final class ScenePublicPropertyTestUser extends Component
 {
     public int $id = 42;
     public object $identity;
+    public bool $allowPrivilegedTags = true;
 
     public function init(): void
     {
@@ -228,6 +251,6 @@ final class ScenePublicPropertyTestUser extends Component
 
     public function can($permissionName, $params = [], $allowCaching = true): bool
     {
-        return true;
+        return $this->allowPrivilegedTags || !in_array($permissionName, ['root', 'admin'], true);
     }
 }

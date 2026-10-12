@@ -62,7 +62,7 @@ class TagsController extends ActiveController
      * @OA\Get(
      *     path="/v1/tags",
      *     summary="获取标签列表",
-     *     description="获取分类标签列表，不返回已废弃的 public 标签；公开状态使用场景属性",
+     *     description="获取所有分类标签，不按 type 筛选，不返回已废弃的 public 标签；公开状态使用场景属性",
      *     tags={"Tags"},
      *     security={{"Bearer": {}}},
      *     @OA\Parameter(
@@ -87,8 +87,7 @@ class TagsController extends ActiveController
      *             @OA\Items(
      *                 @OA\Property(property="id", type="integer", description="标签ID", example=1),
      *                 @OA\Property(property="name", type="string", description="标签名称", example="教育"),
-     *                 @OA\Property(property="key", type="string", description="标签键", example="education"),
-     *                 @OA\Property(property="type", type="string", description="标签类型", example="category")
+     *                 @OA\Property(property="key", type="string", description="标签键", example="education")
      *             )
      *         )
      *     ),

@@ -10,7 +10,6 @@ use Yii;
  * @property int $id
  * @property string|null $name
  * @property string|null $key
- * @property string $type
  *
  * @property VerseTags[] $verseTags
  */
@@ -30,8 +29,6 @@ class Tags extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-           
-            [['type'], 'string'],
             [['name', 'key'], 'string', 'max' => 255],
             //name 和 key 必须提供
             [['name', 'key'], 'required'],
@@ -60,7 +57,6 @@ class Tags extends \yii\db\ActiveRecord
             'id' => 'ID',
             'name' => 'Name',
             'key' => 'Key',
-            'type' => 'Type',
         ];
     }
 
