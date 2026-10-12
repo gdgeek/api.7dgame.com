@@ -42,6 +42,7 @@ class IdentityBackendUserTest extends TestCase
         putenv($this->environment === false ? 'IDENTITY_DATA_SOURCE' : 'IDENTITY_DATA_SOURCE=' . $this->environment);
         $_COOKIE = $this->cookies;
         foreach (['session', 'response', 'request', 'identityAuthority'] as $id) Yii::$app->set($id, $this->components[$id] ?? null);
+        Yii::$app->errorHandler->unregister();
         Yii::$app = $this->originalApplication;
     }
 

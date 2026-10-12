@@ -20,6 +20,7 @@ class IdentityLegacyAdminUiTest extends TestCase
     private AdminUiClient $client;
     private $module;
     private array $configs;
+    private string $runtimePath;
 
     protected function setUp(): void
     {
@@ -29,7 +30,9 @@ class IdentityLegacyAdminUiTest extends TestCase
         $this->environment = getenv('IDENTITY_DATA_SOURCE'); putenv('IDENTITY_DATA_SOURCE=identity');
         $this->client = new AdminUiClient();
         Yii::$container->set(IdentityProviderClient::class, fn() => $this->client);
-        new \yii\web\Application(['id' => 'admin-ui-test', 'basePath' => $this->application->basePath, 'viewPath' => $this->application->basePath . '/backend/views',
+        $this->runtimePath = sys_get_temp_dir() . '/identity-admin-ui-' . bin2hex(random_bytes(8));
+        mkdir($this->runtimePath, 0700, true);
+        new \yii\web\Application(['id' => 'admin-ui-test', 'basePath' => $this->application->basePath, 'runtimePath' => $this->runtimePath, 'viewPath' => $this->application->basePath . '/backend/views',
             'components' => ['request' => ['cookieValidationKey' => 'test-only-secret', 'hostInfo' => 'http://localhost', 'scriptUrl' => '', 'url' => '/admin/user'],
                 'user' => ['class' => AdminUiUser::class, 'identityClass' => User::class, 'enableSession' => false],
                 'authManager' => ['class' => IdentityDbManager::class],
@@ -49,6 +52,8 @@ class IdentityLegacyAdminUiTest extends TestCase
         if (!isset($this->application)) return;
         putenv($this->environment === false ? 'IDENTITY_DATA_SOURCE' : 'IDENTITY_DATA_SOURCE=' . $this->environment);
         foreach ($this->configs as $name => $value) \mdm\admin\components\Configs::instance()->$name = $value;
+        Yii::$app->errorHandler->unregister();
+        \yii\helpers\FileHelper::removeDirectory($this->runtimePath);
         Yii::$container->clear(IdentityProviderClient::class); Yii::$app = $this->application;
     }
     public function testOriginalUserListRendersPrivateRowsAndPagination(): void
