@@ -313,7 +313,10 @@ jobs:
     needs: test
     if: >-
       (github.event_name == 'workflow_dispatch' && inputs.publish_candidate == true) ||
-      (github.event_name == 'push' && github.ref == 'refs/heads/codex/identity-online-dev-20261012')
+      (github.event_name == 'push' && (
+        github.ref == 'refs/heads/codex/identity-online-dev-20261012' ||
+        github.ref == 'refs/heads/codex/identity-tags-public-candidate-20261012'
+      ))
     permissions:
       contents: read
     steps:
