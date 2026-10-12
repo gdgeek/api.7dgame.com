@@ -37,6 +37,19 @@ return [
         'loginCodeReadiness' => [
             'class' => LoginCodeReadiness::class,
         ],
+        // Task 5.1 exact-one transactions must never inherit the application's
+        // per-statement CynosDB retry command. This component is lazy and uses
+        // the same MySQL authority through the standard Yii connection/command.
+        'task51CoordinatorDb' => [
+            'class' => \yii\db\Connection::class,
+            'commandClass' => \yii\db\Command::class,
+            'dsn' => 'mysql:host=' . getenv('MYSQL_HOST') . ';dbname=' . getenv('MYSQL_DB'),
+            'username' => getenv('MYSQL_USERNAME'),
+            'password' => getenv('MYSQL_PASSWORD'),
+            'charset' => 'utf8mb4',
+            'enableSlaves' => false,
+            'attributes' => [\PDO::ATTR_TIMEOUT => 5],
+        ],
         'rateLimiter' => [
             'class' => 'common\components\security\RateLimiter',
             'strategies' => [
@@ -80,6 +93,9 @@ return [
                 [
                     'class' => 'common\components\security\SafeFileTarget',
                     'levels' => ['info', 'error', 'warning'],
+                    // Never append request superglobals: control-plane raw
+                    // bodies and custom auth headers must not enter logs.
+                    'logVars' => [],
                 ],
                 [
                     'class' => 'common\components\security\SafeFileTarget',
@@ -88,6 +104,7 @@ return [
                     'logFile' => '@api/runtime/logs/mrpp.log',
                     'maxFileSize' => 1024 * 2,
                     'maxLogFiles' => 20,
+                    'logVars' => [],
                 ],
                 [
                     'class' => 'common\components\security\SafeFileTarget',
@@ -154,6 +171,9 @@ return [
                         'POST send-email' => 'send-email',
                     ],
                 ],
+                'POST v1/task51/stage-b/issue' => 'v1/task51-stage-b/issue',
+                'POST v1/task51/stage-b/claim' => 'v1/task51-stage-b/claim',
+                'POST v1/task51/stage-b/consume' => 'v1/task51-stage-b/consume',
                 [
                     'class' => 'yii\rest\UrlRule',
                     'controller' => 'v1/plugin-ar-slam-localization',
