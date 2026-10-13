@@ -41,10 +41,21 @@ class IdentityService extends Component
             return $this->identityProviderClient()->refresh($refreshToken, $context);
         }
 
+        if ($this->sessionService()->continuityEnabled()
+            && $this->sessionService()->hasContinuityCredential(trim($refreshToken))) {
+            // An actual AR credential may itself start with "web_". Determine
+            // credential provenance before interpreting the QR transport syntax.
+            return $this->sessionService()->refreshWithContinuity(trim($refreshToken), $context);
+        }
+
         $normalized = $this->normalizeRefreshTokenInput($refreshToken);
         $refreshToken = $normalized['token'];
 
         if ($normalized['from_login_code']) {
+            if ($this->sessionService()->continuityEnabled()
+                && $this->sessionService()->hasContinuityCredential($refreshToken)) {
+                throw new UnauthorizedHttpException('Refresh credentials cannot be exchanged as login codes.');
+            }
             $linkedToken = $this->refreshFromLinkedLoginCode($refreshToken, $context);
             if ($linkedToken !== null) {
                 return $linkedToken;
@@ -69,6 +80,19 @@ class IdentityService extends Component
                     'identity.auth'
                 );
             }
+        }
+
+        if ($this->sessionService()->continuityEnabled()) {
+            // Raw Unity login codes still support the existing multi-device
+            // window. Known AR credentials, including consumed predecessors,
+            // must never use that fallback after a denial or backend failure.
+            if (!$this->sessionService()->hasContinuityCredential($refreshToken)) {
+                $linkedToken = $this->refreshFromLinkedLoginCode($refreshToken, $context);
+                if ($linkedToken !== null) {
+                    return $linkedToken;
+                }
+            }
+            return $this->sessionService()->refreshWithContinuity($refreshToken, $context);
         }
 
         try {

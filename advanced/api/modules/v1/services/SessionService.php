@@ -17,6 +17,9 @@ class SessionService extends Component
     public function issueToken(User $user, array $context = []): array
     {
         $this->assertLegacySessionWriter();
+        if ($this->continuityEnabled()) {
+            return $this->continuity()->issue($user, $context);
+        }
         $authContext = DeviceSnAuthContext::normalize($user->authContext ?: $context);
         if ($authContext !== []) {
             $this->authorizeDeviceSession($authContext['device_sn_id'], (int)$user->id);
@@ -51,6 +54,9 @@ class SessionService extends Component
     public function consumeRefreshToken(string $refreshToken): User
     {
         $this->assertLegacySessionWriter();
+        if ($this->continuityEnabled()) {
+            throw new \common\components\security\ServiceUnavailableHttpException('Refresh rotation must return its atomically persisted response.');
+        }
         $token = $this->findRefreshTokenRecord($refreshToken);
         if (!$token) {
             throw new UnauthorizedHttpException('Refresh token is invalid.');
@@ -102,6 +108,9 @@ class SessionService extends Component
         if ($refreshToken === null || $refreshToken === '') {
             return true;
         }
+        if ($this->continuityEnabled()) {
+            return $this->continuity()->revoke($refreshToken);
+        }
 
         $token = $this->findRefreshTokenRecord($refreshToken);
         if (!$token) {
@@ -118,6 +127,9 @@ class SessionService extends Component
     public function revokeUserSessions(int $userId): int
     {
         $this->assertLegacySessionWriter();
+        if ($this->continuityEnabled()) {
+            return $this->continuity()->revokeUser($userId);
+        }
         return (int)RefreshToken::deleteAll(['user_id' => $userId]);
     }
 
@@ -145,7 +157,29 @@ class SessionService extends Component
         return [
             'ip' => $request->userIP,
             'user_agent' => $request->userAgent,
+            'idempotency_key' => $request->headers->get('Idempotency-Key'),
         ];
+    }
+
+    public function continuityEnabled(): bool
+    {
+        return LegacyArContinuityAdapter::enabled();
+    }
+
+    public function hasContinuityCredential(string $refreshToken): bool
+    {
+        return $this->continuity()->hasCredential($refreshToken);
+    }
+
+    public function refreshWithContinuity(string $refreshToken, array $context): array
+    {
+        $this->assertLegacySessionWriter();
+        return $this->continuity()->refresh($refreshToken, $context);
+    }
+
+    protected function continuity(): LegacyArContinuityAdapter
+    {
+        return new LegacyArContinuityAdapter();
     }
 
     private function assertLegacySessionWriter(): void

@@ -55,6 +55,62 @@ final class IdentityServiceLoginCodeTest extends TestCase
         ], $service->issuedForUsers);
     }
 
+    public function testContinuityKnownConsumedCredentialCannotUseWrappedQrCollision(): void
+    {
+        $raw = str_repeat('a', 64);
+        $store = $this->storeForCodes($raw);
+        $store->issue(42);
+        $sessions = new ContinuityLoginCodeSessionService([$raw]);
+        $service = new RecordingIdentityService($store, $sessions);
+        try {
+            $service->refresh('web_' . $raw);
+            self::fail('Known refresh credential was exchanged as QR.');
+        } catch (UnauthorizedHttpException) {
+            self::assertSame([], $service->issuedForUsers);
+            self::assertSame([], $sessions->attemptedTokens);
+        }
+    }
+
+    public function testContinuityActualCredentialWithWebPrefixIsNotTruncated(): void
+    {
+        $raw = 'web_' . str_repeat('b', 60);
+        $sessions = new ContinuityLoginCodeSessionService([$raw], false);
+        $service = new RecordingIdentityService($this->storeForCodes(str_repeat('b', 60)), $sessions);
+        self::assertSame(['refreshToken' => 'original-successor'], $service->refresh($raw));
+        self::assertSame([$raw], $sessions->attemptedTokens);
+        self::assertSame([], $service->issuedForUsers);
+    }
+
+    public function testContinuityRevokedBareCredentialCannotUseQrCollision(): void
+    {
+        $raw = str_repeat('c', 64);
+        $store = $this->storeForCodes($raw);
+        $store->issue(42);
+        $sessions = new ContinuityLoginCodeSessionService([$raw]);
+        $service = new RecordingIdentityService($store, $sessions);
+        try {
+            $service->refresh($raw);
+            self::fail('Revoked credential was exchanged as QR.');
+        } catch (UnauthorizedHttpException) {
+            self::assertSame([$raw], $sessions->attemptedTokens);
+            self::assertSame([], $service->issuedForUsers);
+        }
+    }
+
+    public function testContinuityTrueQrMissRetainsMultipleDeviceRedemption(): void
+    {
+        $raw = str_repeat('d', 64);
+        $store = $this->storeForCodes($raw);
+        $store->issue(42);
+        $sessions = new ContinuityLoginCodeSessionService([]);
+        $service = new RecordingIdentityService($store, $sessions);
+        $one = $service->refresh($raw);
+        $two = $service->refresh('web_' . $raw);
+        self::assertNotSame($one['refreshToken'], $two['refreshToken']);
+        self::assertCount(2, $service->issuedForUsers);
+        self::assertSame([], $sessions->attemptedTokens);
+    }
+
     public function testSameUserCanRedeemMultipleDistinctActiveQrLoginCodes(): void
     {
         $store = $this->storeForCodes(str_repeat('b', 64), str_repeat('c', 64));
@@ -142,7 +198,7 @@ final class RecordingIdentityService extends IdentityService
 
     public function __construct(
         private LoginCodeStore $testLoginCodeStore,
-        private ?RejectingLoginCodeSessionService $testSessionService = null,
+        private ?\api\modules\v1\services\SessionService $testSessionService = null,
         array $config = []
     )
     {
@@ -184,6 +240,20 @@ final class RejectingLoginCodeSessionService extends \api\modules\v1\services\Se
     {
         $this->attemptedTokens[] = $refreshToken;
         throw new UnauthorizedHttpException('Refresh token is invalid.');
+    }
+}
+
+final class ContinuityLoginCodeSessionService extends \api\modules\v1\services\SessionService
+{
+    public array $attemptedTokens = [];
+    public function __construct(private array $known, private bool $reject = true) { parent::__construct(); }
+    public function continuityEnabled(): bool { return true; }
+    public function hasContinuityCredential(string $raw): bool { return in_array($raw, $this->known, true); }
+    public function refreshWithContinuity(string $raw, array $context): array
+    {
+        $this->attemptedTokens[] = $raw;
+        if ($this->reject) throw new UnauthorizedHttpException('Credential is revoked.');
+        return ['refreshToken' => 'original-successor'];
     }
 }
 

@@ -271,6 +271,16 @@ jobs:
           echo "Running tests..."
           php vendor/bin/phpunit -c phpunit.xml --testdox
 
+      - name: Verify Legacy PHP Refresh Continuity on Disposable MySQL and Redis
+        working-directory: ./advanced
+        env:
+          AR_CONTINUITY_MYSQL_TEST_HOST: 127.0.0.1
+          AR_CONTINUITY_MYSQL_TEST_PORT: 3306
+          AR_CONTINUITY_MYSQL_TEST_PASSWORD: root
+          AR_CONTINUITY_REDIS_TEST_HOST: 127.0.0.1
+          AR_CONTINUITY_REDIS_TEST_PORT: 6379
+        run: php tests/integration/legacy_ar_continuity_mysql.php
+
       - name: Run WebMCP P1 MySQL Concurrency and HTTP Recovery Contracts
         working-directory: ./advanced
         env:
