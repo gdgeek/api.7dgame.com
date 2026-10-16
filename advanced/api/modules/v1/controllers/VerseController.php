@@ -16,6 +16,7 @@ use mdm\admin\components\AccessControl;
 use Yii;
 use api\modules\v1\services\ReliableWrite;
 use api\modules\v1\services\ScenePublication;
+use api\modules\v1\services\SceneProperties;
 use yii\filters\auth\CompositeAuth;
 use yii\rest\ActiveController;
 use yii\web\BadRequestHttpException;
@@ -62,10 +63,63 @@ class VerseController extends ActiveController
 
         $behaviors['access'] = [
             'class' => AccessControl::class,
+            // These actions enforce the root role directly, independent of route grants.
+            'allowActions' => ['properties', 'add-property'],
         ];
 
         return $behaviors;
     }
+
+    protected function verbs()
+    {
+        return array_merge(parent::verbs(), [
+            'properties' => ['GET', 'HEAD'],
+            'add-property' => ['POST'],
+        ]);
+    }
+
+    /**
+     * @OA\Get(path="/v1/verses/{id}/properties", summary="Root 查看场景属性", tags={"Verse"}, security={{"Bearer": {}}},
+     * @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     * @OA\Response(response=200, description="场景已关联的属性，按 ID 排序", @OA\JsonContent(type="array", @OA\Items(
+     *   @OA\Property(property="id", type="integer"), @OA\Property(property="key", type="string"),
+     *   @OA\Property(property="info", nullable=true, description="属性信息，兼容历史 JSON 值")))),
+     * @OA\Response(response=401, description="未认证"), @OA\Response(response=403, description="仅 root 可访问"),
+     * @OA\Response(response=404, description="场景不存在"))
+     */
+    public function actionProperties($id): array
+    {
+        $this->requirePropertyRoot();
+        return SceneProperties::listing($id);
+    }
+
+    /**
+     * @OA\Post(path="/v1/verses/{id}/properties", summary="Root 为场景新增属性", tags={"Verse"}, security={{"Bearer": {}}},
+     * description="按 key 复用全局属性，不覆盖已有 info；重复关联幂等。添加 public 会使场景公开。",
+     * @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     * @OA\RequestBody(required=true, @OA\JsonContent(required={"key"},
+     *   @OA\Property(property="key", type="string", minLength=1, maxLength=255),
+     *   @OA\Property(property="info", type="string", nullable=true, description="可选；最多 65535 字节"))),
+     * @OA\Response(response=200, description="新增或已关联成功", @OA\JsonContent(
+     *   @OA\Property(property="success", type="boolean", example=true),
+     *   @OA\Property(property="property", type="object", @OA\Property(property="id", type="integer"),
+     *     @OA\Property(property="key", type="string"), @OA\Property(property="info", nullable=true)))),
+     * @OA\Response(response=400, description="key 或 info 无效"), @OA\Response(response=401, description="未认证"),
+     * @OA\Response(response=403, description="仅 root 可访问"), @OA\Response(response=404, description="场景不存在"))
+     */
+    public function actionAddProperty($id): array
+    {
+        $this->requirePropertyRoot();
+        return ['success' => true, 'property' => SceneProperties::add($id, Yii::$app->request->bodyParams)];
+    }
+
+    private function requirePropertyRoot(): void
+    {
+        if (!Yii::$app->user->can('root')) {
+            throw new ForbiddenHttpException('Only root can manage scene properties');
+        }
+    }
+
     public function actions()
     {
         $actions = parent::actions();
