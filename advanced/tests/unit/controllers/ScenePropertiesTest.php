@@ -46,7 +46,8 @@ final class ScenePropertiesTest extends TestCase
         $db = Yii::$app->db;
         $db->open();
         foreach ([
-            'verse' => ['id' => 'pk', 'author_id' => 'integer'],
+            'verse' => ['id' => 'pk', 'author_id' => 'integer', 'updater_id' => 'integer', 'image_id' => 'integer',
+                'created_at' => 'datetime', 'updated_at' => 'datetime', 'name' => 'string', 'info' => 'text', 'data' => 'text'],
             'property' => ['id' => 'pk', 'key' => 'string not null unique', 'info' => 'text'],
             'verse_property' => ['id' => 'pk', 'verse_id' => 'integer', 'property_id' => 'integer'],
             'auth_item' => ['name' => 'string primary key', 'type' => 'integer', 'description' => 'text',
@@ -67,13 +68,15 @@ final class ScenePropertiesTest extends TestCase
         $root = $auth->createRole('root');
         $admin = $auth->createRole('admin');
         $member = $auth->createRole('user');
-        foreach ([$root, $admin, $member] as $role) {
+        $manager = $auth->createRole('manager');
+        foreach ([$root, $admin, $member, $manager] as $role) {
             $auth->add($role);
         }
         $auth->addChild($root, $admin);
         $auth->addChild($admin, $member);
         $auth->assign($root, 1);
         $auth->assign($admin, 2);
+        $auth->assign($manager, 3);
         $auth->assign($member, 42);
         $this->actAs(1);
     }
@@ -106,12 +109,183 @@ final class ScenePropertiesTest extends TestCase
         $this->assertSame([['id' => 2, 'key' => 'checkin', 'info' => 'Original info']],
             $controller->actionProperties(1));
 
+        $this->passRouteFilter($controller, 'property-options');
+        $this->assertSame(['checkin', 'other-scene', 'public'], array_column($controller->actionPropertyOptions(1), 'key'));
+
         $this->passRouteFilter($controller, 'add-property');
         Yii::$app->request->setBodyParams(['key' => 'root-route-test']);
         $created = $controller->actionAddProperty(1);
         $this->assertTrue($created['success']);
         $this->assertSame('root-route-test', $created['property']['key']);
         $this->assertSame(['checkin', 'root-route-test'], array_column($controller->actionProperties(1), 'key'));
+
+        $this->passRouteFilter($controller, 'remove-property');
+        $this->assertSame($created, $controller->actionRemoveProperty(1, $created['property']['id']));
+        $this->assertSame(['checkin'], array_column($controller->actionProperties(1), 'key'));
+
+        $this->passRouteFilter($controller, 'property-usage');
+        $this->assertSame(['property' => $created['property'], 'sceneCount' => 0],
+            $controller->actionPropertyUsage(1, $created['property']['id']));
+        $this->passRouteFilter($controller, 'delete-property-globally');
+        $this->assertSame($created + ['affectedSceneCount' => 0],
+            $controller->actionDeletePropertyGlobally(1, $created['property']['id']));
+    }
+
+    public function testRootListsTheEntireDictionaryIncludingAssociatedAndUnassociatedProperties(): void
+    {
+        $this->assertSame([
+            ['id' => 2, 'key' => 'checkin', 'info' => 'Original info'],
+            ['id' => 3, 'key' => 'other-scene', 'info' => null],
+            ['id' => 1, 'key' => 'public', 'info' => 'Public visibility'],
+        ], $this->controller()->actionPropertyOptions(1));
+        $this->assertSame($this->controller()->actionPropertyOptions(1), $this->controller()->actionPropertyOptions(2));
+    }
+
+    public function testRootAssociatesExistingPropertyByIdWithoutChangingTheDictionary(): void
+    {
+        Yii::$app->request->setBodyParams(['propertyId' => 3]);
+        $expected = ['success' => true, 'property' => ['id' => 3, 'key' => 'other-scene', 'info' => null]];
+        $this->assertSame($expected, $this->controller()->actionAddProperty(1));
+        $this->assertSame($expected, $this->controller()->actionAddProperty(1));
+        $this->assertSame(3, (int) Yii::$app->db->createCommand('SELECT COUNT(*) FROM property')->queryScalar());
+        $this->assertSame(1, (int) Yii::$app->db->createCommand('SELECT COUNT(*) FROM verse_property WHERE verse_id = 1 AND property_id = 3')->queryScalar());
+        $this->assertSame(['checkin', 'other-scene'], array_column($this->controller()->actionProperties(1), 'key'));
+    }
+
+    public function testUnknownPropertyIdReturns404WithoutAnyWrites(): void
+    {
+        Yii::$app->request->setBodyParams(['propertyId' => 999]);
+        try {
+            $this->controller()->actionAddProperty(1);
+            $this->fail('Unknown property should fail');
+        } catch (NotFoundHttpException $error) {
+            $this->assertSame(404, $error->statusCode);
+            $this->assertSame(3, (int) Yii::$app->db->createCommand('SELECT COUNT(*) FROM property')->queryScalar());
+            $this->assertSame(2, (int) Yii::$app->db->createCommand('SELECT COUNT(*) FROM verse_property')->queryScalar());
+        }
+    }
+
+    public function testChoosingExistingPublicPropertyImmediatelyChangesVisibility(): void
+    {
+        $this->assertFalse(Verse::findOne(1)->public);
+        Yii::$app->request->setBodyParams(['propertyId' => 1]);
+        $this->controller()->actionAddProperty(1);
+        $this->assertTrue(Verse::findOne(1)->public);
+        $this->assertSame('Public visibility', $this->controller()->actionProperties(1)[0]['info']);
+    }
+
+    public function testRootRemovesAllMatchingSceneAssociationsAndRetainsDictionaryAndOtherScenes(): void
+    {
+        Yii::$app->db->createCommand()->batchInsert('verse_property', ['verse_id', 'property_id'],
+            [[1, 2], [2, 2], [1, 1]])->execute();
+        $expected = ['success' => true, 'property' => ['id' => 2, 'key' => 'checkin', 'info' => 'Original info']];
+        $this->assertSame($expected, $this->controller()->actionRemoveProperty(1, 2));
+        $this->assertSame($expected, $this->controller()->actionRemoveProperty(1, 2));
+        $this->assertSame(['public'], array_column($this->controller()->actionProperties(1), 'key'));
+        $this->assertSame(['checkin', 'other-scene'], array_column($this->controller()->actionProperties(2), 'key'));
+        $this->assertSame(3, (int) Yii::$app->db->createCommand('SELECT COUNT(*) FROM property')->queryScalar());
+        $this->assertSame(0, (int) Yii::$app->db->createCommand('SELECT COUNT(*) FROM verse_property WHERE verse_id = 1 AND property_id = 2')->queryScalar());
+        $this->assertSame('Original info', Yii::$app->db->createCommand('SELECT info FROM property WHERE id = 2')->queryScalar());
+    }
+
+    public function testRemovingUnassociatedExistingPropertyIsSuccessfulAndDoesNotAffectOtherScenes(): void
+    {
+        $this->assertSame(['success' => true, 'property' => ['id' => 3, 'key' => 'other-scene', 'info' => null]],
+            $this->controller()->actionRemoveProperty(1, 3));
+        $this->assertSame(['checkin'], array_column($this->controller()->actionProperties(1), 'key'));
+        $this->assertSame(['other-scene'], array_column($this->controller()->actionProperties(2), 'key'));
+    }
+
+    public function testRemovingPublicImmediatelyMakesScenePrivateAndKeepsOtherProperties(): void
+    {
+        Yii::$app->request->setBodyParams(['propertyId' => 1]);
+        $this->controller()->actionAddProperty(1);
+        $this->controller()->actionAddProperty(2);
+        $this->assertTrue(Verse::findOne(1)->public);
+        $this->assertSame(['success' => true, 'property' => ['id' => 1, 'key' => 'public', 'info' => 'Public visibility']],
+            $this->controller()->actionRemoveProperty(1, 1));
+        $this->assertFalse(Verse::findOne(1)->public);
+        $this->assertTrue(Verse::findOne(2)->public);
+        $this->assertSame(['checkin'], array_column($this->controller()->actionProperties(1), 'key'));
+        $this->assertSame(['checkin', 'other-scene', 'public'], array_column($this->controller()->actionPropertyOptions(1), 'key'));
+    }
+
+    public function testRemovingUnknownPropertyReturns404WithoutAnyWrites(): void
+    {
+        try {
+            $this->controller()->actionRemoveProperty(1, 999);
+            $this->fail('Unknown property should fail');
+        } catch (NotFoundHttpException $error) {
+            $this->assertSame(404, $error->statusCode);
+            $this->assertSame(3, (int) Yii::$app->db->createCommand('SELECT COUNT(*) FROM property')->queryScalar());
+            $this->assertSame(2, (int) Yii::$app->db->createCommand('SELECT COUNT(*) FROM verse_property')->queryScalar());
+        }
+    }
+
+    public function testUsageCountsDistinctScenesAcrossAuthorsAndNotOnlyCurrentScene(): void
+    {
+        Yii::$app->db->createCommand()->batchInsert('verse_property', ['verse_id', 'property_id'],
+            [[1, 2], [2, 2]])->execute();
+        $this->assertSame(['property' => ['id' => 2, 'key' => 'checkin', 'info' => 'Original info'], 'sceneCount' => 2],
+            $this->controller()->actionPropertyUsage(2, 2));
+        $this->assertSame(0, $this->controller()->actionPropertyUsage(1, 1)['sceneCount']);
+    }
+
+    public function testGlobalDeleteRemovesDictionaryAndEveryDuplicateAcrossScenesButRetainsScenesAndOtherProperties(): void
+    {
+        Yii::$app->db->createCommand()->batchInsert('verse_property', ['verse_id', 'property_id'],
+            [[1, 2], [2, 2]])->execute();
+        $this->assertSame(['success' => true, 'property' => ['id' => 2, 'key' => 'checkin', 'info' => 'Original info'],
+            'affectedSceneCount' => 2], $this->controller()->actionDeletePropertyGlobally(1, 2));
+        $this->assertSame([], $this->controller()->actionProperties(1));
+        $this->assertSame(['other-scene'], array_column($this->controller()->actionProperties(2), 'key'));
+        $this->assertSame(['other-scene', 'public'], array_column($this->controller()->actionPropertyOptions(1), 'key'));
+        $this->assertSame(2, (int) Yii::$app->db->createCommand('SELECT COUNT(*) FROM verse')->queryScalar());
+        $this->assertSame(0, (int) Yii::$app->db->createCommand('SELECT COUNT(*) FROM verse_property WHERE property_id = 2')->queryScalar());
+        $this->expectException(NotFoundHttpException::class);
+        $this->controller()->actionDeletePropertyGlobally(1, 2);
+    }
+
+    public function testGlobalDeleteCanStartFromUnassociatedSceneAndDeleteUnusedProperty(): void
+    {
+        $deleted = $this->controller()->actionDeletePropertyGlobally(1, 3);
+        $this->assertSame(1, $deleted['affectedSceneCount']);
+        $this->assertSame([], $this->controller()->actionProperties(2));
+        $deleted = $this->controller()->actionDeletePropertyGlobally(1, 1);
+        $this->assertSame(0, $deleted['affectedSceneCount']);
+        $this->assertSame(['checkin'], array_column($this->controller()->actionProperties(1), 'key'));
+    }
+
+    public function testGlobalDeletePublicMakesAllScenesPrivateAndAllowsExplicitLaterRecreation(): void
+    {
+        Yii::$app->request->setBodyParams(['propertyId' => 1]);
+        $this->controller()->actionAddProperty(1);
+        $this->controller()->actionAddProperty(2);
+        $this->assertTrue(Verse::findOne(1)->public);
+        $this->assertTrue(Verse::findOne(2)->public);
+        $this->assertSame(2, $this->controller()->actionDeletePropertyGlobally(1, 1)['affectedSceneCount']);
+        $this->assertFalse(Verse::findOne(1)->public);
+        $this->assertFalse(Verse::findOne(2)->public);
+        $this->assertSame(['checkin'], array_column($this->controller()->actionProperties(1), 'key'));
+        $this->assertSame(['other-scene'], array_column($this->controller()->actionProperties(2), 'key'));
+        Yii::$app->request->setBodyParams(['key' => 'public']);
+        $recreated = $this->controller()->actionAddProperty(1);
+        $this->assertNotSame(1, $recreated['property']['id']);
+        $this->assertSame($recreated, $this->controller()->actionAddProperty(1));
+        $this->assertTrue(Verse::findOne(1)->public);
+        $this->assertFalse(Verse::findOne(2)->public);
+    }
+
+    #[DataProvider('unknownGlobalPropertyActions')]
+    public function testUnknownGlobalPropertyReturns404WithoutWrites(string $action): void
+    {
+        $this->expectException(NotFoundHttpException::class);
+        $this->controller()->$action(1, 999);
+    }
+
+    public static function unknownGlobalPropertyActions(): array
+    {
+        return [['actionPropertyUsage'], ['actionDeletePropertyGlobally']];
     }
 
     #[DataProvider('legacyActions')]
@@ -124,7 +298,7 @@ final class ScenePropertiesTest extends TestCase
 
     public static function legacyActions(): array
     {
-        return [['index'], ['update'], ['add-public'], ['remove-public']];
+        return [['index'], ['update']];
     }
 
     public function testRootCreatesPropertyThenReusesItWithoutOverwritingGlobalInfo(): void
@@ -164,8 +338,7 @@ final class ScenePropertiesTest extends TestCase
         $this->assertTrue(Verse::findOne(1)->public);
         $this->assertSame(['public', 'checkin'], array_column($this->controller()->actionProperties(1), 'key'));
 
-        $this->actAs(42);
-        $this->controller()->actionRemovePublic(1);
+        $this->controller()->actionRemoveProperty(1, 1);
         $this->assertFalse(Verse::findOne(1)->public);
         $this->actAs(1);
         $this->assertSame(['checkin'], array_column($this->controller()->actionProperties(1), 'key'));
@@ -177,9 +350,9 @@ final class ScenePropertiesTest extends TestCase
         $this->actAs($userId);
         Yii::$app->request->setBodyParams(['key' => 'forbidden']);
         $controller = $this->controller();
-        $this->passRouteFilter($controller, $action === 'actionProperties' ? 'properties' : 'add-property');
+        $this->passRouteFilter($controller, self::actionId($action));
         try {
-            $controller->$action(1);
+            $this->callPropertyAction($controller, $action, 1);
             $this->fail('Only root should access scene property management');
         } catch (ForbiddenHttpException $error) {
             $this->assertSame(403, $error->statusCode);
@@ -191,12 +364,190 @@ final class ScenePropertiesTest extends TestCase
     public static function forbiddenActors(): array
     {
         $cases = [];
-        foreach (['admin' => 2, 'author' => 42, 'ordinary' => 7, 'guest' => null] as $role => $id) {
-            foreach (['actionProperties', 'actionAddProperty'] as $action) {
+        foreach (['admin' => 2, 'manager' => 3, 'author' => 42, 'ordinary' => 7, 'guest' => null] as $role => $id) {
+            foreach (['actionProperties', 'actionPropertyOptions', 'actionAddProperty', 'actionRemoveProperty', 'actionPropertyUsage', 'actionDeletePropertyGlobally'] as $action) {
+                if ($role === 'admin' && in_array($action, ['actionProperties', 'actionPropertyOptions', 'actionRemoveProperty'], true)) continue;
                 $cases[$role . '-' . $action] = [$id, $action];
             }
         }
         return $cases;
+    }
+
+    public function testAdminManagesExistingAssociationsAcrossAuthorsWithoutRouteGrantsOrDictionaryChanges(): void
+    {
+        $this->actAs(2);
+        $controller = $this->controller();
+        foreach (['properties', 'property-options', 'add-property', 'remove-property'] as $action) {
+            $this->passRouteFilter($controller, $action);
+        }
+        $this->assertSame(['checkin'], array_column($controller->actionProperties(1), 'key'));
+        $this->assertCount(3, $controller->actionPropertyOptions(1));
+        Yii::$app->request->setBodyParams(['propertyId' => 3]);
+        $added = $controller->actionAddProperty(1);
+        $this->assertSame(['success' => true, 'property' => ['id' => 3, 'key' => 'other-scene', 'info' => null]], $added);
+        $this->assertSame($added, $controller->actionAddProperty(1));
+        $this->assertSame($added, $controller->actionRemoveProperty(1, 3));
+        $this->assertSame(['other-scene'], array_column($controller->actionProperties(2), 'key'));
+        $this->assertCount(3, $controller->actionPropertyOptions(1));
+        Yii::$app->request->setBodyParams(['propertyId' => 1]);
+        $controller->actionAddProperty(1);
+        $this->assertTrue(Verse::findOne(1)->public);
+        $controller->actionRemoveProperty(1, 1);
+        $this->assertFalse(Verse::findOne(1)->public);
+    }
+
+    #[DataProvider('adminKeyBodies')]
+    public function testAdminCannotCreateOrReuseDictionaryByKey(array $body): void
+    {
+        $this->actAs(2);
+        Yii::$app->request->setBodyParams($body);
+        $this->expectException(ForbiddenHttpException::class);
+        $this->controller()->actionAddProperty(1);
+    }
+
+    public static function adminKeyBodies(): array
+    {
+        return [[['key' => 'new']], [['key' => 'public']], [['propertyId' => 1, 'key' => 'public']],
+            [['propertyId' => 1, 'info' => 'changed']]];
+    }
+
+    #[DataProvider('nonManagerIds')]
+    public function testManagerAndOrdinaryActorsCannotAssociateExistingProperty(?int $id): void
+    {
+        $this->actAs($id);
+        Yii::$app->request->setBodyParams(['propertyId' => 1]);
+        $this->expectException(ForbiddenHttpException::class);
+        $this->controller()->actionAddProperty(1);
+    }
+
+    public static function nonManagerIds(): array
+    {
+        return [[3], [42], [7], [null]];
+    }
+
+    public function testLegacyPublicWriteActionsDoNotExist(): void
+    {
+        $controller = $this->controller();
+        $this->assertNull($controller->createAction('add-public'));
+        $this->assertNull($controller->createAction('remove-public'));
+        $this->assertFalse(method_exists($controller, 'actionAddPublic'));
+        $this->assertFalse(method_exists($controller, 'actionRemovePublic'));
+    }
+
+    #[DataProvider('nonManagerIds')]
+    public function testSceneSerializerDoesNotExposePropertyDetailsEvenWhenExplicitlyRequested(?int $id): void
+    {
+        $this->actAs($id);
+        $scene = Verse::findOne(1);
+        Yii::$app->db->createCommand()->insert('verse_property', ['verse_id' => 1, 'property_id' => 1])->execute();
+        $serialized = $scene->toArray(['id'], ['public', 'properties', 'properties.info',
+            'verseProperties', 'verseProperties.property', 'verseProperties.property.info']);
+        $this->assertSame(['id' => 1, 'public' => true], $serialized);
+        $this->assertNotContains('properties', $scene->extraFields());
+        $this->assertNotContains('verseProperties', $scene->extraFields());
+        $this->assertArrayNotHasKey('properties', $scene->fields());
+        $this->assertArrayNotHasKey('verseProperties', $scene->fields());
+    }
+
+    public function testRootGlobalCatalogNeedsNoSceneAndIncludesUnusedProperties(): void
+    {
+        $this->passRouteFilter($this->controller(), 'global-property-options');
+        Yii::$app->db->createCommand()->delete('verse_property')->execute();
+        Yii::$app->db->createCommand()->delete('verse')->execute();
+        $this->assertSame(['checkin', 'other-scene', 'public'],
+            array_column($this->controller()->actionGlobalPropertyOptions(), 'key'));
+    }
+
+    public function testRootGlobalPropertyQueryIncludesPrivateScenesAcrossAuthorsWithoutDuplicatesAndKeepsMineBoundary(): void
+    {
+        Yii::$app->db->createCommand()->batchInsert('verse_property', ['verse_id', 'property_id'], [[1, 2], [2, 2]])->execute();
+        Yii::$app->request->setQueryParams(['propertyId' => '2']);
+        $this->passRouteFilter($this->controller(), 'by-property');
+        $global = $this->controller()->actionByProperty();
+        $this->assertSame([1, 2], array_map('intval', $global->query->orderBy('id')->select('id')->column()));
+        $this->assertSame(2, $global->getTotalCount());
+        $this->assertSame([], $this->controller()->actionIndex()->query->select('id')->column());
+        $this->passRouteFilter($this->controller(), 'by-property-scene');
+        $this->assertSame(1, (int) $this->controller()->actionByPropertyScene(1)->id);
+        Yii::$app->request->setQueryParams(['propertyId' => '1']);
+        $this->assertSame([], $this->controller()->actionByProperty()->getModels());
+        $this->expectException(NotFoundHttpException::class);
+        $this->controller()->actionByPropertyScene(1);
+    }
+
+    public function testGlobalPropertyQueryReusesSearchSortAndPagination(): void
+    {
+        Yii::$app->db->createCommand()->update('verse', ['name' => 'First scene'], ['id' => 1])->execute();
+        Yii::$app->db->createCommand()->update('verse', ['name' => 'Second scene'], ['id' => 2])->execute();
+        Yii::$app->db->createCommand()->insert('verse_property', ['verse_id' => 2, 'property_id' => 2])->execute();
+        Yii::$app->request->setQueryParams(['propertyId' => '2', 'sort' => '-id', 'page' => '1', 'per-page' => '1']);
+        $provider = $this->controller()->actionByProperty();
+        // PHPUnit shares the automatic provider ID counter across requests.
+        $provider->id = null;
+        $provider->pagination->params = Yii::$app->request->queryParams;
+        $provider->sort->params = Yii::$app->request->queryParams;
+        $this->assertSame(2, $provider->getTotalCount());
+        $this->assertSame([2], array_map(static fn(Verse $scene): int => (int) $scene->id, $provider->getModels()));
+        Yii::$app->request->setQueryParams(['propertyId' => '2', 'VerseSearch' => ['name' => 'First']]);
+        $this->assertSame([1], array_map(static fn(Verse $scene): int => (int) $scene->id,
+            $this->controller()->actionByProperty()->getModels()));
+    }
+
+    #[DataProvider('invalidGlobalPropertyIds')]
+    public function testGlobalPropertyQueryRejectsInvalidId($value): void
+    {
+        Yii::$app->request->setQueryParams($value === null ? [] : ['propertyId' => $value]);
+        $this->expectException(BadRequestHttpException::class);
+        $this->controller()->actionByProperty();
+    }
+
+    public static function invalidGlobalPropertyIds(): array
+    {
+        return [[null], [''], ['0'], ['-1'], ['1.5'], [' 1'], ['+1'], [['1']], [true], ['999999999999999999999999']];
+    }
+
+    public function testGlobalPropertyQueryRejectsUnknownProperty(): void
+    {
+        Yii::$app->request->setQueryParams(['propertyId' => '999']);
+        $this->expectException(NotFoundHttpException::class);
+        $this->controller()->actionByProperty();
+    }
+
+    #[DataProvider('globalPropertyActors')]
+    public function testGlobalPropertyReadActionsRequireRoot(?int $id, string $action): void
+    {
+        $this->actAs($id);
+        Yii::$app->request->setQueryParams(['propertyId' => '2']);
+        $this->expectException(ForbiddenHttpException::class);
+        $action === 'actionByPropertyScene' ? $this->controller()->$action(1) : $this->controller()->$action();
+    }
+
+    public static function globalPropertyActors(): array
+    {
+        $cases = [];
+        foreach ([2, 3, 42, null] as $id) {
+            foreach (['actionGlobalPropertyOptions', 'actionByProperty', 'actionByPropertyScene'] as $action) {
+                $cases[] = [$id, $action];
+            }
+        }
+        return $cases;
+    }
+
+    #[DataProvider('globalPropertyActionIds')]
+    public function testGlobalPropertyReadActionsRequireJwt(string $id): void
+    {
+        $this->actAs(null);
+        $controller = $this->controller();
+        $auth = Yii::createObject($controller->behaviors()['authenticator'] + [
+            'user' => Yii::$app->user, 'request' => Yii::$app->request, 'response' => Yii::$app->response,
+        ]);
+        $this->expectException(UnauthorizedHttpException::class);
+        $auth->beforeAction($controller->createAction($id));
+    }
+
+    public static function globalPropertyActionIds(): array
+    {
+        return [['global-property-options'], ['by-property'], ['by-property-scene']];
     }
 
     #[DataProvider('invalidBodies')]
@@ -223,6 +574,11 @@ final class ScenePropertiesTest extends TestCase
             'boolean info' => [['key' => 'x', 'info' => false]], 'numeric info' => [['key' => 'x', 'info' => 3]],
             'long info' => [['key' => 'x', 'info' => str_repeat('x', 65536)]],
             'invalid UTF-8 info' => [['key' => 'x', 'info' => "\xFF"]],
+            'null ID' => [['propertyId' => null]], 'zero ID' => [['propertyId' => 0]],
+            'negative ID' => [['propertyId' => -1]], 'string ID' => [['propertyId' => '3']],
+            'float ID' => [['propertyId' => 3.0]], 'boolean ID' => [['propertyId' => true]],
+            'array ID' => [['propertyId' => [3]]], 'ID and key' => [['propertyId' => 3, 'key' => 'other-scene']],
+            'ID and info' => [['propertyId' => 3, 'info' => null]],
         ];
     }
 
@@ -231,7 +587,7 @@ final class ScenePropertiesTest extends TestCase
     {
         Yii::$app->request->setBodyParams(['key' => 'missing-scene']);
         try {
-            $this->controller()->$action(999);
+            $this->callPropertyAction($this->controller(), $action, 999);
             $this->fail('Missing scene should fail');
         } catch (NotFoundHttpException $error) {
             $this->assertSame(404, $error->statusCode);
@@ -240,7 +596,7 @@ final class ScenePropertiesTest extends TestCase
     }
 
     #[DataProvider('propertyActions')]
-    public function testBothActionsRequireJwt(string $action): void
+    public function testPropertyActionsRequireJwt(string $action): void
     {
         $this->actAs(null);
         $controller = $this->controller();
@@ -248,12 +604,13 @@ final class ScenePropertiesTest extends TestCase
             'user' => Yii::$app->user, 'request' => Yii::$app->request, 'response' => Yii::$app->response,
         ]);
         $this->expectException(UnauthorizedHttpException::class);
-        $auth->beforeAction(new InlineAction($action === 'actionProperties' ? 'properties' : 'add-property', $controller, $action));
+        $auth->beforeAction(new InlineAction(self::actionId($action), $controller, $action));
     }
 
     public static function propertyActions(): array
     {
-        return [['actionProperties'], ['actionAddProperty']];
+        return [['actionProperties'], ['actionPropertyOptions'], ['actionAddProperty'], ['actionRemoveProperty'],
+            ['actionPropertyUsage'], ['actionDeletePropertyGlobally']];
     }
 
     #[DataProvider('disallowedMethods')]
@@ -262,27 +619,86 @@ final class ScenePropertiesTest extends TestCase
         Yii::$app->request->headers->set('X-Http-Method-Override', $method);
         Yii::$app->request->setBodyParams(['key' => 'wrong-method']);
         $this->expectException(MethodNotAllowedHttpException::class);
-        $this->controller()->runAction($action, ['id' => 1]);
+        $this->controller()->runAction($action, ['id' => 1, 'propertyId' => 2]);
     }
 
     public static function disallowedMethods(): array
     {
-        return [['add-property', 'GET'], ['properties', 'POST'], ['add-property', 'DELETE']];
+        return [['add-property', 'GET'], ['properties', 'POST'], ['add-property', 'DELETE'], ['property-options', 'POST'],
+            ['remove-property', 'GET'], ['remove-property', 'POST'], ['remove-property', 'PUT'],
+            ['property-usage', 'POST'], ['property-usage', 'DELETE'], ['delete-property-globally', 'GET'],
+            ['delete-property-globally', 'POST'], ['delete-property-globally', 'PUT'], ['by-property', 'POST'],
+            ['by-property', 'DELETE'], ['global-property-options', 'POST'], ['by-property-scene', 'POST']];
     }
 
-    public function testRoutesResolveBothMethodsAndPreflightFromSourceConfig(): void
+    public function testRoutesResolvePropertyMethodsAndPreflightFromSourceConfig(): void
     {
         $config = require dirname(__DIR__, 4) . '/files/api/config/main.php';
         $rules = array_values(array_filter($config['components']['urlManager']['rules'], static function ($rule): bool {
             return is_array($rule) && ($rule['controller'] ?? null) === 'v1/verse';
         }));
-        $manager = new UrlManager(['enablePrettyUrl' => true, 'showScriptName' => false, 'rules' => $rules]);
+        $manager = new UrlManager(['enablePrettyUrl' => true, 'showScriptName' => false, 'enableStrictParsing' => true, 'rules' => $rules]);
+        foreach (['by-property', 'global-property-options', 'by-property/2'] as $path) {
+            foreach (['GET', 'OPTIONS'] as $method) {
+                $request = new Request(['hostInfo' => 'http://localhost', 'scriptUrl' => '']);
+                $request->setPathInfo('v1/verses/' . $path);
+                $request->headers->set('X-Http-Method-Override', $method);
+                $expected = $method === 'OPTIONS' ? 'options' : ($path === 'by-property/2' ? 'by-property-scene' : $path);
+                $this->assertSame(['v1/verse/' . $expected, $path === 'by-property/2' ? ['id' => '2'] : []], $manager->parseRequest($request));
+            }
+        }
+        foreach (['POST', 'DELETE'] as $method) {
+            $request = new Request(['hostInfo' => 'http://localhost', 'scriptUrl' => '']);
+            $request->setPathInfo('v1/verses/2/public');
+            $request->headers->set('X-Http-Method-Override', $method);
+            $this->assertFalse($manager->parseRequest($request));
+        }
         foreach (['GET' => 'properties', 'POST' => 'add-property', 'OPTIONS' => 'options'] as $method => $action) {
             $request = new Request(['hostInfo' => 'http://localhost', 'scriptUrl' => '']);
             $request->setPathInfo('v1/verses/2/properties');
             $request->headers->set('X-Http-Method-Override', $method);
             $this->assertSame(['v1/verse/' . $action, ['id' => '2']], $manager->parseRequest($request));
         }
+        foreach (['GET' => 'property-options', 'OPTIONS' => 'options'] as $method => $action) {
+            $request = new Request(['hostInfo' => 'http://localhost', 'scriptUrl' => '']);
+            $request->setPathInfo('v1/verses/2/property-options');
+            $request->headers->set('X-Http-Method-Override', $method);
+            $this->assertSame(['v1/verse/' . $action, ['id' => '2']], $manager->parseRequest($request));
+        }
+        foreach (['DELETE' => 'remove-property', 'OPTIONS' => 'options'] as $method => $action) {
+            $request = new Request(['hostInfo' => 'http://localhost', 'scriptUrl' => '']);
+            $request->setPathInfo('v1/verses/2/properties/3');
+            $request->headers->set('X-Http-Method-Override', $method);
+            $this->assertSame(['v1/verse/' . $action, ['id' => '2', 'propertyId' => '3']], $manager->parseRequest($request));
+        }
+        foreach (['usage' => ['GET' => 'property-usage', 'OPTIONS' => 'options'],
+            'global' => ['DELETE' => 'delete-property-globally', 'OPTIONS' => 'options']] as $suffix => $methods) {
+            foreach ($methods as $method => $action) {
+                $request = new Request(['hostInfo' => 'http://localhost', 'scriptUrl' => '']);
+                $request->setPathInfo('v1/verses/2/properties/3/' . $suffix);
+                $request->headers->set('X-Http-Method-Override', $method);
+                $this->assertSame(['v1/verse/' . $action, ['id' => '2', 'propertyId' => '3']], $manager->parseRequest($request));
+            }
+        }
+    }
+
+    private static function actionId(string $action): string
+    {
+        return match ($action) {
+            'actionProperties' => 'properties',
+            'actionPropertyOptions' => 'property-options',
+            'actionRemoveProperty' => 'remove-property',
+            'actionPropertyUsage' => 'property-usage',
+            'actionDeletePropertyGlobally' => 'delete-property-globally',
+            default => 'add-property',
+        };
+    }
+
+    private function callPropertyAction(VerseController $controller, string $action, int $sceneId): array
+    {
+        return in_array($action, ['actionRemoveProperty', 'actionPropertyUsage', 'actionDeletePropertyGlobally'], true)
+            ? $controller->$action($sceneId, 2)
+            : $controller->$action($sceneId);
     }
 
     private function actAs(?int $id): void
