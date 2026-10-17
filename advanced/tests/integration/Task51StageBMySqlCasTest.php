@@ -1097,9 +1097,33 @@ final class Task51StageBMySqlCasTest extends TestCase
     private function removeRaceFiles(array $paths): void
     {
         $all = array_merge([$paths['gate']], $paths['results'], $paths['ready']);
+        foreach ($paths['ready'] as $ready) {
+            $all[] = $ready . '.publishing';
+        }
         foreach ($all as $path) {
             if (is_file($path)) {
                 unlink($path);
+            }
+        }
+    }
+
+    private function publishReadyMarker(string $path, int $connectionId): void
+    {
+        $payload = json_encode(['connectionId' => $connectionId], JSON_THROW_ON_ERROR);
+        $temporary = $path . '.publishing';
+        try {
+            // The parent treats path existence as readiness. LOCK_EX alone lets
+            // it observe the file before any bytes are written; publish the
+            // complete payload atomically within the same directory instead.
+            if (file_put_contents($temporary, $payload, LOCK_EX) !== strlen($payload)) {
+                throw new RuntimeException('Unable to write complete Task51 readiness marker.');
+            }
+            if (!rename($temporary, $path)) {
+                throw new RuntimeException('Unable to publish Task51 readiness marker.');
+            }
+        } finally {
+            if (is_file($temporary)) {
+                unlink($temporary);
             }
         }
     }
@@ -1111,9 +1135,7 @@ final class Task51StageBMySqlCasTest extends TestCase
         string $ready
     ): never {
         $db = $this->newConnection();
-        file_put_contents($ready, json_encode([
-            'connectionId' => (int)$db->createCommand('SELECT CONNECTION_ID()')->queryScalar(),
-        ], JSON_THROW_ON_ERROR), LOCK_EX);
+        $this->publishReadyMarker($ready, (int)$db->createCommand('SELECT CONNECTION_ID()')->queryScalar());
         while (trim((string)file_get_contents($gate)) !== 'go') {
             usleep(1000);
         }
@@ -1203,9 +1225,7 @@ final class Task51StageBMySqlCasTest extends TestCase
     private function runCoordinatorChild(string $gate, string $result, string $ready, array $operation): never
     {
         $db = $this->newConnection();
-        file_put_contents($ready, json_encode([
-            'connectionId' => (int)$db->createCommand('SELECT CONNECTION_ID()')->queryScalar(),
-        ], JSON_THROW_ON_ERROR), LOCK_EX);
+        $this->publishReadyMarker($ready, (int)$db->createCommand('SELECT CONNECTION_ID()')->queryScalar());
         while (trim((string)file_get_contents($gate)) !== 'go') {
             usleep(1000);
         }
