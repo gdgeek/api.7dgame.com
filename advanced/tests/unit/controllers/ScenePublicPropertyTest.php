@@ -200,11 +200,12 @@ final class ScenePublicPropertyTest extends TestCase
         $controller = $this->verseController();
         $controller->actionAddTag(1, 2);
         $this->assertFalse(Verse::findOne(1)->public);
-        $controller->actionAddPublic(1);
+        Yii::$app->request->setBodyParams(['propertyId' => 1]);
+        $controller->actionAddProperty(1);
         $this->assertTrue(Verse::findOne(1)->public);
         $controller->actionRemoveTag(1, 1);
         $this->assertTrue(Verse::findOne(1)->public);
-        $controller->actionRemovePublic(1);
+        $controller->actionRemoveProperty(1, 1);
         $this->assertFalse(Verse::findOne(1)->public);
         $this->assertTrue(VerseTags::find()->where(['verse_id' => 1, 'tags_id' => 2])->exists());
     }
