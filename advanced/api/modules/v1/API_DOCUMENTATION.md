@@ -406,7 +406,7 @@ Authorization: Bearer {accessToken}
 
 ### 17. 获取公开场景列表
 
-**端点**: `GET /v1/verse/public`
+**端点**: `GET /v1/verses/public`
 
 **Headers**:
 
@@ -422,9 +422,19 @@ Authorization: Bearer {accessToken}
 
 **响应**: 返回关联 `property.key=public` 的公开场景列表。
 
-公开状态属于场景属性，分类属于标签，两者独立。`tags` 参数仅匹配分类标签，旧 `tags.public` ID 不再匹配任何场景；混合多个 ID 时，其他分类标签仍按 OR 匹配。标签目录和场景 `expand=tags` 不返回旧 `public` 标签；通过标签新增接口添加它会返回 400，设置公开请使用场景公开接口。
+公开状态属于场景属性，分类属于标签，两者独立。`tags` 参数仅匹配分类标签，旧 `tags.public` ID 不再匹配任何场景；混合多个 ID 时，其他分类标签仍按 OR 匹配。标签目录和场景 `expand=tags` 不返回旧 `public` 标签；通过标签新增接口添加它会返回 400。设置公开由 admin 或 root 在属性管理中选择已有 `public` 属性并关联到场景；取消公开则从当前场景移除该属性关联。
+
+所有目录标签都可作为分类使用。标签查询、校验和关联不再依赖 `tags.type`，旧的 `TagsSearch[type]` 参数会被忽略；标签创建与更新只需 `name`、`key`。部署此兼容版本并完成验证后，可删除数据库的 `tags.type` 列，场景公开属性不受影响。
 
 场景列表支持独立的 `public` 查询参数：`1` / `true` 筛选有公开属性的场景，`0` / `false` 筛选没有公开属性的场景；其他值返回 400。`/v1/verses` 仍受当前用户范围限制。`/v1/verses/public?public=0` 返回空列表，不能用该参数扩大公开列表范围。省略 `public` 不增加属性筛选。此查询参数不修改公开状态。
+
+admin 和 root 可通过 `GET /v1/verses/{id}/properties` 查看场景属性，通过 `GET /v1/verses/{id}/property-options` 获取属性目录，并通过 `POST /v1/verses/{id}/properties` 提交 `{"propertyId":2}` 关联已有属性。`DELETE /v1/verses/{id}/properties/{propertyId}` 仅移除当前场景关联，保留全局字典与其他场景关联；重复操作幂等。
+
+仅 root 可向同一 POST 接口提交 `{"key":"checkin","info":"签到场景"}` 创建或复用字典项（key 已存在也要求 root），通过 `GET /v1/verses/{id}/properties/{propertyId}/usage` 预览全局使用量，以及通过 `DELETE /v1/verses/{id}/properties/{propertyId}/global` 删除属性本身和所有场景关联。两种 POST 形式互斥，复用字典项不覆盖已有信息。全局删除 `public` 会使所有关联场景变为私有。
+
+root 还可通过 `GET /v1/verses/global-property-options` 获取无需指定场景的全局筛选目录，通过 `GET /v1/verses/by-property?propertyId=2` 查询跨作者的全局关联场景（含私有场景），并通过 `GET /v1/verses/by-property/{id}?propertyId=2` 查看仍关联该属性的场景详情。普通“我的场景”和详情权限范围保持原样；manager、普通用户和未登录用户不能访问属性明细管理接口，场景派生 `public` 布尔值和公开浏览保留。
+
+旧 `POST`/`DELETE /v1/verse/{id}/public`、`/v1/verses/{id}/public` 及 `add-public`/`remove-public` action 已移除；公开状态写入统一使用属性关联接口。`GET /v1/verses/public` 公开列表保留。完整参数与错误码见 [场景 Property 管理](../../../../docs/SCENE_PROPERTIES_API.md)。
 
 ---
 

@@ -18,7 +18,7 @@ final class TagsPublicKeyTest extends TestCase
         $this->originalDb = Yii::$app->db;
         Yii::$app->set('db', new Connection(['dsn' => 'sqlite::memory:']));
         Yii::$app->db->createCommand()->createTable('tags', [
-            'id' => 'pk', 'name' => 'string', 'key' => 'string', 'type' => 'string',
+            'id' => 'pk', 'name' => 'string', 'key' => 'string',
         ])->execute();
         Yii::$app->db->createCommand()->createTable('property', [
             'id' => 'pk', 'key' => 'string',
@@ -43,7 +43,7 @@ final class TagsPublicKeyTest extends TestCase
     #[DataProvider('reservedKeys')]
     public function testCatalogCannotRecreatePublicTag(string $key): void
     {
-        $tag = new Tags(['name' => 'Deprecated visibility tag', 'key' => $key, 'type' => 'Classify']);
+        $tag = new Tags(['name' => 'Deprecated visibility tag', 'key' => $key]);
 
         self::assertFalse($tag->save());
         self::assertTrue($tag->hasErrors('key'));
@@ -52,7 +52,7 @@ final class TagsPublicKeyTest extends TestCase
 
     public function testExistingClassificationCannotBeRenamedToPublic(): void
     {
-        $tag = new Tags(['name' => 'Learning by doing', 'key' => 'learning-by-doing', 'type' => 'Classify']);
+        $tag = new Tags(['name' => 'Learning by doing', 'key' => 'learning-by-doing']);
         self::assertTrue($tag->save());
 
         $tag->key = 'public';
@@ -61,10 +61,35 @@ final class TagsPublicKeyTest extends TestCase
         self::assertSame('learning-by-doing', Tags::findOne($tag->id)->key);
     }
 
+    public function testClassificationCanBeCreatedAndUpdatedWithoutTypeColumn(): void
+    {
+        $tag = new Tags();
+        $tag->setAttributes(['name' => 'Learning by doing', 'key' => 'learning-by-doing', 'type' => 'Classify']);
+
+        self::assertTrue($tag->save());
+        self::assertFalse($tag->hasAttribute('type'));
+        $tag->setAttributes(['name' => 'Hands-on learning', 'key' => 'hands-on', 'type' => 'Status']);
+        self::assertTrue($tag->save());
+        self::assertSame(['id' => $tag->id, 'name' => 'Hands-on learning', 'key' => 'hands-on'], Tags::findOne($tag->id)->toArray());
+    }
+
+    public function testLearningByDoingRegistrationIsIdempotentWithoutTypeColumn(): void
+    {
+        require_once Yii::getAlias('@console/migrations/m261012_000001_add_learning_by_doing_classify_tag.php');
+        $migration = new \m261012_000001_add_learning_by_doing_classify_tag(['db' => Yii::$app->db]);
+        $this->expectOutputRegex('/Verified tag: id=1, name=做中学, key=learning-by-doing/');
+
+        $migration->safeUp();
+        $migration->safeUp();
+
+        self::assertSame(1, (int) Tags::find()->count());
+        self::assertSame(['id' => 1, 'name' => '做中学', 'key' => 'learning-by-doing'], Tags::findOne(1)->toArray());
+    }
+
     public function testHistoricalPublicTagCanBeDeletedWithoutChangingPublicProperty(): void
     {
         Yii::$app->db->createCommand()->insert('tags', [
-            'id' => 1, 'name' => 'Historical public', 'key' => 'public', 'type' => 'Status',
+            'id' => 1, 'name' => 'Historical public', 'key' => 'public',
         ])->execute();
         Yii::$app->db->createCommand()->insert('property', ['id' => 1, 'key' => 'public'])->execute();
         Yii::$app->db->createCommand()->insert('verse_property', ['verse_id' => 7, 'property_id' => 1])->execute();
@@ -81,11 +106,10 @@ final class TagsPublicKeyTest extends TestCase
     public function testHistoricalPublicKeyCanBeChangedToAnOrdinaryClassification(): void
     {
         Yii::$app->db->createCommand()->insert('tags', [
-            'id' => 1, 'name' => 'Historical public', 'key' => 'public', 'type' => 'Status',
+            'id' => 1, 'name' => 'Historical public', 'key' => 'public',
         ])->execute();
         $tag = Tags::findOne(1);
         $tag->key = 'ordinary-category';
-        $tag->type = 'Classify';
 
         self::assertTrue($tag->save());
         self::assertSame('ordinary-category', Tags::findOne(1)->key);
