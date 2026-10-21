@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "kind": "identity-admission-test-protocol-snapshot",
+  "upstream": {
+    "repository": "xrugc-superproject",
+    "commit": "f603930906d55c54fc2c3552ed2f431d05cafe18",
+    "directory": "driver/identity-dev-admission"
+  },
+  "files": {
+    "coordinator.mjs": "44d225851a2229d206a66ffc823fdbe09022b1d8c4134c6a13dd7b63f4786622",
+    "journal.mjs": "1d9d48d8de5d09b9bc88e410350bd95930b892afab310d1e2719bacf90ecc300",
+    "participant-client.mjs": "1143c1376ba81a0e91856c4ef76796f84686847e8708d4b0fbc19fba3863f1e9",
+    "gateway.mjs": "2f5d951c777f62e2c4823f6b8d2572f08c840181e31f5a5055032c6f4fc7e2cf",
+    "hold-queue.mjs": "7a8d1b7cfcea52027ebe200cfa60fa2e97b03f6c2134962749b641931bdae60a",
+    "test-support.mjs": "29c8da5d0763c1b045c09e0f7a42b8bce6efaa9fc1c4d280950d8466dd912c7f"
+  }
+}
