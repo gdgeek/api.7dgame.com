@@ -26,13 +26,48 @@ use yii\web\NotFoundHttpException;
 class ScenePackageService extends Component
 {
     /**
-     * Remove legacy copy timestamps and keep imported names within the
-     * models' 255-character limit. UUIDs, rather than names, identify copies.
+     * Refresh scene/entity timestamps; resources only lose legacy copy suffixes.
+     * Reserve suffix space within the models' 255-character limit.
      */
-    private function buildImportName(string $name): string
+    private function buildImportName(string $name, ?\DateTimeInterface $importedAt = null): string
     {
-        $baseName = preg_replace('/(?:（副本 \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}）)+$/u', '', $name);
-        return mb_substr($baseName, 0, 255, 'UTF-8');
+        $baseName = $importedAt === null ? $name : trim($name);
+        $pattern = $importedAt === null
+            ? '/（副本 (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})）$/uD'
+            : '/(?:_(\d{4}-\d{2}-\d{2})_(\d{2}-\d{2}-\d{2})|（副本 (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})）)$/uD';
+
+        for (;;) {
+            $previous = $baseName;
+            if ($importedAt !== null) {
+                foreach ([' - 副本', ' - Copy', ' - コピー', ' - สำเนา'] as $copySuffix) {
+                    if (str_ends_with($baseName, $copySuffix)) {
+                        $baseName = trim(substr($baseName, 0, -strlen($copySuffix)));
+                        break;
+                    }
+                }
+            }
+            if (preg_match($pattern, $baseName, $matches, PREG_UNMATCHED_AS_NULL)) {
+                $date = $matches[1] ?? $matches[3];
+                $time = str_replace('-', ':', $matches[2] ?? $matches[4]);
+                [$year, $month, $day] = array_map('intval', explode('-', $date));
+                [$hour, $minute, $second] = array_map('intval', explode(':', $time));
+                if (checkdate($month, $day, $year) && $hour <= 23 && $minute <= 59 && $second <= 59) {
+                    $baseName = substr($baseName, 0, -strlen($matches[0]));
+                    if ($importedAt !== null) {
+                        $baseName = trim($baseName);
+                    }
+                }
+            }
+            if ($baseName === $previous) {
+                break;
+            }
+        }
+        if ($importedAt !== null && $baseName === '') {
+            throw new \InvalidArgumentException('Scene or entity name must contain a non-empty base name.');
+        }
+
+        $suffix = $importedAt === null ? '' : $importedAt->format('_Y-m-d_H-i-s');
+        return mb_substr($baseName, 0, 255 - mb_strlen($suffix, 'UTF-8'), 'UTF-8') . $suffix;
     }
 
     /**
@@ -130,6 +165,7 @@ class ScenePackageService extends Component
 
         $transaction = null;
         try {
+            $importedAt = new \DateTimeImmutable('now', new \DateTimeZone(Yii::$app->timeZone));
             $db = Yii::$app->db;
             $transaction = $db->beginTransaction();
 
@@ -236,7 +272,7 @@ class ScenePackageService extends Component
             // --- Step 2: Create Verse (new UUID, data temporarily empty) ---
             $verse = new Verse();
             $verse->uuid = UuidHelper::uuid();
-            $verse->name = $this->buildImportName($verseData['name']);
+            $verse->name = $this->buildImportName($verseData['name'], $importedAt);
             $verse->description = $verseData['description'] ?? null;
             // Save with empty data first to avoid afterSave refreshMetas issues
             $verse->data = null;
@@ -277,7 +313,7 @@ class ScenePackageService extends Component
             foreach ($metasData as $metaInput) {
                 $meta = new Meta();
                 $meta->uuid = UuidHelper::uuid();
-                $meta->title = $this->buildImportName($metaInput['title']);
+                $meta->title = $this->buildImportName($metaInput['title'], $importedAt);
                 $meta->prefab = $metaInput['prefab'] ?? 0;
                 // Save with empty data/events first to avoid afterSave refreshResources issues
                 $meta->data = null;
