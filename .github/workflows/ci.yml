@@ -362,18 +362,19 @@ jobs:
         run: |
           set -euo pipefail
           BRANCH_NAME=$(echo "${{ github.ref }}" | sed 's|refs/heads/||' | sed 's|/|-|g')
+          case "${BRANCH_NAME}" in
+            develop|main|publish) ;;
+            *) echo 'Unsupported release image tag.' >&2; exit 1 ;;
+          esac
           TASK51_RELEASE_IMAGE="hkccr.ccs.tencentyun.com/gdgeek/api:${BRANCH_NAME}"
-          TASK51_RELEASE_IMMUTABLE_IMAGE="hkccr.ccs.tencentyun.com/gdgeek/api:${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}"
           remote_head=$(git ls-remote --exit-code origin "${GITHUB_REF}" | awk '{print $1}')
           test "${remote_head}" = "${{ github.sha }}"
           docker build \
             --label "org.opencontainers.image.revision=${{ github.sha }}" \
             -t "${TASK51_RELEASE_IMAGE}" \
-            -t "${TASK51_RELEASE_IMMUTABLE_IMAGE}" \
             -f docker/Release \
             .
           echo "TASK51_RELEASE_IMAGE=${TASK51_RELEASE_IMAGE}" >> "${GITHUB_ENV}"
-          echo "TASK51_RELEASE_IMMUTABLE_IMAGE=${TASK51_RELEASE_IMMUTABLE_IMAGE}" >> "${GITHUB_ENV}"
 
       - name: Smoke Task 5.1 Release Image
         shell: bash
@@ -835,10 +836,10 @@ jobs:
           expected_commit=$(tr -d '\r\n' < advanced/GIT_COMMIT)
           remote_head=$(git ls-remote --exit-code origin "${GITHUB_REF}" | awk '{print $1}')
           test "${remote_head}" = "${expected_commit}"
+          expected_image_id=$(docker image inspect --format='{{.Id}}' "${TASK51_RELEASE_IMAGE}")
 
-          # Publish the immutable identity first. Mutable deployment tags are
-          # allowed to move only while this run is still the exact branch head.
-          docker push "${TASK51_RELEASE_IMMUTABLE_IMAGE}"
+          # Only branch/latest tags are published. The registry digest below
+          # preserves an immutable identity without creating a version tag.
           docker push "${TASK51_RELEASE_IMAGE}"
 
           # Push latest tag（仅 publish 分支）
@@ -850,29 +851,48 @@ jobs:
           remote_head_after_push=$(git ls-remote --exit-code origin "${GITHUB_REF}" | awk '{print $1}')
           test "${remote_head_after_push}" = "${expected_commit}"
 
-          # Resolve every tag from the registry, not from the local build cache.
-          # Equal raw-manifest hashes prove branch/latest point at this run's
-          # immutable image. A fresh pull then proves its OCI revision label.
-          immutable_manifest_sha=$(docker buildx imagetools inspect --raw \
-            "${TASK51_RELEASE_IMMUTABLE_IMAGE}" | sha256sum | awk '{print $1}')
+          # Resolve the actual registry descriptor digest, then compare the
+          # raw manifests behind the fixed digest and every deployment tag.
+          registry_digest=$(docker buildx imagetools inspect \
+            --format '{{json .Manifest}}' "${TASK51_RELEASE_IMAGE}" | php -r '
+              $manifest = json_decode(stream_get_contents(STDIN), true, 32, JSON_THROW_ON_ERROR);
+              $digest = $manifest["digest"] ?? "";
+              if (!is_string($digest) || !preg_match("/\\Asha256:[0-9a-f]{64}\\z/D", $digest)) {
+                  fwrite(STDERR, "Invalid registry manifest digest.\n");
+                  exit(1);
+              }
+              echo $digest;
+            ')
+          TASK51_RELEASE_DIGEST_IMAGE="${TASK51_RELEASE_IMAGE%:*}@${registry_digest}"
+          digest_manifest_sha=$(docker buildx imagetools inspect --raw \
+            "${TASK51_RELEASE_DIGEST_IMAGE}" | sha256sum | awk '{print $1}')
           branch_manifest_sha=$(docker buildx imagetools inspect --raw \
             "${TASK51_RELEASE_IMAGE}" | sha256sum | awk '{print $1}')
-          test "${branch_manifest_sha}" = "${immutable_manifest_sha}"
+          test "${branch_manifest_sha}" = "${digest_manifest_sha}"
 
-          local_image_refs=("${TASK51_RELEASE_IMAGE}" "${TASK51_RELEASE_IMMUTABLE_IMAGE}")
+          local_image_refs=("${TASK51_RELEASE_IMAGE}")
           if [ "${{ github.ref }}" = "refs/heads/publish" ]; then
             latest_manifest_sha=$(docker buildx imagetools inspect --raw \
               hkccr.ccs.tencentyun.com/gdgeek/api:latest | sha256sum | awk '{print $1}')
-            test "${latest_manifest_sha}" = "${immutable_manifest_sha}"
+            test "${latest_manifest_sha}" = "${digest_manifest_sha}"
             local_image_refs+=(hkccr.ccs.tencentyun.com/gdgeek/api:latest)
           fi
 
           docker image rm "${local_image_refs[@]}" >/dev/null
-          docker pull "${TASK51_RELEASE_IMMUTABLE_IMAGE}" >/dev/null
+          docker pull "${TASK51_RELEASE_DIGEST_IMAGE}" >/dev/null
+          remote_image_id=$(docker image inspect --format='{{.Id}}' "${TASK51_RELEASE_DIGEST_IMAGE}")
+          test "${remote_image_id}" = "${expected_image_id}"
           remote_oci_revision=$(docker image inspect \
             --format='{{ index .Config.Labels "org.opencontainers.image.revision" }}' \
-            "${TASK51_RELEASE_IMMUTABLE_IMAGE}")
+            "${TASK51_RELEASE_DIGEST_IMAGE}")
           test "${remote_oci_revision}" = "${expected_commit}"
+          remote_commit=$(docker run --rm "${TASK51_RELEASE_DIGEST_IMAGE}" \
+            sh -c "tr -d '\\r\\n' < /var/www/html/advanced/GIT_COMMIT")
+          test "${remote_commit}" = "${expected_commit}"
+          remote_head_after_verify=$(git ls-remote --exit-code origin "${GITHUB_REF}" | awk '{print $1}')
+          test "${remote_head_after_verify}" = "${expected_commit}"
+          echo "TASK51_RELEASE_DIGEST_IMAGE=${TASK51_RELEASE_DIGEST_IMAGE}" >> "${GITHUB_ENV}"
+          echo "Verified registry image: ${TASK51_RELEASE_DIGEST_IMAGE} (revision ${expected_commit})" >> "${GITHUB_STEP_SUMMARY}"
 
   # 阶段3: registry publish notice（仅 publish 分支）。这不是部署证明；
   # Task 5.1 必须另外取得 live consumer digest/revision/health convergence。
