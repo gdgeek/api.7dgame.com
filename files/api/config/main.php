@@ -554,6 +554,10 @@ return [
                     'controller' => 'v1/verse',
                     'extraPatterns' => [
                         'GET public' => 'public',
+                        'GET,HEAD all' => 'all',
+                        'OPTIONS all' => 'options',
+                        'GET,HEAD all/{id}' => 'all-scene',
+                        'OPTIONS all/{id}' => 'options',
                         'GET by-property' => 'by-property',
                         'OPTIONS by-property' => 'options',
                         'GET by-property/{id}' => 'by-property-scene',
