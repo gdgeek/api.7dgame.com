@@ -50,6 +50,8 @@ final class ScenePropertiesTest extends TestCase
                 'created_at' => 'datetime', 'updated_at' => 'datetime', 'name' => 'string', 'info' => 'text', 'data' => 'text'],
             'property' => ['id' => 'pk', 'key' => 'string not null unique', 'info' => 'text'],
             'verse_property' => ['id' => 'pk', 'verse_id' => 'integer', 'property_id' => 'integer'],
+            'group_verse' => ['group_id' => 'integer', 'verse_id' => 'integer'],
+            'group_user' => ['group_id' => 'integer', 'user_id' => 'integer'],
             'auth_item' => ['name' => 'string primary key', 'type' => 'integer', 'description' => 'text',
                 'rule_name' => 'string', 'data' => 'text', 'created_at' => 'integer', 'updated_at' => 'integer'],
             'auth_item_child' => ['parent' => 'string', 'child' => 'string'],
@@ -298,7 +300,8 @@ final class ScenePropertiesTest extends TestCase
 
     public static function legacyActions(): array
     {
-        return [['index'], ['update']];
+        // Root metadata updates are an explicit exception; editing, deleting and publishing are not.
+        return [['index'], ['delete'], ['update-code'], ['take-photo']];
     }
 
     public function testRootCreatesPropertyThenReusesItWithoutOverwritingGlobalInfo(): void
@@ -366,14 +369,14 @@ final class ScenePropertiesTest extends TestCase
         $cases = [];
         foreach (['admin' => 2, 'manager' => 3, 'author' => 42, 'ordinary' => 7, 'guest' => null] as $role => $id) {
             foreach (['actionProperties', 'actionPropertyOptions', 'actionAddProperty', 'actionRemoveProperty', 'actionPropertyUsage', 'actionDeletePropertyGlobally'] as $action) {
-                if ($role === 'admin' && in_array($action, ['actionProperties', 'actionPropertyOptions', 'actionRemoveProperty'], true)) continue;
+                if ($role === 'admin' && in_array($action, ['actionProperties', 'actionPropertyOptions'], true)) continue;
                 $cases[$role . '-' . $action] = [$id, $action];
             }
         }
         return $cases;
     }
 
-    public function testAdminManagesExistingAssociationsAcrossAuthorsWithoutRouteGrantsOrDictionaryChanges(): void
+    public function testAdminReadsAcrossAuthorsButManagesExistingAssociationsOnlyOnOwnScene(): void
     {
         $this->actAs(2);
         $controller = $this->controller();
@@ -382,6 +385,7 @@ final class ScenePropertiesTest extends TestCase
         }
         $this->assertSame(['checkin'], array_column($controller->actionProperties(1), 'key'));
         $this->assertCount(3, $controller->actionPropertyOptions(1));
+        Yii::$app->db->createCommand()->update('verse', ['author_id' => 2], ['id' => 1])->execute();
         Yii::$app->request->setBodyParams(['propertyId' => 3]);
         $added = $controller->actionAddProperty(1);
         $this->assertSame(['success' => true, 'property' => ['id' => 3, 'key' => 'other-scene', 'info' => null]], $added);
@@ -394,6 +398,39 @@ final class ScenePropertiesTest extends TestCase
         $this->assertTrue(Verse::findOne(1)->public);
         $controller->actionRemoveProperty(1, 1);
         $this->assertFalse(Verse::findOne(1)->public);
+    }
+
+    public function testAdminCannotAddOrRemoveExistingPropertyOnAnotherAuthorsNonEditableScene(): void
+    {
+        $this->actAs(2);
+        $before = Yii::$app->db->createCommand('SELECT * FROM verse_property ORDER BY id')->queryAll();
+        Yii::$app->request->setBodyParams(['propertyId' => 3]);
+        foreach ([fn () => $this->controller()->actionAddProperty(1),
+            fn () => $this->controller()->actionRemoveProperty(1, 2)] as $operation) {
+            try {
+                $operation();
+                $this->fail('Only root may write properties across authors without scene editing permission');
+            } catch (ForbiddenHttpException $error) {
+                $this->assertSame(403, $error->statusCode);
+                $this->assertSame($before, Yii::$app->db->createCommand('SELECT * FROM verse_property ORDER BY id')->queryAll());
+            }
+        }
+        $this->assertSame(['checkin'], array_column($this->controller()->actionProperties(1), 'key'));
+        $this->assertCount(3, $this->controller()->actionPropertyOptions(1));
+    }
+
+    public function testAdminCollaboratorCanMaintainExistingSceneProperties(): void
+    {
+        Yii::$app->authManager->assign(Yii::$app->authManager->getRole('admin'), 22);
+        $this->actAs(22);
+        Yii::$app->db->createCommand()->insert('group_verse', ['group_id' => 7, 'verse_id' => 2])->execute();
+        Yii::$app->db->createCommand()->insert('group_user', ['group_id' => 7, 'user_id' => 22])->execute();
+        $this->assertTrue(Verse::findOne(2)->editable);
+        Yii::$app->request->setBodyParams(['propertyId' => 2]);
+        $added = $this->controller()->actionAddProperty(2);
+        $this->assertTrue($added['success']);
+        $this->assertSame($added, $this->controller()->actionRemoveProperty(2, 2));
+        $this->assertSame(['other-scene'], array_column($this->controller()->actionProperties(2), 'key'));
     }
 
     #[DataProvider('adminKeyBodies')]

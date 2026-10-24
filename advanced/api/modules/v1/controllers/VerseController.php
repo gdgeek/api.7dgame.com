@@ -63,12 +63,19 @@ class VerseController extends ActiveController
 
         $behaviors['access'] = [
             'class' => AccessControl::class,
-            // Scene associations require admin/root; dictionary creation and deletion require root.
+            // Root manages any scene; admin association writes also require scene edit permission.
             'allowActions' => ['properties', 'property-options', 'add-property', 'remove-property',
-                'property-usage', 'delete-property-globally', 'global-property-options', 'by-property', 'by-property-scene'],
+                'property-usage', 'delete-property-globally', 'global-property-options', 'by-property', 'by-property-scene',
+                'all', 'all-scene'],
         ];
 
         return $behaviors;
+    }
+
+    /** Evaluated by AccessControl after JWT authentication, without changing other users' route grants. */
+    public function allowAction(): array
+    {
+        return Yii::$app->user->can('root') ? ['update', 'add-tag', 'remove-tag'] : [];
     }
 
     protected function verbs()
@@ -83,7 +90,128 @@ class VerseController extends ActiveController
             'global-property-options' => ['GET', 'HEAD'],
             'by-property' => ['GET', 'HEAD'],
             'by-property-scene' => ['GET', 'HEAD'],
+            'all' => ['GET', 'HEAD'],
+            'all-scene' => ['GET', 'HEAD'],
         ]);
+    }
+
+    /**
+     * @OA\Get(path="/v1/verses/all", summary="Root 查看所有作者的场景", tags={"Verse"}, security={{"Bearer": {}}},
+     * description="含私有场景。复用场景搜索、排序、分页及 expand；authorSearch 按用户名或昵称字面子串匹配，最多 255 个字符。authorId 精确匹配作者；propertyId 筛选属性。普通场景列表仍仅返回本人创建的场景，不改变对象编辑权限。",
+     * @OA\Parameter(name="authorSearch", in="query", @OA\Schema(type="string", maxLength=255)),
+     * @OA\Parameter(name="authorId", in="query", @OA\Schema(type="integer", minimum=1)),
+     * @OA\Parameter(name="propertyId", in="query", @OA\Schema(type="integer", minimum=1)),
+     * @OA\Parameter(name="VerseSearch[name]", in="query", @OA\Schema(type="string", maxLength=255)),
+     * @OA\Parameter(name="sort", in="query", @OA\Schema(type="string", default="-id")),
+     * @OA\Parameter(name="page", in="query", @OA\Schema(type="integer", minimum=1, maximum=1000000)),
+     * @OA\Parameter(name="per-page", in="query", @OA\Schema(type="integer", minimum=1, maximum=100)),
+     * @OA\Response(response=200, description="标准场景数组和分页头，保留各场景 editable/viewable 值"),
+     * @OA\Response(response=400, description="查询参数无效或超出限制"), @OA\Response(response=401, description="未认证"),
+     * @OA\Response(response=403, description="仅 root 可访问"), @OA\Response(response=404, description="筛选属性不存在"))
+     */
+    public function actionAll(): \yii\data\ActiveDataProvider
+    {
+        $this->requirePropertyRoot();
+        $params = Yii::$app->request->queryParams;
+        $filters = $params['VerseSearch'] ?? [];
+        if (!is_array($filters)) {
+            throw new BadRequestHttpException('VerseSearch must be an object');
+        }
+        foreach (['name' => 255, 'created_at' => 64, 'updated_at' => 64, 'info' => 4096, 'data' => 4096] as $field => $limit) {
+            if (array_key_exists($field, $filters) && $filters[$field] !== null) {
+                $this->sceneSearchText($filters[$field], 'VerseSearch[' . $field . ']', $limit);
+            }
+        }
+        foreach (['page' => 1000000, 'per-page' => 100] as $field => $limit) {
+            if (array_key_exists($field, $params)) {
+                $this->sceneFilterId($params[$field], $field, $limit);
+            }
+        }
+        foreach (['sort' => 255, 'expand' => 1024, 'fields' => 1024] as $field => $limit) {
+            if (array_key_exists($field, $params)) {
+                $this->sceneSearchText($params[$field], $field, $limit);
+            }
+        }
+        if (array_key_exists('tags', $params)) {
+            $tags = $this->sceneSearchText($params['tags'], 'tags', 2048);
+            if ($tags !== '' && (!preg_match('/^[1-9][0-9]*(,[1-9][0-9]*)*$/D', $tags) || count(explode(',', $tags)) > 100)) {
+                throw new BadRequestHttpException('tags must contain at most 100 comma-separated positive IDs');
+            }
+            foreach ($tags === '' ? [] : explode(',', $tags) as $tagId) {
+                $this->sceneFilterId($tagId, 'tags');
+            }
+        }
+        $search = new VerseSearch();
+        $search->load($params);
+        if (!$search->validate()) {
+            throw new BadRequestHttpException('Invalid scene search filters');
+        }
+        $provider = $search->search($params);
+        $provider->id = null;
+        $provider->pagination->params = $params;
+        $provider->pagination->pageSizeLimit = [1, 100];
+        $provider->sort->params = $params;
+        $provider->sort->defaultOrder = ['id' => SORT_DESC];
+        if (array_key_exists('propertyId', $params)) {
+            $this->applyScenePropertyFilter($provider->query, $this->sceneFilterId($params['propertyId'], 'propertyId'));
+        }
+        if (array_key_exists('authorId', $params)) {
+            $provider->query->andWhere(['verse.author_id' => $this->sceneFilterId($params['authorId'], 'authorId')]);
+        }
+        if (array_key_exists('authorSearch', $params)) {
+            $authorSearch = $this->sceneSearchText($params['authorSearch'], 'authorSearch', 255);
+            if ($authorSearch !== '') {
+                $author = (new Query())->select('scene_author.id')->from(['scene_author' => \api\modules\v1\models\User::tableName()])
+                    ->where('scene_author.id = verse.author_id')
+                    ->andWhere(['or', ['like', 'scene_author.username', $authorSearch], ['like', 'scene_author.nickname', $authorSearch]]);
+                $provider->query->andWhere(['exists', $author]);
+            }
+        }
+        $this->applyPublicFilter($provider->query);
+        $this->applyTagsFilter($provider->query);
+        return $provider;
+    }
+
+    /**
+     * @OA\Get(path="/v1/verses/all/{id}", summary="Root 查看任意作者场景详情", tags={"Verse"}, security={{"Bearer": {}}},
+     * description="含私有场景；返回既有 Verse 序列化，支持 expand，不改变 editable 或普通详情权限。详情不受当前列表筛选条件影响。",
+     * @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer", minimum=1)),
+     * @OA\Response(response=200, description="场景详情"), @OA\Response(response=400, description="ID 无效"),
+     * @OA\Response(response=401, description="未认证"), @OA\Response(response=403, description="仅 root 可访问"),
+     * @OA\Response(response=404, description="场景不存在"))
+     */
+    public function actionAllScene($id): Verse
+    {
+        $this->requirePropertyRoot();
+        return $this->findVerse($this->sceneFilterId($id, 'id'));
+    }
+
+    private function sceneFilterId($value, string $field, int $maximum = PHP_INT_MAX): int
+    {
+        if ((!is_int($value) && (!is_string($value) || !preg_match('/^[1-9][0-9]*$/D', $value)))
+            || filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => $maximum]]) === false) {
+            throw new BadRequestHttpException($field . ' must be a positive integer within its allowed range');
+        }
+        return (int) $value;
+    }
+
+    private function sceneSearchText($value, string $field, int $maximum): string
+    {
+        if (!is_string($value) || !mb_check_encoding($value, 'UTF-8') || mb_strlen($value, 'UTF-8') > $maximum) {
+            throw new BadRequestHttpException($field . ' must be a valid string of at most ' . $maximum . ' characters');
+        }
+        return trim($value);
+    }
+
+    private function applyScenePropertyFilter(ActiveQuery $query, int $propertyId): void
+    {
+        if (!Property::find()->where(['id' => $propertyId])->exists()) {
+            throw new NotFoundHttpException('Property not found');
+        }
+        $association = (new Query())->select('property_filter.verse_id')->from(['property_filter' => VerseProperty::tableName()])
+            ->where('property_filter.verse_id = verse.id')
+            ->andWhere(['property_filter.property_id' => $propertyId]);
+        $query->andWhere(['exists', $association]);
     }
 
     /**
@@ -146,20 +274,9 @@ class VerseController extends ActiveController
     public function actionByProperty(): \yii\data\ActiveDataProvider
     {
         $this->requirePropertyRoot();
-        $value = Yii::$app->request->get('propertyId');
-        if ((!is_int($value) && (!is_string($value) || !preg_match('/^[1-9][0-9]*$/D', $value)))
-            || filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) === false) {
-            throw new BadRequestHttpException('propertyId must be a positive integer');
-        }
-        $propertyId = (int) $value;
-        if (!Property::find()->where(['id' => $propertyId])->exists()) {
-            throw new NotFoundHttpException('Property not found');
-        }
+        $propertyId = $this->sceneFilterId(Yii::$app->request->get('propertyId'), 'propertyId');
         $dataProvider = (new VerseSearch())->search(Yii::$app->request->queryParams);
-        $association = (new Query())->select('property_filter.verse_id')->from(['property_filter' => VerseProperty::tableName()])
-            ->where('property_filter.verse_id = verse.id')
-            ->andWhere(['property_filter.property_id' => $propertyId]);
-        $dataProvider->query->andWhere(['exists', $association]);
+        $this->applyScenePropertyFilter($dataProvider->query, $propertyId);
         $this->applyPublicFilter($dataProvider->query);
         $this->applyTagsFilter($dataProvider->query);
         return $dataProvider;
@@ -187,7 +304,7 @@ class VerseController extends ActiveController
 
     /**
      * @OA\Post(path="/v1/verses/{id}/properties", summary="Admin 或 root 关联已有属性；仅 root 可通过 key 创建属性", tags={"Verse"}, security={{"Bearer": {}}},
-     * description="admin 或 root 通过 propertyId 关联已有属性；只有 root 可通过 key 和可选 info 新建或复用属性（key 已存在也要求 root）；两种形式互斥。已有 key 复用全局属性，不覆盖已有 info；重复关联幂等。添加 public 会使场景公开。",
+     * description="root 可为任意场景关联已有属性；admin 仅可为自己或具有协作编辑权限的场景关联。只有 root 可通过 key 和可选 info 新建或复用属性（key 已存在也要求 root）；两种形式互斥。已有 key 复用全局属性，不覆盖已有 info；重复关联幂等。添加 public 会使场景公开。",
      * @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
      * @OA\RequestBody(required=true, @OA\JsonContent(oneOf={
      *   @OA\Schema(required={"propertyId"}, not=@OA\Schema(anyOf={@OA\Schema(required={"key"}), @OA\Schema(required={"info"})}),
@@ -200,14 +317,14 @@ class VerseController extends ActiveController
      *   @OA\Property(property="property", type="object", @OA\Property(property="id", type="integer"),
      *     @OA\Property(property="key", type="string"), @OA\Property(property="info", nullable=true)))),
      * @OA\Response(response=400, description="propertyId、key 或 info 无效，或混用两种形式"), @OA\Response(response=401, description="未认证"),
-     * @OA\Response(response=403, description="propertyId 关联仅 admin 或 root；key 形式仅 root（包括复用已有 key）"), @OA\Response(response=404, description="场景或属性不存在"))
+     * @OA\Response(response=403, description="关联需 root 或对场景可编辑的 admin；key 形式仅 root（包括复用已有 key）"), @OA\Response(response=404, description="场景或属性不存在"))
      */
     public function actionAddProperty($id): array
     {
         $body = Yii::$app->request->bodyParams;
         if (is_array($body) && array_key_exists('propertyId', $body)
             && !array_key_exists('key', $body) && !array_key_exists('info', $body)) {
-            $this->requirePropertyManager();
+            $this->requirePropertyWriteAccess($id);
         } else {
             // The key form may create global dictionary data, so it always
             // requires root even when the supplied key already exists.
@@ -218,19 +335,19 @@ class VerseController extends ActiveController
 
     /**
      * @OA\Delete(path="/v1/verses/{id}/properties/{propertyId}", summary="Admin 或 root 从场景移除属性", tags={"Verse"}, security={{"Bearer": {}}},
-     * description="仅移除当前场景关联，保留全局属性与其他场景关联；重复移除幂等。移除 public 会取消场景公开。",
+     * description="root 可操作任意场景；admin 仅可操作自己或具有协作编辑权限的场景。仅移除当前场景关联，保留全局属性与其他场景关联；重复移除幂等。移除 public 会取消场景公开。",
      * @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
      * @OA\Parameter(name="propertyId", in="path", required=true, @OA\Schema(type="integer", minimum=1)),
      * @OA\Response(response=200, description="关联已移除或原本未关联", @OA\JsonContent(
      *   @OA\Property(property="success", type="boolean", example=true),
      *   @OA\Property(property="property", type="object", @OA\Property(property="id", type="integer"),
      *     @OA\Property(property="key", type="string"), @OA\Property(property="info", nullable=true)))),
-     * @OA\Response(response=401, description="未认证"), @OA\Response(response=403, description="仅 admin 或 root 可访问"),
+     * @OA\Response(response=401, description="未认证"), @OA\Response(response=403, description="移除需 root 或对场景可编辑的 admin"),
      * @OA\Response(response=404, description="场景或全局属性不存在"))
      */
     public function actionRemoveProperty($id, $propertyId): array
     {
-        $this->requirePropertyManager();
+        $this->requirePropertyWriteAccess($id);
         return ['success' => true, 'property' => SceneProperties::remove($id, $propertyId)];
     }
 
@@ -285,6 +402,14 @@ class VerseController extends ActiveController
         }
     }
 
+    private function requirePropertyWriteAccess($sceneId): void
+    {
+        $this->requirePropertyManager();
+        if (!Yii::$app->user->can('root')) {
+            $this->checkAccess('update', $this->findVerse($sceneId));
+        }
+    }
+
     public function actions()
     {
         $actions = parent::actions();
@@ -324,14 +449,35 @@ class VerseController extends ActiveController
             fn (Verse $model) => $this->checkAccess('update', $model));
     }
 
+    /**
+     * @OA\Put(path="/v1/verses/{id}", summary="更新场景；root 可跨作者修改场景信息", tags={"Verse"}, security={{"Bearer": {}}},
+     * description="作者和协作者沿用既有编辑权限。场景 editable=false 时，仅 root 可提交 name、description、image_id 中至少一个字段；兼容 version 字段但忽略其值。未知字段、受保护字段及混合请求返回 400，不授予场景内容、脚本、删除或发布权限。作者保持不变，updater_id 记录本次操作者。支持既有 Idempotency-Key / If-Match 写入约定。",
+     * @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     * @OA\RequestBody(required=true, @OA\JsonContent(type="object",
+     *   @OA\Property(property="name", type="string", maxLength=255),
+     *   @OA\Property(property="description", type="string", maxLength=255, nullable=true),
+     *   @OA\Property(property="image_id", type="integer", nullable=true),
+     *   @OA\Property(property="version", description="跨作者元信息保存中兼容但忽略"))),
+     * @OA\Response(response=200, description="保存成功，返回场景及 serverRevision"),
+     * @OA\Response(response=400, description="跨作者请求含非白名单字段、缺少可修改字段或字段校验失败"),
+     * @OA\Response(response=401, description="未认证"), @OA\Response(response=403, description="既无场景编辑权限也非 root"),
+     * @OA\Response(response=404, description="场景不存在"), @OA\Response(response=409, description="写入版本冲突"))
+     */
     public function actionUpdate($id)
     {
         $body = Yii::$app->request->bodyParams;
+        $attributes = $body;
         return ReliableWrite::run('verse', (int) $id, 'save', $body,
-            fn (Verse $model) => $this->checkAccess('update', $model),
-            function (Verse $model) use ($body): array {
+            function (Verse $model) use ($body, &$attributes): void {
+                if ($model->editable || !Yii::$app->user->can('root')) {
+                    $this->checkAccess('update', $model);
+                    return;
+                }
+                $attributes = $this->rootMetadataAttributes($body);
+            },
+            function (Verse $model) use (&$attributes): array {
                 $authorId = $model->author_id;
-                $model->load($body, '');
+                $model->load($attributes, '');
                 $model->author_id = $authorId;
                 if (!$model->save()) {
                     throw new \yii\web\BadRequestHttpException('Invalid editor data; nothing was saved');
@@ -342,6 +488,26 @@ class VerseController extends ActiveController
                 return $model->toArray();
             }
         );
+    }
+
+    private function rootMetadataAttributes(array $body): array
+    {
+        $fields = array_fill_keys(['name', 'description', 'image_id'], true);
+        if (array_diff_key($body, $fields + ['version' => true]) !== []) {
+            throw new BadRequestHttpException('Root may only update the scene name, description or cover without scene edit permission');
+        }
+        $attributes = array_intersect_key($body, $fields);
+        if ($attributes === []) {
+            throw new BadRequestHttpException('At least one scene information field is required');
+        }
+        return $attributes;
+    }
+
+    private function checkMetadataAccess(Verse $model): void
+    {
+        if (!Yii::$app->user->can('root')) {
+            $this->checkAccess('update', $model);
+        }
     }
     /**
      * @OA\Get(
@@ -536,9 +702,9 @@ class VerseController extends ActiveController
      * @throws Exception
      * 
      * @OA\Post(
-     *     path="/v1/verse/{id}/tag",
+     *     path="/v1/verses/{id}/tag",
      *     summary="添加标签",
-     *     description="为 Verse 添加分类标签；public 是场景属性，传入旧 public 标签 ID 返回 400",
+     *     description="作者、协作者或 root 可添加分类标签；root 可维护他人场景。public 是场景属性，传入旧 public 标签 ID 返回 400。其他非作者管理员不新增权限。",
      *     tags={"Verse"},
      *     security={{"Bearer": {}}},
      *     @OA\Parameter(
@@ -574,7 +740,7 @@ class VerseController extends ActiveController
         if (!$verse) {
             throw new NotFoundHttpException('Verse not found');
         }
-        $this->checkAccess('update', $verse);
+        $this->checkMetadataAccess($verse);
 
         $tags = Tags::findOne($tags_id);
         if (!$tags) {
@@ -608,9 +774,9 @@ class VerseController extends ActiveController
      * @throws Exception
      * 
      * @OA\Delete(
-     *     path="/v1/verse/{id}/tag",
+     *     path="/v1/verses/{id}/tag",
      *     summary="移除标签",
-     *     description="从 Verse 移除标签",
+     *     description="作者、协作者或 root 可移除分类标签；root 可维护他人场景，其他非作者管理员不新增权限。不改变场景公开属性。",
      *     tags={"Verse"},
      *     security={{"Bearer": {}}},
      *     @OA\Parameter(
@@ -646,7 +812,7 @@ class VerseController extends ActiveController
         if (!$verse) {
             throw new NotFoundHttpException('Verse not found');
         }
-        $this->checkAccess('update', $verse);
+        $this->checkMetadataAccess($verse);
 
         $model = VerseTags::find()->where(['verse_id' => $id, 'tags_id' => $tags_id])->one();
         if ($model) {
