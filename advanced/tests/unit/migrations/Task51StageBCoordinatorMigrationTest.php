@@ -300,8 +300,7 @@ final class Task51StageBCoordinatorMigrationTest extends TestCase
             'group: server-ci-${{ github.workflow }}-${{ github.ref }}',
             'cancel-in-progress: false',
             '--label "org.opencontainers.image.revision=${{ github.sha }}"',
-            'TASK51_RELEASE_IMMUTABLE_IMAGE=',
-            '${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}',
+            'develop|main|publish) ;;',
             'git ls-remote --exit-code origin "${GITHUB_REF}"',
             '/var/www/html/advanced/GIT_COMMIT',
             'docker image inspect',
@@ -362,16 +361,24 @@ final class Task51StageBCoordinatorMigrationTest extends TestCase
             '/index.php/v1/task51/stage-b/claim',
             'test "${oversize_status}" = \'413\'',
             'docker logs "${container_id}" > "${smoke_dir}/prod-container.log"',
-            'docker push "${TASK51_RELEASE_IMMUTABLE_IMAGE}"',
             'docker push "${TASK51_RELEASE_IMAGE}"',
             'docker buildx imagetools inspect --raw',
-            'test "${branch_manifest_sha}" = "${immutable_manifest_sha}"',
-            'test "${latest_manifest_sha}" = "${immutable_manifest_sha}"',
-            'docker pull "${TASK51_RELEASE_IMMUTABLE_IMAGE}"',
+            '--format \'{{json .Manifest}}\'',
+            'TASK51_RELEASE_DIGEST_IMAGE="${TASK51_RELEASE_IMAGE%:*}@${registry_digest}"',
+            'test "${branch_manifest_sha}" = "${digest_manifest_sha}"',
+            'test "${latest_manifest_sha}" = "${digest_manifest_sha}"',
+            'docker pull "${TASK51_RELEASE_DIGEST_IMAGE}"',
+            'test "${remote_image_id}" = "${expected_image_id}"',
             'test "${remote_oci_revision}" = "${expected_commit}"',
+            'test "${remote_commit}" = "${expected_commit}"',
+            'test "${remote_head_after_verify}" = "${expected_commit}"',
+            'Verified registry image:',
         ] as $expectedImageGate) {
             $this->assertStringContainsString($expectedImageGate, $workflow);
         }
+        $this->assertStringNotContainsString('TASK51_RELEASE_IMMUTABLE_IMAGE', $workflow);
+        $this->assertStringNotContainsString('${{ github.run_id }}', $workflow);
+        $this->assertStringNotContainsString('${{ github.run_attempt }}', $workflow);
 
         $this->assertSame(
             2,

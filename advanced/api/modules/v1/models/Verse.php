@@ -352,7 +352,9 @@ class Verse extends \yii\db\ActiveRecord
 
         parent::afterSave($insert, $changedAttributes);
        
-        $this->refreshMetas();
+        if ($insert || array_key_exists('data', $changedAttributes)) {
+            $this->refreshMetas();
+        }
     }
     
 

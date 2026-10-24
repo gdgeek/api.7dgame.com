@@ -428,7 +428,7 @@ Authorization: Bearer {accessToken}
 
 场景列表支持独立的 `public` 查询参数：`1` / `true` 筛选有公开属性的场景，`0` / `false` 筛选没有公开属性的场景；其他值返回 400。`/v1/verses` 仍受当前用户范围限制。`/v1/verses/public?public=0` 返回空列表，不能用该参数扩大公开列表范围。省略 `public` 不增加属性筛选。此查询参数不修改公开状态。
 
-admin 和 root 可通过 `GET /v1/verses/{id}/properties` 查看场景属性，通过 `GET /v1/verses/{id}/property-options` 获取属性目录，并通过 `POST /v1/verses/{id}/properties` 提交 `{"propertyId":2}` 关联已有属性。`DELETE /v1/verses/{id}/properties/{propertyId}` 仅移除当前场景关联，保留全局字典与其他场景关联；重复操作幂等。
+admin 和 root 可通过 `GET /v1/verses/{id}/properties` 查看任意场景属性，通过 `GET /v1/verses/{id}/property-options` 获取属性目录。root 可通过 `POST /v1/verses/{id}/properties` 提交 `{"propertyId":2}` 为任意场景关联已有属性；admin 仅可维护自己或具有协作编辑权限（`editable=true`）的场景，不能跨作者维护不可编辑场景。`DELETE /v1/verses/{id}/properties/{propertyId}` 遵循同一对象权限，只移除当前场景关联，保留全局字典与其他场景关联；重复操作幂等。
 
 仅 root 可向同一 POST 接口提交 `{"key":"checkin","info":"签到场景"}` 创建或复用字典项（key 已存在也要求 root），通过 `GET /v1/verses/{id}/properties/{propertyId}/usage` 预览全局使用量，以及通过 `DELETE /v1/verses/{id}/properties/{propertyId}/global` 删除属性本身和所有场景关联。两种 POST 形式互斥，复用字典项不覆盖已有信息。全局删除 `public` 会使所有关联场景变为私有。
 
@@ -470,6 +470,27 @@ Authorization: Bearer {accessToken}
 - `POST /v1/verse/create`: 创建场景
 - `PUT /v1/verse/update?id={id}`: 更新场景
 - `DELETE /v1/verse/delete?id={id}`: 删除场景
+
+#### root 跨作者维护场景信息
+
+root 专用“所有场景”入口使用 `GET /v1/verses/all` 和 `GET /v1/verses/all/{id}`，包含全部作者的私有场景。列表可组合 `authorSearch`（用户名/昵称字面子串，去首尾空格，最多 255 字符）、`authorId`、`VerseSearch[name]`、可选 `propertyId`、`tags`、`public`、`sort` 和标准分页；默认 `sort=-id`，`page` 为 1–1000000，`per-page` 为 1–100。响应沿用场景序列化、`expand` 和分页头。详情不依赖当前列表筛选。非 root 直调返回 403，未登录返回 401，非法参数返回 400，场景/筛选属性不存在返回 404，支持 GET/HEAD/OPTIONS。完整约定见 [场景 Property 管理](../../../../docs/SCENE_PROPERTIES_API.md)。
+
+“自己创造”的 `GET /v1/verses` 始终只返回本人创建的场景，协作权限与客户端属性/作者参数都不能扩大此范围。新增读取入口不改变 `editable` / `viewable` 或通用对象检查，不新增 3D、脚本、删除或发布权限。
+
+复用 `PUT /v1/verses/{id}`。作者或已有协作权限的用户继续使用原场景编辑权限。场景 `editable=false` 时，仅 `root` 可以维护下列元信息：
+
+```json
+{"name":"场景名称","description":"场景简介","image_id":123,"version":"客户端兼容值"}
+```
+
+- `name`、`description`、`image_id` 至少提供一个；`image_id` 是已有文件 ID，允许用 `null` 清除封面。
+- `version` 为兼容客户端自动附加的字段，在 root 跨作者元信息更新中忽略，不写入场景内容。
+- 空请求、仅含 `version`，或包含 `data`、`info`、`metas`、`author_id`、`uuid`、脚本、公开状态等非白名单字段（包括白名单与保护字段混合）均返回 400，整次不保存。
+- 普通用户及非作者管理员没有新增的跨作者权限；无原场景编辑权限且非 root 时返回 403。现有 JWT 认证保留。
+- 原作者不变；沿用 `updater_id` 记录本次操作者。元信息更新不会重写场景实体关联，不改变 `editable`，不额外开放 3D 数据、脚本、删除或发布。
+- 沿用原有 `ReliableWrite`，可使用配对的 `Idempotency-Key` / `If-Match`；版本冲突返回 409。
+
+分类标签复用 `POST /v1/verses/{id}/tag?tags_id={tagsId}` 和 `DELETE /v1/verses/{id}/tag?tags_id={tagsId}`：root 可维护其他作者场景的分类标签，作者/协作者沿用原权限；其他用户没有新增权限。`public` 仍属于场景属性，不能通过分类标签新增接口设置公开状态。属性读取权限及 root 全局字典管理规则保持不变；属性关联的跨作者写入仅 root，admin 只可维护自己或可协作编辑的场景。
 
 ---
 
