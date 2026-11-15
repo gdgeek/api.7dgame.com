@@ -1,6 +1,7 @@
 <?php
 namespace api\modules\v1\controllers;
 use api\modules\v1\models\Snapshot;
+use api\modules\v1\models\Verse;
 use mdm\admin\components\AccessControl;
 use bizley\jwt\JwtHttpBearerAuth;
 use Yii;
@@ -9,6 +10,10 @@ use yii\rest\ActiveController;
 use api\modules\v1\models\data\VerseCodeTool;
 
 use yii\base\Exception;
+use yii\web\ForbiddenHttpException;
+use yii\web\NotFoundHttpException;
+use yii\web\BadRequestHttpException;
+use OpenApi\Annotations as OA;
 class SnapshotController extends ActiveController
 {
 
@@ -50,9 +55,27 @@ class SnapshotController extends ActiveController
     }
 
 
+    /**
+     * @OA\Post(path="/v1/snapshot/take-photo", summary="创建或覆盖有编辑权限的场景快照", tags={"Verse"}, security={{"Bearer": {}}},
+     * @OA\Parameter(name="verse_id", in="query", required=true, @OA\Schema(type="integer", minimum=1)),
+     * @OA\Response(response=200, description="已保存的场景快照"), @OA\Response(response=400, description="场景 ID 无效或内容为空"),
+     * @OA\Response(response=401, description="未认证"), @OA\Response(response=403, description="没有场景编辑权限"),
+     * @OA\Response(response=404, description="场景不存在"))
+     */
     public function actionTakePhoto($verse_id)
     {
-        
+        if ((!is_int($verse_id) && (!is_string($verse_id) || !preg_match('/^[1-9][0-9]*$/D', $verse_id)))
+            || filter_var($verse_id, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) === false) {
+            throw new BadRequestHttpException('verse_id must be a positive integer');
+        }
+        $verse_id = (int) $verse_id;
+        $verse = Verse::findOne($verse_id);
+        if ($verse === null) {
+            throw new NotFoundHttpException('Verse not found');
+        }
+        if (!$verse->editable) {
+            throw new ForbiddenHttpException('You are not allowed to publish this scene');
+        }
         $snapshot = Snapshot::CreateById($verse_id);
         if ($snapshot->validate()) {
             $snapshot->save();
