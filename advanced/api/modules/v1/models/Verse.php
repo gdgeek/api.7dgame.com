@@ -7,6 +7,7 @@ use api\modules\v1\models\User;
 use api\modules\v1\models\Tags;
 use api\modules\v1\models\VerseTags;
 use api\modules\v1\models\VerseCode;
+use api\modules\v1\services\OrganizationSceneAccess;
 use yii\db\ActiveQuery;
 use yii\db\Query;
 use Yii;
@@ -532,7 +533,7 @@ class Verse extends \yii\db\ActiveRecord
         if ($this->public || $this->editable) {
             return true;
         }
-        return false;
+        return OrganizationSceneAccess::canView($this);
     }
 
     /**

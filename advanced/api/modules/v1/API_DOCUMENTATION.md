@@ -471,6 +471,10 @@ Authorization: Bearer {accessToken}
 - `PUT /v1/verse/update?id={id}`: 更新场景
 - `DELETE /v1/verse/delete?id={id}`: 删除场景
 
+#### manager / admin 查看组织场景
+
+拥有直接 `manager` 或 `admin` 角色且属于组织的用户可使用 `GET /v1/verses/organization` 与 `GET /v1/verses/organization/{id}`，查看所在全部组织成员创建的场景（含私有场景，多组织取并集）。列表复用现有搜索、作者/标签/公开属性筛选、排序、分页及 `expand`，任何客户端参数都不能扩大组织范围。无有效组织或无 manager / admin 直接角色返回 403，未认证返回 401，专属详情中的组织外场景返回 404。同组织私有场景的标准详情与预览也可读取，`viewable=true`；组织关系不改变 `editable` 或任何写权限，前端组织视图强制只读。详见 [组织场景 API](../../../../docs/ORGANIZATION_SCENES_API.md)。
+
 #### root 跨作者维护场景信息
 
 root 专用“所有场景”入口使用 `GET /v1/verses/all` 和 `GET /v1/verses/all/{id}`，包含全部作者的私有场景。列表可组合 `authorSearch`（用户名/昵称字面子串，去首尾空格，最多 255 字符）、`authorId`、`VerseSearch[name]`、可选 `propertyId`、`tags`、`public`、`sort` 和标准分页；默认 `sort=-id`，`page` 为 1–1000000，`per-page` 为 1–100。响应沿用场景序列化、`expand` 和分页头。详情不依赖当前列表筛选。非 root 直调返回 403，未登录返回 401，非法参数返回 400，场景/筛选属性不存在返回 404，支持 GET/HEAD/OPTIONS。完整约定见 [场景 Property 管理](../../../../docs/SCENE_PROPERTIES_API.md)。
@@ -574,6 +578,8 @@ Authorization: Bearer {accessToken}
 ### 25. 创建场景快照
 
 **端点**: `POST /v1/snapshot/take-photo?verse_id={verse_id}`
+
+仅场景作者或已有协作编辑权限的用户可创建/覆盖快照；组织 manager / admin 的只读权限不能发布快照。旧 `system/take-photo` 入口使用相同对象权限。场景 ID 必须为正整数：无效 ID 返回 400，场景不存在返回 404，无编辑权限返回 403。
 
 **Headers**:
 

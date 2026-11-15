@@ -554,6 +554,10 @@ return [
                     'controller' => 'v1/verse',
                     'extraPatterns' => [
                         'GET public' => 'public',
+                        'GET,HEAD organization' => 'organization',
+                        'OPTIONS organization' => 'options',
+                        'GET,HEAD organization/{id}' => 'organization-scene',
+                        'OPTIONS organization/{id}' => 'options',
                         'GET,HEAD all' => 'all',
                         'OPTIONS all' => 'options',
                         'GET,HEAD all/{id}' => 'all-scene',
