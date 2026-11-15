@@ -15,6 +15,7 @@ use yii\db\Query;
 use mdm\admin\components\AccessControl;
 use Yii;
 use api\modules\v1\services\ReliableWrite;
+use api\modules\v1\services\OrganizationSceneAccess;
 use api\modules\v1\services\ScenePublication;
 use api\modules\v1\services\SceneProperties;
 use yii\filters\auth\CompositeAuth;
@@ -66,7 +67,7 @@ class VerseController extends ActiveController
             // Root manages any scene; admin association writes also require scene edit permission.
             'allowActions' => ['properties', 'property-options', 'add-property', 'remove-property',
                 'property-usage', 'delete-property-globally', 'global-property-options', 'by-property', 'by-property-scene',
-                'all', 'all-scene'],
+                'all', 'all-scene', 'organization', 'organization-scene'],
         ];
 
         return $behaviors;
@@ -92,6 +93,8 @@ class VerseController extends ActiveController
             'by-property-scene' => ['GET', 'HEAD'],
             'all' => ['GET', 'HEAD'],
             'all-scene' => ['GET', 'HEAD'],
+            'organization' => ['GET', 'HEAD'],
+            'organization-scene' => ['GET', 'HEAD'],
         ]);
     }
 
@@ -112,6 +115,50 @@ class VerseController extends ActiveController
     public function actionAll(): \yii\data\ActiveDataProvider
     {
         $this->requirePropertyRoot();
+        return $this->sceneList();
+    }
+
+    /**
+     * @OA\Get(path="/v1/verses/organization", summary="Manager 或 admin 只读查看所在组织的场景", tags={"Verse"}, security={{"Bearer": {}}},
+     * description="包含当前 manager 或 admin 所在全部组织成员创建的公开和私有场景，多组织取并集，不重复返回。支持现有场景搜索、标签、公开属性、作者筛选、排序、分页及 expand；无法通过客户端参数扩大组织范围。不会授予编辑、删除、发布或资源写权限。",
+     * @OA\Parameter(name="VerseSearch[name]", in="query", @OA\Schema(type="string", maxLength=255)),
+     * @OA\Parameter(name="sort", in="query", @OA\Schema(type="string", default="-id")),
+     * @OA\Parameter(name="page", in="query", @OA\Schema(type="integer", minimum=1, maximum=1000000)),
+     * @OA\Parameter(name="per-page", in="query", @OA\Schema(type="integer", minimum=1, maximum=100)),
+     * @OA\Response(response=200, description="标准场景数组和分页头；保留场景已有 editable 值，组织视图按只读展示"),
+     * @OA\Response(response=400, description="查询参数无效"), @OA\Response(response=401, description="未认证"),
+     * @OA\Response(response=403, description="需要 manager 或 admin 直接角色且属于至少一个组织"))
+     */
+    public function actionOrganization(): \yii\data\ActiveDataProvider
+    {
+        $userId = OrganizationSceneAccess::requireReader();
+        $provider = $this->sceneList();
+        OrganizationSceneAccess::applyScope($provider->query, $userId);
+        return $provider;
+    }
+
+    /**
+     * @OA\Get(path="/v1/verses/organization/{id}", summary="Manager 或 admin 查看同组织场景详情", tags={"Verse"}, security={{"Bearer": {}}},
+     * description="每次请求核实当前组织与作者组织的交集；支持现有 expand。组织阅读权限也适用于普通场景详情和预览，但不改变 editable 或任何写入权限。",
+     * @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer", minimum=1)),
+     * @OA\Response(response=200, description="同组织场景详情"), @OA\Response(response=400, description="ID 无效"),
+     * @OA\Response(response=401, description="未认证"), @OA\Response(response=403, description="需要有组织的 manager 或 admin"),
+     * @OA\Response(response=404, description="场景不存在或不在当前组织范围"))
+     */
+    public function actionOrganizationScene($id): Verse
+    {
+        $userId = OrganizationSceneAccess::requireReader();
+        $query = Verse::find()->where(['verse.id' => $this->sceneFilterId($id, 'id')]);
+        OrganizationSceneAccess::applyScope($query, $userId);
+        $verse = $query->one();
+        if ($verse === null) {
+            throw new NotFoundHttpException('Organization scene not found');
+        }
+        return $verse;
+    }
+
+    private function sceneList(): \yii\data\ActiveDataProvider
+    {
         $params = Yii::$app->request->queryParams;
         $filters = $params['VerseSearch'] ?? [];
         if (!is_array($filters)) {

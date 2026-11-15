@@ -481,11 +481,13 @@ final class VersePreviewContractTest extends TestCase
     private function withPreviewDatabase(callable $callback): void
     {
         $originalDb = Yii::$app->get('db');
+        $originalAuthManager = Yii::$app->get('authManager', false);
         $originalIdentity = Yii::$app->user->identity;
         $originalQueryParams = Yii::$app->request->getQueryParams();
         $db = new Connection(['dsn' => 'sqlite::memory:']);
         $db->open();
         Yii::$app->set('db', $db);
+        Yii::$app->set('authManager', new \yii\rbac\DbManager(['db' => $db]));
         $this->resetVerseRequestCaches();
 
         try {
@@ -507,11 +509,14 @@ SQL)->execute();
             $db->createCommand('CREATE TABLE verse_property (verse_id INTEGER NOT NULL, property_id INTEGER NOT NULL)')->execute();
             $db->createCommand('CREATE TABLE group_verse (group_id INTEGER NOT NULL, verse_id INTEGER NOT NULL)')->execute();
             $db->createCommand('CREATE TABLE group_user (group_id INTEGER NOT NULL, user_id INTEGER NOT NULL)')->execute();
+            $db->createCommand('CREATE TABLE auth_item (name TEXT PRIMARY KEY, type INTEGER, description TEXT, rule_name TEXT, data TEXT, created_at INTEGER, updated_at INTEGER)')->execute();
+            $db->createCommand('CREATE TABLE auth_assignment (item_name TEXT, user_id TEXT, created_at INTEGER)')->execute();
             $callback($db);
         } finally {
             Yii::$app->request->setQueryParams($originalQueryParams);
             Yii::$app->user->switchIdentity($originalIdentity);
             Yii::$app->set('db', $originalDb);
+            Yii::$app->set('authManager', $originalAuthManager);
             $this->resetVerseRequestCaches();
             $db->close();
         }
