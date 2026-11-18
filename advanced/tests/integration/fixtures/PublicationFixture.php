@@ -3,7 +3,7 @@ namespace tests\integration\fixtures;
 require_once __DIR__ . '/WebMcpHttpFixture.php';
 final class PublicationFixture
 {
-    private const TABLES = ['scene_publication_revision','webmcp_operation','snapshot','verse','verse_code','meta','meta_code','code','verse_meta','meta_resource','resource','file','manager','verse_space','space','user'];
+    private const TABLES = ['scene_publication_revision','webmcp_operation','snapshot','verse','verse_code','meta','meta_code','code','verse_meta','meta_resource','resource_subtitle','resource','file','manager','verse_space','space','user'];
     public static function reset(\yii\db\Connection $db): void
     {
         $config = WebMcpHttpFixture::databaseConfig();
@@ -18,7 +18,8 @@ final class PublicationFixture
             'meta_code'=>'id INT PRIMARY KEY, meta_id INT, code_id INT, lua TEXT, js TEXT, blockly TEXT',
             'code'=>'id INT PRIMARY KEY, lua TEXT, js TEXT',
             'verse_meta'=>'verse_id INT, meta_id INT', 'meta_resource'=>'meta_id INT, resource_id INT',
-            'resource'=>'id INT PRIMARY KEY, name TEXT, uuid TEXT, type TEXT, info JSON, file_id INT, image_id INT, created_at TEXT',
+            'resource'=>'id INT PRIMARY KEY, author_id INT, name TEXT, uuid TEXT, type TEXT, info JSON, file_id INT, image_id INT, created_at TEXT',
+            'resource_subtitle'=>'media_resource_id INT PRIMARY KEY, subtitle_resource_id INT NOT NULL',
             'file'=>'id INT PRIMARY KEY, md5 TEXT, type TEXT, url TEXT, filename TEXT, size INT, `key` TEXT',
             'manager'=>'id INT PRIMARY KEY, verse_id INT, type TEXT, data JSON',
             'verse_space'=>'id INT PRIMARY KEY, verse_id INT, space_id INT',

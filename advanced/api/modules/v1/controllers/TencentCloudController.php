@@ -1,6 +1,7 @@
 <?php
 namespace api\modules\v1\controllers;
 
+use api\modules\v1\services\SubtitleResources;
 use TencentCloud\Common\Credential;
 use TencentCloud\Common\Profile\ClientProfile;
 use TencentCloud\Common\Profile\HttpProfile;
@@ -217,6 +218,25 @@ class TencentCloudController extends Controller
                 ),
             ),
         );
+        $private = $bucket === ($cloud['private']['bucket'] ?? null);
+        if ($private || $bucket === ($cloud['public']['bucket'] ?? null)) {
+            $prefix = 'qcs::cos:' . $region . ':uid/' . $AppId . ':prefix//' . $AppId . '/' . $ShortBucketName . '/';
+            $key = (string) Yii::$app->request->get('key', '');
+            if (str_starts_with($key, SubtitleResources::FILE_PREFIX)) {
+                $user = SubtitleResources::requireManagementAccess();
+                if (!preg_match('~^subtitles/' . (int) $user->id . '/[a-f0-9]{32}\.json$~D', $key)) {
+                    throw new \yii\web\ForbiddenHttpException('Invalid subtitle upload scope.');
+                }
+                $policy['statement'][0]['resource'] = [$prefix . $key];
+            } else {
+                // Public subtitles are readable. Writing requires an authorized, scoped request.
+                $actions = $private ? ['name/cos:*'] : array_values(array_diff(
+                    $policy['statement'][0]['action'], ['name/cos:GetObject', 'name/cos:HeadObject', 'name/cos:ListParts', 'name/cos:ListMultipartUploads']
+                ));
+                $policy['statement'][] = ['effect' => 'deny', 'action' => $actions,
+                    'resource' => [$prefix . 'subtitles/*']];
+            }
+        }
         $policyStr = str_replace('\\/', '/', json_encode($policy));
         $req->Policy = urlencode($policyStr);
         

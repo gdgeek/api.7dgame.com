@@ -2,6 +2,7 @@
 
 namespace api\modules\v1\models;
 
+use api\modules\v1\services\PublicationPayload;
 use Yii;
 
 use yii\helpers\Url;
@@ -231,7 +232,9 @@ class Snapshot extends \yii\db\ActiveRecord
         }, $verse->getMetas()->all());
 
 
-        $snapshot->resources = $verse->getResources();
+        $snapshot->resources = PublicationPayload::withBoundSubtitles(
+            (int) $verse->id, self::jsonReadyValue($verse->getResources())
+        );
         $snapshot->space = self::buildSpaceSnapshot($verse->space);
         return $snapshot;
     }

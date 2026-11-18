@@ -140,9 +140,9 @@ class FileControllerUploadTest extends TestCase
         $originalUserComponent = Yii::$app->get('user', false);
         $originalRequestMethod = $_SERVER['REQUEST_METHOD'] ?? null;
 
-        Yii::$app->set('db', new Connection(['dsn' => 'sqlite::memory:']));
+        Yii::$app->set('db', new Connection(['dsn' => 'sqlite::memory:', 'pdoClass' => \Pdo\Sqlite::class]));
         Yii::$app->db->open();
-        Yii::$app->db->pdo->sqliteCreateFunction('NOW', static fn () => gmdate('Y-m-d H:i:s'));
+        Yii::$app->db->pdo->createFunction('NOW', static fn () => gmdate('Y-m-d H:i:s'));
         Yii::$app->db->createCommand()->createTable('{{%user}}', [
             'id' => 'pk',
         ])->execute();

@@ -37,6 +37,14 @@ return [
         'pluginAccessConfigClient' => [
             'class' => \api\modules\v1\services\PluginAccessConfigClient::class,
         ],
+        'subtitleDb' => [
+            'class' => \yii\db\Connection::class,
+            'dsn' => 'mysql:host=' . getenv('MYSQL_HOST') . ';dbname=' . getenv('MYSQL_DB'),
+            'username' => getenv('MYSQL_USERNAME'),
+            'password' => getenv('MYSQL_PASSWORD'),
+            'charset' => 'utf8mb4',
+            'enableSlaves' => false,
+        ],
         'loginCodeReadiness' => [
             'class' => LoginCodeReadiness::class,
         ],
@@ -176,6 +184,20 @@ return [
             'rules' => [
                 // 健康检查路由（无需认证）
                 'GET health' => 'health/index',
+                'GET v1/subtitles' => 'v1/subtitle/index',
+                'POST v1/subtitles' => 'v1/subtitle/create',
+                'POST v1/subtitles/prepare' => 'v1/subtitle/prepare',
+                'OPTIONS v1/subtitles/prepare' => 'v1/subtitle/options',
+                'GET v1/subtitles/<id:\d+>' => 'v1/subtitle/view',
+                'PUT v1/subtitles/<id:\d+>' => 'v1/subtitle/update',
+                'OPTIONS v1/subtitles' => 'v1/subtitle/options',
+                'OPTIONS v1/subtitles/<id:\d+>' => 'v1/subtitle/options',
+                'GET v1/resources/<id:\d+>/subtitle' => 'v1/subtitle/binding',
+                'POST v1/resources/<id:\d+>/subtitle' => 'v1/subtitle/upload-bound',
+                'PUT v1/resources/<id:\d+>/subtitle' => 'v1/subtitle/set-binding',
+                'OPTIONS v1/resources/<id:\d+>/subtitle' => 'v1/subtitle/options',
+                'GET v1/verses/<verseId:\d+>/snapshot/subtitles/<fileId:\d+>' => 'v1/subtitle/snapshot-file',
+                'OPTIONS v1/verses/<verseId:\d+>/snapshot/subtitles/<fileId:\d+>' => 'v1/subtitle/options',
                 'HEAD health' => 'health/index',
                 'GET storage/<bucket>/<key:.+>' => 'storage/file',
                 'HEAD storage/<bucket>/<key:.+>' => 'storage/file',
@@ -399,6 +421,7 @@ return [
                     'pluralize' => false,
                     'extraPatterns' => [
                         'POST file' => 'file',
+                        'HEAD file' => 'file',
                     ],
                 ],
                 [
