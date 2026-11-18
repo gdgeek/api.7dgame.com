@@ -2,8 +2,6 @@
 
 namespace api\modules\v1\controllers;
 
-use api\modules\v1\components\DeviceSnAuthContext;
-use api\modules\v1\models\User;
 use api\modules\v1\models\Snapshot;
 use api\modules\v1\models\File;
 use api\modules\v1\services\SubtitleResources;
@@ -18,7 +16,6 @@ use yii\rest\OptionsAction;
 use yii\web\ForbiddenHttpException;
 use yii\web\NotFoundHttpException;
 use yii\web\Response;
-use yii\web\UnauthorizedHttpException;
 
 final class SubtitleController extends Controller
 {
@@ -46,14 +43,7 @@ final class SubtitleController extends Controller
     private function authorized(callable $operation): array
     {
         Yii::$app->response->headers->set('Cache-Control', 'private, no-store');
-        $user = Yii::$app->user->identity;
-        if (!$user instanceof User) {
-            throw new UnauthorizedHttpException();
-        }
-        if (!SubtitleResources::enabled()
-            || (int)$user->status !== 10 || DeviceSnAuthContext::normalize($user->authContext) !== []) {
-            throw new ForbiddenHttpException('当前会话无法管理字幕资源。');
-        }
+        $user = SubtitleResources::requireManagementAccess();
         $db = Yii::$app->get('subtitleDb');
         return $db->transaction(function () use ($db, $operation, $user) {
             $id = (int)$user->id;
@@ -102,7 +92,8 @@ final class SubtitleController extends Controller
     }
 
     /** @OA\Post(path="/v1/subtitles/prepare", security={{"Bearer":{}}},
-     * @OA\Response(response=200, description="Validated JSON bytes and the owner's public upload directory")) */
+     * @OA\Response(response=200, description="Validated JSON bytes and the owner's public upload directory"),
+     * @OA\Response(response=403, description="Requires the admin or root role")) */
     public function actionPrepare(): array
     {
         return $this->authorized(fn () => [
@@ -114,7 +105,8 @@ final class SubtitleController extends Controller
     /** @OA\Get(path="/v1/subtitles", security={{"Bearer":{}}},
      * @OA\Parameter(name="search", in="query", @OA\Schema(type="string"), description="Substring of the subtitle asset name"),
      * @OA\Parameter(name="page", in="query", @OA\Schema(type="integer", minimum=1)),
-     * @OA\Response(response=200, description="Matching own subtitle assets, 20 per page")) */
+     * @OA\Response(response=200, description="Matching own subtitle assets, 20 per page"),
+     * @OA\Response(response=403, description="Requires the admin or root role")) */
     public function actionIndex(int $page = 1, string $search = ''): array
     {
         return $this->authorized(fn ($resources) => $resources->listing(max(1, min(100000000, $page)), $search));
@@ -122,7 +114,8 @@ final class SubtitleController extends Controller
 
     /** @OA\Get(path="/v1/subtitles/{id}", security={{"Bearer":{}}},
      * @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
-     * @OA\Response(response=200, description="Metadata and timed cues in milliseconds")) */
+     * @OA\Response(response=200, description="Metadata and timed cues in milliseconds"),
+     * @OA\Response(response=403, description="Requires the admin or root role")) */
     public function actionView(int $id): array
     {
         return $this->authorized(fn ($resources) => $resources->view($id));
@@ -130,7 +123,8 @@ final class SubtitleController extends Controller
 
     /** @OA\Post(path="/v1/subtitles", security={{"Bearer":{}}},
      * @OA\RequestBody(required=true, @OA\JsonContent(required={"name","srt","uploadedFileId"}, @OA\Property(property="name",type="string"), @OA\Property(property="uploadedFileId",type="integer"), @OA\Property(property="srt",type="string"))),
-     * @OA\Response(response=201, description="Created subtitle asset")) */
+     * @OA\Response(response=201, description="Created subtitle asset"),
+     * @OA\Response(response=403, description="Requires the admin or root role")) */
     public function actionCreate(): array
     {
         $result = $this->save(null);
@@ -141,7 +135,8 @@ final class SubtitleController extends Controller
     /** @OA\Put(path="/v1/subtitles/{id}", security={{"Bearer":{}}},
      * @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
      * @OA\RequestBody(required=true, @OA\JsonContent(required={"fileId","name","srt"}, @OA\Property(property="fileId",type="integer"), @OA\Property(property="name",type="string"), @OA\Property(property="uploadedFileId",type="integer"), @OA\Property(property="srt",type="string"))),
-     * @OA\Response(response=200, description="Saved a new version"), @OA\Response(response=409, description="Version conflict")) */
+     * @OA\Response(response=200, description="Saved a new version"), @OA\Response(response=409, description="Version conflict"),
+     * @OA\Response(response=403, description="Requires the admin or root role")) */
     public function actionUpdate(int $id): array
     {
         return $this->save($id);
@@ -149,7 +144,8 @@ final class SubtitleController extends Controller
 
     /** @OA\Get(path="/v1/resources/{id}/subtitle", security={{"Bearer":{}}},
      * @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
-     * @OA\Response(response=200, description="Subtitle asset reference or null for an owned audio/video")) */
+     * @OA\Response(response=200, description="Subtitle asset reference or null for an owned audio/video"),
+     * @OA\Response(response=403, description="Requires the admin or root role")) */
     public function actionBinding(int $id): array
     {
         return $this->authorized(fn ($resources) => $resources->binding($id));
@@ -160,7 +156,8 @@ final class SubtitleController extends Controller
      * @OA\RequestBody(required=true, @OA\JsonContent(required={"subtitleResourceId","previousSubtitleResourceId"},
      * @OA\Property(property="subtitleResourceId",type="integer",nullable=true),
      * @OA\Property(property="previousSubtitleResourceId",type="integer",nullable=true))),
-     * @OA\Response(response=200, description="Updated binding"), @OA\Response(response=409, description="Binding changed")) */
+     * @OA\Response(response=200, description="Updated binding"), @OA\Response(response=409, description="Binding changed"),
+     * @OA\Response(response=403, description="Requires the admin or root role")) */
     public function actionSetBinding(int $id): array
     {
         return $this->authorized(fn ($resources) => $resources->setBinding($id, Yii::$app->request->bodyParams));
@@ -172,7 +169,8 @@ final class SubtitleController extends Controller
      * @OA\Property(property="name",type="string"), @OA\Property(property="uploadedFileId",type="integer"), @OA\Property(property="srt",type="string"),
      * @OA\Property(property="previousSubtitleResourceId",type="integer",nullable=true))),
      * @OA\Response(response=201, description="Created and bound a subtitle asset"),
-     * @OA\Response(response=409, description="Binding changed"), @OA\Response(response=422, description="Invalid subtitle")) */
+     * @OA\Response(response=409, description="Binding changed"), @OA\Response(response=422, description="Invalid subtitle"),
+     * @OA\Response(response=403, description="Requires the admin or root role")) */
     public function actionUploadBound(int $id): array
     {
         $result = $this->authorized(fn ($resources) => $resources->uploadBound($id, Yii::$app->request->bodyParams));

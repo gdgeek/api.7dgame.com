@@ -2,11 +2,16 @@
 
 namespace api\modules\v1\services;
 
+use api\modules\v1\components\DeviceSnAuthContext;
+use api\modules\v1\models\User;
 use common\components\UuidHelper;
+use Yii;
 use yii\db\Connection;
 use yii\db\Query;
 use yii\web\ConflictHttpException;
+use yii\web\ForbiddenHttpException;
 use yii\web\NotFoundHttpException;
+use yii\web\UnauthorizedHttpException;
 use yii\web\UnprocessableEntityHttpException;
 
 final class SubtitleResources
@@ -21,6 +26,20 @@ final class SubtitleResources
     public static function enabled(): bool
     {
         return getenv('ENABLE_DEV_SUBTITLE_RESOURCES') === '1' && in_array(getenv('FILE_STORAGE_DRIVER') ?: 'cos', ['local', 'cos'], true);
+    }
+
+    public static function requireManagementAccess(): User
+    {
+        $user = Yii::$app->user->identity;
+        if (!$user instanceof User) {
+            throw new UnauthorizedHttpException();
+        }
+        if (!self::enabled() || (int) $user->status !== 10
+            || DeviceSnAuthContext::normalize($user->authContext) !== []
+            || !array_intersect(['admin', 'root'], $user->roles)) {
+            throw new ForbiddenHttpException('仅管理员和超级管理员可以管理字幕资源。');
+        }
+        return $user;
     }
 
     private static function milliseconds(array $parts, int $offset): int

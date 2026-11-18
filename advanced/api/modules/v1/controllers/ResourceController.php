@@ -5,6 +5,7 @@ namespace api\modules\v1\controllers;
 use api\modules\v1\models\ResourceSearch;
 use api\modules\v1\models\Resource;
 use api\modules\v1\models\File;
+use api\modules\v1\services\SubtitleResources;
 use mdm\admin\components\AccessControl;
 use bizley\jwt\JwtHttpBearerAuth;
 use Yii;
@@ -129,6 +130,12 @@ class ResourceController extends ActiveController
 
     public function checkAccess($action, $model = null, $params = [])
     {
+        if ($action === 'view' && $model instanceof Resource && strtolower(trim((string) $model->type)) === 'subtitle') {
+            $user = SubtitleResources::requireManagementAccess();
+            if ((int) $model->author_id !== (int) $user->id) {
+                throw new NotFoundHttpException('字幕资源不存在。');
+            }
+        }
         if ($model instanceof Resource && in_array($action, ['update', 'delete'], true)
             && strtolower(trim((string)$model->type)) === 'subtitle') {
             throw new ForbiddenHttpException('请通过字幕资源接口管理该素材。');
@@ -178,7 +185,7 @@ class ResourceController extends ActiveController
 
         $ownedCount = File::find()
             ->where(['id' => $fileIds, 'user_id' => (int) Yii::$app->user->id])
-            ->andWhere(['not like', 'key', \api\modules\v1\services\SubtitleResources::FILE_PREFIX . '%', false])
+            ->andWhere(['not like', 'key', SubtitleResources::FILE_PREFIX . '%', false])
             ->count();
 
         if ((int) $ownedCount !== count($fileIds)) {
@@ -232,9 +239,13 @@ class ResourceController extends ActiveController
         
         if (isset(Yii::$app->request->queryParams['type'])) {
             $type = HtmlPurifier::process(Yii::$app->request->queryParams['type']);
+            if (strtolower(trim($type)) === 'subtitle') {
+                SubtitleResources::requireManagementAccess();
+            }
             $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id, 'type' => $type]);
         } else {
-            $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id]);
+            $dataProvider->query->andWhere(['author_id' => Yii::$app->user->id])
+                ->andWhere(['or', ['<>', 'type', 'subtitle'], ['type' => null]]);
         }
         //$dataProvider->query->cache(3600, new TagDependency(['tags' => 'resource_cache']));
         return $dataProvider;
