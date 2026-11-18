@@ -1,6 +1,7 @@
 <?php
 namespace api\modules\v1\controllers;
 
+use api\modules\v1\services\SubtitleResources;
 use api\modules\v1\models\File;
 use common\components\security\RateLimitBehavior;
 use mdm\admin\components\AccessControl;
@@ -68,6 +69,11 @@ class FileController extends ActiveController
     public function actionCreate()
     {
         $body = Yii::$app->request->bodyParams;
+        $model = new File();
+        $model->load($body, '');
+        $model->user_id = (int) Yii::$app->user->id;
+        $this->checkAccess('create', $model);
+
         $key = trim((string)($body['key'] ?? ''));
         if ($key !== '') {
             $candidates = File::find()
@@ -81,16 +87,14 @@ class FileController extends ActiveController
             $location = explode('?', (string) ($body['url'] ?? ''), 2)[0];
             foreach ($candidates as $existingFile) {
                 if ($location === '' || explode('?', (string) $existingFile->url, 2)[0] === $location) {
+                    if ($location === '') {
+                        $this->checkAccess('create', $existingFile);
+                    }
                     Yii::$app->response->statusCode = 200;
                     return $existingFile;
                 }
             }
         }
-
-        $model = new File();
-        $model->load($body, '');
-        $model->user_id = (int) Yii::$app->user->id;
-        $this->checkAccess('create', $model);
 
         if ($model->save()) {
             Yii::$app->response->statusCode = 201;
@@ -148,15 +152,19 @@ class FileController extends ActiveController
 
     public function checkAccess($action, $model = null, $params = [])
     {
-        if ($model instanceof File && in_array($action, ['create', 'update', 'delete'], true)
-            && str_starts_with((string)$model->key, \api\modules\v1\services\SubtitleResources::FILE_PREFIX)) {
+        if (!$model instanceof File || !in_array($action, ['create', 'update', 'delete'], true)) {
+            return;
+        }
+        $path = parse_url((string) $model->getAttribute('url'), PHP_URL_PATH);
+        $subtitle = preg_match('~^/(?:storage/(?:raw|store)/)?subtitles/~', (string) $path);
+        if (str_starts_with((string) $model->key, SubtitleResources::FILE_PREFIX)
+            || ($subtitle && $action !== 'create')) {
             throw new ForbiddenHttpException('字幕文件由字幕资源接口维护。');
         }
-        if (
-            $model instanceof File
-            && in_array($action, ['update', 'delete'], true)
-            && (int) $model->user_id !== (int) Yii::$app->user->id
-        ) {
+        if ($subtitle) {
+            SubtitleResources::requireManagementAccess();
+        }
+        if ($action !== 'create' && (int) $model->user_id !== (int) Yii::$app->user->id) {
             throw new ForbiddenHttpException('You are not allowed to access this file');
         }
     }

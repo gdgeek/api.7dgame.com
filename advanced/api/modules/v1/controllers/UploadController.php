@@ -2,6 +2,7 @@
 
 namespace api\modules\v1\controllers;
 
+use api\modules\v1\services\SubtitleResources;
 use api\modules\v1\models\UserCreation;
 use mdm\admin\components\AccessControl;
 use bizley\jwt\JwtHttpBearerAuth;
@@ -105,10 +106,13 @@ class UploadController extends \yii\rest\Controller
         $md5 = strtolower((string)ArrayHelper::getValue($data, 'md5'));
         $directory = $this->normalizeDirectory(ArrayHelper::getValue($data, 'directory', ''));
         $bucket = (string)ArrayHelper::getValue($data, 'bucket', 'store');
-        if (in_array($bucket, ['raw', 'store'], true) && ($directory === 'subtitles' || str_starts_with($directory, 'subtitles/'))
-            && ($directory !== 'subtitles/' . (int) \Yii::$app->user->id || $filename !== $md5 . '.json'
-                || !preg_match('/^[a-f0-9]{32}$/D', $md5))) {
-            throw new \yii\web\ForbiddenHttpException('Invalid subtitle upload scope.');
+        if ($directory === 'subtitles' || str_starts_with($directory, SubtitleResources::FILE_PREFIX)) {
+            $user = SubtitleResources::requireManagementAccess();
+            if (!in_array($bucket, ['raw', 'store'], true)
+                || $directory !== SubtitleResources::FILE_PREFIX . $user->id
+                || $filename !== $md5 . '.json' || !preg_match('/^[a-f0-9]{32}$/D', $md5)) {
+                throw new \yii\web\ForbiddenHttpException('Invalid subtitle upload scope.');
+            }
         }
 
         if (!in_array($bucket, $storage->buckets, true)) {

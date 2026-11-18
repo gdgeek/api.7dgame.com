@@ -1,6 +1,6 @@
 # 本地 dev 的字幕素材
 
-本地 Compose 启用 `ENABLE_DEV_SUBTITLE_RESOURCES=1` 后，已登录且有效的人员账号可管理自己的字幕。主站依据开发域名的 `features.subtitle` 显示入口。音视频关联使用迁移 `m261118_000002_create_resource_subtitle`。
+启用 `ENABLE_DEV_SUBTITLE_RESOURCES=1` 后，持有 `admin` 或 `root` 角色的有效人员账号可上传、预览、编辑自己的字幕，并管理自己音视频素材的字幕绑定。其他已登录账号访问字幕管理接口或申请字幕上传凭据时收到 HTTP 403。主站依据开发域名的 `features.subtitle` 和账号角色显示入口。音视频关联使用迁移 `m261118_000002_create_resource_subtitle`。
 
 | 请求 | 请求参数 | 响应 |
 | --- | --- | --- |
@@ -21,6 +21,6 @@
 
 生成快照时，已绑定字幕的音视频在原有 `info` JSON 字符串中增加整数 `subtitleResourceId`。该 ID 对应同一份 `resources[]` 中的 `type: "subtitle"` 素材。共用一份字幕的音视频各自携带引用，资源列表只收录一次字幕。
 
-字幕的 `file.key` 为 JSON 内容的 `{md5}.json`，`file.id` 指向发布时的文件版本。公共 COS 字幕的 `file.url` 是可匿名 GET 的 HTTPS 对象地址。本地磁盘模式使用公共目录 `/storage/store/subtitles/{userId}/{md5}.json`。两种地址都不需要下载签名。取得公共文件地址的人可读取字幕正文，包括从私有场景引用的公共字幕。素材编辑和绑定仍需登录并校验所有者。编辑字幕或变更绑定后，重新生成快照才会反映变更。
+字幕的 `file.key` 为 JSON 内容的 `{md5}.json`，`file.id` 指向发布时的文件版本。公共 COS 字幕的 `file.url` 是可匿名 GET 的 HTTPS 对象地址。本地磁盘模式使用公共目录 `/storage/store/subtitles/{userId}/{md5}.json`。两种地址都不需要下载签名。取得公共文件地址的人可读取字幕正文，包括从私有场景引用的公共字幕。编辑字幕或变更绑定后，重新生成快照才会反映变更。
 
 历史私有文件继续通过 `GET /v1/verses/{verseId}/snapshot/subtitles/{fileId}` 下载。该入口校验场景查看权限和当前快照的文件版本，对旧的私有 COS 文件签发 5 分钟 GET 地址，对旧的本地私有文件返回 JSON。重新保存字幕时，编辑器将该版本上传到公共素材桶。
