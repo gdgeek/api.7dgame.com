@@ -96,7 +96,7 @@ final class SubtitleFiles
         if (!$secret->id || !$secret->key) {
             throw new \RuntimeException('COS storage is not configured');
         }
-        return new Client(['region' => $bucket['region'], 'scheme' => 'https',
+        return new Client(['region' => $bucket['region'], 'scheme' => 'https', 'timezone' => date_default_timezone_get(),
             'credentials' => ['secretId' => $secret->id, 'secretKey' => $secret->key]]);
     }
 }
