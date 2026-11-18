@@ -2,6 +2,7 @@
 
 namespace api\modules\v1\controllers;
 
+use api\modules\v1\services\SubtitleResources;
 use api\modules\v1\models\UserCreation;
 use mdm\admin\components\AccessControl;
 use bizley\jwt\JwtHttpBearerAuth;
@@ -94,7 +95,8 @@ class UploadController extends \yii\rest\Controller
         if (!$storage->init()) {
             throw new Exception('文件系统初始化失败', 400);
         }
-        $data = \Yii::$app->request->post();
+        $head = \Yii::$app->request->isHead;
+        $data = $head ? \Yii::$app->request->queryParams : \Yii::$app->request->post();
 
         $skip = (int)ArrayHelper::getValue($data, 'skip', 0);
         $blockSize = (int)ArrayHelper::getValue($data, 'block_size', 1048576);
@@ -104,9 +106,26 @@ class UploadController extends \yii\rest\Controller
         $md5 = strtolower((string)ArrayHelper::getValue($data, 'md5'));
         $directory = $this->normalizeDirectory(ArrayHelper::getValue($data, 'directory', ''));
         $bucket = (string)ArrayHelper::getValue($data, 'bucket', 'store');
+        if ($directory === 'subtitles' || str_starts_with($directory, SubtitleResources::FILE_PREFIX)) {
+            $user = SubtitleResources::requireManagementAccess();
+            if (!in_array($bucket, ['raw', 'store'], true)
+                || $directory !== SubtitleResources::FILE_PREFIX . $user->id
+                || $filename !== $md5 . '.json' || !preg_match('/^[a-f0-9]{32}$/D', $md5)) {
+                throw new \yii\web\ForbiddenHttpException('Invalid subtitle upload scope.');
+            }
+        }
 
         if (!in_array($bucket, $storage->buckets, true)) {
             throw new BadRequestHttpException('非法存储桶');
+        }
+        if ($head) {
+            $key = ($directory === '' ? '' : $directory . '/') . $filename;
+            $registered = \api\modules\v1\models\File::find()->where([
+                'user_id' => (int) \Yii::$app->user->id, 'key' => $filename, 'md5' => $md5,
+            ])->exists();
+            if (!$registered || !is_file($storage->path($bucket, $key))) throw new \yii\web\NotFoundHttpException();
+            \Yii::$app->response->statusCode = 204;
+            return null;
         }
         if ($size <= 0 || $upload_size <= 0 || $upload_size > $size || $blockSize <= 0) {
             throw new BadRequestHttpException('非法文件大小');

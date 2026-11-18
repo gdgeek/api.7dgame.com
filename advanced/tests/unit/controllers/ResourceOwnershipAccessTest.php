@@ -101,7 +101,7 @@ final class OwnershipResource extends Resource
 {
     public function attributes(): array
     {
-        return ['author_id'];
+        return ['author_id', 'type'];
     }
 }
 
@@ -109,7 +109,7 @@ final class OwnershipFile extends File
 {
     public function attributes(): array
     {
-        return ['user_id'];
+        return ['user_id', 'key'];
     }
 }
 

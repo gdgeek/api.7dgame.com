@@ -40,17 +40,9 @@ final class PublicationPayload
             ->innerJoin(['vm' => '{{%verse_meta}}'], 'vm.meta_id = mr.meta_id')
             ->where(['vm.verse_id' => $verse->id])->orderBy('r.id')->all();
         foreach ($resourceRows as $row) {
-            $info = self::decode($row['info']);
-            if ($row['type'] === 'polygen' && ($info === null || $info === '' || $info == (object) [] || $info === [])) {
-                $info = json_decode(Resource::DEFAULT_POLYGEN_INFO);
-            }
-            $resources[] = [
-                'id' => (int) $row['id'], 'name' => $row['name'], 'uuid' => $row['uuid'],
-                'type' => $row['type'], 'info' => is_string($info) || $info === null ? $info : self::json($info),
-                'created_at' => $row['created_at'], 'image_id' => $row['image_id'],
-                'file' => self::file($row['file_id']), 'image' => self::file($row['image_id']),
-            ];
+            $resources[] = self::resource($row);
         }
+        $resources = self::withBoundSubtitles((int) $verse->id, $resources);
         $managers = [];
         foreach (self::query('manager')->where(['verse_id' => $verse->id])->orderBy('id')->all() as $row) {
             $managers[] = ['type' => $row['type'], 'data' => self::json(self::decode($row['data']))];
@@ -88,6 +80,64 @@ final class PublicationPayload
                 'dependencies' => ['spaceId' => $space ? (int) $space['id'] : null, 'versions' => null,
                     'resourceBytesArchived' => false, 'fileAccess' => 'resolve_current_authorized_file'],
             ],
+        ];
+    }
+
+    public static function withBoundSubtitles(int $verseId, array $resources): array
+    {
+        if (!SubtitleResources::enabled()) return $resources;
+
+        $positions = array_flip(array_column($resources, 'id'));
+        $mediaIds = [];
+        foreach ($resources as $resource) {
+            if (in_array($resource['type'], ['video', 'audio'], true)) $mediaIds[] = $resource['id'];
+        }
+        if (!$mediaIds) return $resources;
+
+        $bindings = (new Query())->from(['b' => '{{%resource_subtitle}}'])->cache(false)->select(['s.*', 'b.media_resource_id'])
+            ->innerJoin(['m' => '{{%resource}}'], 'm.id = b.media_resource_id')
+            ->innerJoin(['s' => '{{%resource}}'], 's.id = b.subtitle_resource_id AND s.author_id = m.author_id')
+            ->where(['b.media_resource_id' => $mediaIds, 's.type' => 'subtitle'])
+            ->orderBy(['s.id' => SORT_ASC, 'b.media_resource_id' => SORT_ASC])->all();
+        $captured = [];
+        foreach ($bindings as $row) {
+            $subtitleId = (int) $row['id'];
+            $mediaIndex = $positions[$row['media_resource_id']];
+            $info = self::decode($resources[$mediaIndex]['info']);
+            if (is_string($info)) $info = self::decode($info);
+            if ($info === null || $info === '' || $info === []) $info = new \stdClass();
+            if (!is_object($info)) {
+                throw new BadRequestHttpException("Invalid info for media resource {$row['media_resource_id']}");
+            }
+            $info->subtitleResourceId = $subtitleId;
+            $resources[$mediaIndex]['info'] = self::json($info);
+
+            if (!isset($captured[$subtitleId])) {
+                $entry = self::resource($row);
+                $url = SubtitleFiles::publicUrl((int) $row['author_id'], $entry['file']);
+                $entry['file']['key'] = $entry['file']['md5'] . '.json';
+                $entry['file']['url'] = $url ?? Yii::$app->urlManager->createAbsoluteUrl([
+                    'v1/subtitle/snapshot-file', 'verseId' => $verseId, 'fileId' => (int) $row['file_id'],
+                ]);
+                $index = $positions[$subtitleId] ?? count($resources);
+                $resources[$index] = $entry;
+                $captured[$subtitleId] = true;
+            }
+        }
+        return $resources;
+    }
+
+    private static function resource(array $row): array
+    {
+        $info = self::decode($row['info']);
+        if ($row['type'] === 'polygen' && ($info === null || $info === '' || $info == (object) [] || $info === [])) {
+            $info = json_decode(Resource::DEFAULT_POLYGEN_INFO);
+        }
+        return [
+            'id' => (int) $row['id'], 'name' => $row['name'], 'uuid' => $row['uuid'],
+            'type' => $row['type'], 'info' => is_string($info) || $info === null ? $info : self::json($info),
+            'created_at' => $row['created_at'], 'image_id' => $row['image_id'],
+            'file' => self::file($row['file_id']), 'image' => self::file($row['image_id']),
         ];
     }
 
