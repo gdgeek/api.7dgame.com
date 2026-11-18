@@ -3,6 +3,8 @@
 namespace tests\unit\models;
 
 use api\modules\v1\models\Snapshot;
+use api\modules\v1\models\Verse;
+use api\modules\v1\services\PublicationPayload;
 use PHPUnit\Framework\TestCase;
 use Yii;
 use yii\db\Connection;
@@ -285,6 +287,61 @@ final class SnapshotTest extends TestCase
         $this->assertSame('immersal', $snapshot->space['type']);
         $this->assertIsArray($snapshot->managers);
         $this->assertSame(10, $snapshot->managers[0]['data']['value']);
+    }
+
+    public function testBothPublishPathsCaptureSharedSubtitleOnceAndKeepMediaInfo(): void
+    {
+        $oldFlag = getenv('ENABLE_DEV_SUBTITLE_RESOURCES');
+        $oldStorage = getenv('FILE_STORAGE_DRIVER');
+        putenv('ENABLE_DEV_SUBTITLE_RESOURCES=1');
+        putenv('FILE_STORAGE_DRIVER=local');
+        try {
+            $this->insertSnapshotContractVerse(510);
+            $db = Yii::$app->db;
+            $db->createCommand('CREATE TABLE meta_code (meta_id INTEGER, lua TEXT, js TEXT, code_id INTEGER)')->execute();
+            $db->createCommand('CREATE TABLE resource_subtitle (media_resource_id INTEGER PRIMARY KEY, subtitle_resource_id INTEGER)')->execute();
+            $this->insertFile(205, 'track.json', 'subtitles/42/test.json', 'application/json');
+            $hash = md5('track');
+            $publicPath = '/storage/store/subtitles/42/' . $hash . '.json';
+            $db->createCommand()->update('file', ['key' => $hash . '.json', 'md5' => $hash,
+                'url' => 'http://localhost' . $publicPath], ['id' => 205])->execute();
+            foreach ([902 => 'video', 903 => 'audio', 904 => 'subtitle', 905 => 'video'] as $id => $type) {
+                $db->createCommand()->insert('resource', ['id' => $id, 'uuid' => 'resource-' . $id,
+                    'name' => $type, 'type' => $type, 'author_id' => 42, 'file_id' => $id === 904 ? 205 : 201,
+                    'info' => $id === 903 ? null : '{"length":12}'])->execute();
+                if ($id !== 904) $db->createCommand()->insert('meta_resource', ['meta_id' => 801, 'resource_id' => $id])->execute();
+            }
+            $db->createCommand()->batchInsert('resource_subtitle', ['media_resource_id', 'subtitle_resource_id'],
+                [[902, 904], [903, 904]])->execute();
+            $capture = PublicationPayload::capture(Verse::findOne(510));
+            $this->assertArrayNotHasKey('url', end($capture['body']['runtime']['resources'])['file']);
+            foreach ([$capture['runtime']['resources'], Snapshot::CreateById(510)->resources] as $resources) {
+                $this->assertCount(5, $resources);
+                $byId = array_column($resources, null, 'id');
+                $this->assertSame(['length' => 12, 'subtitleResourceId' => 904], json_decode($byId[902]['info'], true));
+                $this->assertSame(['subtitleResourceId' => 904], json_decode($byId[903]['info'], true));
+                $this->assertSame('{"length":12}', $byId[905]['info']);
+                $this->assertSame(205, $byId[904]['file']['id']);
+                $this->assertSame($publicPath, parse_url($byId[904]['file']['url'], PHP_URL_PATH));
+            }
+            // A direct scene reference and an indirect media binding may point to the same asset.
+            $db->createCommand()->insert('meta_resource', ['meta_id' => 801, 'resource_id' => 904])->execute();
+            $this->insertFile(206, 'edited.json', 'subtitles/42/edited.json', 'application/json');
+            $db->createCommand()->update('file', ['key' => 'subtitles/42/12345678-1234-5678-1234-123456789abc.json',
+                'md5' => md5('legacy version'), 'url' => null], ['id' => 206])->execute();
+            $db->createCommand()->update('resource', ['file_id' => 206], ['id' => 904])->execute();
+            $republished = PublicationPayload::capture(Verse::findOne(510))['runtime']['resources'];
+            $this->assertCount(5, $republished);
+            $this->assertSame(206, array_column($republished, null, 'id')[904]['file']['id']);
+            $this->assertSame(205, array_column($capture['runtime']['resources'], null, 'id')[904]['file']['id']);
+            $db->createCommand()->delete('meta_resource', ['resource_id' => 904])->execute();
+            $db->createCommand()->delete('resource_subtitle')->execute();
+            $this->assertCount(4, PublicationPayload::capture(Verse::findOne(510))['runtime']['resources']);
+            $this->assertSame('{"length":12}', $db->createCommand('SELECT info FROM resource WHERE id=902')->queryScalar());
+        } finally {
+            putenv($oldFlag === false ? 'ENABLE_DEV_SUBTITLE_RESOURCES' : 'ENABLE_DEV_SUBTITLE_RESOURCES=' . $oldFlag);
+            putenv($oldStorage === false ? 'FILE_STORAGE_DRIVER' : 'FILE_STORAGE_DRIVER=' . $oldStorage);
+        }
     }
 
     public function testTakePhotoResponseContractKeepsStructuredSnapshotFields(): void
