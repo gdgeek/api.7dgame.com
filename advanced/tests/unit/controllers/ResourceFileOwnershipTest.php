@@ -26,10 +26,12 @@ final class ResourceFileOwnershipTest extends TestCase
         Yii::$app->db->createCommand()->createTable('{{%file}}', [
             'id' => 'pk',
             'user_id' => 'integer not null',
+            'key' => 'text not null',
         ])->execute();
-        Yii::$app->db->createCommand()->batchInsert('{{%file}}', ['id', 'user_id'], [
-            [100, 42],
-            [200, 7],
+        Yii::$app->db->createCommand()->batchInsert('{{%file}}', ['id', 'user_id', 'key'], [
+            [100, 42, 'ordinary-file'],
+            [200, 7, 'another-file'],
+            [300, 42, 'subtitles/42/private.json'],
         ])->execute();
         Yii::$app->set('user', new ResourceFileOwnershipTestUser());
     }
@@ -62,6 +64,13 @@ final class ResourceFileOwnershipTest extends TestCase
             'file_id' => 200,
         ]));
     }
+
+    public function testSubtitleVersionCannotBeReusedAsAnOrdinaryFile(): void
+    {
+        $controller = new TestableResourceController('resource', Yii::$app->getModule('v1'));
+        $this->expectException(ForbiddenHttpException::class);
+        $controller->requireOwnedFiles(new FileBackedResource(['file_id' => 300]));
+    }
 }
 
 final class ResourceFileOwnershipTestUser extends Component
@@ -73,7 +82,7 @@ final class FileBackedResource extends Resource
 {
     public function attributes(): array
     {
-        return ['file_id', 'image_id'];
+        return ['file_id', 'image_id', 'type'];
     }
 }
 

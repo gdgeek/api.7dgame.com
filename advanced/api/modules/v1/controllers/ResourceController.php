@@ -129,6 +129,10 @@ class ResourceController extends ActiveController
 
     public function checkAccess($action, $model = null, $params = [])
     {
+        if ($model instanceof Resource && in_array($action, ['update', 'delete'], true)
+            && strtolower(trim((string)$model->type)) === 'subtitle') {
+            throw new ForbiddenHttpException('请通过字幕资源接口管理该素材。');
+        }
         if (
             $model instanceof Resource
             && in_array($action, ['update', 'delete'], true)
@@ -160,6 +164,9 @@ class ResourceController extends ActiveController
 
     protected function ensureOwnedFiles(Resource $model): void
     {
+        if (strtolower(trim((string)$model->type)) === 'subtitle') {
+            throw new ForbiddenHttpException('请通过字幕资源接口管理该素材。');
+        }
         $fileIds = array_values(array_unique(array_filter([
             (int) $model->file_id,
             (int) $model->image_id,
@@ -171,6 +178,7 @@ class ResourceController extends ActiveController
 
         $ownedCount = File::find()
             ->where(['id' => $fileIds, 'user_id' => (int) Yii::$app->user->id])
+            ->andWhere(['not like', 'key', \api\modules\v1\services\SubtitleResources::FILE_PREFIX . '%', false])
             ->count();
 
         if ((int) $ownedCount !== count($fileIds)) {

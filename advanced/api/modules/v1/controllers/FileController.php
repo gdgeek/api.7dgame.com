@@ -70,16 +70,20 @@ class FileController extends ActiveController
         $body = Yii::$app->request->bodyParams;
         $key = trim((string)($body['key'] ?? ''));
         if ($key !== '') {
-            $existingFile = File::find()
+            $candidates = File::find()
                 ->where([
                     'user_id' => Yii::$app->user->id,
                     'key' => $key,
                 ])
                 ->orderBy(['id' => SORT_DESC])
-                ->one();
-            if ($existingFile) {
-                Yii::$app->response->statusCode = 200;
-                return $existingFile;
+                ->all();
+            // Content-addressed filenames can exist in both the public and private buckets.
+            $location = explode('?', (string) ($body['url'] ?? ''), 2)[0];
+            foreach ($candidates as $existingFile) {
+                if ($location === '' || explode('?', (string) $existingFile->url, 2)[0] === $location) {
+                    Yii::$app->response->statusCode = 200;
+                    return $existingFile;
+                }
             }
         }
 
@@ -144,6 +148,10 @@ class FileController extends ActiveController
 
     public function checkAccess($action, $model = null, $params = [])
     {
+        if ($model instanceof File && in_array($action, ['create', 'update', 'delete'], true)
+            && str_starts_with((string)$model->key, \api\modules\v1\services\SubtitleResources::FILE_PREFIX)) {
+            throw new ForbiddenHttpException('字幕文件由字幕资源接口维护。');
+        }
         if (
             $model instanceof File
             && in_array($action, ['update', 'delete'], true)
@@ -164,6 +172,7 @@ class FileController extends ActiveController
         $userId = $model->user_id;
         $model->load(Yii::$app->request->bodyParams, '');
         $model->user_id = $userId;
+        $this->checkAccess('update', $model);
 
         if ($model->save() === false && !$model->hasErrors()) {
             throw new ServerErrorHttpException('Failed to update the file');

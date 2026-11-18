@@ -66,6 +66,7 @@ final class PublicationArchive
         if ($db->driverName !== 'mysql') return; // SQLite uses an exclusive writer transaction in tests.
         $tables = ['verse', 'verse_code', 'code', 'meta', 'meta_code', 'verse_meta', 'meta_resource',
             'resource', 'file', 'manager', 'verse_space', 'space', 'snapshot', 'webmcp_operation', 'scene_publication_revision'];
+        if (SubtitleResources::enabled()) $tables[] = 'resource_subtitle';
         $tables = array_map(fn ($name) => $db->tablePrefix . $name, $tables);
         $rows = $db->createCommand('SELECT TABLE_NAME, ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE()')->queryAll();
         $engines = array_column($rows, 'ENGINE', 'TABLE_NAME');

@@ -51,8 +51,22 @@ class Resource extends \yii\db\ActiveRecord
 
     public function  afterSave($insert, $changedAttributes)
     {
+        if (!$insert && \api\modules\v1\services\SubtitleResources::enabled() && $this->leavesMediaType($changedAttributes['type'] ?? null)) {
+            static::getDb()->createCommand()->delete('{{%resource_subtitle}}', ['media_resource_id' => $this->id])->execute();
+        }
         parent::afterSave($insert, $changedAttributes);
         TagDependency::invalidate(Yii::$app->cache, 'resource_cache');
+    }
+
+    private function leavesMediaType(?string $oldType): bool
+    {
+        return in_array($oldType, ['audio', 'video'], true) && !in_array($this->type, ['audio', 'video'], true);
+    }
+
+    public function transactions()
+    {
+        return $this->leavesMediaType($this->getOldAttribute('type'))
+            ? [$this->scenario => self::OP_UPDATE] : parent::transactions();
     }
 
     public function beforeValidate()
@@ -177,13 +191,10 @@ class Resource extends \yii\db\ActiveRecord
     public function afterDelete()
     {
         parent::afterDelete();
-        $file = $this->file;
-        if ($file) {
-            $file->delete();
-        }
-        $image = $this->image;
-        if ($image) {
-            $image->delete();
+        foreach (array_unique(array_filter([$this->file_id, $this->image_id])) as $fileId) {
+            if (!self::find()->where(['or', ['file_id' => $fileId], ['image_id' => $fileId]])->exists()) {
+                File::findOne($fileId)?->delete();
+            }
         }
     }
 
