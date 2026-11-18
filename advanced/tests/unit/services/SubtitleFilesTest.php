@@ -36,7 +36,9 @@ final class SubtitleFilesTest extends TestCase
         $key = self::HASH . '.json';
         $url = 'https://' . self::HOST . '/subtitles/7/' . $key;
         $start = time();
+        $timezone = date_default_timezone_get();
         $signed = SubtitleFiles::signedDownloadUrl(7, ['key' => $key, 'md5' => self::HASH, 'url' => $url]);
+        self::assertSame($timezone, date_default_timezone_get());
         self::assertNull(SubtitleFiles::publicUrl(7, ['key' => $key, 'md5' => self::HASH, 'url' => $url]));
         self::assertSame($url, explode('?', $signed, 2)[0]);
         parse_str(parse_url($signed, PHP_URL_QUERY), $query);
