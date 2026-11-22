@@ -21,6 +21,7 @@ use yii\caching\TagDependency;
  *     @OA\Property(property="type", type="string", description="资源类型", example="image"),
  *     @OA\Property(property="uuid", type="string", description="资源UUID", example="550e8400-e29b-41d4-a716-446655440000"),
  *     @OA\Property(property="info", type="string", description="资源信息（JSON）", example="{}"),
+ *     @OA\Property(property="hasSubtitle", type="boolean", description="音视频素材是否已绑定有效字幕"),
  *     @OA\Property(property="image_id", type="integer", description="预览图片ID", example=10),
  *     @OA\Property(property="created_at", type="string", format="date-time", description="创建时间"),
  *     @OA\Property(property="file", ref="#/components/schemas/File", description="文件对象"),
@@ -47,6 +48,8 @@ class Resource extends \yii\db\ActiveRecord
 
 {
     public const DEFAULT_POLYGEN_INFO = '{"size":{"x":1,"y":1,"z":1},"center":{"x":0,"y":0,"z":0},"anim":[],"faces":0}';
+
+    public ?bool $hasSubtitle = null;
 
 
     public function  afterSave($insert, $changedAttributes)
@@ -215,9 +218,7 @@ class Resource extends \yii\db\ActiveRecord
     }*/
     public function fields()
     {
-      
-
-        return [
+        $fields = [
             'id',
             'info'=>function($model){
                 if($model->type === 'polygen' && self::isEmptyInfo($model->info)){
@@ -240,6 +241,10 @@ class Resource extends \yii\db\ActiveRecord
             },
 
         ];
+        if ($this->hasSubtitle !== null) {
+            $fields[] = 'hasSubtitle';
+        }
+        return $fields;
     }
 
     private static function isEmptyInfo($info): bool

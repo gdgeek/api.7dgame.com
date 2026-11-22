@@ -260,6 +260,7 @@ class Meta extends \yii\db\ActiveRecord
     public function getResources()
     {
         return Resource::find()
+            ->withSubtitleAvailability()
             ->alias('r')
             ->innerJoin(['mr' => MetaResource::tableName()], 'mr.resource_id = r.id')
             ->where(['mr.meta_id' => $this->id])
