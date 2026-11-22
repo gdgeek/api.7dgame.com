@@ -17,9 +17,13 @@
 
 音视频与字幕的关联单独保存在 `resource_subtitle`。主键 `media_resource_id` 限定每个音视频最多绑定一份字幕，带索引的 `subtitle_resource_id` 允许多个音视频复用同一份字幕。两列都引用 `resource.id`，删除任一端时级联清理对应关联。解除绑定只删除一行关联。字幕换文件版本时原绑定继续指向同一份字幕素材。
 
+素材列表、素材详情及实体的 `resources` 返回音视频素材的布尔字段 `hasSubtitle`。编辑器用这个字段显示节点字幕设置。只有存在同一所有者的有效字幕绑定并启用字幕功能时，值才为 `true`。绑定管理继续由上表中的字幕接口提供。
+
 ## 场景快照
 
 生成快照时，已绑定字幕的音视频在原有 `info` JSON 字符串中增加整数 `subtitleResourceId`。该 ID 对应同一份 `resources[]` 中的 `type: "subtitle"` 素材。共用一份字幕的音视频各自携带引用，资源列表只收录一次字幕。
+
+Three.js 编辑器将音频和视频的节点设置写入 `parameters.subtitleStyle`。可选字段 `fontSize` 为 12–96 的 JSON 数字，默认 36。可选字段 `color` 为 `#RRGGBB`，默认 `#FFFFFF`。`enabled: false` 请求隐藏当前节点的字幕，省略时请求显示。恢复默认会删除对应字段。节点样式、开关与媒体字幕绑定可独立保存，同一媒体的多个节点可各自设置。
 
 字幕的 `file.key` 为 JSON 内容的 `{md5}.json`，`file.id` 指向发布时的文件版本。公共 COS 字幕的 `file.url` 是可匿名 GET 的 HTTPS 对象地址。本地磁盘模式使用公共目录 `/storage/store/subtitles/{userId}/{md5}.json`。两种地址都不需要下载签名。取得公共文件地址的人可读取字幕正文，包括从私有场景引用的公共字幕。编辑字幕或变更绑定后，重新生成快照才会反映变更。
 

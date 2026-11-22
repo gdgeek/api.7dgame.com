@@ -120,7 +120,7 @@ class ResourceController extends ActiveController
      */
     public function actionView($id)
     {
-        $model = Resource::findOne($id);
+        $model = Resource::find()->withSubtitleAvailability()->where(['id' => $id])->one();
         if (!$model) {
             throw new NotFoundHttpException('Resource not found');
         }
@@ -236,6 +236,7 @@ class ResourceController extends ActiveController
     {
         $searchModel = new ResourceSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+        $dataProvider->query->withSubtitleAvailability();
         
         if (isset(Yii::$app->request->queryParams['type'])) {
             $type = HtmlPurifier::process(Yii::$app->request->queryParams['type']);
